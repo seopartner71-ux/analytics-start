@@ -384,7 +384,7 @@ export function AnalyticsTab({ projectId }: AnalyticsTabProps) {
                 <span className="text-sm font-normal text-muted-foreground">{t("project.analytics.visits", "визитов")}</span>
               </p>
               {compTotalVisits > 0 && (
-                <p className={cn("text-sm font-semibold mt-1", visitsChange >= 0 ? "text-green-500" : "text-red-500")}>
+                <p className={cn("text-sm font-semibold mt-1", visitsChange >= 0 ? "text-primary" : "text-destructive")}>
                   {visitsChange >= 0 ? "+" : ""}{Math.round(visitsChange * 10) / 10}%
                 </p>
               )}
