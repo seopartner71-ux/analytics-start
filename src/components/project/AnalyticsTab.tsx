@@ -351,10 +351,6 @@ export function AnalyticsTab({ projectId, onSwitchToGoals, onSwitchToSeo, onSwit
                 {`${p.days}${i18n.language === "ru" ? "д" : "d"}`}
               </Button>
             ))}
-            <Button onClick={handleGenerateReport} variant="ghost" size="sm" className="gap-1.5 h-7 text-xs ml-auto">
-              <Link2 className="h-3.5 w-3.5" />
-              {t("project.analytics.generateReport")}
-            </Button>
           </div>
 
           {/* Row 2: Period A | VS | Period B | Toggle | Apply */}

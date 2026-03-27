@@ -61,7 +61,8 @@
       "goals": "Goals",
       "worklog": "Work Log",
       "integrations": "Integrations",
-      "settings": "Settings"
+      "settings": "Settings",
+      "builder": "Report Builder"
     },
     "analytics": {
       "traffic": "Website Traffic",

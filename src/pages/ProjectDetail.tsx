@@ -20,6 +20,7 @@ import { GoalsTab } from "@/components/project/GoalsTab";
 import { SeoTab } from "@/components/project/SeoTab";
 import { PagesTab } from "@/components/project/PagesTab";
 import { AiInsightsBlock } from "@/components/project/AiInsightsBlock";
+import { ReportBuilderTab } from "@/components/project/ReportBuilderTab";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { MetrikaWidget } from "@/components/widgets/MetrikaWidget";
 import { WebmasterWidget } from "@/components/widgets/WebmasterWidget";
@@ -266,6 +267,7 @@ const ProjectDetail = () => {
                 <TabsTrigger value="pages">{t("project.tabs.pages")}</TabsTrigger>
                 <TabsTrigger value="goals">{t("project.tabs.goals")}</TabsTrigger>
                 <TabsTrigger value="worklog">{t("project.tabs.worklog")}</TabsTrigger>
+                <TabsTrigger value="builder">{t("project.tabs.builder")}</TabsTrigger>
                 <TabsTrigger value="integrations">{t("project.tabs.integrations")}</TabsTrigger>
                 <TabsTrigger value="settings">{t("project.tabs.settings")}</TabsTrigger>
               </TabsList>
@@ -317,6 +319,10 @@ const ProjectDetail = () => {
 
               <TabsContent value="worklog">
                 <WorkLogTab projectId={project.id} tasks={workLogs} isAdmin={true} />
+              </TabsContent>
+
+              <TabsContent value="builder">
+                <ReportBuilderTab projectId={project.id} shareToken={project.share_token} />
               </TabsContent>
 
               <TabsContent value="integrations">

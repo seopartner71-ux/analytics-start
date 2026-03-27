@@ -61,7 +61,8 @@
       "goals": "Цели",
       "worklog": "Список работ",
       "integrations": "Интеграции",
-      "settings": "Настройки"
+      "settings": "Настройки",
+      "builder": "Конструктор"
     },
     "analytics": {
       "traffic": "Посещаемость",
