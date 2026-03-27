@@ -316,43 +316,19 @@ export function SearchSystemsTab({ projectId, projectName }: SearchSystemsTabPro
   const [appliedCompRange, setAppliedCompRange] = useState(compRange);
   const [selectedEngine, setSelectedEngine] = useState<string>("all");
 
-  const PRESETS = [
-    { key: "7d", days: 7 },
-    { key: "14d", days: 14 },
-    { key: "30d", days: 30 },
-    { key: "90d", days: 90 },
-  ] as const;
-
-  const handlePreset = (key: string, days: number) => {
-    const nr = { from: subDays(today, days), to: today };
-    setActivePreset(key);
-    setRange(nr);
-    setAppliedRange(nr);
-    const cr = { from: subYears(nr.from, 1), to: subYears(nr.to, 1) };
-    setCompRange(cr);
-    setAppliedCompRange(cr);
-  };
-
   const handleCompPreset = (type: "previous" | "lastYear") => {
-    const days = differenceInDays(range.to, range.from);
-    const nr = type === "previous"
-      ? { from: subDays(range.from, days + 1), to: subDays(range.from, 1) }
-      : { from: subYears(range.from, 1), to: subYears(range.to, 1) };
-    setCompRange(nr);
-  };
-
-  const handleToggleComparison = (on: boolean) => {
-    setShowComparison(on);
-    if (on) {
-      const nr = { from: subYears(range.from, 1), to: subYears(range.to, 1) };
-      setCompRange(nr);
-      setAppliedCompRange(nr);
+    const days = differenceInDays(appliedRange.to, appliedRange.from);
+    if (type === "previous") {
+      const nr = { from: subDays(appliedRange.from, days + 1), to: subDays(appliedRange.from, 1) };
+      setCompRange(nr); setAppliedCompRange(nr);
+    } else {
+      const nr = { from: subYears(appliedRange.from, 1), to: subYears(appliedRange.to, 1) };
+      setCompRange(nr); setAppliedCompRange(nr);
     }
   };
 
   const handleApply = () => {
     setAppliedRange({ ...range });
-    setActivePreset("");
     if (showComparison) setAppliedCompRange({ ...compRange });
     toast.success(t("project.analytics.applied", "Период применён"));
   };
