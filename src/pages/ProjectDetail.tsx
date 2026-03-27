@@ -126,7 +126,7 @@ const ProjectDetail = () => {
   });
 
   const saveAiSummary = useMutation({
-    mutationFn: async (summary: { happened: string; why: string; recommendation: string }) => {
+    mutationFn: async (summary: any) => {
       const now = new Date();
       const reportData = { ai_summary: summary };
       const existing = cachedReport;
@@ -261,6 +261,7 @@ const ProjectDetail = () => {
                     summary={aiSummary}
                     isAdmin={true}
                     onSave={(summary) => saveAiSummary.mutate(summary)}
+                    trafficSources={[]}
                   />
 
                   <div className="grid gap-6 lg:grid-cols-2">
