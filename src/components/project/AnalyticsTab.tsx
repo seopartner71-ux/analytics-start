@@ -160,6 +160,20 @@ export function AnalyticsTab({ projectId }: AnalyticsTabProps) {
   const avgDuration = latestStat?.avg_duration_seconds || 0;
   const sparkData = filteredData.map((d) => ({ v: d.visits }));
 
+  // Traffic sources
+  const TRAFFIC_COLORS = [
+    "hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))",
+    "hsl(var(--chart-4))", "hsl(var(--chart-5))", "hsl(210 70% 50%)",
+    "hsl(340 65% 50%)", "hsl(160 60% 40%)",
+  ];
+
+  const trafficSourcesData = useMemo(() => {
+    if (!latestStat) return [];
+    const sources = (latestStat as any).traffic_sources as { source: string; visits: number }[] | undefined;
+    if (!sources?.length) return [];
+    return sources.sort((a, b) => b.visits - a.visits);
+  }, [latestStat]);
+
   const compTotalVisits = filteredCompData.reduce((s, d) => s + d.visits, 0);
   const visitsChange = compTotalVisits > 0 ? ((totalVisits - compTotalVisits) / compTotalVisits) * 100 : 0;
 
