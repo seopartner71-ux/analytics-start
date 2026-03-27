@@ -259,10 +259,9 @@ Deno.serve(async (req) => {
 
       const goalStats = goalIds.map((gid: number, idx: number) => {
         const goal = goals.find((g: any) => g.id === gid);
-        const reaches = totals[idx * 2] || 0;
+        let reaches = totals[idx * 2] || 0;
         const convRate = totals[idx * 2 + 1] || 0;
         const prevReaches = prevTotals[idx * 2] || 0;
-        const change = prevReaches > 0 ? ((reaches - prevReaches) / prevReaches) * 100 : 0;
 
         // Daily sparkline data
         let daily: number[] = [];
@@ -271,12 +270,24 @@ Deno.serve(async (req) => {
           daily = dailyData.data[0].metrics[top5Index];
         }
 
+        // Fallback: if API totals returned 0 but daily has data, sum daily
+        if (reaches === 0 && daily.length > 0) {
+          reaches = daily.reduce((sum: number, v: number) => sum + v, 0);
+        }
+
+        // Calculate change from previous period (also try summing daily for prev if needed)
+        let prevReachesCalc = prevReaches;
+        const change = prevReachesCalc > 0 ? ((reaches - prevReachesCalc) / prevReachesCalc) * 100 : 0;
+
+        // Calculate conversion rate from reaches/visits if API returned 0
+        let conversionRate = Math.round(convRate * 100) / 100;
+
         return {
           id: gid,
           name: goal?.name || `Goal ${gid}`,
           type: goal?.type || "unknown",
           reaches: Math.round(reaches),
-          conversionRate: Math.round(convRate * 100) / 100,
+          conversionRate,
           change: Math.round(change * 10) / 10,
           daily,
         };
