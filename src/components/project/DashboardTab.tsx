@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useRef, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
@@ -15,11 +15,14 @@ import {
   ResponsiveContainer, PieChart, Pie, Cell,
 } from "recharts";
 import { KpiCard } from "@/components/KpiCard";
+import { ExportMenu } from "@/components/ExportMenu";
+import { exportToPdf, exportToExcel, exportToWord, type ExcelSheet, type WordSection } from "@/lib/export-utils";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
 interface DashboardTabProps {
   projectId: string;
+  projectName: string;
   dateFrom: string;
   dateTo: string;
   compDateFrom?: string;
@@ -62,11 +65,12 @@ function ChangeIndicator({ value }: { value: number }) {
 }
 
 export function DashboardTab({
-  projectId, dateFrom, dateTo, compDateFrom, compDateTo,
+  projectId, projectName, dateFrom, dateTo, compDateFrom, compDateTo,
   showComparison, onSwitchTab,
 }: DashboardTabProps) {
   const { t, i18n } = useTranslation();
   const locale = i18n.language === "ru" ? ru : enUS;
+  const contentRef = useRef<HTMLDivElement>(null);
 
   // Fetch metrika stats
   const { data: allStats = [], isLoading } = useQuery({
