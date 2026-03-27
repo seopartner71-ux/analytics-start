@@ -215,10 +215,49 @@ export function DashboardTab({
     );
   }
 
+  const exportMeta = {
+    projectName,
+    tabName: t("project.tabs.overview", "Дашборд"),
+    periodA: `${dateFrom} — ${dateTo}`,
+    periodB: showComparison && compDateFrom && compDateTo ? `${compDateFrom} — ${compDateTo}` : undefined,
+    language: i18n.language,
+  };
+
+  const handleExportPdf = async () => {
+    if (contentRef.current) await exportToPdf(contentRef.current, exportMeta);
+  };
+
+  const handleExportExcel = async () => {
+    const sheets: ExcelSheet[] = [{
+      name: t("project.tabs.overview"),
+      headers: [t("publicReport.kpi.visits"), t("project.analytics.visitors"), t("project.analytics.conversions"), t("publicReport.kpi.bounceRate")],
+      rows: [[totalVisits, totalVisitors, conversions, `${bounceRate}%`]],
+    }];
+    exportToExcel(sheets, exportMeta);
+  };
+
+  const handleExportWord = async () => {
+    const sections: WordSection[] = [
+      { title: t("project.tabs.overview"), paragraphs: [
+        `${t("publicReport.kpi.visits")}: ${totalVisits.toLocaleString()}`,
+        `${t("project.analytics.visitors")}: ${totalVisitors.toLocaleString()}`,
+        `${t("project.analytics.conversions")}: ${conversions}`,
+        `${t("publicReport.kpi.bounceRate")}: ${bounceRate}%`,
+      ]},
+    ];
+    await exportToWord(sections, exportMeta);
+  };
+
   return (
     <div className="space-y-6">
+      {/* Export button */}
+      <div className="flex justify-end" data-export-ignore>
+        <ExportMenu onExportPdf={handleExportPdf} onExportExcel={handleExportExcel} onExportWord={handleExportWord} />
+      </div>
+
+      <div ref={contentRef}>
       {/* Block 2: KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">{/* mb-6 replaces space-y inside ref */}
         {kpis.map((kpi, i) => (
           <KpiCard
             key={i}
