@@ -476,6 +476,7 @@ export function DashboardTab({
           )}
         </CardContent>
       </Card>
+      </div>{/* close contentRef */}
     </div>
   );
 }
