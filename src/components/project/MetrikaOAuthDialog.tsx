@@ -8,8 +8,9 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, BarChart3, CheckCircle2 } from "lucide-react";
+import { Loader2, BarChart3, CheckCircle2, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -26,13 +27,16 @@ interface MetrikaOAuthDialogProps {
   existingIntegrationId?: string;
 }
 
+const YANDEX_REDIRECT_URI = "https://oauth.yandex.ru/verification_code";
+
 export function MetrikaOAuthDialog({ open, onOpenChange, projectId, existingIntegrationId }: MetrikaOAuthDialogProps) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
-  const [step, setStep] = useState<"auth" | "loading" | "select">("auth");
+  const [step, setStep] = useState<"auth" | "code" | "loading" | "select">("auth");
   const [accessToken, setAccessToken] = useState("");
   const [counters, setCounters] = useState<Counter[]>([]);
   const [selectedCounter, setSelectedCounter] = useState("");
+  const [codeInput, setCodeInput] = useState("");
 
   useEffect(() => {
     if (!open) {
@@ -40,54 +44,46 @@ export function MetrikaOAuthDialog({ open, onOpenChange, projectId, existingInte
       setAccessToken("");
       setCounters([]);
       setSelectedCounter("");
+      setCodeInput("");
     }
   }, [open]);
-
-  // Listen for OAuth callback message
-  useEffect(() => {
-    const handler = (event: MessageEvent) => {
-      if (event.data?.type === "yandex-oauth-callback" && event.data?.code) {
-        handleCodeExchange(event.data.code);
-      }
-    };
-    window.addEventListener("message", handler);
-    return () => window.removeEventListener("message", handler);
-  }, []);
 
   const handleStartOAuth = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      const redirectUri = `${window.location.origin}/oauth/yandex/callback`;
       const projectRef = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-      const funcUrl = `https://${projectRef}.supabase.co/functions/v1/yandex-metrika-auth?action=auth-url&redirect_uri=${encodeURIComponent(redirectUri)}`;
-      
+      const funcUrl = `https://${projectRef}.supabase.co/functions/v1/yandex-metrika-auth?action=auth-url&redirect_uri=${encodeURIComponent(YANDEX_REDIRECT_URI)}`;
+
       const authResp = await fetch(funcUrl, {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       const authData = await authResp.json();
 
       if (authData.url) {
-        // Open popup for OAuth
-        const popup = window.open(authData.url, "yandex-oauth", "width=600,height=700,scrollbars=yes");
-        if (!popup) {
-          toast.error("Разрешите всплывающие окна для авторизации");
-        }
+        window.open(authData.url, "_blank", "noopener,noreferrer");
+        setStep("code");
       }
     } catch (err) {
       toast.error("Ошибка запуска OAuth");
     }
   };
 
-  const handleCodeExchange = async (code: string) => {
+  const handleCodeSubmit = async () => {
+    const code = codeInput.trim();
+    if (!code) {
+      toast.error(t("integrations.metrika.enterCode"));
+      return;
+    }
+
     setStep("loading");
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
       const projectRef = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-      
+
       // Exchange code for token
       const tokenResp = await fetch(
         `https://${projectRef}.supabase.co/functions/v1/yandex-metrika-auth?action=exchange-token`,
@@ -124,14 +120,13 @@ export function MetrikaOAuthDialog({ open, onOpenChange, projectId, existingInte
       setStep("select");
     } catch (err: any) {
       toast.error(err.message || "Ошибка авторизации");
-      setStep("auth");
+      setStep("code");
     }
   };
 
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!selectedCounter || !accessToken) return;
-      const counter = counters.find(c => c.id === selectedCounter);
 
       if (existingIntegrationId) {
         const { error } = await supabase.from("integrations").update({
@@ -171,6 +166,7 @@ export function MetrikaOAuthDialog({ open, onOpenChange, projectId, existingInte
           </DialogTitle>
           <DialogDescription>
             {step === "auth" && t("integrations.metrika.authDesc")}
+            {step === "code" && t("integrations.metrika.pasteCodeDesc")}
             {step === "loading" && t("integrations.metrika.loading")}
             {step === "select" && t("integrations.metrika.selectCounter")}
           </DialogDescription>
@@ -184,6 +180,23 @@ export function MetrikaOAuthDialog({ open, onOpenChange, projectId, existingInte
             <p className="text-sm text-muted-foreground text-center">
               {t("integrations.metrika.authHint")}
             </p>
+          </div>
+        )}
+
+        {step === "code" && (
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-muted-foreground">
+              {t("integrations.metrika.codeInstructions")}
+            </p>
+            <div className="space-y-2">
+              <Label>{t("integrations.metrika.codeLabel")}</Label>
+              <Input
+                value={codeInput}
+                onChange={(e) => setCodeInput(e.target.value)}
+                placeholder="1234567"
+                autoFocus
+              />
+            </div>
           </div>
         )}
 
@@ -223,8 +236,14 @@ export function MetrikaOAuthDialog({ open, onOpenChange, projectId, existingInte
             {t("common.cancel")}
           </Button>
           {step === "auth" && (
-            <Button onClick={handleStartOAuth}>
+            <Button onClick={handleStartOAuth} className="gap-1.5">
+              <ExternalLink className="h-4 w-4" />
               {t("integrations.authorize")}
+            </Button>
+          )}
+          {step === "code" && (
+            <Button onClick={handleCodeSubmit} disabled={!codeInput.trim()}>
+              {t("integrations.metrika.submitCode")}
             </Button>
           )}
           {step === "select" && (
