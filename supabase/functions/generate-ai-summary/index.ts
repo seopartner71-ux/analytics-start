@@ -27,8 +27,8 @@ Deno.serve(async (req) => {
     );
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    if (userError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -41,6 +41,26 @@ Deno.serve(async (req) => {
     if (!project_id) {
       return new Response(JSON.stringify({ error: "project_id is required" }), {
         status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Get OpenRouter API key from app_settings
+    const serviceClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    const { data: apiKeySetting } = await serviceClient
+      .from("app_settings")
+      .select("value")
+      .eq("key", "openrouter_api_key")
+      .maybeSingle();
+
+    const OPENROUTER_API_KEY = apiKeySetting?.value;
+    if (!OPENROUTER_API_KEY) {
+      return new Response(JSON.stringify({ error: "OpenRouter API key not configured. Add it in Admin Panel." }), {
+        status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -79,22 +99,15 @@ Yandex Metrika data for project "${project?.name || "Unknown"}" (${project?.url 
       dataContext = `No analytics data available yet for project "${project?.name || "Unknown"}". Provide general SEO recommendations.`;
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      return new Response(JSON.stringify({ error: "AI API key not configured" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const aiResponse = await fetch("https://api.lovable.dev/v1/chat/completions", {
+    const aiResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${OPENROUTER_API_KEY}`,
         "Content-Type": "application/json",
+        "HTTP-Referer": Deno.env.get("SUPABASE_URL") || "",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-2.5-flash-preview",
         messages: [
           {
             role: "system",
@@ -111,7 +124,7 @@ Yandex Metrika data for project "${project?.name || "Unknown"}" (${project?.url 
 
     if (!aiResponse.ok) {
       const errText = await aiResponse.text();
-      console.error("AI API error:", aiResponse.status, errText);
+      console.error("OpenRouter API error:", aiResponse.status, errText);
       return new Response(
         JSON.stringify({ error: `AI service error: ${aiResponse.status}` }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
