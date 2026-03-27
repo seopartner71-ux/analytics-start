@@ -117,6 +117,8 @@
     "lastSync": "Last sync",
     "connected": "Service connected",
     "disconnected": "Service disconnected",
+    "sync": "Sync",
+    "synced": "Data synced",
     "fillFields": "Please fill in all fields",
     "noConnected": "No connected services. Go to the Integrations tab to set up.",
     "oauthTitle": "Authorize {{service}}",

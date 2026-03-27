@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   BarChart3, Globe, Search, Target,
-  CheckCircle2, Unplug, KeyRound,
+  CheckCircle2, Unplug, KeyRound, RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -96,6 +96,56 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
     },
   });
 
+  const [syncingId, setSyncingId] = useState<string | null>(null);
+
+  const syncMutation = useMutation({
+    mutationFn: async (integration: Tables<"integrations">) => {
+      setSyncingId(integration.id);
+      if (integration.service_name === "yandexMetrika" && integration.access_token && integration.counter_id) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) throw new Error("Not authenticated");
+
+        const projectRef = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+        const resp = await fetch(
+          `https://${projectRef}.supabase.co/functions/v1/yandex-metrika-auth?action=fetch-stats`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              access_token: integration.access_token,
+              counter_id: integration.counter_id,
+            }),
+          }
+        );
+        const data = await resp.json();
+        if (data.error) throw new Error(data.error);
+
+        // Update last_sync timestamp
+        await supabase.from("integrations").update({
+          last_sync: new Date().toISOString(),
+        }).eq("id", integration.id);
+
+        return data;
+      }
+      // For other integrations just update sync time
+      await supabase.from("integrations").update({
+        last_sync: new Date().toISOString(),
+      }).eq("id", integration.id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["integrations", projectId] });
+      toast.success(t("integrations.synced"));
+      setSyncingId(null);
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+      setSyncingId(null);
+    },
+  });
+
   const handleConnect = (meta: IntegrationMeta) => {
     if (meta.key === "yandexMetrika") {
       setMetrikaDialog(true);
@@ -160,10 +210,22 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
                     )}
 
                     {connected ? (
-                      <Button variant="outline" size="sm" className="gap-1.5 text-destructive hover:text-destructive" onClick={() => disconnectMutation.mutate(integration!.id)}>
-                        <Unplug className="h-3.5 w-3.5" />
-                        {t("integrations.disconnect")}
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1.5"
+                          onClick={() => syncMutation.mutate(integration!)}
+                          disabled={syncingId === integration!.id}
+                        >
+                          <RefreshCw className={`h-3.5 w-3.5 ${syncingId === integration!.id ? "animate-spin" : ""}`} />
+                          {t("integrations.sync")}
+                        </Button>
+                        <Button variant="outline" size="sm" className="gap-1.5 text-destructive hover:text-destructive" onClick={() => disconnectMutation.mutate(integration!.id)}>
+                          <Unplug className="h-3.5 w-3.5" />
+                          {t("integrations.disconnect")}
+                        </Button>
+                      </div>
                     ) : (
                       <Button size="sm" className="gap-1.5" onClick={() => handleConnect(meta)}>
                         <KeyRound className="h-3.5 w-3.5" />
