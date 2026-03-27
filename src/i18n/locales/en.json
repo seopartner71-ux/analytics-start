@@ -136,6 +136,15 @@
       "yandexWebmaster": "Indexing errors and page status in search",
       "gsc": "Search queries, clicks, and Google positions",
       "topvisor": "Keyword position monitoring"
+    },
+    "metrika": {
+      "authDesc": "Sign in with Yandex to access your Metrika counters",
+      "loading": "Loading data...",
+      "selectCounter": "Select a Metrika counter for this project",
+      "authHint": "After authorization you will be able to select a counter from the list",
+      "authorized": "Authorization successful",
+      "counterLabel": "Metrika Counter",
+      "counterPlaceholder": "Select a counter"
     }
   },
   "widgets": {
