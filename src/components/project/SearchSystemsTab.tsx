@@ -8,6 +8,9 @@ import {
 } from "@/components/ui/table";
 import { ChevronRight, ChevronDown, Search, Globe, ArrowUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie,
+} from "recharts";
 
 interface SearchSystemsTabProps {
   projectId: string;
@@ -177,8 +180,83 @@ export function SearchSystemsTab({ projectId, showComparison = false }: SearchSy
     </Button>
   );
 
+  /* ── Chart data ── */
+  const ENGINE_COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-5))"];
+
+  const pieData = useMemo(() => {
+    const total = data.reduce((s, e) => s + e.visits, 0);
+    return data.map((e) => ({ name: e.engine, value: e.visits, pct: total ? Math.round((e.visits / total) * 100) : 0 }));
+  }, [data]);
+
+  const barData = useMemo(() =>
+    data.flatMap((eng) => eng.subChannels.map((sub) => ({ name: sub.name, visits: sub.visits, engine: eng.engine }))),
+  [data]);
+
+  const CustomTooltipContent = ({ active, payload }: any) => {
+    if (!active || !payload?.length) return null;
+    const d = payload[0].payload;
+    return (
+      <div className="bg-popover border border-border rounded-lg px-3 py-2 shadow-lg text-xs">
+        <p className="font-medium text-foreground">{d.name}</p>
+        <p className="text-muted-foreground">{t("searchSystems.visits")}: <span className="text-foreground font-semibold">{d.visits?.toLocaleString() ?? d.value?.toLocaleString()}</span></p>
+        {d.pct !== undefined && <p className="text-muted-foreground">{t("searchSystems.share")}: {d.pct}%</p>}
+      </div>
+    );
+  };
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* ── Charts row ── */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Pie — Share */}
+        <Card className="border-border bg-card">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("searchSystems.shareChart")}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={220}>
+              <PieChart>
+                <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={50} outerRadius={85} strokeWidth={2} stroke="hsl(var(--card))">
+                  {pieData.map((_, i) => <Cell key={i} fill={ENGINE_COLORS[i % ENGINE_COLORS.length]} />)}
+                </Pie>
+                <Tooltip content={<CustomTooltipContent />} />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="flex items-center justify-center gap-4 mt-2">
+              {pieData.map((d, i) => (
+                <div key={d.name} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: ENGINE_COLORS[i] }} />
+                  {d.name} — {d.pct}%
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Bar — Sub-channels */}
+        <Card className="border-border bg-card">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("searchSystems.subChannelChart")}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={barData} layout="vertical" margin={{ left: 10, right: 20, top: 5, bottom: 5 }}>
+                <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis type="number" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                <Tooltip content={<CustomTooltipContent />} />
+                <Bar dataKey="visits" radius={[0, 4, 4, 0]} barSize={18}>
+                  {barData.map((d, i) => {
+                    const engIdx = data.findIndex((e) => e.engine === d.engine);
+                    return <Cell key={i} fill={ENGINE_COLORS[engIdx >= 0 ? engIdx : 2]} />;
+                  })}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Search */}
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
