@@ -453,5 +453,12 @@
     "pdf": "PDF (.pdf)",
     "excel": "Excel (.xlsx)",
     "word": "Word (.docx)"
+  },
+  "datePicker": {
+    "periodA": "Период А",
+    "periodB": "Период Б",
+    "reset": "Сбросить",
+    "allTime": "За всё время",
+    "apply": "Применить"
   }
 }
