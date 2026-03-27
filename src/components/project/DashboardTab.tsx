@@ -1,4 +1,4 @@
-import { useRef, useMemo } from "react";
+import { useRef, useMemo, useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
@@ -66,11 +66,23 @@ export function DashboardTab({
   const { t, i18n } = useTranslation();
   const locale = i18n.language === "ru" ? ru : enUS;
   const contentRef = useRef<HTMLDivElement>(null);
-  const { appliedRange, appliedCompRange, showComparison } = useDateRange();
+  const { appliedRange, appliedCompRange, showComparison, applyVersion } = useDateRange();
   const dateFrom = format(appliedRange.from, "yyyy-MM-dd");
   const dateTo = format(appliedRange.to, "yyyy-MM-dd");
   const compDateFrom = format(appliedCompRange.from, "yyyy-MM-dd");
   const compDateTo = format(appliedCompRange.to, "yyyy-MM-dd");
+
+  // Brief loading animation on apply
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const prevVersion = useRef(applyVersion);
+  useEffect(() => {
+    if (applyVersion !== prevVersion.current) {
+      prevVersion.current = applyVersion;
+      setIsRefreshing(true);
+      const timer = setTimeout(() => setIsRefreshing(false), 600);
+      return () => clearTimeout(timer);
+    }
+  }, [applyVersion]);
 
   // Fetch metrika stats
   const { data: allStats = [], isLoading } = useQuery({
@@ -250,6 +262,12 @@ export function DashboardTab({
 
   return (
     <div className="space-y-6">
+      {isRefreshing && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground animate-pulse">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          {t("project.analytics.loading", "Загрузка данных...")}
+        </div>
+      )}
       {/* Export button */}
       <div className="flex justify-end" data-export-ignore>
         <ExportMenu onExportPdf={handleExportPdf} onExportExcel={handleExportExcel} onExportWord={handleExportWord} />
