@@ -606,10 +606,23 @@ export function SearchSystemsTab({ projectId, projectName }: SearchSystemsTabPro
               </Label>
             </div>
 
-            {/* Apply */}
-            <Button size="sm" className="h-8 text-xs ml-auto" onClick={handleApply}>
-              {t("project.analytics.apply", "Применить")}
-            </Button>
+            {/* Apply + Export */}
+            <div className="flex items-center gap-2 ml-auto">
+              <Button size="sm" className="h-8 text-xs" onClick={handleApply}>
+                {t("project.analytics.apply", "Применить")}
+              </Button>
+              <ExportMenu
+                onExportPdf={async () => { if (contentRef.current) await exportToPdf(contentRef.current, { projectName, tabName: t("project.tabs.searchSystems"), periodA: format(appliedRange.from, "dd.MM.yy"), periodB: showComparison ? format(appliedCompRange.from, "dd.MM.yy") + " — " + format(appliedCompRange.to, "dd.MM.yy") : undefined, language: i18n.language }); }}
+                onExportExcel={async () => {
+                  const sheets: ExcelSheet[] = [{ name: t("project.tabs.searchSystems"), headers: [t("searchSystems.engine"), t("searchSystems.visits"), t("searchSystems.visitors"), t("searchSystems.bounce"), t("searchSystems.depth"), t("searchSystems.timeOnSite")], rows: engines.map(e => [e.engine, e.visits, e.visitors, e.bounce, e.depth, formatTime(e.duration)]) }];
+                  exportToExcel(sheets, { projectName, tabName: t("project.tabs.searchSystems"), periodA: format(appliedRange.from, "dd.MM.yy") + " — " + format(appliedRange.to, "dd.MM.yy"), language: i18n.language });
+                }}
+                onExportWord={async () => {
+                  const sections: WordSection[] = [{ title: t("project.tabs.searchSystems"), table: { headers: [t("searchSystems.engine"), t("searchSystems.visits"), t("searchSystems.bounce")], rows: engines.map(e => [e.engine, e.visits, `${e.bounce}%`]) } }];
+                  await exportToWord(sections, { projectName, tabName: t("project.tabs.searchSystems"), periodA: format(appliedRange.from, "dd.MM.yy") + " — " + format(appliedRange.to, "dd.MM.yy"), language: i18n.language });
+                }}
+              />
+            </div>
           </div>
 
           {/* Comparison presets */}
