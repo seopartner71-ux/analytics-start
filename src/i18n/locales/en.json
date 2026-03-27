@@ -77,7 +77,27 @@
       "organic": "Organic",
       "direct": "Direct",
       "social": "Social",
-      "referral": "Referral"
+      "referral": "Referral",
+      "apply": "Apply",
+      "applied": "Period applied",
+      "comparisonTab": "Comparison",
+      "compareTo": "Compare to",
+      "prevPeriod": "Previous period",
+      "lastYear": "Same period last year",
+      "currentPeriod": "Current period",
+      "previousPeriod": "Comparison period",
+      "comparisonChart": "Period comparison",
+      "noCompData": "Not enough data for comparison",
+      "visits": "visits",
+      "avgVisits": "Avg visits/day",
+      "pageDepth": "Page Depth",
+      "avgDuration": "Avg. Time on Site",
+      "totalDays": "Days in period",
+      "maxVisits": "Max visits/day",
+      "minVisits": "Min visits/day",
+      "noData": "No data for selected period",
+      "trafficSources": "Traffic Sources",
+      "trafficShare": "Traffic Share"
     },
     "worklog": {
       "title": "Work Log",
@@ -247,6 +267,17 @@
     "generate": "Generate",
     "generating": "AI is analyzing data...",
     "generated": "AI summary generated"
+  },
+  "goals": {
+    "title": "Goals Performance",
+    "goalName": "Goal Name",
+    "reaches": "Completions",
+    "conversion": "Conversion (%)",
+    "change": "Change",
+    "trend": "Trend",
+    "showAll": "Show all goals",
+    "allGoals": "All Goals",
+    "empty": "No goals configured in Yandex Metrika. Add them to track conversions."
   },
   "artifacts": {
     "openExternal": "Open",
