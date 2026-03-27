@@ -128,7 +128,11 @@ export function AiInsightsBlock({ projectId, summary: rawSummary, isAdmin, onSav
         }
       );
       const data = await resp.json();
-      if (data.error) throw new Error(data.error);
+      if (!resp.ok || data.error) {
+        if (resp.status === 402) throw new Error(t("aiInsights.creditsExhausted", "AI credits exhausted. Please top up your balance in Settings → Workspace → Usage."));
+        if (resp.status === 429) throw new Error(t("aiInsights.rateLimited", "Too many requests. Please wait a moment and try again."));
+        throw new Error(data.error || "AI generation failed");
+      }
 
       if (data.summary) {
         const normalized = normalizeSummary(data.summary);
