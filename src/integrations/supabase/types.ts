@@ -137,6 +137,7 @@ export type Database = {
       }
       projects: {
         Row: {
+          account_manager: string | null
           client_email: string | null
           created_at: string
           description: string | null
@@ -144,11 +145,13 @@ export type Database = {
           logo_url: string | null
           name: string
           owner_id: string
+          seo_specialist: string | null
           share_token: string | null
           updated_at: string
           url: string | null
         }
         Insert: {
+          account_manager?: string | null
           client_email?: string | null
           created_at?: string
           description?: string | null
@@ -156,11 +159,13 @@ export type Database = {
           logo_url?: string | null
           name: string
           owner_id: string
+          seo_specialist?: string | null
           share_token?: string | null
           updated_at?: string
           url?: string | null
         }
         Update: {
+          account_manager?: string | null
           client_email?: string | null
           created_at?: string
           description?: string | null
@@ -168,6 +173,7 @@ export type Database = {
           logo_url?: string | null
           name?: string
           owner_id?: string
+          seo_specialist?: string | null
           share_token?: string | null
           updated_at?: string
           url?: string | null
@@ -244,6 +250,7 @@ export type Database = {
       get_shared_project: {
         Args: { p_share_token: string }
         Returns: {
+          account_manager: string | null
           client_email: string | null
           created_at: string
           description: string | null
@@ -251,6 +258,7 @@ export type Database = {
           logo_url: string | null
           name: string
           owner_id: string
+          seo_specialist: string | null
           share_token: string | null
           updated_at: string
           url: string | null
