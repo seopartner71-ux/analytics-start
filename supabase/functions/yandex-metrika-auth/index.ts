@@ -197,6 +197,7 @@ Deno.serve(async (req) => {
 
       const startDate = date1 || new Date(Date.now() - 30 * 86400000).toISOString().split("T")[0];
       const endDate = date2 || new Date().toISOString().split("T")[0];
+      const accuracyParams = "robot_less=1&accuracy=full&attribution=cross_device_last_significant";
 
       // 1. Fetch list of goals
       const goalsResp = await fetch(
