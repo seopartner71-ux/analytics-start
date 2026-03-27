@@ -4,12 +4,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Rocket, Copy, Check, Info } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Rocket, Copy, Check, Info, Plus, X, GripVertical } from "lucide-react";
 import { toast } from "sonner";
 
 interface ReportBuilderTabProps {
   projectId?: string;
   shareToken?: string | null;
+}
+
+interface CustomField {
+  id: string;
+  title: string;
+  content: string;
+  enabled: boolean;
 }
 
 const MODULES = [
@@ -28,6 +36,7 @@ export function ReportBuilderTab({ projectId, shareToken }: ReportBuilderTabProp
   const isRu = i18n.language === "ru";
 
   const [selected, setSelected] = useState<Set<string>>(new Set(MODULES.map((m) => m.key)));
+  const [customFields, setCustomFields] = useState<CustomField[]>([]);
   const [generatedUrl, setGeneratedUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -43,7 +52,23 @@ export function ReportBuilderTab({ projectId, shareToken }: ReportBuilderTabProp
   const selectAll = () => setSelected(new Set(MODULES.map((m) => m.key)));
   const deselectAll = () => setSelected(new Set());
 
-  const noneSelected = selected.size === 0;
+  const addCustomField = () => {
+    setCustomFields((prev) => [
+      ...prev,
+      { id: crypto.randomUUID(), title: "", content: "", enabled: true },
+    ]);
+  };
+
+  const updateCustomField = (id: string, updates: Partial<CustomField>) => {
+    setCustomFields((prev) => prev.map((f) => (f.id === id ? { ...f, ...updates } : f)));
+  };
+
+  const removeCustomField = (id: string) => {
+    setCustomFields((prev) => prev.filter((f) => f.id !== id));
+  };
+
+  const enabledCustomFields = customFields.filter((f) => f.enabled && f.title.trim());
+  const noneSelected = selected.size === 0 && enabledCustomFields.length === 0;
 
   const handleGenerate = () => {
     if (noneSelected) return;
@@ -52,6 +77,9 @@ export function ReportBuilderTab({ projectId, shareToken }: ReportBuilderTabProp
       : `${window.location.origin}/report/${projectId}`;
     const params = new URLSearchParams();
     params.set("modules", Array.from(selected).join(","));
+    if (enabledCustomFields.length > 0) {
+      params.set("custom", JSON.stringify(enabledCustomFields.map((f) => ({ title: f.title, content: f.content }))));
+    }
     const url = `${base}?${params.toString()}`;
     setGeneratedUrl(url);
     navigator.clipboard.writeText(url);
@@ -93,14 +121,53 @@ export function ReportBuilderTab({ projectId, shareToken }: ReportBuilderTabProp
                 key={m.key}
                 className="flex items-center gap-3 p-3 rounded-lg border border-border hover:border-primary/40 transition-colors cursor-pointer"
               >
-                <Checkbox
-                  checked={selected.has(m.key)}
-                  onCheckedChange={() => toggle(m.key)}
-                />
+                <Checkbox checked={selected.has(m.key)} onCheckedChange={() => toggle(m.key)} />
                 <span className="text-sm font-medium text-foreground">
                   {isRu ? m.labelRu : m.labelEn}
                 </span>
               </label>
+            ))}
+          </div>
+
+          {/* Custom fields section */}
+          <div className="space-y-3 pt-2 border-t border-border">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-foreground">{t("reportBuilder.customFields")}</h3>
+              <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={addCustomField}>
+                <Plus className="h-3 w-3" />
+                {t("reportBuilder.addField")}
+              </Button>
+            </div>
+
+            {customFields.length === 0 && (
+              <p className="text-xs text-muted-foreground">{t("reportBuilder.noCustomFields")}</p>
+            )}
+
+            {customFields.map((field) => (
+              <div key={field.id} className="p-3 rounded-lg border border-border space-y-2">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    checked={field.enabled}
+                    onCheckedChange={(v) => updateCustomField(field.id, { enabled: !!v })}
+                  />
+                  <Input
+                    value={field.title}
+                    onChange={(e) => updateCustomField(field.id, { title: e.target.value })}
+                    placeholder={t("reportBuilder.fieldTitlePlaceholder")}
+                    className="h-8 text-sm flex-1"
+                  />
+                  <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive" onClick={() => removeCustomField(field.id)}>
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+                <Textarea
+                  value={field.content}
+                  onChange={(e) => updateCustomField(field.id, { content: e.target.value })}
+                  placeholder={t("reportBuilder.fieldContentPlaceholder")}
+                  rows={3}
+                  className="text-sm"
+                />
+              </div>
             ))}
           </div>
 
@@ -113,12 +180,7 @@ export function ReportBuilderTab({ projectId, shareToken }: ReportBuilderTabProp
           )}
 
           {/* Generate button */}
-          <Button
-            onClick={handleGenerate}
-            disabled={noneSelected}
-            className="w-full gap-2"
-            size="lg"
-          >
+          <Button onClick={handleGenerate} disabled={noneSelected} className="w-full gap-2" size="lg">
             <Rocket className="h-4 w-4" />
             {t("reportBuilder.generate")}
           </Button>
