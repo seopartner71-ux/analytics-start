@@ -7,9 +7,10 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { ProjectCard } from "@/components/ProjectCard";
 import { AddProjectDialog } from "@/components/AddProjectDialog";
 import { Button } from "@/components/ui/button";
-import { Globe, LogOut } from "lucide-react";
+import { Globe, LogOut, Sun, Moon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import { toast } from "sonner";
 
 const COLORS = [
@@ -29,6 +30,7 @@ const Index = () => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const { user, signOut } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const queryClient = useQueryClient();
 
   const toggleLang = () => i18n.changeLanguage(i18n.language === "ru" ? "en" : "ru");
@@ -70,6 +72,9 @@ const Index = () => {
               <span className="text-sm font-medium text-muted-foreground">StatPulse</span>
             </div>
             <div className="flex items-center gap-2">
+              <Button variant="ghost" size="icon" onClick={toggleTheme} className="h-8 w-8">
+                {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </Button>
               <Button variant="ghost" size="sm" onClick={toggleLang} className="gap-1.5 text-xs">
                 <Globe className="h-3.5 w-3.5" />
                 {i18n.language === "ru" ? "EN" : "RU"}
@@ -105,6 +110,7 @@ const Index = () => {
                     url={project.url || ""}
                     initials={getInitials(project.name)}
                     color={COLORS[i % COLORS.length]}
+                    logoUrl={project.logo_url}
                     reportStatus=""
                     reportReady={false}
                     onClick={() => navigate(`/project/${project.id}`)}
