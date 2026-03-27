@@ -56,21 +56,6 @@ const SimpleTooltip = ({ active, payload, label }: any) => {
   );
 };
 
-// Demo pages data
-function generatePagesData() {
-  return [
-    { url: "/", title: "Главная страница", visits: 4250, bounceRate: 28.5, avgTime: 185, growth: 12.3 },
-    { url: "/catalog", title: "Каталог цветов", visits: 2830, bounceRate: 22.1, avgTime: 240, growth: 18.7 },
-    { url: "/delivery", title: "Доставка", visits: 1920, bounceRate: 35.2, avgTime: 120, growth: 8.4 },
-    { url: "/bouquets/roses", title: "Букеты из роз", visits: 1650, bounceRate: 19.8, avgTime: 195, growth: 25.1 },
-    { url: "/corporate", title: "Корпоративным клиентам", visits: 980, bounceRate: 31.0, avgTime: 165, growth: 32.6 },
-    { url: "/blog/spring-flowers", title: "Весенние цветы: гид", visits: 870, bounceRate: 15.3, avgTime: 310, growth: 45.2 },
-    { url: "/contacts", title: "Контакты", visits: 750, bounceRate: 42.1, avgTime: 85, growth: 5.1 },
-    { url: "/about", title: "О нас", visits: 620, bounceRate: 38.7, avgTime: 130, growth: -3.2 },
-    { url: "/blog/wedding-bouquets", title: "Свадебные букеты", visits: 540, bounceRate: 12.8, avgTime: 280, growth: 38.9 },
-    { url: "/promo", title: "Акции", visits: 480, bounceRate: 25.4, avgTime: 150, growth: 22.0 },
-  ];
-}
 
 const CHART_COLORS = [
   "hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))",
