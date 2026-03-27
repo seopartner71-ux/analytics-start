@@ -321,9 +321,9 @@ Deno.serve(async (req) => {
       const endDate = date2 || new Date().toISOString().split("T")[0];
       const accuracyParams = "robot_less=1&accuracy=full&attribution=cross_device_last_significant";
 
-      // Fetch search phrases with engine breakdown
+      // Fetch search phrases with engine breakdown (limit=10000 to capture all)
       const phrasesResp = await fetch(
-        `https://api-metrika.yandex.net/stat/v1/data?id=${counterId}&metrics=ym:s:visits,ym:s:users,ym:s:bounceRate,ym:s:pageDepth,ym:s:avgVisitDurationSeconds&dimensions=ym:s:lastSearchEngineRoot,ym:s:lastSearchPhrase&date1=${startDate}&date2=${endDate}&limit=500&sort=-ym:s:visits&${accuracyParams}`,
+        `https://api-metrika.yandex.net/stat/v1/data?id=${counterId}&metrics=ym:s:visits,ym:s:users,ym:s:bounceRate,ym:s:pageDepth,ym:s:avgVisitDurationSeconds&dimensions=ym:s:lastSearchEngineRoot,ym:s:lastSearchPhrase&date1=${startDate}&date2=${endDate}&limit=10000&sort=-ym:s:visits&${accuracyParams}`,
         { headers: { Authorization: `OAuth ${accessToken}` } }
       );
 
@@ -344,9 +344,9 @@ Deno.serve(async (req) => {
       );
       const enginesData = await enginesResp.json();
 
-      // Fetch daily trend by search engine
+      // Fetch daily trend by search engine (limit=50 for all engines)
       const trendResp = await fetch(
-        `https://api-metrika.yandex.net/stat/v1/data/bytime?id=${counterId}&metrics=ym:s:visits&dimensions=ym:s:lastSearchEngineRoot&group=day&date1=${startDate}&date2=${endDate}&limit=10&${accuracyParams}`,
+        `https://api-metrika.yandex.net/stat/v1/data/bytime?id=${counterId}&metrics=ym:s:visits&dimensions=ym:s:lastSearchEngineRoot&group=day&date1=${startDate}&date2=${endDate}&limit=50&${accuracyParams}`,
         { headers: { Authorization: `OAuth ${accessToken}` } }
       );
       const trendData = await trendResp.json();
