@@ -287,6 +287,7 @@ const ProjectDetail = () => {
                   {/* Dashboard Summary */}
                   <DashboardTab
                     projectId={project.id}
+                    projectName={project.name}
                     dateFrom={new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10)}
                     dateTo={new Date().toISOString().slice(0, 10)}
                     showComparison={false}
@@ -300,15 +301,15 @@ const ProjectDetail = () => {
               </TabsContent>
 
               <TabsContent value="searchSystems">
-                <SearchSystemsTab projectId={project.id} />
+                <SearchSystemsTab projectId={project.id} projectName={project.name} />
               </TabsContent>
 
               <TabsContent value="pages">
-                <PagesTab projectId={project.id} />
+                <PagesTab projectId={project.id} projectName={project.name} />
               </TabsContent>
 
               <TabsContent value="goals">
-                <GoalsTab projectId={project.id} />
+                <GoalsTab projectId={project.id} projectName={project.name} />
               </TabsContent>
 
               <TabsContent value="worklog">
