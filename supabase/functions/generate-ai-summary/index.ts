@@ -107,7 +107,7 @@ Yandex Metrika data for project "${project?.name || "Unknown"}" (${project?.url 
         "HTTP-Referer": Deno.env.get("SUPABASE_URL") || "",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-preview",
+        model: "google/gemini-2.5-flash-preview:free",
         messages: [
           {
             role: "system",
