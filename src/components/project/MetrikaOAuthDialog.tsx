@@ -203,7 +203,7 @@ export function MetrikaOAuthDialog({ open, onOpenChange, projectId, existingInte
 
         {step === "select" && (
           <div className="space-y-4 py-2">
-            <div className="flex items-center gap-2 text-sm text-green-600">
+            <div className="flex items-center gap-2 text-sm text-[hsl(var(--success))]">
               <CheckCircle2 className="h-4 w-4" />
               {t("integrations.metrika.authorized")}
             </div>
