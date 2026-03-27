@@ -169,7 +169,7 @@ Deno.serve(async (req) => {
 
       // Fetch traffic sources
       const sourcesResp = await fetch(
-        `https://api-metrika.yandex.net/stat/v1/data?id=${counterId}&metrics=ym:s:visits&dimensions=ym:s:lastTrafficSource&date1=${startDate}&date2=${endDate}&limit=20&${accuracyParams}`,
+        `https://api-metrika.yandex.net/stat/v1/data?id=${counterId}&metrics=ym:s:visits&dimensions=ym:s:lastSignTrafficSource&date1=${startDate}&date2=${endDate}&limit=20&${accuracyParams}`,
         { headers: { Authorization: `OAuth ${accessToken}` } }
       );
       const sourcesData = await sourcesResp.json();
