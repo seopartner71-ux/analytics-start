@@ -124,7 +124,8 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
         if (data.error) throw new Error(data.error);
 
         // Parse and save stats to metrika_stats table
-        const totals = data.totals?.data?.[0]?.metrics || [0, 0, 0, 0];
+        // Totals order: visits, users, bounceRate, pageDepth, avgDuration
+        const totals = data.totals?.data?.[0]?.metrics || [0, 0, 0, 0, 0];
         const timeSeries = data.timeSeries;
         
         // Build visits_by_day from time series
@@ -163,9 +164,10 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
           date_to: dateTo,
           visits_by_day: visitsByDay,
           total_visits: Math.round(totals[0] || 0),
-          bounce_rate: Number((totals[1] || 0).toFixed(2)),
-          page_depth: Number((totals[2] || 0).toFixed(2)),
-          avg_duration_seconds: Math.round(totals[3] || 0),
+          total_users: Math.round(totals[1] || 0),
+          bounce_rate: Number((totals[2] || 0).toFixed(2)),
+          page_depth: Number((totals[3] || 0).toFixed(2)),
+          avg_duration_seconds: Math.round(totals[4] || 0),
           fetched_at: now.toISOString(),
           traffic_sources: trafficSources,
         } as any);

@@ -1,0 +1,1 @@
+ALTER TABLE public.metrika_stats ADD COLUMN IF NOT EXISTS total_users integer NOT NULL DEFAULT 0;
