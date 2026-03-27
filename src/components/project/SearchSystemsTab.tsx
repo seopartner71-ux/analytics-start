@@ -370,13 +370,13 @@ export function SearchSystemsTab({ projectId }: SearchSystemsTabProps) {
 
   // Fetch real search phrases from Metrika
   const { data: realData, isLoading } = useQuery({
-    queryKey: ["search-phrases", projectId, integration?.counter_id],
+    queryKey: ["search-phrases", projectId, integration?.counter_id, format(appliedRange.from, "yyyy-MM-dd"), format(appliedRange.to, "yyyy-MM-dd")],
     queryFn: async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session || !integration?.access_token || !integration?.counter_id) return null;
 
-      const startDate = format(subDays(new Date(), 30), "yyyy-MM-dd");
-      const endDate = format(new Date(), "yyyy-MM-dd");
+      const startDate = format(appliedRange.from, "yyyy-MM-dd");
+      const endDate = format(appliedRange.to, "yyyy-MM-dd");
 
       const funcUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/yandex-metrika-auth?action=fetch-search-phrases`;
       const response = await fetch(funcUrl, {
