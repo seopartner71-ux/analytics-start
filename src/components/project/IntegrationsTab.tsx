@@ -123,9 +123,46 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
         const data = await resp.json();
         if (data.error) throw new Error(data.error);
 
+        // Parse and save stats to metrika_stats table
+        const totals = data.totals?.data?.[0]?.metrics || [0, 0, 0, 0];
+        const timeSeries = data.timeSeries;
+        
+        // Build visits_by_day from time series
+        const visitsByDay: { day: string; visits: number }[] = [];
+        if (timeSeries?.time_intervals && timeSeries?.data?.[0]?.metrics?.[0]) {
+          const intervals = timeSeries.time_intervals;
+          const visitsArr = timeSeries.data[0].metrics[0];
+          for (let i = 0; i < intervals.length; i++) {
+            const dateStr = intervals[i]?.[0]?.split("T")?.[0] || "";
+            const day = dateStr.split("-")[2]?.replace(/^0/, "") || String(i + 1);
+            visitsByDay.push({ day, visits: Math.round(visitsArr[i] || 0) });
+          }
+        }
+
+        const now = new Date();
+        const dateFrom = new Date(now.getTime() - 30 * 86400000).toISOString().split("T")[0];
+        const dateTo = now.toISOString().split("T")[0];
+
+        // Upsert: delete old stats for this project, insert new
+        await supabase.from("metrika_stats").delete().eq("project_id", integration.project_id);
+
+        const { error: insertError } = await supabase.from("metrika_stats").insert({
+          project_id: integration.project_id,
+          counter_id: integration.counter_id!,
+          date_from: dateFrom,
+          date_to: dateTo,
+          visits_by_day: visitsByDay,
+          total_visits: Math.round(totals[0] || 0),
+          bounce_rate: Number((totals[1] || 0).toFixed(2)),
+          page_depth: Number((totals[2] || 0).toFixed(2)),
+          avg_duration_seconds: Math.round(totals[3] || 0),
+          fetched_at: now.toISOString(),
+        });
+        if (insertError) throw insertError;
+
         // Update last_sync timestamp
         await supabase.from("integrations").update({
-          last_sync: new Date().toISOString(),
+          last_sync: now.toISOString(),
         }).eq("id", integration.id);
 
         return data;
