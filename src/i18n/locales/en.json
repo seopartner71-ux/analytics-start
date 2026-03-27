@@ -89,6 +89,18 @@
       "title": "Project Settings",
       "nameLabel": "Project Name",
       "urlLabel": "Website URL",
+      "descriptionLabel": "Description",
+      "logoLabel": "Project Logo",
+      "uploadLogo": "Upload",
+      "logoHint": "PNG, JPG up to 2 MB",
+      "logoError": "Please select an image file",
+      "logoUploaded": "Logo uploaded",
+      "teamTitle": "Project Team",
+      "seoSpecialist": "SEO Specialist",
+      "seoPlaceholder": "SEO specialist name",
+      "accountManager": "Account Manager",
+      "managerPlaceholder": "Manager name",
+      "clientEmail": "Client Email",
       "save": "Save",
       "saved": "Settings saved"
     }

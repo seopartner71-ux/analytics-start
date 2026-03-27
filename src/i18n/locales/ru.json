@@ -89,6 +89,18 @@
       "title": "Настройки проекта",
       "nameLabel": "Название проекта",
       "urlLabel": "URL сайта",
+      "descriptionLabel": "Описание",
+      "logoLabel": "Логотип проекта",
+      "uploadLogo": "Загрузить",
+      "logoHint": "PNG, JPG до 2 МБ",
+      "logoError": "Выберите файл изображения",
+      "logoUploaded": "Логотип загружен",
+      "teamTitle": "Команда проекта",
+      "seoSpecialist": "SEO-специалист",
+      "seoPlaceholder": "Имя SEO-специалиста",
+      "accountManager": "Аккаунт-менеджер",
+      "managerPlaceholder": "Имя менеджера",
+      "clientEmail": "Email клиента",
       "save": "Сохранить",
       "saved": "Настройки сохранены"
     }
