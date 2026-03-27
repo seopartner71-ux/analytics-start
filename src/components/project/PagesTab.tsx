@@ -1,9 +1,10 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { format, subDays, subYears, differenceInDays } from "date-fns";
 import { ru, enUS } from "date-fns/locale";
 import { useDateRange } from "@/contexts/DateRangeContext";
+import { generatePagesData, calcDelta } from "@/lib/data-generators";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -12,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
-  CalendarIcon, ArrowRightLeft, ExternalLink, FileText, TrendingUp, TrendingDown,
+  CalendarIcon, ArrowRightLeft, ExternalLink, FileText, TrendingUp, TrendingDown, Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -55,21 +56,6 @@ const SimpleTooltip = ({ active, payload, label }: any) => {
   );
 };
 
-// Demo pages data
-function generatePagesData() {
-  return [
-    { url: "/", title: "Главная страница", visits: 4250, bounceRate: 28.5, avgTime: 185, growth: 12.3 },
-    { url: "/catalog", title: "Каталог цветов", visits: 2830, bounceRate: 22.1, avgTime: 240, growth: 18.7 },
-    { url: "/delivery", title: "Доставка", visits: 1920, bounceRate: 35.2, avgTime: 120, growth: 8.4 },
-    { url: "/bouquets/roses", title: "Букеты из роз", visits: 1650, bounceRate: 19.8, avgTime: 195, growth: 25.1 },
-    { url: "/corporate", title: "Корпоративным клиентам", visits: 980, bounceRate: 31.0, avgTime: 165, growth: 32.6 },
-    { url: "/blog/spring-flowers", title: "Весенние цветы: гид", visits: 870, bounceRate: 15.3, avgTime: 310, growth: 45.2 },
-    { url: "/contacts", title: "Контакты", visits: 750, bounceRate: 42.1, avgTime: 85, growth: 5.1 },
-    { url: "/about", title: "О нас", visits: 620, bounceRate: 38.7, avgTime: 130, growth: -3.2 },
-    { url: "/blog/wedding-bouquets", title: "Свадебные букеты", visits: 540, bounceRate: 12.8, avgTime: 280, growth: 38.9 },
-    { url: "/promo", title: "Акции", visits: 480, bounceRate: 25.4, avgTime: 150, growth: 22.0 },
-  ];
-}
 
 const CHART_COLORS = [
   "hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))",
@@ -85,10 +71,28 @@ export function PagesTab({ projectId, projectName }: PagesTabProps) {
     range, setRange, appliedRange, apply,
     showComparison, setShowComparison,
     compRange, setCompRange, appliedCompRange,
-    resetToDefault,
+    resetToDefault, applyVersion,
   } = useDateRange();
 
-  const pages = useMemo(() => generatePagesData(), []);
+  // Loading animation on apply
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const prevVersion = useRef(applyVersion);
+  useEffect(() => {
+    if (applyVersion !== prevVersion.current) {
+      prevVersion.current = applyVersion;
+      setIsRefreshing(true);
+      const timer = setTimeout(() => setIsRefreshing(false), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [applyVersion]);
+
+  // Dynamic pages data based on applied date range
+  const pages = useMemo(() => generatePagesData(appliedRange), [appliedRange]);
+  const compPages = useMemo(
+    () => showComparison ? generatePagesData(appliedCompRange) : [],
+    [appliedCompRange, showComparison]
+  );
+
   const top5Growing = useMemo(() => [...pages].sort((a, b) => b.growth - a.growth).slice(0, 5), [pages]);
 
   // AI summary
@@ -113,8 +117,17 @@ export function PagesTab({ projectId, projectName }: PagesTabProps) {
   const totalVisits = pages.reduce((s, p) => s + p.visits, 0);
   const avgBounce = pages.length > 0 ? Math.round((pages.reduce((s, p) => s + p.bounceRate, 0) / pages.length) * 10) / 10 : 0;
 
+  const compTotalVisits = compPages.reduce((s, p) => s + p.visits, 0);
+  const compAvgBounce = compPages.length > 0 ? Math.round((compPages.reduce((s, p) => s + p.bounceRate, 0) / compPages.length) * 10) / 10 : 0;
+
   return (
-    <div className="space-y-6" ref={contentRef}>
+    <div className={cn("space-y-6 transition-opacity duration-300", isRefreshing && "opacity-60")} ref={contentRef}>
+      {isRefreshing && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground animate-pulse">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          {t("project.analytics.loading", "Загрузка данных...")}
+        </div>
+      )}
       {/* Filter Bar */}
       <Card className="border-border bg-card">
         <CardContent className="p-4">
@@ -167,10 +180,20 @@ export function PagesTab({ projectId, projectName }: PagesTabProps) {
         <Card className="border-border bg-card p-4">
           <p className="text-xs text-muted-foreground">{t("pagesTab.totalVisits", "Всего визитов")}</p>
           <p className="text-2xl font-bold text-foreground mt-1">{totalVisits.toLocaleString()}</p>
+          {showComparison && compTotalVisits > 0 && (
+            <p className={cn("text-xs font-medium mt-1", totalVisits >= compTotalVisits ? "text-emerald-500" : "text-destructive")}>
+              {totalVisits >= compTotalVisits ? "+" : ""}{calcDelta(totalVisits, compTotalVisits)}% <span className="text-muted-foreground font-normal">vs {compTotalVisits.toLocaleString()}</span>
+            </p>
+          )}
         </Card>
         <Card className="border-border bg-card p-4">
           <p className="text-xs text-muted-foreground">{t("pagesTab.avgBounce", "Ср. отказы")}</p>
           <p className="text-2xl font-bold text-foreground mt-1">{avgBounce}%</p>
+          {showComparison && compAvgBounce > 0 && (
+            <p className={cn("text-xs font-medium mt-1", avgBounce <= compAvgBounce ? "text-emerald-500" : "text-destructive")}>
+              {avgBounce <= compAvgBounce ? "" : "+"}{calcDelta(avgBounce, compAvgBounce)}% <span className="text-muted-foreground font-normal">vs {compAvgBounce}%</span>
+            </p>
+          )}
         </Card>
         <Card className="border-border bg-card p-4">
           <p className="text-xs text-muted-foreground">{t("pagesTab.pagesCount", "Страниц")}</p>

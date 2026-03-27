@@ -344,8 +344,8 @@ export function SearchSystemsTab({ projectId, projectName }: SearchSystemsTabPro
     enabled: !!projectId,
   });
 
-  // Fetch real search phrases from Metrika
-  const { data: realData, isLoading } = useQuery({
+  // Fetch real search phrases from Metrika — Period A
+  const { data: realData, isLoading, isFetching } = useQuery({
     queryKey: ["search-phrases", projectId, integration?.counter_id, format(appliedRange.from, "yyyy-MM-dd"), format(appliedRange.to, "yyyy-MM-dd")],
     queryFn: async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -376,12 +376,85 @@ export function SearchSystemsTab({ projectId, projectName }: SearchSystemsTabPro
     staleTime: 5 * 60 * 1000,
   });
 
+  // Fetch comparison period data — Period B
+  const { data: compData, isFetching: isCompFetching } = useQuery({
+    queryKey: ["search-phrases-comp", projectId, integration?.counter_id, format(appliedCompRange.from, "yyyy-MM-dd"), format(appliedCompRange.to, "yyyy-MM-dd")],
+    queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session || !integration?.access_token || !integration?.counter_id) return null;
+
+      const funcUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/yandex-metrika-auth?action=fetch-search-phrases`;
+      const response = await fetch(funcUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          access_token: integration.access_token,
+          counter_id: integration.counter_id,
+          date1: format(appliedCompRange.from, "yyyy-MM-dd"),
+          date2: format(appliedCompRange.to, "yyyy-MM-dd"),
+        }),
+      });
+
+      if (!response.ok) return null;
+      return response.json();
+    },
+    enabled: !!integration?.access_token && !!integration?.counter_id && showComparison,
+    staleTime: 5 * 60 * 1000,
+  });
+
   const { engines, trend } = useMemo(() => {
     if (realData?.phrases) {
-      return parseMetrikaData(realData);
+      const parsed = parseMetrikaData(realData);
+      // Merge comparison data if available
+      if (showComparison && compData?.phrases) {
+        const compParsed = parseMetrikaData(compData);
+        // Map comparison engines by key
+        const compMap = new Map(compParsed.engines.map(e => [e.key, e]));
+        for (const eng of parsed.engines) {
+          const comp = compMap.get(eng.key);
+          if (comp) {
+            eng.prevVisits = comp.visits;
+            eng.prevBounce = comp.bounce;
+            eng.prevDepth = comp.depth;
+            eng.prevDuration = comp.duration;
+            // Merge subchannel prev data
+            for (const sub of eng.subChannels) {
+              const compSub = comp.subChannels.find(s => s.name === sub.name);
+              if (compSub) {
+                sub.prevVisits = compSub.visits;
+                sub.prevBounce = compSub.bounce;
+                sub.prevDepth = compSub.depth;
+                sub.prevDuration = compSub.duration;
+                for (const phrase of sub.phrases) {
+                  const compPhrase = compSub.phrases.find(p => p.name === phrase.name);
+                  if (compPhrase) {
+                    phrase.prevVisits = compPhrase.visits;
+                    phrase.prevBounce = compPhrase.bounce;
+                    phrase.prevDepth = compPhrase.depth;
+                    phrase.prevDuration = compPhrase.duration;
+                  }
+                }
+              }
+            }
+          }
+        }
+        // Merge comparison trend data
+        const maxLen = Math.max(parsed.trend.length, compParsed.trend.length);
+        for (let i = 0; i < maxLen; i++) {
+          if (parsed.trend[i] && compParsed.trend[i]) {
+            parsed.trend[i].yandexPrev = compParsed.trend[i].yandex;
+            parsed.trend[i].googlePrev = compParsed.trend[i].google;
+            parsed.trend[i].otherPrev = compParsed.trend[i].other;
+          }
+        }
+      }
+      return parsed;
     }
     return buildDemoData();
-  }, [realData]);
+  }, [realData, compData, showComparison]);
   const [expandedEngines, setExpandedEngines] = useState<Set<string>>(new Set());
   const [expandedSubs, setExpandedSubs] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
@@ -485,10 +558,18 @@ export function SearchSystemsTab({ projectId, projectName }: SearchSystemsTabPro
     );
   }
 
+  const isRefreshing = isFetching || isCompFetching;
+
   const isRealData = !!realData?.phrases;
 
   return (
-    <div className="space-y-6" ref={contentRef}>
+    <div className={cn("space-y-6 transition-opacity duration-300", isRefreshing && "opacity-60")} ref={contentRef}>
+      {isRefreshing && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground animate-pulse">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          {t("project.analytics.loading", "Загрузка данных...")}
+        </div>
+      )}
       {/* Data source indicator */}
       {!isRealData && (
         <div className="text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2 flex items-center gap-2">

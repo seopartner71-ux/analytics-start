@@ -85,6 +85,7 @@
       "referral": "Referral",
       "apply": "Apply",
       "applied": "Period applied",
+      "loading": "Loading data...",
       "comparisonTab": "Comparison",
       "compareTo": "Compare to",
       "prevPeriod": "Previous period",
