@@ -17,6 +17,8 @@ import { IntegrationsTab } from "@/components/project/IntegrationsTab";
 import { AnalyticsTab } from "@/components/project/AnalyticsTab";
 import { WorkLogTab } from "@/components/project/WorkLogTab";
 import { GoalsTab } from "@/components/project/GoalsTab";
+import { SeoTab } from "@/components/project/SeoTab";
+import { PagesTab } from "@/components/project/PagesTab";
 import { AiInsightsBlock } from "@/components/project/AiInsightsBlock";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { MetrikaWidget } from "@/components/widgets/MetrikaWidget";
@@ -260,7 +262,8 @@ const ProjectDetail = () => {
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
               <TabsList className="bg-muted/60 hidden md:inline-flex">
                 <TabsTrigger value="overview">{t("project.tabs.overview")}</TabsTrigger>
-                <TabsTrigger value="analytics">{t("project.tabs.analytics")}</TabsTrigger>
+                <TabsTrigger value="seo">{t("project.tabs.seo")}</TabsTrigger>
+                <TabsTrigger value="pages">{t("project.tabs.pages")}</TabsTrigger>
                 <TabsTrigger value="goals">{t("project.tabs.goals")}</TabsTrigger>
                 <TabsTrigger value="worklog">{t("project.tabs.worklog")}</TabsTrigger>
                 <TabsTrigger value="integrations">{t("project.tabs.integrations")}</TabsTrigger>
@@ -293,7 +296,15 @@ const ProjectDetail = () => {
               </TabsContent>
 
               <TabsContent value="analytics">
-                <AnalyticsTab projectId={project.id} onSwitchToGoals={() => setActiveTab("goals")} />
+                <AnalyticsTab projectId={project.id} onSwitchToGoals={() => setActiveTab("goals")} onSwitchToSeo={() => setActiveTab("seo")} onSwitchToPages={() => setActiveTab("pages")} />
+              </TabsContent>
+
+              <TabsContent value="seo">
+                <SeoTab projectId={project.id} />
+              </TabsContent>
+
+              <TabsContent value="pages">
+                <PagesTab projectId={project.id} />
               </TabsContent>
 
               <TabsContent value="goals">
