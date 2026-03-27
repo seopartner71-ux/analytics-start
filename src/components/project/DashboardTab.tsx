@@ -19,15 +19,11 @@ import { ExportMenu } from "@/components/ExportMenu";
 import { exportToPdf, exportToExcel, exportToWord, type ExcelSheet, type WordSection } from "@/lib/export-utils";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { useDateRange } from "@/contexts/DateRangeContext";
 
 interface DashboardTabProps {
   projectId: string;
   projectName: string;
-  dateFrom: string;
-  dateTo: string;
-  compDateFrom?: string;
-  compDateTo?: string;
-  showComparison: boolean;
   onSwitchTab: (tab: string) => void;
 }
 
