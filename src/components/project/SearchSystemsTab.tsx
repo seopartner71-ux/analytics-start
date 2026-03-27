@@ -3,21 +3,24 @@ import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { ChevronRight, ChevronDown, Search, Globe, ArrowUpDown } from "lucide-react";
+import { ChevronRight, ChevronDown, Search, Globe, ArrowUpDown, TrendingUp, TrendingDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie,
+  AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, Cell, PieChart, Pie, Legend,
 } from "recharts";
+import { format, subDays } from "date-fns";
 
 interface SearchSystemsTabProps {
   projectId: string;
-  showComparison?: boolean;
 }
 
-/* ── Yandex / Google brand SVG icons ── */
+/* ── Brand icons ── */
 const YandexIcon = () => (
   <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" fill="none">
     <rect width="24" height="24" rx="4" fill="#FC3F1D" />
@@ -33,15 +36,25 @@ const GoogleIcon = () => (
   </svg>
 );
 
-/* ── Demo data structure ── */
+/* ── Colors ── */
+const YANDEX_COLOR = "hsl(15 95% 55%)";
+const GOOGLE_COLOR = "hsl(217 91% 60%)";
+const OTHER_COLOR = "hsl(var(--muted-foreground))";
+const ENGINE_COLORS = [YANDEX_COLOR, GOOGLE_COLOR, OTHER_COLOR];
+const ENGINE_KEYS = ["yandex", "google", "other"] as const;
+
+/* ── Data types ── */
 interface Phrase {
   name: string;
   visits: number;
   visitors: number;
   bounce: number;
   depth: number;
-  duration: number; // seconds
+  duration: number;
   prevVisits?: number;
+  prevBounce?: number;
+  prevDepth?: number;
+  prevDuration?: number;
 }
 interface SubChannel {
   name: string;
@@ -51,10 +64,14 @@ interface SubChannel {
   depth: number;
   duration: number;
   prevVisits?: number;
+  prevBounce?: number;
+  prevDepth?: number;
+  prevDuration?: number;
   phrases: Phrase[];
 }
 interface EngineData {
   engine: string;
+  key: string;
   icon: React.ReactNode;
   visits: number;
   visitors: number;
@@ -62,97 +79,135 @@ interface EngineData {
   depth: number;
   duration: number;
   prevVisits?: number;
+  prevBounce?: number;
+  prevDepth?: number;
+  prevDuration?: number;
   subChannels: SubChannel[];
 }
 
-function buildDemoData(comparison: boolean): EngineData[] {
+interface TrendPoint {
+  date: string;
+  yandex: number;
+  google: number;
+  other: number;
+  yandexPrev?: number;
+  googlePrev?: number;
+  otherPrev?: number;
+}
+
+/* ── Demo data builder ── */
+function buildDemoData(comparison: boolean): { engines: EngineData[]; trend: TrendPoint[] } {
   const rnd = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
+  const mkPrev = (v: number) => comparison ? Math.round(v * (0.7 + Math.random() * 0.6)) : undefined;
+
   const mkPhrases = (prefix: string, n: number): Phrase[] =>
-    Array.from({ length: n }, (_, i) => ({
-      name: `${prefix} запрос ${i + 1}`,
-      visits: rnd(10, 800),
-      visitors: rnd(8, 600),
-      bounce: rnd(15, 65),
-      depth: +(rnd(10, 50) / 10).toFixed(1),
-      duration: rnd(20, 400),
-      ...(comparison ? { prevVisits: rnd(10, 800) } : {}),
-    }));
+    Array.from({ length: n }, (_, i) => {
+      const visits = rnd(10, 800);
+      const bounce = rnd(15, 65);
+      const depth = +(rnd(10, 50) / 10).toFixed(1);
+      const duration = rnd(20, 400);
+      return {
+        name: `${prefix} запрос ${i + 1}`,
+        visits, visitors: rnd(8, 600), bounce, depth, duration,
+        prevVisits: mkPrev(visits), prevBounce: mkPrev(bounce), prevDepth: mkPrev(depth), prevDuration: mkPrev(duration),
+      };
+    });
+
   const mkSub = (name: string, phrases: Phrase[]): SubChannel => {
     const visits = phrases.reduce((s, p) => s + p.visits, 0);
+    const bounce = +(phrases.reduce((s, p) => s + p.bounce, 0) / phrases.length).toFixed(1);
+    const depth = +(phrases.reduce((s, p) => s + p.depth, 0) / phrases.length).toFixed(1);
+    const duration = Math.round(phrases.reduce((s, p) => s + p.duration, 0) / phrases.length);
     return {
-      name,
-      visits,
-      visitors: phrases.reduce((s, p) => s + p.visitors, 0),
-      bounce: +(phrases.reduce((s, p) => s + p.bounce, 0) / phrases.length).toFixed(1),
-      depth: +(phrases.reduce((s, p) => s + p.depth, 0) / phrases.length).toFixed(1),
-      duration: Math.round(phrases.reduce((s, p) => s + p.duration, 0) / phrases.length),
-      ...(comparison ? { prevVisits: Math.round(visits * (0.7 + Math.random() * 0.6)) } : {}),
+      name, visits, visitors: phrases.reduce((s, p) => s + p.visitors, 0), bounce, depth, duration,
+      prevVisits: mkPrev(visits), prevBounce: mkPrev(bounce), prevDepth: mkPrev(depth), prevDuration: mkPrev(duration),
       phrases,
     };
   };
-  const mkEngine = (engine: string, icon: React.ReactNode, subs: SubChannel[]): EngineData => {
+
+  const mkEngine = (engine: string, key: string, icon: React.ReactNode, subs: SubChannel[]): EngineData => {
     const visits = subs.reduce((s, c) => s + c.visits, 0);
+    const bounce = +(subs.reduce((s, c) => s + c.bounce, 0) / subs.length).toFixed(1);
+    const depth = +(subs.reduce((s, c) => s + c.depth, 0) / subs.length).toFixed(1);
+    const duration = Math.round(subs.reduce((s, c) => s + c.duration, 0) / subs.length);
     return {
-      engine,
-      icon,
-      visits,
-      visitors: subs.reduce((s, c) => s + c.visitors, 0),
-      bounce: +(subs.reduce((s, c) => s + c.bounce, 0) / subs.length).toFixed(1),
-      depth: +(subs.reduce((s, c) => s + c.depth, 0) / subs.length).toFixed(1),
-      duration: Math.round(subs.reduce((s, c) => s + c.duration, 0) / subs.length),
-      ...(comparison ? { prevVisits: Math.round(visits * (0.7 + Math.random() * 0.6)) } : {}),
+      engine, key, icon, visits, visitors: subs.reduce((s, c) => s + c.visitors, 0), bounce, depth, duration,
+      prevVisits: mkPrev(visits), prevBounce: mkPrev(bounce), prevDepth: mkPrev(depth), prevDuration: mkPrev(duration),
       subChannels: subs,
     };
   };
 
-  return [
-    mkEngine("Яндекс", <YandexIcon />, [
+  const engines = [
+    mkEngine("Яндекс", "yandex", <YandexIcon />, [
       mkSub("Яндекс: Поиск", mkPhrases("ya-search", 8)),
       mkSub("Яндекс: Картинки", mkPhrases("ya-img", 4)),
     ]),
-    mkEngine("Google", <GoogleIcon />, [
+    mkEngine("Google", "google", <GoogleIcon />, [
       mkSub("Google: Поиск", mkPhrases("g-search", 10)),
       mkSub("Google: Картинки", mkPhrases("g-img", 3)),
     ]),
-    mkEngine("Другие", <Globe className="h-4 w-4 text-muted-foreground" />, [
+    mkEngine("Другие", "other", <Globe className="h-4 w-4 text-muted-foreground" />, [
       mkSub("Bing", mkPhrases("bing", 3)),
       mkSub("DuckDuckGo", mkPhrases("ddg", 2)),
     ]),
   ];
+
+  const trend: TrendPoint[] = Array.from({ length: 30 }, (_, i) => ({
+    date: format(subDays(new Date(), 29 - i), "dd.MM"),
+    yandex: rnd(200, 600),
+    google: rnd(300, 800),
+    other: rnd(30, 150),
+    ...(comparison ? { yandexPrev: rnd(180, 550), googlePrev: rnd(250, 700), otherPrev: rnd(20, 120) } : {}),
+  }));
+
+  return { engines, trend };
 }
 
-const formatTime = (s: number) => {
-  const m = Math.floor(s / 60);
-  const sec = s % 60;
-  return `${m}:${String(sec).padStart(2, "0")}`;
-};
+/* ── Helpers ── */
+const formatTime = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 
 const bounceColor = (v: number) =>
   v > 50 ? "text-destructive" : v > 30 ? "text-orange-400" : "text-foreground";
 
-const Delta = ({ current, prev }: { current: number; prev?: number }) => {
-  if (prev === undefined) return null;
-  const pct = prev === 0 ? 0 : Math.round(((current - prev) / prev) * 100);
+const calcDelta = (cur: number, prev?: number) => {
+  if (prev === undefined || prev === 0) return undefined;
+  return Math.round(((cur - prev) / prev) * 100);
+};
+
+const DeltaBadge = ({ current, prev }: { current: number; prev?: number }) => {
+  const d = calcDelta(current, prev);
+  if (d === undefined) return null;
+  const positive = d >= 0;
   return (
-    <span className={cn("text-[10px] ml-1", pct >= 0 ? "text-emerald-500" : "text-destructive")}>
-      {pct >= 0 ? "+" : ""}{pct}%
+    <span className={cn("inline-flex items-center gap-0.5 text-[10px] font-medium ml-1", positive ? "text-emerald-500" : "text-destructive")}>
+      {positive ? <TrendingUp className="h-2.5 w-2.5" /> : <TrendingDown className="h-2.5 w-2.5" />}
+      {positive ? "+" : ""}{d}%
     </span>
   );
 };
 
+const PrevLabel = ({ value, comparison }: { value?: number; comparison: boolean }) => {
+  if (!comparison || value === undefined) return null;
+  return <span className="block text-[10px] text-muted-foreground">было: {value.toLocaleString()}</span>;
+};
+
 type SortKey = "visits" | "visitors" | "bounce" | "depth" | "duration";
 
-export function SearchSystemsTab({ projectId, showComparison = false }: SearchSystemsTabProps) {
+/* ══════════════════════ COMPONENT ══════════════════════ */
+export function SearchSystemsTab({ projectId }: SearchSystemsTabProps) {
   const { t } = useTranslation();
-  const [data] = useState<EngineData[]>(() => buildDemoData(showComparison));
+  const [showComparison, setShowComparison] = useState(false);
+  const [{ engines, trend }] = useState(() => buildDemoData(true)); // always build with prev data available
   const [expandedEngines, setExpandedEngines] = useState<Set<string>>(new Set());
   const [expandedSubs, setExpandedSubs] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("visits");
   const [sortAsc, setSortAsc] = useState(false);
+  const [visibleEngines, setVisibleEngines] = useState<Set<string>>(new Set(ENGINE_KEYS));
 
   const toggleEngine = (e: string) => setExpandedEngines((p) => { const n = new Set(p); n.has(e) ? n.delete(e) : n.add(e); return n; });
   const toggleSub = (s: string) => setExpandedSubs((p) => { const n = new Set(p); n.has(s) ? n.delete(s) : n.add(s); return n; });
+  const toggleVisible = (key: string) => setVisibleEngines((p) => { const n = new Set(p); n.has(key) ? n.delete(key) : n.add(key); return n; });
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) setSortAsc(!sortAsc);
@@ -161,95 +216,165 @@ export function SearchSystemsTab({ projectId, showComparison = false }: SearchSy
 
   const filteredData = useMemo(() => {
     const q = search.toLowerCase();
-    if (!q) return data;
-    return data.map((eng) => ({
-      ...eng,
-      subChannels: eng.subChannels.map((sub) => ({
-        ...sub,
-        phrases: sub.phrases.filter((p) => p.name.toLowerCase().includes(q)),
-      })).filter((sub) => sub.phrases.length > 0),
-    })).filter((eng) => eng.subChannels.length > 0);
-  }, [data, search]);
+    let d = engines;
+    if (q) {
+      d = d.map((eng) => ({
+        ...eng,
+        subChannels: eng.subChannels.map((sub) => ({
+          ...sub,
+          phrases: sub.phrases.filter((p) => p.name.toLowerCase().includes(q)),
+        })).filter((sub) => sub.phrases.length > 0),
+      })).filter((eng) => eng.subChannels.length > 0);
+    }
+    return d.filter((eng) => visibleEngines.has(eng.key));
+  }, [engines, search, visibleEngines]);
 
   const sortFn = (a: any, b: any) => (sortAsc ? a[sortKey] - b[sortKey] : b[sortKey] - a[sortKey]);
 
-  const SortBtn = ({ k, label }: { k: SortKey; label: string }) => (
-    <Button variant="ghost" size="sm" className="h-auto p-0 text-xs font-medium gap-1 text-muted-foreground hover:text-foreground" onClick={() => handleSort(k)}>
-      {label}
-      <ArrowUpDown className="h-3 w-3" />
-    </Button>
-  );
-
   /* ── Chart data ── */
-  const ENGINE_COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-5))"];
-
   const pieData = useMemo(() => {
-    const total = data.reduce((s, e) => s + e.visits, 0);
-    return data.map((e) => ({ name: e.engine, value: e.visits, pct: total ? Math.round((e.visits / total) * 100) : 0 }));
-  }, [data]);
+    const total = engines.reduce((s, e) => s + e.visits, 0);
+    return engines.map((e, i) => ({ name: e.engine, value: e.visits, pct: total ? Math.round((e.visits / total) * 100) : 0, fill: ENGINE_COLORS[i] }));
+  }, [engines]);
 
   const barData = useMemo(() =>
-    data.flatMap((eng) => eng.subChannels.map((sub) => ({ name: sub.name, visits: sub.visits, engine: eng.engine }))),
-  [data]);
+    engines.flatMap((eng, ei) => eng.subChannels.map((sub) => ({ name: sub.name, visits: sub.visits, color: ENGINE_COLORS[ei] }))),
+  [engines]);
 
-  const CustomTooltipContent = ({ active, payload }: any) => {
+  /* ── Trend chart tooltip ── */
+  const TrendTooltip = ({ active, payload, label }: any) => {
+    if (!active || !payload?.length) return null;
+    return (
+      <div className="bg-popover border border-border rounded-lg px-3 py-2 shadow-lg text-xs space-y-1">
+        <p className="font-medium text-foreground">{label}</p>
+        {payload.filter((p: any) => !p.dataKey.includes("Prev")).map((p: any) => (
+          <div key={p.dataKey} className="flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: p.color }} />
+            <span className="text-muted-foreground">{p.name}:</span>
+            <span className="font-semibold text-foreground">{p.value.toLocaleString()}</span>
+            {showComparison && (() => {
+              const prevKey = `${p.dataKey}Prev`;
+              const prevEntry = payload.find((pp: any) => pp.dataKey === prevKey);
+              if (!prevEntry) return null;
+              const d = calcDelta(p.value, prevEntry.value);
+              return (
+                <span className={cn("text-[10px]", d !== undefined && d >= 0 ? "text-emerald-500" : "text-destructive")}>
+                  ({prevEntry.value.toLocaleString()}{d !== undefined ? `, ${d >= 0 ? "+" : ""}${d}%` : ""})
+                </span>
+              );
+            })()}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  const ChartTooltip = ({ active, payload }: any) => {
     if (!active || !payload?.length) return null;
     const d = payload[0].payload;
     return (
       <div className="bg-popover border border-border rounded-lg px-3 py-2 shadow-lg text-xs">
         <p className="font-medium text-foreground">{d.name}</p>
-        <p className="text-muted-foreground">{t("searchSystems.visits")}: <span className="text-foreground font-semibold">{d.visits?.toLocaleString() ?? d.value?.toLocaleString()}</span></p>
+        <p className="text-muted-foreground">{t("searchSystems.visits")}: <span className="text-foreground font-semibold">{(d.visits ?? d.value)?.toLocaleString()}</span></p>
         {d.pct !== undefined && <p className="text-muted-foreground">{t("searchSystems.share")}: {d.pct}%</p>}
       </div>
     );
   };
 
+  const SortBtn = ({ k, label }: { k: SortKey; label: string }) => (
+    <Button variant="ghost" size="sm" className="h-auto p-0 text-xs font-medium gap-1 text-muted-foreground hover:text-foreground" onClick={() => handleSort(k)}>
+      {label}<ArrowUpDown className="h-3 w-3" />
+    </Button>
+  );
+
+  const engineLabels: Record<string, string> = { yandex: "Яндекс", google: "Google", other: t("searchSystems.otherEngines") };
+
   return (
     <div className="space-y-6">
-      {/* ── Charts row ── */}
+      {/* ── Comparison toggle ── */}
+      <div className="flex items-center gap-3">
+        <Switch id="ss-comp" checked={showComparison} onCheckedChange={setShowComparison} />
+        <Label htmlFor="ss-comp" className="text-sm cursor-pointer">{t("searchSystems.enableComparison")}</Label>
+      </div>
+
+      {/* ── Trend Area Chart ── */}
+      <Card className="border-border bg-card">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground">{t("searchSystems.trendTitle")}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={280}>
+            <AreaChart data={trend} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+              <defs>
+                {ENGINE_KEYS.map((k, i) => (
+                  <linearGradient key={k} id={`grad-${k}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={ENGINE_COLORS[i]} stopOpacity={0.25} />
+                    <stop offset="95%" stopColor={ENGINE_COLORS[i]} stopOpacity={0} />
+                  </linearGradient>
+                ))}
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="date" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+              <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+              <Tooltip content={<TrendTooltip />} />
+              {ENGINE_KEYS.map((k, i) => visibleEngines.has(k) && (
+                <Area key={k} type="monotone" dataKey={k} name={engineLabels[k]} stroke={ENGINE_COLORS[i]} fill={`url(#grad-${k})`} strokeWidth={2} dot={false} />
+              ))}
+              {showComparison && ENGINE_KEYS.map((k, i) => visibleEngines.has(k) && (
+                <Area key={`${k}Prev`} type="monotone" dataKey={`${k}Prev`} name={`${engineLabels[k]} (prev)`} stroke={ENGINE_COLORS[i]} fill="none" strokeWidth={1.5} strokeDasharray="5 3" dot={false} />
+              ))}
+            </AreaChart>
+          </ResponsiveContainer>
+          {/* Interactive legend */}
+          <div className="flex items-center justify-center gap-4 mt-3">
+            {ENGINE_KEYS.map((k, i) => (
+              <button key={k} onClick={() => toggleVisible(k)} className={cn("flex items-center gap-1.5 text-xs transition-opacity", visibleEngines.has(k) ? "opacity-100" : "opacity-40")}>
+                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: ENGINE_COLORS[i] }} />
+                {engineLabels[k]}
+              </button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ── Pie + Bar row ── */}
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Pie — Share */}
         <Card className="border-border bg-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">{t("searchSystems.shareChart")}</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={220}>
+            <ResponsiveContainer width="100%" height={200}>
               <PieChart>
-                <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={50} outerRadius={85} strokeWidth={2} stroke="hsl(var(--card))">
-                  {pieData.map((_, i) => <Cell key={i} fill={ENGINE_COLORS[i % ENGINE_COLORS.length]} />)}
+                <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={45} outerRadius={80} strokeWidth={2} stroke="hsl(var(--card))">
+                  {pieData.map((d, i) => <Cell key={i} fill={ENGINE_COLORS[i]} />)}
                 </Pie>
-                <Tooltip content={<CustomTooltipContent />} />
+                <Tooltip content={<ChartTooltip />} />
               </PieChart>
             </ResponsiveContainer>
-            <div className="flex items-center justify-center gap-4 mt-2">
+            <div className="flex items-center justify-center gap-4 mt-1">
               {pieData.map((d, i) => (
-                <div key={d.name} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: ENGINE_COLORS[i] }} />
-                  {d.name} — {d.pct}%
-                </div>
+                <span key={d.name} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: ENGINE_COLORS[i] }} />{d.name} — {d.pct}%
+                </span>
               ))}
             </div>
           </CardContent>
         </Card>
 
-        {/* Bar — Sub-channels */}
         <Card className="border-border bg-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">{t("searchSystems.subChannelChart")}</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
+            <ResponsiveContainer width="100%" height={230}>
               <BarChart data={barData} layout="vertical" margin={{ left: 10, right: 20, top: 5, bottom: 5 }}>
                 <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis type="number" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
                 <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                <Tooltip content={<CustomTooltipContent />} />
+                <Tooltip content={<ChartTooltip />} />
                 <Bar dataKey="visits" radius={[0, 4, 4, 0]} barSize={18}>
-                  {barData.map((d, i) => {
-                    const engIdx = data.findIndex((e) => e.engine === d.engine);
-                    return <Cell key={i} fill={ENGINE_COLORS[engIdx >= 0 ? engIdx : 2]} />;
-                  })}
+                  {barData.map((d, i) => <Cell key={i} fill={d.color} />)}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -257,24 +382,21 @@ export function SearchSystemsTab({ projectId, showComparison = false }: SearchSy
         </Card>
       </div>
 
-      {/* Search */}
+      {/* ── Search ── */}
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder={t("searchSystems.searchPlaceholder")}
-          className="pl-9 h-9 text-sm"
-        />
+        <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("searchSystems.searchPlaceholder")} className="pl-9 h-9 text-sm" />
       </div>
 
+      {/* ── Table ── */}
       <Card className="border-border bg-card overflow-hidden">
         <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow className="border-border">
-                <TableHead className="w-[280px] text-xs">{t("searchSystems.name")}</TableHead>
+                <TableHead className="w-[260px] text-xs">{t("searchSystems.name")}</TableHead>
                 <TableHead className="text-right text-xs"><SortBtn k="visits" label={t("searchSystems.visits")} /></TableHead>
+                {showComparison && <TableHead className="text-right text-xs">{t("searchSystems.change")}</TableHead>}
                 <TableHead className="text-right text-xs"><SortBtn k="visitors" label={t("searchSystems.visitors")} /></TableHead>
                 <TableHead className="text-right text-xs"><SortBtn k="bounce" label={t("searchSystems.bounce")} /></TableHead>
                 <TableHead className="text-right text-xs"><SortBtn k="depth" label={t("searchSystems.depth")} /></TableHead>
@@ -285,24 +407,33 @@ export function SearchSystemsTab({ projectId, showComparison = false }: SearchSy
               {[...filteredData].sort(sortFn).map((eng) => {
                 const engOpen = expandedEngines.has(eng.engine);
                 return (
-                  <> 
-                    {/* Level 1: Engine */}
+                  <>
+                    {/* Level 1 */}
                     <TableRow key={eng.engine} className="cursor-pointer hover:bg-muted/40 border-border" onClick={() => toggleEngine(eng.engine)}>
                       <TableCell className="font-medium text-sm">
                         <div className="flex items-center gap-2">
                           {engOpen ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
-                          {eng.icon}
-                          {eng.engine}
+                          {eng.icon}{eng.engine}
                         </div>
                       </TableCell>
-                      <TableCell className="text-right text-sm font-semibold">{eng.visits.toLocaleString()}<Delta current={eng.visits} prev={eng.prevVisits} /></TableCell>
+                      <TableCell className="text-right text-sm font-semibold">
+                        {eng.visits.toLocaleString()}
+                        <PrevLabel value={eng.prevVisits} comparison={showComparison} />
+                      </TableCell>
+                      {showComparison && <TableCell className="text-right text-sm"><DeltaBadge current={eng.visits} prev={eng.prevVisits} /></TableCell>}
                       <TableCell className="text-right text-sm">{eng.visitors.toLocaleString()}</TableCell>
-                      <TableCell className={cn("text-right text-sm", bounceColor(eng.bounce))}>{eng.bounce}%</TableCell>
-                      <TableCell className="text-right text-sm">{eng.depth}</TableCell>
-                      <TableCell className="text-right text-sm">{formatTime(eng.duration)}</TableCell>
+                      <TableCell className={cn("text-right text-sm", bounceColor(eng.bounce))}>
+                        {eng.bounce}%{showComparison && <DeltaBadge current={eng.bounce} prev={eng.prevBounce} />}
+                      </TableCell>
+                      <TableCell className="text-right text-sm">
+                        {eng.depth}{showComparison && <DeltaBadge current={eng.depth} prev={eng.prevDepth} />}
+                      </TableCell>
+                      <TableCell className="text-right text-sm">
+                        {formatTime(eng.duration)}{showComparison && <DeltaBadge current={eng.duration} prev={eng.prevDuration} />}
+                      </TableCell>
                     </TableRow>
 
-                    {/* Level 2: Sub-channels */}
+                    {/* Level 2 */}
                     {engOpen && [...eng.subChannels].sort(sortFn).map((sub) => {
                       const subKey = `${eng.engine}::${sub.name}`;
                       const subOpen = expandedSubs.has(subKey);
@@ -315,22 +446,42 @@ export function SearchSystemsTab({ projectId, showComparison = false }: SearchSy
                                 {sub.name}
                               </div>
                             </TableCell>
-                            <TableCell className="text-right text-sm">{sub.visits.toLocaleString()}<Delta current={sub.visits} prev={sub.prevVisits} /></TableCell>
+                            <TableCell className="text-right text-sm">
+                              {sub.visits.toLocaleString()}
+                              <PrevLabel value={sub.prevVisits} comparison={showComparison} />
+                            </TableCell>
+                            {showComparison && <TableCell className="text-right text-sm"><DeltaBadge current={sub.visits} prev={sub.prevVisits} /></TableCell>}
                             <TableCell className="text-right text-sm">{sub.visitors.toLocaleString()}</TableCell>
-                            <TableCell className={cn("text-right text-sm", bounceColor(sub.bounce))}>{sub.bounce}%</TableCell>
-                            <TableCell className="text-right text-sm">{sub.depth}</TableCell>
-                            <TableCell className="text-right text-sm">{formatTime(sub.duration)}</TableCell>
+                            <TableCell className={cn("text-right text-sm", bounceColor(sub.bounce))}>
+                              {sub.bounce}%{showComparison && <DeltaBadge current={sub.bounce} prev={sub.prevBounce} />}
+                            </TableCell>
+                            <TableCell className="text-right text-sm">
+                              {sub.depth}{showComparison && <DeltaBadge current={sub.depth} prev={sub.prevDepth} />}
+                            </TableCell>
+                            <TableCell className="text-right text-sm">
+                              {formatTime(sub.duration)}{showComparison && <DeltaBadge current={sub.duration} prev={sub.prevDuration} />}
+                            </TableCell>
                           </TableRow>
 
-                          {/* Level 3: Phrases */}
+                          {/* Level 3 */}
                           {subOpen && [...sub.phrases].sort(sortFn).map((phrase) => (
                             <TableRow key={`${subKey}::${phrase.name}`} className="border-border bg-muted/5">
                               <TableCell className="text-xs text-muted-foreground pl-16">{phrase.name}</TableCell>
-                              <TableCell className="text-right text-xs">{phrase.visits.toLocaleString()}<Delta current={phrase.visits} prev={phrase.prevVisits} /></TableCell>
+                              <TableCell className="text-right text-xs">
+                                {phrase.visits.toLocaleString()}
+                                <PrevLabel value={phrase.prevVisits} comparison={showComparison} />
+                              </TableCell>
+                              {showComparison && <TableCell className="text-right text-xs"><DeltaBadge current={phrase.visits} prev={phrase.prevVisits} /></TableCell>}
                               <TableCell className="text-right text-xs">{phrase.visitors.toLocaleString()}</TableCell>
-                              <TableCell className={cn("text-right text-xs", bounceColor(phrase.bounce))}>{phrase.bounce}%</TableCell>
-                              <TableCell className="text-right text-xs">{phrase.depth}</TableCell>
-                              <TableCell className="text-right text-xs">{formatTime(phrase.duration)}</TableCell>
+                              <TableCell className={cn("text-right text-xs", bounceColor(phrase.bounce))}>
+                                {phrase.bounce}%{showComparison && <DeltaBadge current={phrase.bounce} prev={phrase.prevBounce} />}
+                              </TableCell>
+                              <TableCell className="text-right text-xs">
+                                {phrase.depth}{showComparison && <DeltaBadge current={phrase.depth} prev={phrase.prevDepth} />}
+                              </TableCell>
+                              <TableCell className="text-right text-xs">
+                                {formatTime(phrase.duration)}{showComparison && <DeltaBadge current={phrase.duration} prev={phrase.prevDuration} />}
+                              </TableCell>
                             </TableRow>
                           ))}
                         </>
