@@ -432,6 +432,7 @@
     "enableComparison": "Compare Periods",
     "change": "Change %",
     "otherEngines": "Other",
+    "allEngines": "All Search Engines",
     "demoDataHint": "Showing demo data. Connect Yandex.Metrika in Settings to display real search queries."
   },
   "dashboardTab": {
