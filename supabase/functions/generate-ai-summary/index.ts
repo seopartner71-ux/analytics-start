@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { project_id, language } = body;
+    const { project_id, language, period_a, period_b } = body;
 
     if (!project_id) {
       return new Response(JSON.stringify({ error: "project_id is required" }), {
@@ -45,21 +45,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get OpenRouter API key from app_settings
-    const serviceClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-
-    const { data: apiKeySetting } = await serviceClient
-      .from("app_settings")
-      .select("value")
-      .eq("key", "openrouter_api_key")
-      .maybeSingle();
-
-    const OPENROUTER_API_KEY = apiKeySetting?.value;
-    if (!OPENROUTER_API_KEY) {
-      return new Response(JSON.stringify({ error: "OpenRouter API key not configured. Add it in Admin Panel." }), {
+    // Use Lovable AI Gateway
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      return new Response(JSON.stringify({ error: "AI API key not configured" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -88,35 +77,44 @@ Deno.serve(async (req) => {
       const visitsByDay = stats.visits_by_day || [];
       dataContext = `
 Yandex Metrika data for project "${project?.name || "Unknown"}" (${project?.url || ""}):
-- Period: ${stats.date_from} to ${stats.date_to}
+- Period A: ${period_a?.from || stats.date_from} to ${period_a?.to || stats.date_to}
 - Total visits: ${stats.total_visits}
 - Bounce rate: ${stats.bounce_rate}%
 - Page depth: ${stats.page_depth}
 - Average visit duration: ${stats.avg_duration_seconds} seconds
-- Daily visits trend: ${JSON.stringify(visitsByDay.slice(-10))}
+- Daily visits trend (last 10 days): ${JSON.stringify((visitsByDay as any[]).slice(-10))}
 `;
+
+      // If comparison period provided, add context
+      if (period_b) {
+        dataContext += `
+Comparison Period B: ${period_b.from} to ${period_b.to}
+Period B metrics:
+- Visits: ${period_b.visits ?? "N/A"}
+- Bounce rate: ${period_b.bounceRate ?? "N/A"}%
+- Traffic change: ${period_b.trafficDelta ?? "N/A"}%
+- Conversion change: ${period_b.conversionDelta ?? "N/A"}%
+`;
+      }
     } else {
       dataContext = `No analytics data available yet for project "${project?.name || "Unknown"}". Provide general SEO recommendations.`;
     }
 
-    const aiResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    const systemPrompt = period_b
+      ? `You are an expert SEO analyst. Compare Period A and Period B. Highlight key changes. If traffic grew but conversion dropped — mark this explicitly. Give 2-3 short insights. Return ONLY valid JSON with exactly 3 fields: "happened" (what happened with the metrics), "why" (analysis of why), "recommendation" (actionable next steps). Each field should be 1-3 sentences. Answer in ${lang}. No markdown, no code blocks, just raw JSON.`
+      : `You are an expert SEO analyst. Provide a concise performance summary in ${lang}. Return ONLY valid JSON with exactly 3 fields: "happened" (what happened with the metrics), "why" (analysis of why), "recommendation" (actionable next steps). Each field should be 1-3 sentences. No markdown, no code blocks, just raw JSON.`;
+
+    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
-        "HTTP-Referer": Deno.env.get("SUPABASE_URL") || "",
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          {
-            role: "system",
-            content: `You are an expert SEO analyst. Provide a concise performance summary in ${lang}. Return ONLY valid JSON with exactly 3 fields: "happened" (what happened with the metrics), "why" (analysis of why), "recommendation" (actionable next steps). Each field should be 1-3 sentences. No markdown, no code blocks, just raw JSON.`,
-          },
-          {
-            role: "user",
-            content: dataContext,
-          },
+          { role: "system", content: systemPrompt },
+          { role: "user", content: dataContext },
         ],
         response_format: { type: "json_object" },
       }),
@@ -124,7 +122,19 @@ Yandex Metrika data for project "${project?.name || "Unknown"}" (${project?.url 
 
     if (!aiResponse.ok) {
       const errText = await aiResponse.text();
-      console.error("OpenRouter API error:", aiResponse.status, errText);
+      console.error("AI gateway error:", aiResponse.status, errText);
+      if (aiResponse.status === 429) {
+        return new Response(JSON.stringify({ error: "Rate limit exceeded, try again later" }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (aiResponse.status === 402) {
+        return new Response(JSON.stringify({ error: "AI credits exhausted" }), {
+          status: 402,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       return new Response(
         JSON.stringify({ error: `AI service error: ${aiResponse.status}` }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
