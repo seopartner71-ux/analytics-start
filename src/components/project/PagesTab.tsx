@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
-  CalendarIcon, ArrowRightLeft, ExternalLink, FileText, TrendingUp, TrendingDown,
+  CalendarIcon, ArrowRightLeft, ExternalLink, FileText, TrendingUp, TrendingDown, Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
