@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronRight, Copy, Pencil, Upload, X, User, Link2, Calendar } from "lucide-react";
+import { ChevronRight, Copy, Pencil, Upload, X, User, Link2, Calendar, Plug } from "lucide-react";
 import { toast } from "sonner";
 import { IntegrationsTab } from "@/components/project/IntegrationsTab";
 import { AnalyticsTab } from "@/components/project/AnalyticsTab";
@@ -329,9 +329,6 @@ const ProjectDetail = () => {
                 <ReportBuilderTab projectId={project.id} shareToken={project.share_token} />
               </TabsContent>
 
-              <TabsContent value="integrations">
-                <IntegrationsTab projectId={project.id} integrations={integrations} />
-              </TabsContent>
 
               <TabsContent value="settings">
                 <div className="max-w-lg space-y-8">
@@ -460,8 +457,17 @@ const ProjectDetail = () => {
                       />
                       <p className="text-[11px] text-muted-foreground">{t("project.shareLinkExpiryHint")}</p>
                     </div>
+                    </div>
                   </div>
-                </div>
+
+                  {/* Integrations */}
+                  <div className="border-t border-border pt-6">
+                    <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-4">
+                      <Plug className="h-4 w-4" />
+                      {t("project.tabs.integrations")}
+                    </h3>
+                    <IntegrationsTab projectId={project.id} integrations={integrations} />
+                  </div>
               </TabsContent>
             </Tabs>
           </main>
