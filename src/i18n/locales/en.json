@@ -141,10 +141,15 @@
       "authDesc": "Sign in with Yandex to access your Metrika counters",
       "loading": "Loading data...",
       "selectCounter": "Select a Metrika counter for this project",
-      "authHint": "After authorization you will be able to select a counter from the list",
+      "authHint": "A Yandex page will open — grant access and copy the verification code",
       "authorized": "Authorization successful",
       "counterLabel": "Metrika Counter",
-      "counterPlaceholder": "Select a counter"
+      "counterPlaceholder": "Select a counter",
+      "pasteCodeDesc": "Paste the verification code from Yandex",
+      "codeInstructions": "Copy the code from the Yandex page and paste it below",
+      "codeLabel": "Verification code",
+      "submitCode": "Submit code",
+      "enterCode": "Please enter the verification code"
     }
   },
   "widgets": {
