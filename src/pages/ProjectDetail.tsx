@@ -50,6 +50,18 @@ const ProjectDetail = () => {
     enabled: !!id,
   });
 
+  const { data: latestMetrikaStats } = useQuery({
+    queryKey: ["metrika-stats-latest", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("metrika_stats").select("traffic_sources")
+        .eq("project_id", id!).order("fetched_at", { ascending: false }).limit(1).maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!id,
+  });
+
   const { data: workLogs = [] } = useQuery({
     queryKey: ["work_logs", id],
     queryFn: async () => {
@@ -126,7 +138,7 @@ const ProjectDetail = () => {
   });
 
   const saveAiSummary = useMutation({
-    mutationFn: async (summary: { happened: string; why: string; recommendation: string }) => {
+    mutationFn: async (summary: any) => {
       const now = new Date();
       const reportData = { ai_summary: summary };
       const existing = cachedReport;
@@ -261,6 +273,7 @@ const ProjectDetail = () => {
                     summary={aiSummary}
                     isAdmin={true}
                     onSave={(summary) => saveAiSummary.mutate(summary)}
+                    trafficSources={(latestMetrikaStats?.traffic_sources as any[]) || []}
                   />
 
                   <div className="grid gap-6 lg:grid-cols-2">
