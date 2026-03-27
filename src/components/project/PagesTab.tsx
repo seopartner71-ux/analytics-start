@@ -114,7 +114,7 @@ export function PagesTab({ projectId, projectName }: PagesTabProps) {
   const avgBounce = pages.length > 0 ? Math.round((pages.reduce((s, p) => s + p.bounceRate, 0) / pages.length) * 10) / 10 : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" ref={contentRef}>
       {/* Filter Bar */}
       <Card className="border-border bg-card">
         <CardContent className="p-4">
@@ -144,6 +144,17 @@ export function PagesTab({ projectId, projectName }: PagesTabProps) {
             <Button size="sm" className="h-8 text-xs ml-auto" onClick={handleApply}>
               {t("project.analytics.apply")}
             </Button>
+            <ExportMenu
+              onExportPdf={async () => { if (contentRef.current) await exportToPdf(contentRef.current, { projectName, tabName: t("project.tabs.pages"), periodA: format(appliedRange.from, "dd.MM.yy") + " — " + format(appliedRange.to, "dd.MM.yy"), language: i18n.language }); }}
+              onExportExcel={async () => {
+                const sheets: ExcelSheet[] = [{ name: t("project.tabs.pages"), headers: ["URL", t("pagesTab.title", "Страница"), t("publicReport.kpi.visits"), t("publicReport.kpi.bounceRate"), t("pagesTab.avgTime", "Ср. время")], rows: pages.map(p => [p.url, p.title, p.visits, `${p.bounceRate}%`, formatDuration(p.avgTime)]) }];
+                exportToExcel(sheets, { projectName, tabName: t("project.tabs.pages"), periodA: format(appliedRange.from, "dd.MM.yy") + " — " + format(appliedRange.to, "dd.MM.yy"), language: i18n.language });
+              }}
+              onExportWord={async () => {
+                const sections: WordSection[] = [{ title: t("project.tabs.pages"), table: { headers: ["URL", t("publicReport.kpi.visits"), t("publicReport.kpi.bounceRate")], rows: pages.map(p => [p.url, p.visits, `${p.bounceRate}%`]) } }];
+                await exportToWord(sections, { projectName, tabName: t("project.tabs.pages"), periodA: format(appliedRange.from, "dd.MM.yy") + " — " + format(appliedRange.to, "dd.MM.yy"), language: i18n.language });
+              }}
+            />
           </div>
         </CardContent>
       </Card>

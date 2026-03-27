@@ -237,7 +237,7 @@ export function GoalsTab({ projectId, projectName }: GoalsTabProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" ref={contentRef}>
       {/* Filters */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-2 flex-wrap">
@@ -277,6 +277,18 @@ export function GoalsTab({ projectId, projectName }: GoalsTabProps) {
           <Button size="sm" className="h-8 text-xs" onClick={handleApply}>
             {t("project.analytics.apply", "Применить")}
           </Button>
+
+          <ExportMenu
+            onExportPdf={async () => { if (contentRef.current) await exportToPdf(contentRef.current, { projectName, tabName: t("project.tabs.goals"), periodA: dateFrom + " — " + dateTo, periodB: showComparison ? compDateFrom + " — " + compDateTo : undefined, language: i18n.language }); }}
+            onExportExcel={async () => {
+              const sheets: ExcelSheet[] = [{ name: t("project.tabs.goals"), headers: [t("goals.goalName"), t("goals.reaches"), t("goals.conversion"), t("goals.change")], rows: goalsWithDelta.map(g => [g.name, g.reaches, `${g.conversionRate}%`, `${g.delta > 0 ? "+" : ""}${Math.round(g.delta)}%`]) }];
+              exportToExcel(sheets, { projectName, tabName: t("project.tabs.goals"), periodA: dateFrom + " — " + dateTo, language: i18n.language });
+            }}
+            onExportWord={async () => {
+              const sections: WordSection[] = [{ title: t("project.tabs.goals"), table: { headers: [t("goals.goalName"), t("goals.reaches"), t("goals.conversion")], rows: goalsWithDelta.map(g => [g.name, g.reaches, `${g.conversionRate}%`]) } }];
+              await exportToWord(sections, { projectName, tabName: t("project.tabs.goals"), periodA: dateFrom + " — " + dateTo, language: i18n.language });
+            }}
+          />
 
           <div className="flex items-center gap-2 ml-2">
             <Switch id="goals-comp" checked={showComparison} onCheckedChange={setShowComparison} className="scale-90" />
