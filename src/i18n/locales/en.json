@@ -159,7 +159,8 @@
       "title": "Yandex Metrika — Visits",
       "bounceRate": "Bounce Rate",
       "pageDepth": "Page Depth",
-      "avgTime": "Avg. Time"
+      "avgTime": "Avg. Time",
+      "demoData": "demo data"
     },
     "webmaster": {
       "title": "Yandex Webmaster",
