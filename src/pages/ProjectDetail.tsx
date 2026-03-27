@@ -470,6 +470,7 @@ const ProjectDetail = () => {
         <MobileBottomNav activeTab={activeTab} onTabChange={setActiveTab} />
       </div>
     </SidebarProvider>
+    </DateRangeProvider>
   );
 };
 
