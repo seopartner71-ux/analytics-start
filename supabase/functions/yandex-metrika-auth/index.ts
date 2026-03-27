@@ -302,6 +302,60 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Action: fetch search phrases (search engines breakdown)
+    if (action === "fetch-search-phrases") {
+      const body = await req.json();
+      const { access_token: accessToken, counter_id: counterId, date1, date2 } = body;
+      if (!accessToken || !counterId) {
+        return new Response(
+          JSON.stringify({ error: "access_token and counter_id are required" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const startDate = date1 || new Date(Date.now() - 30 * 86400000).toISOString().split("T")[0];
+      const endDate = date2 || new Date().toISOString().split("T")[0];
+
+      // Fetch search phrases with engine breakdown
+      const phrasesResp = await fetch(
+        `https://api-metrika.yandex.net/stat/v1/data?id=${counterId}&metrics=ym:s:visits,ym:s:users,ym:s:bounceRate,ym:s:pageDepth,ym:s:avgVisitDurationSeconds&dimensions=ym:s:lastSearchEngineRoot,ym:s:lastSearchPhrase&date1=${startDate}&date2=${endDate}&limit=500&sort=-ym:s:visits`,
+        { headers: { Authorization: `OAuth ${accessToken}` } }
+      );
+
+      if (!phrasesResp.ok) {
+        const errData = await phrasesResp.json().catch(() => ({}));
+        return new Response(
+          JSON.stringify({ error: errData.message || "Failed to fetch search phrases" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const phrasesData = await phrasesResp.json();
+
+      // Also fetch engine-level totals
+      const enginesResp = await fetch(
+        `https://api-metrika.yandex.net/stat/v1/data?id=${counterId}&metrics=ym:s:visits,ym:s:users,ym:s:bounceRate,ym:s:pageDepth,ym:s:avgVisitDurationSeconds&dimensions=ym:s:lastSearchEngineRoot&date1=${startDate}&date2=${endDate}&limit=50&sort=-ym:s:visits`,
+        { headers: { Authorization: `OAuth ${accessToken}` } }
+      );
+      const enginesData = await enginesResp.json();
+
+      // Fetch daily trend by search engine
+      const trendResp = await fetch(
+        `https://api-metrika.yandex.net/stat/v1/data/bytime?id=${counterId}&metrics=ym:s:visits&dimensions=ym:s:lastSearchEngineRoot&group=day&date1=${startDate}&date2=${endDate}&limit=10`,
+        { headers: { Authorization: `OAuth ${accessToken}` } }
+      );
+      const trendData = await trendResp.json();
+
+      return new Response(
+        JSON.stringify({
+          phrases: phrasesData,
+          engines: enginesData,
+          trend: trendData,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     return new Response(JSON.stringify({ error: "Unknown action" }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
