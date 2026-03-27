@@ -135,6 +135,7 @@ export type Database = {
           id: string
           page_depth: number
           project_id: string
+          total_users: number
           total_visits: number
           traffic_sources: Json
           visits_by_day: Json
@@ -150,6 +151,7 @@ export type Database = {
           id?: string
           page_depth?: number
           project_id: string
+          total_users?: number
           total_visits?: number
           traffic_sources?: Json
           visits_by_day?: Json
@@ -165,6 +167,7 @@ export type Database = {
           id?: string
           page_depth?: number
           project_id?: string
+          total_users?: number
           total_visits?: number
           traffic_sources?: Json
           visits_by_day?: Json
