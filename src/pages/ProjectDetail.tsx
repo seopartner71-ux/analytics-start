@@ -17,6 +17,7 @@ import { IntegrationsTab } from "@/components/project/IntegrationsTab";
 import { AnalyticsTab } from "@/components/project/AnalyticsTab";
 import { WorkLogTab } from "@/components/project/WorkLogTab";
 import { GoalsTab } from "@/components/project/GoalsTab";
+import { AiInsightsBlock } from "@/components/project/AiInsightsBlock";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { MetrikaWidget } from "@/components/widgets/MetrikaWidget";
 import { WebmasterWidget } from "@/components/widgets/WebmasterWidget";
