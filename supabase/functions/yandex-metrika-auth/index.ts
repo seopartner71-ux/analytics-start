@@ -232,7 +232,7 @@ Deno.serve(async (req) => {
 
       // Fetch totals for current period
       const statsResp = await fetch(
-        `https://api-metrika.yandex.net/stat/v1/data?id=${counterId}&metrics=${metricsArr.join(",")}&date1=${startDate}&date2=${endDate}`,
+        `https://api-metrika.yandex.net/stat/v1/data?id=${counterId}&metrics=${metricsArr.join(",")}&date1=${startDate}&date2=${endDate}&${accuracyParams}`,
         { headers: { Authorization: `OAuth ${accessToken}` } }
       );
       const statsData = await statsResp.json();
@@ -241,7 +241,7 @@ Deno.serve(async (req) => {
       const top5Ids = goalIds;
       const dailyMetrics = top5Ids.map((gid: number) => `ym:s:goal${gid}reaches`).join(",");
       const dailyResp = await fetch(
-        `https://api-metrika.yandex.net/stat/v1/data/bytime?id=${counterId}&metrics=${dailyMetrics}&group=day&date1=${startDate}&date2=${endDate}`,
+        `https://api-metrika.yandex.net/stat/v1/data/bytime?id=${counterId}&metrics=${dailyMetrics}&group=day&date1=${startDate}&date2=${endDate}&${accuracyParams}`,
         { headers: { Authorization: `OAuth ${accessToken}` } }
       );
       const dailyData = await dailyResp.json();
@@ -252,7 +252,7 @@ Deno.serve(async (req) => {
       const prevStart = new Date(new Date(startDate).getTime() - (daysDiff + 1) * 86400000).toISOString().split("T")[0];
 
       const prevResp = await fetch(
-        `https://api-metrika.yandex.net/stat/v1/data?id=${counterId}&metrics=${metricsArr.join(",")}&date1=${prevStart}&date2=${prevEnd}`,
+        `https://api-metrika.yandex.net/stat/v1/data?id=${counterId}&metrics=${metricsArr.join(",")}&date1=${prevStart}&date2=${prevEnd}&${accuracyParams}`,
         { headers: { Authorization: `OAuth ${accessToken}` } }
       );
       const prevData = await prevResp.json();
