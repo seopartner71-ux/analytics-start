@@ -1,11 +1,14 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Pencil, Check, X, ChevronDown, ChevronUp } from "lucide-react";
+import { Sparkles, Pencil, Check, X, ChevronDown, ChevronUp, Loader2, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AiInsightsBlockProps {
+  projectId?: string;
   summary?: {
     happened: string;
     why: string;
@@ -21,11 +24,12 @@ const defaultSummary = {
   recommendation: "",
 };
 
-export function AiInsightsBlock({ summary = defaultSummary, isAdmin, onSave }: AiInsightsBlockProps) {
-  const { t } = useTranslation();
+export function AiInsightsBlock({ projectId, summary = defaultSummary, isAdmin, onSave }: AiInsightsBlockProps) {
+  const { t, i18n } = useTranslation();
   const [editing, setEditing] = useState(false);
   const [expanded, setExpanded] = useState(true);
   const [draft, setDraft] = useState(summary);
+  const [generating, setGenerating] = useState(false);
 
   const hasSummary = summary.happened || summary.why || summary.recommendation;
 
@@ -37,6 +41,47 @@ export function AiInsightsBlock({ summary = defaultSummary, isAdmin, onSave }: A
   const handleCancel = () => {
     setDraft(summary);
     setEditing(false);
+  };
+
+  const handleGenerate = async () => {
+    if (!projectId) return;
+    setGenerating(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+
+      const projectRef = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const resp = await fetch(
+        `https://${projectRef}.supabase.co/functions/v1/generate-ai-summary`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            project_id: projectId,
+            language: i18n.language,
+          }),
+        }
+      );
+      const data = await resp.json();
+      if (data.error) throw new Error(data.error);
+
+      if (data.summary) {
+        const generated = {
+          happened: data.summary.happened || "",
+          why: data.summary.why || "",
+          recommendation: data.summary.recommendation || "",
+        };
+        onSave?.(generated);
+        toast.success(t("aiInsights.generated"));
+      }
+    } catch (err: any) {
+      toast.error(err.message || "AI generation failed");
+    } finally {
+      setGenerating(false);
+    }
   };
 
   const sections = [
@@ -70,15 +115,31 @@ export function AiInsightsBlock({ summary = defaultSummary, isAdmin, onSave }: A
           </div>
           <div className="flex items-center gap-1.5">
             {isAdmin && !editing && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 text-xs gap-1.5 text-muted-foreground hover:text-primary"
-                onClick={() => { setDraft(summary); setEditing(true); }}
-              >
-                <Pencil className="h-3 w-3" />
-                {t("aiInsights.edit")}
-              </Button>
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs gap-1.5 text-muted-foreground hover:text-primary"
+                  onClick={handleGenerate}
+                  disabled={generating}
+                >
+                  {generating ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Wand2 className="h-3 w-3" />
+                  )}
+                  {t("aiInsights.generate")}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs gap-1.5 text-muted-foreground hover:text-primary"
+                  onClick={() => { setDraft(summary); setEditing(true); }}
+                >
+                  <Pencil className="h-3 w-3" />
+                  {t("aiInsights.edit")}
+                </Button>
+              </>
             )}
             <Button
               variant="ghost"
@@ -100,7 +161,12 @@ export function AiInsightsBlock({ summary = defaultSummary, isAdmin, onSave }: A
               transition={{ duration: 0.3 }}
               className="overflow-hidden"
             >
-              {editing ? (
+              {generating ? (
+                <div className="flex flex-col items-center gap-3 py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  <p className="text-sm text-muted-foreground">{t("aiInsights.generating")}</p>
+                </div>
+              ) : editing ? (
                 <div className="space-y-4">
                   {sections.map((s) => (
                     <div key={s.key} className="space-y-1.5">
@@ -149,15 +215,27 @@ export function AiInsightsBlock({ summary = defaultSummary, isAdmin, onSave }: A
                 <div className="text-center py-6">
                   <p className="text-sm text-muted-foreground">{t("aiInsights.empty")}</p>
                   {isAdmin && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="mt-3 gap-1.5 text-xs"
-                      onClick={() => setEditing(true)}
-                    >
-                      <Pencil className="h-3 w-3" />
-                      {t("aiInsights.addSummary")}
-                    </Button>
+                    <div className="flex gap-2 justify-center mt-3">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5 text-xs"
+                        onClick={handleGenerate}
+                        disabled={generating}
+                      >
+                        <Wand2 className="h-3 w-3" />
+                        {t("aiInsights.generate")}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5 text-xs"
+                        onClick={() => setEditing(true)}
+                      >
+                        <Pencil className="h-3 w-3" />
+                        {t("aiInsights.addSummary")}
+                      </Button>
+                    </div>
                   )}
                 </div>
               )}
