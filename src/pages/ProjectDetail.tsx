@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { ChevronRight, Globe, LogOut, Copy, Pencil, Upload, X, User, Search } from "lucide-react";
+import { ChevronRight, Globe, LogOut, Copy, Pencil, Upload, X, User, Search, Sun, Moon } from "lucide-react";
 import { toast } from "sonner";
 import { IntegrationsTab } from "@/components/project/IntegrationsTab";
 import { AnalyticsTab } from "@/components/project/AnalyticsTab";
@@ -20,11 +20,13 @@ import { GSCWidget } from "@/components/widgets/GSCWidget";
 import { TopvisorWidget } from "@/components/widgets/TopvisorWidget";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
 
 const ProjectDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { t, i18n } = useTranslation();
   const { signOut } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("overview");
 
@@ -179,6 +181,9 @@ const ProjectDetail = () => {
               <span className="text-sm font-medium text-muted-foreground">StatPulse</span>
             </div>
             <div className="flex items-center gap-2">
+              <Button variant="ghost" size="icon" onClick={toggleTheme} className="h-8 w-8">
+                {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </Button>
               <Button variant="ghost" size="sm" onClick={toggleLang} className="gap-1.5 text-xs">
                 <Globe className="h-3.5 w-3.5" />
                 {i18n.language === "ru" ? "EN" : "RU"}

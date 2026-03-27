@@ -7,6 +7,7 @@ interface ProjectCardProps {
   url: string;
   initials: string;
   color: string;
+  logoUrl?: string | null;
   reportStatus: string;
   reportReady: boolean;
   onClick: () => void;
@@ -17,6 +18,7 @@ export function ProjectCard({
   url,
   initials,
   color,
+  logoUrl,
   reportStatus,
   reportReady,
   onClick,
@@ -28,12 +30,20 @@ export function ProjectCard({
     >
       <CardContent className="p-5">
         <div className="flex items-start gap-4">
-          <div
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-primary-foreground"
-            style={{ backgroundColor: color }}
-          >
-            {initials}
-          </div>
+          {logoUrl ? (
+            <img
+              src={logoUrl}
+              alt={name}
+              className="h-12 w-12 shrink-0 rounded-full object-cover border border-border"
+            />
+          ) : (
+            <div
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-primary-foreground"
+              style={{ backgroundColor: color }}
+            >
+              {initials}
+            </div>
+          )}
           <div className="min-w-0 flex-1">
             <h3 className="font-semibold text-foreground truncate">{name}</h3>
             <div className="flex items-center gap-1 mt-1 text-sm text-muted-foreground">
@@ -42,18 +52,20 @@ export function ProjectCard({
             </div>
           </div>
         </div>
-        <div className="mt-4">
-          <Badge
-            variant={reportReady ? "default" : "secondary"}
-            className={
-              reportReady
-                ? "bg-[hsl(var(--success))] text-[hsl(var(--success-foreground))] hover:bg-[hsl(var(--success))]/90"
-                : ""
-            }
-          >
-            {reportStatus}
-          </Badge>
-        </div>
+        {reportStatus && (
+          <div className="mt-4">
+            <Badge
+              variant={reportReady ? "default" : "secondary"}
+              className={
+                reportReady
+                  ? "bg-[hsl(var(--success))] text-[hsl(var(--success-foreground))] hover:bg-[hsl(var(--success))]/90"
+                  : ""
+              }
+            >
+              {reportStatus}
+            </Badge>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
