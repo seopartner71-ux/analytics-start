@@ -16,7 +16,7 @@ import { toast } from "sonner";
 import { IntegrationsTab } from "@/components/project/IntegrationsTab";
 import { AnalyticsTab } from "@/components/project/AnalyticsTab";
 import { WorkLogTab } from "@/components/project/WorkLogTab";
-import { AiInsightsBlock } from "@/components/project/AiInsightsBlock";
+import { GoalsTab } from "@/components/project/GoalsTab";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { MetrikaWidget } from "@/components/widgets/MetrikaWidget";
 import { WebmasterWidget } from "@/components/widgets/WebmasterWidget";
@@ -260,6 +260,7 @@ const ProjectDetail = () => {
               <TabsList className="bg-muted/60 hidden md:inline-flex">
                 <TabsTrigger value="overview">{t("project.tabs.overview")}</TabsTrigger>
                 <TabsTrigger value="analytics">{t("project.tabs.analytics")}</TabsTrigger>
+                <TabsTrigger value="goals">{t("project.tabs.goals")}</TabsTrigger>
                 <TabsTrigger value="worklog">{t("project.tabs.worklog")}</TabsTrigger>
                 <TabsTrigger value="integrations">{t("project.tabs.integrations")}</TabsTrigger>
                 <TabsTrigger value="settings">{t("project.tabs.settings")}</TabsTrigger>
@@ -292,6 +293,10 @@ const ProjectDetail = () => {
 
               <TabsContent value="analytics">
                 <AnalyticsTab projectId={project.id} />
+              </TabsContent>
+
+              <TabsContent value="goals">
+                <GoalsTab projectId={project.id} />
               </TabsContent>
 
               <TabsContent value="worklog">
