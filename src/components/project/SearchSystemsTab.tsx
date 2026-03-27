@@ -312,9 +312,9 @@ export function SearchSystemsTab({ projectId, projectName }: SearchSystemsTabPro
   const [range, setRange] = useState<{ from: Date; to: Date }>({ from: subDays(today, 30), to: today });
   const [appliedRange, setAppliedRange] = useState(range);
   const [showComparison, setShowComparison] = useState(false);
-  const [compRange, setCompRange] = useState<{ from: Date; to: Date }>({ from: subYears(subDays(today, 30), 1), to: subYears(today, 1) });
+  const [compRange, setCompRange] = useState<{ from: Date; to: Date }>({ from: subDays(today, 61), to: subDays(today, 31) });
   const [appliedCompRange, setAppliedCompRange] = useState(compRange);
-  const [activePreset, setActivePreset] = useState<string>("30d");
+  const [selectedEngine, setSelectedEngine] = useState<string>("all");
 
   const PRESETS = [
     { key: "7d", days: 7 },
