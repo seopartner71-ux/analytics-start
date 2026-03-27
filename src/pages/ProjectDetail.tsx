@@ -209,6 +209,7 @@ const ProjectDetail = () => {
             }
           />
 
+          <main className="flex-1 p-6 lg:p-8">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
               <TabsList className="bg-muted/60">
                 <TabsTrigger value="overview">{t("project.tabs.overview")}</TabsTrigger>
