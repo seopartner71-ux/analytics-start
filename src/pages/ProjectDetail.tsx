@@ -22,6 +22,7 @@ import { SearchSystemsTab } from "@/components/project/SearchSystemsTab";
 import { PagesTab } from "@/components/project/PagesTab";
 import { AiInsightsBlock } from "@/components/project/AiInsightsBlock";
 import { ReportBuilderTab } from "@/components/project/ReportBuilderTab";
+import { DashboardTab } from "@/components/project/DashboardTab";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { MetrikaWidget } from "@/components/widgets/MetrikaWidget";
 import { WebmasterWidget } from "@/components/widgets/WebmasterWidget";
@@ -283,25 +284,14 @@ const ProjectDetail = () => {
                     trafficSources={(latestMetrikaStats?.traffic_sources as any[]) || []}
                   />
 
-                  {/* Main Analytics (Dashboard) */}
-                  <AnalyticsTab
+                  {/* Dashboard Summary */}
+                  <DashboardTab
                     projectId={project.id}
-                    onSwitchToGoals={() => setActiveTab("goals")}
-                    onSwitchToSeo={() => setActiveTab("seo")}
-                    onSwitchToPages={() => setActiveTab("pages")}
+                    dateFrom={new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10)}
+                    dateTo={new Date().toISOString().slice(0, 10)}
+                    showComparison={false}
+                    onSwitchTab={setActiveTab}
                   />
-
-                  <div className="grid gap-6 lg:grid-cols-2">
-                    {isConnected("yandexMetrika") && <MetrikaWidget projectId={id} />}
-                    {isConnected("yandexWebmaster") && <WebmasterWidget />}
-                    {isConnected("googleSearchConsole") && <GSCWidget />}
-                    {isConnected("topvisor") && <TopvisorWidget />}
-                    {integrations.length === 0 || !integrations.some((i) => i.connected) ? (
-                      <div className="lg:col-span-2 text-center py-16">
-                        <p className="text-muted-foreground">{t("integrations.noConnected")}</p>
-                      </div>
-                    ) : null}
-                  </div>
                 </div>
               </TabsContent>
 
