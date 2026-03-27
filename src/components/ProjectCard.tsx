@@ -8,6 +8,9 @@ interface ProjectCardProps {
   initials: string;
   color: string;
   logoUrl?: string | null;
+  description?: string | null;
+  seoSpecialist?: string | null;
+  accountManager?: string | null;
   reportStatus: string;
   reportReady: boolean;
   onClick: () => void;
@@ -19,6 +22,9 @@ export function ProjectCard({
   initials,
   color,
   logoUrl,
+  description,
+  seoSpecialist,
+  accountManager,
   reportStatus,
   reportReady,
   onClick,
@@ -52,6 +58,19 @@ export function ProjectCard({
             </div>
           </div>
         </div>
+        {description && (
+          <p className="mt-3 text-xs text-muted-foreground line-clamp-2">{description}</p>
+        )}
+        {(seoSpecialist || accountManager) && (
+          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+            {seoSpecialist && (
+              <span>SEO: <span className="text-foreground font-medium">{seoSpecialist}</span></span>
+            )}
+            {accountManager && (
+              <span>AM: <span className="text-foreground font-medium">{accountManager}</span></span>
+            )}
+          </div>
+        )}
         {reportStatus && (
           <div className="mt-4">
             <Badge
