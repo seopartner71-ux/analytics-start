@@ -111,6 +111,9 @@ const Index = () => {
                     initials={getInitials(project.name)}
                     color={COLORS[i % COLORS.length]}
                     logoUrl={project.logo_url}
+                    description={project.description}
+                    seoSpecialist={project.seo_specialist}
+                    accountManager={project.account_manager}
                     reportStatus=""
                     reportReady={false}
                     onClick={() => navigate(`/project/${project.id}`)}
