@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { ChevronRight, Globe, LogOut, Copy, Pencil, Upload, X, User, Search } from "lucide-react";
+import { ChevronRight, Globe, LogOut, Copy, Pencil, Upload, X, User, Search, Sun, Moon } from "lucide-react";
 import { toast } from "sonner";
 import { IntegrationsTab } from "@/components/project/IntegrationsTab";
 import { AnalyticsTab } from "@/components/project/AnalyticsTab";
