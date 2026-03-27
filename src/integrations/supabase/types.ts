@@ -99,6 +99,59 @@ export type Database = {
           },
         ]
       }
+      metrika_stats: {
+        Row: {
+          avg_duration_seconds: number
+          bounce_rate: number
+          counter_id: string
+          created_at: string
+          date_from: string
+          date_to: string
+          fetched_at: string
+          id: string
+          page_depth: number
+          project_id: string
+          total_visits: number
+          visits_by_day: Json
+        }
+        Insert: {
+          avg_duration_seconds?: number
+          bounce_rate?: number
+          counter_id: string
+          created_at?: string
+          date_from: string
+          date_to: string
+          fetched_at?: string
+          id?: string
+          page_depth?: number
+          project_id: string
+          total_visits?: number
+          visits_by_day?: Json
+        }
+        Update: {
+          avg_duration_seconds?: number
+          bounce_rate?: number
+          counter_id?: string
+          created_at?: string
+          date_from?: string
+          date_to?: string
+          fetched_at?: string
+          id?: string
+          page_depth?: number
+          project_id?: string
+          total_visits?: number
+          visits_by_day?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "metrika_stats_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           agency_name: string | null
