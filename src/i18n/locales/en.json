@@ -431,6 +431,7 @@
     "trendTitle": "Search Traffic Dynamics",
     "enableComparison": "Compare Periods",
     "change": "Change %",
-    "otherEngines": "Other"
+    "otherEngines": "Other",
+    "demoDataHint": "Showing demo data. Connect Yandex.Metrika in Settings to display real search queries."
   }
 }
