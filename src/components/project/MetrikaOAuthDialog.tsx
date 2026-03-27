@@ -60,15 +60,8 @@ export function MetrikaOAuthDialog({ open, onOpenChange, projectId, existingInte
       if (!session) return;
 
       const redirectUri = `${window.location.origin}/oauth/yandex/callback`;
-
-      const resp = await supabase.functions.invoke("yandex-metrika-auth", {
-        body: null,
-        headers: { "Content-Type": "application/json" },
-      });
-
-      // Build URL directly since we know the client_id pattern
-      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-      const funcUrl = `https://${projectId}.supabase.co/functions/v1/yandex-metrika-auth?action=auth-url&redirect_uri=${encodeURIComponent(redirectUri)}`;
+      const projectRef = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const funcUrl = `https://${projectRef}.supabase.co/functions/v1/yandex-metrika-auth?action=auth-url&redirect_uri=${encodeURIComponent(redirectUri)}`;
       
       const authResp = await fetch(funcUrl, {
         headers: { Authorization: `Bearer ${session.access_token}` },
