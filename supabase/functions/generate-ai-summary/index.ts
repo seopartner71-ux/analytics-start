@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { project_id, language, period_a, period_b } = body;
+    const { project_id, language, period_a, period_b, traffic_sources } = body;
 
     if (!project_id) {
       return new Response(JSON.stringify({ error: "project_id is required" }), {
@@ -45,7 +45,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Use Lovable AI Gateway
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       return new Response(JSON.stringify({ error: "AI API key not configured" }), {
@@ -77,7 +76,7 @@ Deno.serve(async (req) => {
       const visitsByDay = stats.visits_by_day || [];
       dataContext = `
 Yandex Metrika data for project "${project?.name || "Unknown"}" (${project?.url || ""}):
-- Period A: ${period_a?.from || stats.date_from} to ${period_a?.to || stats.date_to}
+- Period: ${period_a?.from || stats.date_from} to ${period_a?.to || stats.date_to}
 - Total visits: ${stats.total_visits}
 - Bounce rate: ${stats.bounce_rate}%
 - Page depth: ${stats.page_depth}
@@ -85,7 +84,15 @@ Yandex Metrika data for project "${project?.name || "Unknown"}" (${project?.url 
 - Daily visits trend (last 10 days): ${JSON.stringify((visitsByDay as any[]).slice(-10))}
 `;
 
-      // If comparison period provided, add context
+      // Add traffic sources breakdown
+      const sources = traffic_sources || (stats as any).traffic_sources || [];
+      if (sources.length > 0) {
+        dataContext += `\nTraffic sources breakdown:\n`;
+        for (const src of sources) {
+          dataContext += `- ${src.source}: ${src.visits} visits\n`;
+        }
+      }
+
       if (period_b) {
         dataContext += `
 Comparison Period B: ${period_b.from} to ${period_b.to}
@@ -100,9 +107,46 @@ Period B metrics:
       dataContext = `No analytics data available yet for project "${project?.name || "Unknown"}". Provide general SEO recommendations.`;
     }
 
-    const systemPrompt = period_b
-      ? `You are an expert SEO analyst. Compare Period A and Period B. Highlight key changes. If traffic grew but conversion dropped — mark this explicitly. Give 2-3 short insights. Return ONLY valid JSON with exactly 3 fields: "happened" (what happened with the metrics), "why" (analysis of why), "recommendation" (actionable next steps). Each field should be 1-3 sentences. Answer in ${lang}. No markdown, no code blocks, just raw JSON.`
-      : `You are an expert SEO analyst. Provide a concise performance summary in ${lang}. Return ONLY valid JSON with exactly 3 fields: "happened" (what happened with the metrics), "why" (analysis of why), "recommendation" (actionable next steps). Each field should be 1-3 sentences. No markdown, no code blocks, just raw JSON.`;
+    const systemPrompt = `You are an expert SEO and digital marketing analyst. Analyze the provided website metrics data.
+
+Return ONLY valid JSON with this exact structure:
+{
+  "general": {
+    "happened": "1-2 sentences about overall metrics",
+    "why": "1-2 sentences analysis",
+    "recommendation": "1-2 sentences actionable advice"
+  },
+  "channels": {
+    "search": {
+      "insight": "1-2 sentences about organic/search traffic performance",
+      "trend": "up" or "down" or "stable"
+    },
+    "direct": {
+      "insight": "1-2 sentences about direct traffic",
+      "trend": "up" or "down" or "stable"
+    },
+    "ad": {
+      "insight": "1-2 sentences about paid/ad traffic",
+      "trend": "up" or "down" or "stable"
+    },
+    "social": {
+      "insight": "1-2 sentences about social media traffic",
+      "trend": "up" or "down" or "stable"
+    },
+    "referral": {
+      "insight": "1-2 sentences about referral traffic",
+      "trend": "up" or "down" or "stable"
+    }
+  }
+}
+
+Rules:
+- Answer in ${lang}.
+- For each channel, analyze its specific data if available. If no data for a channel, note it has no significant traffic.
+- Look for anomalies: sudden growth or decline. Give a specific reason based on data.
+- If traffic grew but conversion dropped — explicitly flag this.
+${period_b ? "- Compare Period A and Period B for each channel." : ""}
+- No markdown, no code blocks, just raw JSON.`;
 
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -125,14 +169,12 @@ Period B metrics:
       console.error("AI gateway error:", aiResponse.status, errText);
       if (aiResponse.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded, try again later" }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       if (aiResponse.status === 402) {
         return new Response(JSON.stringify({ error: "AI credits exhausted" }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       return new Response(
@@ -148,7 +190,19 @@ Period B metrics:
     try {
       summary = JSON.parse(content);
     } catch {
-      summary = { happened: content, why: "", recommendation: "" };
+      // Fallback to old format
+      summary = {
+        general: { happened: content, why: "", recommendation: "" },
+        channels: {},
+      };
+    }
+
+    // Normalize: ensure general field exists
+    if (!summary.general && summary.happened) {
+      summary = {
+        general: { happened: summary.happened, why: summary.why || "", recommendation: summary.recommendation || "" },
+        channels: summary.channels || {},
+      };
     }
 
     return new Response(JSON.stringify({ summary }), {

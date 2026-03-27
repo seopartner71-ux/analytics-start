@@ -1,45 +1,106 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Pencil, Check, X, ChevronDown, ChevronUp, Loader2, Wand2 } from "lucide-react";
+import {
+  Sparkles, Pencil, Check, X, ChevronDown, ChevronUp, Loader2, Wand2,
+  Search, Megaphone, Globe, Share2, Link, LayoutGrid,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 
-interface AiInsightsBlockProps {
-  projectId?: string;
-  summary?: {
+// Types for the new channel-based summary
+interface ChannelInsight {
+  insight: string;
+  trend: "up" | "down" | "stable";
+}
+
+interface AiSummaryData {
+  general: {
     happened: string;
     why: string;
     recommendation: string;
   };
-  isAdmin: boolean;
-  onSave?: (summary: { happened: string; why: string; recommendation: string }) => void;
+  channels: {
+    search?: ChannelInsight;
+    direct?: ChannelInsight;
+    ad?: ChannelInsight;
+    social?: ChannelInsight;
+    referral?: ChannelInsight;
+  };
 }
 
-const defaultSummary = {
-  happened: "",
-  why: "",
-  recommendation: "",
-};
+// Backward compat: old format
+interface LegacySummary {
+  happened: string;
+  why: string;
+  recommendation: string;
+}
 
-export function AiInsightsBlock({ projectId, summary = defaultSummary, isAdmin, onSave }: AiInsightsBlockProps) {
+interface AiInsightsBlockProps {
+  projectId?: string;
+  summary?: AiSummaryData | LegacySummary;
+  isAdmin: boolean;
+  onSave?: (summary: AiSummaryData) => void;
+  trafficSources?: { source: string; visits: number }[];
+}
+
+type ChannelKey = "general" | "search" | "direct" | "ad" | "social" | "referral";
+
+const CHANNEL_CONFIG: { key: ChannelKey; icon: typeof Search; colorClass: string }[] = [
+  { key: "general", icon: LayoutGrid, colorClass: "from-primary to-purple-500" },
+  { key: "search", icon: Search, colorClass: "from-emerald-500 to-teal-600" },
+  { key: "direct", icon: Globe, colorClass: "from-blue-500 to-indigo-600" },
+  { key: "ad", icon: Megaphone, colorClass: "from-orange-500 to-red-500" },
+  { key: "social", icon: Share2, colorClass: "from-pink-500 to-rose-600" },
+  { key: "referral", icon: Link, colorClass: "from-violet-500 to-purple-600" },
+];
+
+function normalizeSummary(raw: AiSummaryData | LegacySummary | undefined): AiSummaryData {
+  if (!raw) return { general: { happened: "", why: "", recommendation: "" }, channels: {} };
+  if ("general" in raw && raw.general) return raw as AiSummaryData;
+  // Legacy format
+  const legacy = raw as LegacySummary;
+  return {
+    general: { happened: legacy.happened || "", why: legacy.why || "", recommendation: legacy.recommendation || "" },
+    channels: {},
+  };
+}
+
+function TrendDot({ trend }: { trend?: "up" | "down" | "stable" }) {
+  if (!trend || trend === "stable") return null;
+  return (
+    <span
+      className={cn(
+        "absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-card",
+        trend === "up" ? "bg-emerald-500" : "bg-red-500"
+      )}
+    />
+  );
+}
+
+export function AiInsightsBlock({ projectId, summary: rawSummary, isAdmin, onSave, trafficSources }: AiInsightsBlockProps) {
   const { t, i18n } = useTranslation();
   const [editing, setEditing] = useState(false);
   const [expanded, setExpanded] = useState(true);
-  const [draft, setDraft] = useState(summary);
   const [generating, setGenerating] = useState(false);
+  const [activeChannel, setActiveChannel] = useState<ChannelKey>("general");
 
-  const hasSummary = summary.happened || summary.why || summary.recommendation;
+  const summary = useMemo(() => normalizeSummary(rawSummary), [rawSummary]);
+  const [draft, setDraft] = useState(summary.general);
+
+  const hasSummary = summary.general.happened || summary.general.why || summary.general.recommendation;
+  const hasChannels = Object.keys(summary.channels).length > 0;
 
   const handleSave = () => {
-    onSave?.(draft);
+    onSave?.({ ...summary, general: draft });
     setEditing(false);
   };
 
   const handleCancel = () => {
-    setDraft(summary);
+    setDraft(summary.general);
     setEditing(false);
   };
 
@@ -62,6 +123,7 @@ export function AiInsightsBlock({ projectId, summary = defaultSummary, isAdmin, 
           body: JSON.stringify({
             project_id: projectId,
             language: i18n.language,
+            traffic_sources: trafficSources || [],
           }),
         }
       );
@@ -69,12 +131,9 @@ export function AiInsightsBlock({ projectId, summary = defaultSummary, isAdmin, 
       if (data.error) throw new Error(data.error);
 
       if (data.summary) {
-        const generated = {
-          happened: data.summary.happened || "",
-          why: data.summary.why || "",
-          recommendation: data.summary.recommendation || "",
-        };
-        onSave?.(generated);
+        const normalized = normalizeSummary(data.summary);
+        onSave?.(normalized);
+        setActiveChannel("general");
         toast.success(t("aiInsights.generated"));
       }
     } catch (err: any) {
@@ -84,11 +143,15 @@ export function AiInsightsBlock({ projectId, summary = defaultSummary, isAdmin, 
     }
   };
 
-  const sections = [
+  const generalSections = [
     { key: "happened" as const, icon: "📊", label: t("aiInsights.happened") },
     { key: "why" as const, icon: "🔍", label: t("aiInsights.why") },
     { key: "recommendation" as const, icon: "💡", label: t("aiInsights.recommendation") },
   ];
+
+  const activeChannelData = activeChannel === "general"
+    ? null
+    : summary.channels[activeChannel as keyof typeof summary.channels];
 
   return (
     <motion.div
@@ -117,36 +180,24 @@ export function AiInsightsBlock({ projectId, summary = defaultSummary, isAdmin, 
             {isAdmin && !editing && (
               <>
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  variant="ghost" size="sm"
                   className="h-7 text-xs gap-1.5 text-muted-foreground hover:text-primary"
-                  onClick={handleGenerate}
-                  disabled={generating}
+                  onClick={handleGenerate} disabled={generating}
                 >
-                  {generating ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : (
-                    <Wand2 className="h-3 w-3" />
-                  )}
+                  {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3" />}
                   {t("aiInsights.generate")}
                 </Button>
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  variant="ghost" size="sm"
                   className="h-7 text-xs gap-1.5 text-muted-foreground hover:text-primary"
-                  onClick={() => { setDraft(summary); setEditing(true); }}
+                  onClick={() => { setDraft(summary.general); setEditing(true); }}
                 >
                   <Pencil className="h-3 w-3" />
                   {t("aiInsights.edit")}
                 </Button>
               </>
             )}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-muted-foreground"
-              onClick={() => setExpanded(!expanded)}
-            >
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" onClick={() => setExpanded(!expanded)}>
               {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
             </Button>
           </div>
@@ -168,7 +219,7 @@ export function AiInsightsBlock({ projectId, summary = defaultSummary, isAdmin, 
                 </div>
               ) : editing ? (
                 <div className="space-y-4">
-                  {sections.map((s) => (
+                  {generalSections.map((s) => (
                     <div key={s.key} className="space-y-1.5">
                       <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                         <span>{s.icon}</span> {s.label}
@@ -192,46 +243,114 @@ export function AiInsightsBlock({ projectId, summary = defaultSummary, isAdmin, 
                   </div>
                 </div>
               ) : hasSummary ? (
-                <div className="space-y-3">
-                  {sections.map((s, i) =>
-                    summary[s.key] ? (
-                      <motion.div
-                        key={s.key}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: i * 0.15, duration: 0.4 }}
-                        className="flex gap-3"
-                      >
-                        <span className="text-base mt-0.5 shrink-0">{s.icon}</span>
-                        <div>
-                          <p className="text-xs font-semibold text-muted-foreground mb-0.5">{s.label}</p>
-                          <p className="text-sm text-foreground leading-relaxed">{summary[s.key]}</p>
-                        </div>
-                      </motion.div>
-                    ) : null
+                <div className="space-y-4">
+                  {/* Channel badges row — scrollable on mobile */}
+                  {hasChannels && (
+                    <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none -mx-1 px-1">
+                      {CHANNEL_CONFIG.map(({ key, icon: Icon, colorClass }) => {
+                        const isActive = activeChannel === key;
+                        const channelData = key === "general" ? null : summary.channels[key as keyof typeof summary.channels];
+                        const trend = channelData?.trend;
+
+                        return (
+                          <button
+                            key={key}
+                            onClick={() => setActiveChannel(key)}
+                            className={cn(
+                              "relative flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap shrink-0",
+                              isActive
+                                ? `bg-gradient-to-r ${colorClass} text-white shadow-sm`
+                                : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+                            )}
+                          >
+                            <Icon className="h-3 w-3" />
+                            {t(`aiInsights.channels.${key}`)}
+                            {key !== "general" && <TrendDot trend={trend} />}
+                          </button>
+                        );
+                      })}
+                    </div>
                   )}
+
+                  {/* Content area with animation */}
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={activeChannel}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      transition={{ duration: 0.25 }}
+                    >
+                      {activeChannel === "general" ? (
+                        <div className="space-y-3">
+                          {generalSections.map((s, i) =>
+                            summary.general[s.key] ? (
+                              <motion.div
+                                key={s.key}
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: i * 0.1, duration: 0.3 }}
+                                className="flex gap-3"
+                              >
+                                <span className="text-base mt-0.5 shrink-0">{s.icon}</span>
+                                <div>
+                                  <p className="text-xs font-semibold text-muted-foreground mb-0.5">{s.label}</p>
+                                  <p className="text-sm text-foreground leading-relaxed">{summary.general[s.key]}</p>
+                                </div>
+                              </motion.div>
+                            ) : null
+                          )}
+                        </div>
+                      ) : activeChannelData ? (
+                        <div className="flex gap-3 items-start">
+                          <div className={cn(
+                            "flex items-center justify-center h-8 w-8 rounded-lg shrink-0 bg-gradient-to-br text-white",
+                            CHANNEL_CONFIG.find(c => c.key === activeChannel)?.colorClass
+                          )}>
+                            {(() => {
+                              const cfg = CHANNEL_CONFIG.find(c => c.key === activeChannel);
+                              const Icon = cfg?.icon || Search;
+                              return <Icon className="h-4 w-4" />;
+                            })()}
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <p className="text-xs font-semibold text-muted-foreground">
+                                {t(`aiInsights.channels.${activeChannel}`)}
+                              </p>
+                              <span className={cn(
+                                "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold",
+                                activeChannelData.trend === "up" && "bg-emerald-500/15 text-emerald-500",
+                                activeChannelData.trend === "down" && "bg-red-500/15 text-red-500",
+                                activeChannelData.trend === "stable" && "bg-muted text-muted-foreground",
+                              )}>
+                                {activeChannelData.trend === "up" && "↑"}
+                                {activeChannelData.trend === "down" && "↓"}
+                                {activeChannelData.trend === "stable" && "→"}
+                                {t(`aiInsights.trend.${activeChannelData.trend}`)}
+                              </span>
+                            </div>
+                            <p className="text-sm text-foreground leading-relaxed">{activeChannelData.insight}</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground text-center py-4">
+                          {t("aiInsights.noChannelData", "Нет данных по этому каналу")}
+                        </p>
+                      )}
+                    </motion.div>
+                  </AnimatePresence>
                 </div>
               ) : (
                 <div className="text-center py-6">
                   <p className="text-sm text-muted-foreground">{t("aiInsights.empty")}</p>
                   {isAdmin && (
                     <div className="flex gap-2 justify-center mt-3">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-1.5 text-xs"
-                        onClick={handleGenerate}
-                        disabled={generating}
-                      >
+                      <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={handleGenerate} disabled={generating}>
                         <Wand2 className="h-3 w-3" />
                         {t("aiInsights.generate")}
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-1.5 text-xs"
-                        onClick={() => setEditing(true)}
-                      >
+                      <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => setEditing(true)}>
                         <Pencil className="h-3 w-3" />
                         {t("aiInsights.addSummary")}
                       </Button>
