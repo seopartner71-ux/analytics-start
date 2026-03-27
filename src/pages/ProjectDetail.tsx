@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChevronRight, Globe, LogOut, Copy, Pencil, Upload, X, User, Search, Sun, Moon } from "lucide-react";
 import { toast } from "sonner";
 import { IntegrationsTab } from "@/components/project/IntegrationsTab";
@@ -62,12 +63,21 @@ const ProjectDetail = () => {
     enabled: !!id,
   });
 
-  // Edit form state
+  const { data: teamMembers = [] } = useQuery({
+    queryKey: ["team_members"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("team_members").select("*").order("full_name");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+
   const [editName, setEditName] = useState("");
   const [editUrl, setEditUrl] = useState("");
   const [editDescription, setEditDescription] = useState("");
-  const [editSeoSpecialist, setEditSeoSpecialist] = useState("");
-  const [editAccountManager, setEditAccountManager] = useState("");
+  const [editSeoSpecialistId, setEditSeoSpecialistId] = useState("");
+  const [editAccountManagerId, setEditAccountManagerId] = useState("");
   const [editClientEmail, setEditClientEmail] = useState("");
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -79,8 +89,8 @@ const ProjectDetail = () => {
       setEditName(project.name);
       setEditUrl(project.url || "");
       setEditDescription(project.description || "");
-      setEditSeoSpecialist((project as any).seo_specialist || "");
-      setEditAccountManager((project as any).account_manager || "");
+      setEditSeoSpecialistId((project as any).seo_specialist_id || "");
+      setEditAccountManagerId((project as any).account_manager_id || "");
       setEditClientEmail(project.client_email || "");
       setLogoPreview(project.logo_url || null);
       setInitialized(true);
@@ -142,12 +152,16 @@ const ProjectDetail = () => {
   };
 
   const handleSaveSettings = () => {
+    const seoMember = teamMembers.find(m => m.id === editSeoSpecialistId);
+    const amMember = teamMembers.find(m => m.id === editAccountManagerId);
     updateProject.mutate({
       name: editName,
       url: editUrl,
       description: editDescription,
-      seo_specialist: editSeoSpecialist,
-      account_manager: editAccountManager,
+      seo_specialist: seoMember?.full_name || null,
+      account_manager: amMember?.full_name || null,
+      seo_specialist_id: editSeoSpecialistId || null,
+      account_manager_id: editAccountManagerId || null,
       client_email: editClientEmail,
     });
   };
@@ -310,19 +324,31 @@ const ProjectDetail = () => {
                     </h3>
                     <div className="space-y-2">
                       <Label>{t("project.settingsTab.seoSpecialist")}</Label>
-                      <Input
-                        value={editSeoSpecialist}
-                        onChange={(e) => setEditSeoSpecialist(e.target.value)}
-                        placeholder={t("project.settingsTab.seoPlaceholder")}
-                      />
+                      <Select value={editSeoSpecialistId} onValueChange={setEditSeoSpecialistId}>
+                        <SelectTrigger>
+                          <SelectValue placeholder={t("team.selectSeo")} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">{t("team.notAssigned")}</SelectItem>
+                          {teamMembers.filter(m => m.role === "seo").map(m => (
+                            <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="space-y-2">
                       <Label>{t("project.settingsTab.accountManager")}</Label>
-                      <Input
-                        value={editAccountManager}
-                        onChange={(e) => setEditAccountManager(e.target.value)}
-                        placeholder={t("project.settingsTab.managerPlaceholder")}
-                      />
+                      <Select value={editAccountManagerId} onValueChange={setEditAccountManagerId}>
+                        <SelectTrigger>
+                          <SelectValue placeholder={t("team.selectAm")} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">{t("team.notAssigned")}</SelectItem>
+                          {teamMembers.filter(m => m.role === "account_manager").map(m => (
+                            <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="space-y-2">
                       <Label>{t("project.settingsTab.clientEmail")}</Label>
