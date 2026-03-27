@@ -14,16 +14,284 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      cached_reports: {
+        Row: {
+          generated_at: string
+          id: string
+          project_id: string
+          report_data: Json
+          report_month: number
+          report_year: number
+        }
+        Insert: {
+          generated_at?: string
+          id?: string
+          project_id: string
+          report_data?: Json
+          report_month: number
+          report_year: number
+        }
+        Update: {
+          generated_at?: string
+          id?: string
+          project_id?: string
+          report_data?: Json
+          report_month?: number
+          report_year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cached_reports_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integrations: {
+        Row: {
+          access_token: string | null
+          api_key: string | null
+          connected: boolean
+          counter_id: string | null
+          created_at: string
+          external_project_id: string | null
+          id: string
+          last_sync: string | null
+          project_id: string
+          service_name: string
+          updated_at: string
+        }
+        Insert: {
+          access_token?: string | null
+          api_key?: string | null
+          connected?: boolean
+          counter_id?: string | null
+          created_at?: string
+          external_project_id?: string | null
+          id?: string
+          last_sync?: string | null
+          project_id: string
+          service_name: string
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string | null
+          api_key?: string | null
+          connected?: boolean
+          counter_id?: string | null
+          created_at?: string
+          external_project_id?: string | null
+          id?: string
+          last_sync?: string | null
+          project_id?: string
+          service_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integrations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          agency_name: string | null
+          avatar_url: string | null
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          preferred_language: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agency_name?: string | null
+          avatar_url?: string | null
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id?: string
+          preferred_language?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agency_name?: string | null
+          avatar_url?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          preferred_language?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      projects: {
+        Row: {
+          client_email: string | null
+          created_at: string
+          description: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          owner_id: string
+          share_token: string | null
+          updated_at: string
+          url: string | null
+        }
+        Insert: {
+          client_email?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          logo_url?: string | null
+          name: string
+          owner_id: string
+          share_token?: string | null
+          updated_at?: string
+          url?: string | null
+        }
+        Update: {
+          client_email?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          owner_id?: string
+          share_token?: string | null
+          updated_at?: string
+          url?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      work_logs: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          link_url: string | null
+          project_id: string
+          sort_order: number
+          status: string
+          task_date: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          link_url?: string | null
+          project_id: string
+          sort_order?: number
+          status?: string
+          task_date?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          link_url?: string | null
+          project_id?: string
+          sort_order?: number
+          status?: string
+          task_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_logs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_shared_project: {
+        Args: { p_share_token: string }
+        Returns: {
+          client_email: string | null
+          created_at: string
+          description: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          owner_id: string
+          share_token: string | null
+          updated_at: string
+          url: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "projects"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      get_shared_work_logs: {
+        Args: { p_project_id: string }
+        Returns: {
+          created_at: string
+          description: string
+          id: string
+          link_url: string | null
+          project_id: string
+          sort_order: number
+          status: string
+          task_date: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "work_logs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "viewer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +418,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "viewer"],
+    },
   },
 } as const
