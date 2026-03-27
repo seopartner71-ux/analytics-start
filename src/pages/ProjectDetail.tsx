@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronRight, Copy, Pencil, Upload, X, User, Link2, Calendar } from "lucide-react";
+import { ChevronRight, Copy, Pencil, Upload, X, User, Link2, Calendar, Plug } from "lucide-react";
 import { toast } from "sonner";
 import { IntegrationsTab } from "@/components/project/IntegrationsTab";
 import { AnalyticsTab } from "@/components/project/AnalyticsTab";
@@ -329,9 +329,6 @@ const ProjectDetail = () => {
                 <ReportBuilderTab projectId={project.id} shareToken={project.share_token} />
               </TabsContent>
 
-              <TabsContent value="integrations">
-                <IntegrationsTab projectId={project.id} integrations={integrations} />
-              </TabsContent>
 
               <TabsContent value="settings">
                 <div className="max-w-lg space-y-8">
