@@ -144,6 +144,9 @@ export function PagesTab({ projectId, projectName }: PagesTabProps) {
             <Button size="sm" className="h-8 text-xs ml-auto" onClick={handleApply}>
               {t("project.analytics.apply")}
             </Button>
+            <Button size="sm" variant="ghost" className="h-8 text-xs text-muted-foreground" onClick={resetToDefault}>
+              {t("datePicker.reset", "Сбросить")}
+            </Button>
             <ExportMenu
               onExportPdf={async () => { if (contentRef.current) await exportToPdf(contentRef.current, { projectName, tabName: t("project.tabs.pages"), periodA: format(appliedRange.from, "dd.MM.yy") + " — " + format(appliedRange.to, "dd.MM.yy"), language: i18n.language }); }}
               onExportExcel={async () => {

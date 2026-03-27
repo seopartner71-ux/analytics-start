@@ -536,6 +536,9 @@ export function SearchSystemsTab({ projectId, projectName }: SearchSystemsTabPro
           <Button size="sm" className="h-8 text-xs" onClick={handleApply}>
             {t("project.analytics.apply", "Применить")}
           </Button>
+          <Button size="sm" variant="ghost" className="h-8 text-xs text-muted-foreground" onClick={resetToDefault}>
+            {t("datePicker.reset", "Сбросить")}
+          </Button>
 
           <ExportMenu
             onExportPdf={async () => { if (contentRef.current) await exportToPdf(contentRef.current, { projectName, tabName: t("project.tabs.searchSystems"), periodA: format(appliedRange.from, "dd.MM.yy") + " — " + format(appliedRange.to, "dd.MM.yy"), periodB: showComparison ? format(appliedCompRange.from, "dd.MM.yy") + " — " + format(appliedCompRange.to, "dd.MM.yy") : undefined, language: i18n.language }); }}

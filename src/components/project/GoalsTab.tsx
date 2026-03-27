@@ -267,6 +267,9 @@ export function GoalsTab({ projectId, projectName }: GoalsTabProps) {
           <Button size="sm" className="h-8 text-xs" onClick={handleApply}>
             {t("project.analytics.apply", "Применить")}
           </Button>
+          <Button size="sm" variant="ghost" className="h-8 text-xs text-muted-foreground" onClick={resetToDefault}>
+            {t("datePicker.reset", "Сбросить")}
+          </Button>
 
           <ExportMenu
             onExportPdf={async () => { if (contentRef.current) await exportToPdf(contentRef.current, { projectName, tabName: t("project.tabs.goals"), periodA: dateFrom + " — " + dateTo, periodB: showComparison ? compDateFrom + " — " + compDateTo : undefined, language: i18n.language }); }}
