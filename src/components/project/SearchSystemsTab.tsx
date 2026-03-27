@@ -622,6 +622,15 @@ export function SearchSystemsTab({ projectId }: SearchSystemsTabProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* ── Trend Area Chart ── */}
+      <Card className="border-border bg-card">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground">{t("searchSystems.trendTitle")}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={280}>
+            <AreaChart data={trend} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
               <defs>
                 {ENGINE_KEYS.map((k, i) => (
                   <linearGradient key={k} id={`grad-${k}`} x1="0" y1="0" x2="0" y2="1">
