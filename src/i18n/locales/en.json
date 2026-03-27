@@ -49,6 +49,8 @@
   "project": {
     "breadcrumbProjects": "Projects",
     "shareLink": "Public link for client",
+    "shareLinkExpiry": "Link expiration date",
+    "shareLinkExpiryHint": "Leave empty for a permanent link",
     "editProject": "Edit",
     "tabs": {
       "overview": "Overview",
@@ -83,7 +85,9 @@
       "addTask": "Add Task",
       "deleteTask": "Delete",
       "viewResult": "View Result",
-      "noTasks": "No tasks yet"
+      "noTasks": "No tasks yet",
+      "completed": "Completed",
+      "inProgress": "In Progress"
     },
     "settingsTab": {
       "title": "Project Settings",
@@ -166,6 +170,8 @@
     "title": "Promotion Report for {{month}}",
     "downloadPdf": "Download PDF",
     "langSwitch": "Русский",
+    "expired": "Link has expired",
+    "expiredDesc": "This link is no longer active. Contact your manager for a new link.",
     "kpi": {
       "title": "Key Metrics",
       "visits": "Visits",
@@ -208,6 +214,27 @@
     "selectSeo": "Select SEO Specialist",
     "selectAm": "Select Account Manager",
     "notAssigned": "Not assigned"
+  },
+  "aiInsights": {
+    "title": "AI Performance Summary",
+    "subtitle": "Analytical overview for the current period",
+    "happened": "What happened",
+    "why": "Why",
+    "recommendation": "Recommendation",
+    "edit": "Edit",
+    "empty": "AI summary not yet filled. Click 'Edit' to add analytics.",
+    "addSummary": "Add Summary",
+    "placeholder": "Enter text...",
+    "saved": "AI summary saved"
+  },
+  "artifacts": {
+    "openExternal": "Open",
+    "quickPreview": "Preview"
+  },
+  "mobileNav": {
+    "overview": "Overview",
+    "charts": "Charts",
+    "tasks": "Tasks"
   },
   "common": {
     "save": "Save",

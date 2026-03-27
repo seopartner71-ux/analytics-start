@@ -49,6 +49,8 @@
   "project": {
     "breadcrumbProjects": "Проекты",
     "shareLink": "Публичная ссылка для клиента",
+    "shareLinkExpiry": "Срок действия ссылки",
+    "shareLinkExpiryHint": "Оставьте пустым для бессрочной ссылки",
     "editProject": "Редактировать",
     "tabs": {
       "overview": "Обзор",
@@ -83,7 +85,9 @@
       "addTask": "Добавить задачу",
       "deleteTask": "Удалить",
       "viewResult": "Посмотреть результат",
-      "noTasks": "Задач пока нет"
+      "noTasks": "Задач пока нет",
+      "completed": "Выполнено",
+      "inProgress": "В работе"
     },
     "settingsTab": {
       "title": "Настройки проекта",
@@ -166,6 +170,8 @@
     "title": "Отчёт по продвижению за {{month}}",
     "downloadPdf": "Скачать PDF",
     "langSwitch": "English",
+    "expired": "Срок действия ссылки истёк",
+    "expiredDesc": "Эта ссылка больше не активна. Обратитесь к вашему менеджеру за новой ссылкой.",
     "kpi": {
       "title": "Ключевые показатели",
       "visits": "Визиты",
@@ -208,6 +214,27 @@
     "selectSeo": "Выберите SEO-специалиста",
     "selectAm": "Выберите аккаунт-менеджера",
     "notAssigned": "Не назначен"
+  },
+  "aiInsights": {
+    "title": "AI Performance Summary",
+    "subtitle": "Аналитический обзор за текущий период",
+    "happened": "Что произошло",
+    "why": "Почему",
+    "recommendation": "Рекомендация",
+    "edit": "Редактировать",
+    "empty": "AI-сводка ещё не заполнена. Нажмите «Редактировать», чтобы добавить аналитику.",
+    "addSummary": "Добавить сводку",
+    "placeholder": "Введите текст...",
+    "saved": "AI-сводка сохранена"
+  },
+  "artifacts": {
+    "openExternal": "Открыть",
+    "quickPreview": "Превью"
+  },
+  "mobileNav": {
+    "overview": "Обзор",
+    "charts": "Графики",
+    "tasks": "Задачи"
   },
   "common": {
     "save": "Сохранить",

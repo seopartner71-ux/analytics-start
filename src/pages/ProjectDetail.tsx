@@ -11,24 +11,24 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronRight, Copy, Pencil, Upload, X, User } from "lucide-react";
+import { ChevronRight, Copy, Pencil, Upload, X, User, Link2, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import { IntegrationsTab } from "@/components/project/IntegrationsTab";
 import { AnalyticsTab } from "@/components/project/AnalyticsTab";
 import { WorkLogTab } from "@/components/project/WorkLogTab";
+import { AiInsightsBlock } from "@/components/project/AiInsightsBlock";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { MetrikaWidget } from "@/components/widgets/MetrikaWidget";
 import { WebmasterWidget } from "@/components/widgets/WebmasterWidget";
 import { GSCWidget } from "@/components/widgets/GSCWidget";
 import { TopvisorWidget } from "@/components/widgets/TopvisorWidget";
 import { supabase } from "@/integrations/supabase/client";
 
-
 const ProjectDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("overview");
-
 
   const { data: project, isLoading } = useQuery({
     queryKey: ["project", id],
@@ -69,6 +69,22 @@ const ProjectDetail = () => {
     },
   });
 
+  const { data: cachedReport } = useQuery({
+    queryKey: ["cached_report", id],
+    queryFn: async () => {
+      const now = new Date();
+      const { data, error } = await supabase
+        .from("cached_reports")
+        .select("*")
+        .eq("project_id", id!)
+        .eq("report_year", now.getFullYear())
+        .eq("report_month", now.getMonth())
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!id,
+  });
 
   const [editName, setEditName] = useState("");
   const [editUrl, setEditUrl] = useState("");
@@ -76,6 +92,7 @@ const ProjectDetail = () => {
   const [editSeoSpecialistId, setEditSeoSpecialistId] = useState("");
   const [editAccountManagerId, setEditAccountManagerId] = useState("");
   const [editClientEmail, setEditClientEmail] = useState("");
+  const [editShareExpiry, setEditShareExpiry] = useState("");
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -89,6 +106,7 @@ const ProjectDetail = () => {
       setEditSeoSpecialistId((project as any).seo_specialist_id || "");
       setEditAccountManagerId((project as any).account_manager_id || "");
       setEditClientEmail(project.client_email || "");
+      setEditShareExpiry((project as any).share_link_expires_at ? new Date((project as any).share_link_expires_at).toISOString().slice(0, 10) : "");
       setLogoPreview(project.logo_url || null);
       setInitialized(true);
     }
@@ -107,35 +125,46 @@ const ProjectDetail = () => {
     onError: (err: Error) => toast.error(err.message),
   });
 
+  const saveAiSummary = useMutation({
+    mutationFn: async (summary: { happened: string; why: string; recommendation: string }) => {
+      const now = new Date();
+      const reportData = { ai_summary: summary };
+      const existing = cachedReport;
+      if (existing) {
+        const merged = { ...(typeof existing.report_data === 'object' && existing.report_data ? existing.report_data : {}), ai_summary: summary };
+        const { error } = await supabase.from("cached_reports").update({ report_data: merged as any }).eq("id", existing.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("cached_reports").insert({
+          project_id: id!,
+          report_year: now.getFullYear(),
+          report_month: now.getMonth(),
+          report_data: reportData as any,
+        });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cached_report", id] });
+      toast.success(t("aiInsights.saved"));
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     if (!file.type.startsWith("image/")) {
       toast.error(t("project.settingsTab.logoError"));
       return;
     }
-
     setUploading(true);
     const ext = file.name.split(".").pop();
     const filePath = `${id}/${Date.now()}.${ext}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("project-logos")
-      .upload(filePath, file, { upsert: true });
-
-    if (uploadError) {
-      toast.error(uploadError.message);
-      setUploading(false);
-      return;
-    }
-
-    const { data: publicUrl } = supabase.storage
-      .from("project-logos")
-      .getPublicUrl(filePath);
-
+    const { error: uploadError } = await supabase.storage.from("project-logos").upload(filePath, file, { upsert: true });
+    if (uploadError) { toast.error(uploadError.message); setUploading(false); return; }
+    const { data: publicUrl } = supabase.storage.from("project-logos").getPublicUrl(filePath);
     setLogoPreview(publicUrl.publicUrl);
-
     await supabase.from("projects").update({ logo_url: publicUrl.publicUrl }).eq("id", id!);
     queryClient.invalidateQueries({ queryKey: ["project", id] });
     toast.success(t("project.settingsTab.logoUploaded"));
@@ -160,6 +189,7 @@ const ProjectDetail = () => {
       seo_specialist_id: editSeoSpecialistId || null,
       account_manager_id: editAccountManagerId || null,
       client_email: editClientEmail,
+      share_link_expires_at: editShareExpiry ? new Date(editShareExpiry).toISOString() : null,
     });
   };
 
@@ -172,6 +202,10 @@ const ProjectDetail = () => {
 
   const isConnected = (serviceName: string) =>
     integrations.some((i) => i.service_name === serviceName && i.connected);
+
+  const aiSummary = cachedReport?.report_data && typeof cachedReport.report_data === 'object' && 'ai_summary' in (cachedReport.report_data as any)
+    ? (cachedReport.report_data as any).ai_summary
+    : undefined;
 
   if (isLoading || !project) {
     return (
@@ -209,9 +243,9 @@ const ProjectDetail = () => {
             }
           />
 
-          <main className="flex-1 p-6 lg:p-8">
+          <main className="flex-1 p-4 sm:p-6 lg:p-8 pb-20 md:pb-8">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-              <TabsList className="bg-muted/60">
+              <TabsList className="bg-muted/60 hidden md:inline-flex">
                 <TabsTrigger value="overview">{t("project.tabs.overview")}</TabsTrigger>
                 <TabsTrigger value="analytics">{t("project.tabs.analytics")}</TabsTrigger>
                 <TabsTrigger value="worklog">{t("project.tabs.worklog")}</TabsTrigger>
@@ -220,16 +254,25 @@ const ProjectDetail = () => {
               </TabsList>
 
               <TabsContent value="overview">
-                <div className="grid gap-6 lg:grid-cols-2">
-                  {isConnected("yandexMetrika") && <MetrikaWidget />}
-                  {isConnected("yandexWebmaster") && <WebmasterWidget />}
-                  {isConnected("googleSearchConsole") && <GSCWidget />}
-                  {isConnected("topvisor") && <TopvisorWidget />}
-                  {integrations.length === 0 || !integrations.some((i) => i.connected) ? (
-                    <div className="lg:col-span-2 text-center py-16">
-                      <p className="text-muted-foreground">{t("integrations.noConnected")}</p>
-                    </div>
-                  ) : null}
+                <div className="space-y-6">
+                  {/* AI Insights Block */}
+                  <AiInsightsBlock
+                    summary={aiSummary}
+                    isAdmin={true}
+                    onSave={(summary) => saveAiSummary.mutate(summary)}
+                  />
+
+                  <div className="grid gap-6 lg:grid-cols-2">
+                    {isConnected("yandexMetrika") && <MetrikaWidget />}
+                    {isConnected("yandexWebmaster") && <WebmasterWidget />}
+                    {isConnected("googleSearchConsole") && <GSCWidget />}
+                    {isConnected("topvisor") && <TopvisorWidget />}
+                    {integrations.length === 0 || !integrations.some((i) => i.connected) ? (
+                      <div className="lg:col-span-2 text-center py-16">
+                        <p className="text-muted-foreground">{t("integrations.noConnected")}</p>
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
               </TabsContent>
 
@@ -347,13 +390,30 @@ const ProjectDetail = () => {
                   </Button>
 
                   {/* Share link */}
-                  <div className="border-t border-border pt-6 space-y-3">
-                    <h3 className="text-sm font-semibold text-foreground">{t("project.shareLink")}</h3>
+                  <div className="border-t border-border pt-6 space-y-4">
+                    <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                      <Link2 className="h-4 w-4" />
+                      {t("project.shareLink")}
+                    </h3>
                     <div className="flex gap-2">
                       <Input readOnly value={project.share_token ? `${window.location.origin}/share/${project.share_token}` : ""} className="text-xs" />
                       <Button variant="outline" size="icon" onClick={handleCopyShareLink}>
                         <Copy className="h-4 w-4" />
                       </Button>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-1.5 text-xs">
+                        <Calendar className="h-3.5 w-3.5" />
+                        {t("project.shareLinkExpiry")}
+                      </Label>
+                      <Input
+                        type="date"
+                        value={editShareExpiry}
+                        onChange={(e) => setEditShareExpiry(e.target.value)}
+                        className="max-w-[200px] h-8 text-xs"
+                        min={new Date().toISOString().slice(0, 10)}
+                      />
+                      <p className="text-[11px] text-muted-foreground">{t("project.shareLinkExpiryHint")}</p>
                     </div>
                   </div>
                 </div>
@@ -361,6 +421,9 @@ const ProjectDetail = () => {
             </Tabs>
           </main>
         </div>
+
+        {/* Mobile Bottom Nav */}
+        <MobileBottomNav activeTab={activeTab} onTabChange={setActiveTab} />
       </div>
     </SidebarProvider>
   );
