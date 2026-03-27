@@ -61,12 +61,16 @@ function ChangeIndicator({ value }: { value: number }) {
 }
 
 export function DashboardTab({
-  projectId, projectName, dateFrom, dateTo, compDateFrom, compDateTo,
-  showComparison, onSwitchTab,
+  projectId, projectName, onSwitchTab,
 }: DashboardTabProps) {
   const { t, i18n } = useTranslation();
   const locale = i18n.language === "ru" ? ru : enUS;
   const contentRef = useRef<HTMLDivElement>(null);
+  const { appliedRange, appliedCompRange, showComparison } = useDateRange();
+  const dateFrom = format(appliedRange.from, "yyyy-MM-dd");
+  const dateTo = format(appliedRange.to, "yyyy-MM-dd");
+  const compDateFrom = format(appliedCompRange.from, "yyyy-MM-dd");
+  const compDateTo = format(appliedCompRange.to, "yyyy-MM-dd");
 
   // Fetch metrika stats
   const { data: allStats = [], isLoading } = useQuery({
