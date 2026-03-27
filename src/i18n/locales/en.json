@@ -339,6 +339,14 @@
     "saveKeys": "Save Keys",
     "keysSaved": "Keys saved"
   },
+  "comparison": {
+    "periodA": "Period A",
+    "periodB": "Period B",
+    "a": "A",
+    "b": "B",
+    "enable": "Comparison",
+    "presets": "Presets"
+  },
   "common": {
     "save": "Save",
     "cancel": "Cancel",
