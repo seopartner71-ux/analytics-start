@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,11 +23,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Globe, LogOut, Sun, Moon, Plus, Pencil, Trash2, User, Search, FolderKanban } from "lucide-react";
+import { Plus, Pencil, Trash2, User, FolderKanban } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTheme } from "@/contexts/ThemeContext";
 
 interface TeamMember {
   id: string;
@@ -38,9 +38,8 @@ interface TeamMember {
 }
 
 const Team = () => {
-  const { t, i18n } = useTranslation();
-  const { signOut, user } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { t } = useTranslation();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
@@ -48,8 +47,6 @@ const Team = () => {
   const [formEmail, setFormEmail] = useState("");
   const [formPhone, setFormPhone] = useState("");
   const [formRole, setFormRole] = useState("seo");
-
-  const toggleLang = () => i18n.changeLanguage(i18n.language === "ru" ? "en" : "ru");
 
   const { data: members = [], isLoading } = useQuery({
     queryKey: ["team_members"],
@@ -148,25 +145,7 @@ const Team = () => {
       <div className="min-h-screen flex w-full">
         <AppSidebar />
         <div className="flex-1 flex flex-col">
-          <header className="h-14 flex items-center justify-between border-b border-border/60 px-4 bg-card">
-            <div className="flex items-center">
-              <SidebarTrigger className="mr-4" />
-              <span className="text-sm font-medium text-muted-foreground">StatPulse</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" onClick={toggleTheme} className="h-8 w-8">
-                {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-              </Button>
-              <Button variant="ghost" size="sm" onClick={toggleLang} className="gap-1.5 text-xs">
-                <Globe className="h-3.5 w-3.5" />
-                {i18n.language === "ru" ? "EN" : "RU"}
-              </Button>
-              <Button variant="ghost" size="sm" onClick={signOut} className="gap-1.5 text-xs text-muted-foreground">
-                <LogOut className="h-3.5 w-3.5" />
-                {t("auth.logout")}
-              </Button>
-            </div>
-          </header>
+          <PageHeader />
 
           <main className="flex-1 p-6 lg:p-8">
             <div className="flex items-center justify-between mb-6">
