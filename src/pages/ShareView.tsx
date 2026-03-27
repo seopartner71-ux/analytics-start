@@ -1,14 +1,17 @@
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
+import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   TrendingUp, TrendingDown, CheckCircle2, ExternalLink, Globe, BarChart3,
+  Sparkles, AlertTriangle,
 } from "lucide-react";
 import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart,
 } from "recharts";
+import { ArtifactCard } from "@/components/project/ArtifactCard";
 import { supabase } from "@/integrations/supabase/client";
 import { trafficData, kpiData } from "@/data/projects";
 
@@ -38,6 +41,23 @@ const ShareView = () => {
     enabled: !!project?.id,
   });
 
+  const { data: cachedReport } = useQuery({
+    queryKey: ["shared-cached-report", project?.id],
+    queryFn: async () => {
+      const now = new Date();
+      const { data, error } = await supabase
+        .from("cached_reports")
+        .select("*")
+        .eq("project_id", project!.id)
+        .eq("report_year", now.getFullYear())
+        .eq("report_month", now.getMonth())
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!project?.id,
+  });
+
   const currentMonth = new Date().getMonth();
   const monthName = t(`publicReport.months.${currentMonth}`);
   const completedTasks = workLogs.filter((wl) => wl.status === "done");
@@ -53,6 +73,10 @@ const ShareView = () => {
     if (idx === 1 || idx === 3) return change < 0;
     return change > 0;
   };
+
+  const aiSummary = cachedReport?.report_data && typeof cachedReport.report_data === 'object' && 'ai_summary' in (cachedReport.report_data as any)
+    ? (cachedReport.report_data as any).ai_summary
+    : null;
 
   if (loadingProject) {
     return (
@@ -70,62 +94,145 @@ const ShareView = () => {
     );
   }
 
+  // Check link expiry
+  const expiresAt = (project as any).share_link_expires_at;
+  if (expiresAt && new Date(expiresAt) < new Date()) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-3">
+          <AlertTriangle className="h-12 w-12 text-warning mx-auto" />
+          <h2 className="text-xl font-semibold text-foreground">{t("publicReport.expired")}</h2>
+          <p className="text-muted-foreground max-w-md">{t("publicReport.expiredDesc")}</p>
+        </div>
+      </div>
+    );
+  }
+
+  const aiSections = aiSummary ? [
+    { key: "happened", icon: "📊", label: t("aiInsights.happened") },
+    { key: "why", icon: "🔍", label: t("aiInsights.why") },
+    { key: "recommendation", icon: "💡", label: t("aiInsights.recommendation") },
+  ] : [];
+
   return (
     <div className="min-h-screen bg-background">
-      <div className="fixed top-4 right-4 z-50">
-        <Button variant="outline" size="sm" onClick={toggleLang} className="gap-1.5 bg-card shadow-md text-xs">
-          <Globe className="h-3.5 w-3.5" />
-          {i18n.language === "ru" ? "EN" : "RU"}
-        </Button>
+      {/* Sticky header */}
+      <div className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border/40">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            {project.logo_url ? (
+              <img src={project.logo_url} alt={project.name} className="h-7 w-7 rounded object-cover" />
+            ) : (
+              <BarChart3 className="h-5 w-5 text-primary" />
+            )}
+            <span className="text-sm font-medium text-foreground truncate">{project.name}</span>
+            <span className="text-xs text-muted-foreground hidden sm:inline">• {monthName}</span>
+          </div>
+          <Button variant="outline" size="sm" onClick={toggleLang} className="gap-1.5 text-xs h-8">
+            <Globe className="h-3.5 w-3.5" />
+            {i18n.language === "ru" ? "EN" : "RU"}
+          </Button>
+        </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 py-10 sm:px-6 lg:px-8">
+      <div className="max-w-5xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 mb-4">
-            <BarChart3 className="h-6 w-6 text-primary" />
-            <span className="text-sm font-medium text-muted-foreground">StatPulse</span>
-          </div>
-          <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-primary text-primary-foreground text-2xl font-bold mb-4 shadow-lg">
-            {project.name.slice(0, 2).toUpperCase()}
-          </div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground mb-2">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-10"
+        >
+          {project.logo_url ? (
+            <img src={project.logo_url} alt={project.name} className="h-20 w-20 rounded-2xl object-cover mx-auto mb-4 shadow-lg" />
+          ) : (
+            <div className="inline-flex h-20 w-20 items-center justify-center rounded-2xl bg-primary text-primary-foreground text-2xl font-bold mb-4 shadow-lg">
+              {project.name.slice(0, 2).toUpperCase()}
+            </div>
+          )}
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground mb-2">
             {t("publicReport.title", { month: monthName })}
           </h1>
-          <p className="text-lg text-muted-foreground">{project.name} — {project.url}</p>
-        </div>
+          <p className="text-muted-foreground">{project.name}{project.url ? ` — ${project.url}` : ""}</p>
+        </motion.div>
+
+        {/* AI Insights (read-only) */}
+        {aiSummary && (aiSummary.happened || aiSummary.why || aiSummary.recommendation) && (
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="mb-10"
+          >
+            <div className="relative rounded-xl border border-primary/20 overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/8 via-purple-500/5 to-primary/8" />
+              <div className="absolute inset-0 bg-card/60 backdrop-blur-sm" />
+              <div className="relative p-5 sm:p-6">
+                <div className="flex items-center gap-2.5 mb-4">
+                  <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-purple-500 text-white">
+                    <Sparkles className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground">{t("aiInsights.title")}</h3>
+                    <p className="text-[11px] text-muted-foreground">{t("aiInsights.subtitle")}</p>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  {aiSections.map((s, i) =>
+                    aiSummary[s.key] ? (
+                      <motion.div
+                        key={s.key}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.2 + i * 0.15 }}
+                        className="flex gap-3"
+                      >
+                        <span className="text-base mt-0.5 shrink-0">{s.icon}</span>
+                        <div>
+                          <p className="text-xs font-semibold text-muted-foreground mb-0.5">{s.label}</p>
+                          <p className="text-sm text-foreground leading-relaxed">{aiSummary[s.key]}</p>
+                        </div>
+                      </motion.div>
+                    ) : null
+                  )}
+                </div>
+              </div>
+            </div>
+          </motion.section>
+        )}
 
         {/* KPIs */}
-        <section className="mb-12">
+        <section className="mb-10">
           <h2 className="text-xl font-semibold text-foreground mb-5">{t("publicReport.kpi.title")}</h2>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {kpis.map((kpi, i) => {
               const positive = isPositive(kpi.change, i);
               return (
-                <Card key={i} className="border-border/60">
-                  <CardContent className="p-5">
-                    <p className="text-sm text-muted-foreground mb-1">{kpi.label}</p>
-                    <p className="text-3xl font-bold text-foreground">{kpi.value}{kpi.suffix}</p>
-                    <div className={`flex items-center gap-1 mt-2 text-sm font-medium ${positive ? "text-[hsl(var(--success))]" : "text-destructive"}`}>
-                      {positive ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-                      <span>{Math.abs(kpi.change)}%</span>
-                      <span className="text-xs font-normal text-muted-foreground ml-1">
-                        {positive ? t("publicReport.growth") : t("publicReport.decline")}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
+                <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 * i }}>
+                  <Card className="border-border/60">
+                    <CardContent className="p-4 sm:p-5">
+                      <p className="text-xs sm:text-sm text-muted-foreground mb-1">{kpi.label}</p>
+                      <p className="text-2xl sm:text-3xl font-bold text-foreground">{kpi.value}{kpi.suffix}</p>
+                      <div className={`flex items-center gap-1 mt-2 text-sm font-medium ${positive ? "text-success" : "text-destructive"}`}>
+                        {positive ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+                        <span>{Math.abs(kpi.change)}%</span>
+                        <span className="text-xs font-normal text-muted-foreground ml-1 hidden sm:inline">
+                          {positive ? t("publicReport.growth") : t("publicReport.decline")}
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
               );
             })}
           </div>
         </section>
 
         {/* Traffic Chart */}
-        <section className="mb-12">
+        <section className="mb-10">
           <h2 className="text-xl font-semibold text-foreground mb-5">{t("publicReport.trafficDynamics")}</h2>
           <Card className="border-border/60">
-            <CardContent className="p-6">
-              <ResponsiveContainer width="100%" height={320}>
+            <CardContent className="p-4 sm:p-6">
+              <ResponsiveContainer width="100%" height={280}>
                 <AreaChart data={trafficData}>
                   <defs>
                     <linearGradient id="shareGrad" x1="0" y1="0" x2="0" y2="1">
@@ -144,49 +251,35 @@ const ShareView = () => {
           </Card>
         </section>
 
-        {/* Completed Work */}
+        {/* Completed Work with Artifact Cards */}
         {completedTasks.length > 0 && (
-          <section className="mb-12">
+          <section className="mb-10">
             <h2 className="text-xl font-semibold text-foreground mb-5">{t("publicReport.completedWork")}</h2>
             <div className="space-y-2">
               {completedTasks.map((task) => (
-                <div key={task.id} className="flex items-center gap-3 rounded-lg border border-border/60 bg-card px-4 py-3">
-                  <CheckCircle2 className="h-5 w-5 text-[hsl(var(--success))] shrink-0" />
+                <div key={task.id} className="flex items-center gap-3 rounded-lg border border-border/60 bg-card px-4 py-3 flex-wrap sm:flex-nowrap">
+                  <CheckCircle2 className="h-5 w-5 text-success shrink-0" />
                   <span className="flex-1 text-sm text-foreground">{task.description}</span>
-                  {task.link_url && (
-                    <a href={task.link_url} target="_blank" rel="noopener noreferrer">
-                      <Button variant="outline" size="sm" className="gap-1.5 text-xs">
-                        <ExternalLink className="h-3 w-3" />
-                        {t("publicReport.viewResult")}
-                      </Button>
-                    </a>
-                  )}
+                  {task.link_url && <ArtifactCard url={task.link_url} />}
                 </div>
               ))}
             </div>
           </section>
         )}
 
-        {/* All Work Logs (read-only) */}
+        {/* All Work Logs */}
         {workLogs.length > 0 && (
-          <section className="mb-12">
+          <section className="mb-10">
             <h2 className="text-xl font-semibold text-foreground mb-5">{t("project.worklog.title")}</h2>
             <div className="space-y-2">
               {workLogs.map((task) => (
-                <div key={task.id} className="flex items-center gap-3 rounded-lg border border-border/60 bg-card px-4 py-3">
-                  <CheckCircle2 className={`h-5 w-5 shrink-0 ${task.status === "done" ? "text-[hsl(var(--success))]" : "text-muted-foreground"}`} />
-                  <div className="flex-1">
+                <div key={task.id} className="flex items-center gap-3 rounded-lg border border-border/60 bg-card px-4 py-3 flex-wrap sm:flex-nowrap">
+                  <CheckCircle2 className={`h-5 w-5 shrink-0 ${task.status === "done" ? "text-success" : "text-muted-foreground"}`} />
+                  <div className="flex-1 min-w-0">
                     <span className="text-sm text-foreground">{task.description}</span>
                     <span className="text-xs text-muted-foreground ml-2">{task.task_date}</span>
                   </div>
-                  {task.link_url && (
-                    <a href={task.link_url} target="_blank" rel="noopener noreferrer">
-                      <Button variant="outline" size="sm" className="gap-1.5 text-xs">
-                        <ExternalLink className="h-3 w-3" />
-                        {t("publicReport.viewResult")}
-                      </Button>
-                    </a>
-                  )}
+                  {task.link_url && <ArtifactCard url={task.link_url} />}
                 </div>
               ))}
             </div>
