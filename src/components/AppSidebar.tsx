@@ -1,6 +1,7 @@
 import { FolderKanban, Users, Settings, BarChart3 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Sidebar,
   SidebarContent,
@@ -13,15 +14,15 @@ import {
 } from "@/components/ui/sidebar";
 
 const navItems = [
-  { title: "Проекты", url: "/", icon: FolderKanban },
-  { title: "Команда", url: "/team", icon: Users },
-  { title: "Настройки", url: "/settings", icon: Settings },
+  { titleKey: "nav.projects", url: "/", icon: FolderKanban },
+  { titleKey: "nav.team", url: "/team", icon: Users },
+  { titleKey: "nav.settings", url: "/settings", icon: Settings },
 ];
 
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
-  const location = useLocation();
+  const { t } = useTranslation();
 
   return (
     <Sidebar collapsible="icon">
@@ -39,7 +40,7 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {navItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
+                <SidebarMenuItem key={item.titleKey}>
                   <SidebarMenuButton asChild>
                     <NavLink
                       to={item.url}
@@ -48,7 +49,7 @@ export function AppSidebar() {
                       activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
                     >
                       <item.icon className="mr-2 h-4 w-4 shrink-0" />
-                      {!collapsed && <span>{item.title}</span>}
+                      {!collapsed && <span>{t(item.titleKey)}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
