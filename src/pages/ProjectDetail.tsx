@@ -9,27 +9,32 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ChevronRight, Globe } from "lucide-react";
 import { toast } from "sonner";
-import { OverviewTab } from "@/components/project/OverviewTab";
+import { IntegrationsTab } from "@/components/project/IntegrationsTab";
 import { AnalyticsTab } from "@/components/project/AnalyticsTab";
 import { WorkLogTab } from "@/components/project/WorkLogTab";
-import { demoProjects, type ProjectData, type WorkTask } from "@/data/projects";
+import { MetrikaWidget } from "@/components/widgets/MetrikaWidget";
+import { WebmasterWidget } from "@/components/widgets/WebmasterWidget";
+import { GSCWidget } from "@/components/widgets/GSCWidget";
+import { TopvisorWidget } from "@/components/widgets/TopvisorWidget";
+import { demoProjects, type ProjectData, type WorkTask, type Integration } from "@/data/projects";
 
 const ProjectDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { t, i18n } = useTranslation();
 
   const initial = demoProjects.find((p) => p.id === id) || demoProjects[0];
-  const [project, setProject] = useState<ProjectData>({ ...initial, tasks: [...initial.tasks] });
+  const [project, setProject] = useState<ProjectData>({
+    ...initial,
+    tasks: [...initial.tasks],
+    integrations: [...initial.integrations],
+  });
   const [editName, setEditName] = useState(project.name);
   const [editUrl, setEditUrl] = useState(project.url);
 
   const toggleLang = () => i18n.changeLanguage(i18n.language === "ru" ? "en" : "ru");
 
-  const handleToggleService = (key: string) => {
-    setProject((prev) => ({
-      ...prev,
-      services: { ...prev.services, [key]: !prev.services[key as keyof typeof prev.services] },
-    }));
+  const handleIntegrationsChange = (integrations: Integration[]) => {
+    setProject((prev) => ({ ...prev, integrations }));
   };
 
   const handleTasksChange = (tasks: WorkTask[]) => {
@@ -40,6 +45,8 @@ const ProjectDetail = () => {
     setProject((prev) => ({ ...prev, name: editName, url: editUrl }));
     toast.success(t("project.settingsTab.saved"));
   };
+
+  const isConnected = (key: string) => project.integrations.find((i) => i.key === key)?.connected ?? false;
 
   return (
     <SidebarProvider>
@@ -58,7 +65,6 @@ const ProjectDetail = () => {
           </header>
 
           <main className="flex-1 p-6 lg:p-8">
-            {/* Breadcrumbs */}
             <nav className="flex items-center gap-1.5 text-sm text-muted-foreground mb-6">
               <Link to="/" className="hover:text-foreground transition-colors">
                 {t("project.breadcrumbProjects")}
@@ -72,11 +78,22 @@ const ProjectDetail = () => {
                 <TabsTrigger value="overview">{t("project.tabs.overview")}</TabsTrigger>
                 <TabsTrigger value="analytics">{t("project.tabs.analytics")}</TabsTrigger>
                 <TabsTrigger value="worklog">{t("project.tabs.worklog")}</TabsTrigger>
+                <TabsTrigger value="integrations">{t("project.tabs.integrations")}</TabsTrigger>
                 <TabsTrigger value="settings">{t("project.tabs.settings")}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="overview">
-                <OverviewTab services={project.services} onToggleService={handleToggleService} />
+                <div className="grid gap-6 lg:grid-cols-2">
+                  {isConnected("yandexMetrika") && <MetrikaWidget />}
+                  {isConnected("yandexWebmaster") && <WebmasterWidget />}
+                  {isConnected("googleSearchConsole") && <GSCWidget />}
+                  {isConnected("topvisor") && <TopvisorWidget />}
+                  {!project.integrations.some((i) => i.connected) && (
+                    <div className="lg:col-span-2 text-center py-16">
+                      <p className="text-muted-foreground">{t("integrations.noConnected")}</p>
+                    </div>
+                  )}
+                </div>
               </TabsContent>
 
               <TabsContent value="analytics">
@@ -85,6 +102,10 @@ const ProjectDetail = () => {
 
               <TabsContent value="worklog">
                 <WorkLogTab tasks={project.tasks} onTasksChange={handleTasksChange} />
+              </TabsContent>
+
+              <TabsContent value="integrations">
+                <IntegrationsTab integrations={project.integrations} onIntegrationsChange={handleIntegrationsChange} />
               </TabsContent>
 
               <TabsContent value="settings">
