@@ -189,6 +189,26 @@
       "8": "September", "9": "October", "10": "November", "11": "December"
     }
   },
+  "team": {
+    "title": "Team",
+    "subtitle": "Manage specialists and account managers",
+    "addMember": "Add Member",
+    "editMember": "Edit Member",
+    "nameLabel": "Name",
+    "namePlaceholder": "John Doe",
+    "roleLabel": "Role",
+    "roleSeo": "SEO Specialist",
+    "roleAm": "Account Manager",
+    "phoneLabel": "Phone",
+    "linkedProjects": "Linked Projects",
+    "noMembers": "No team members yet. Add your first one!",
+    "added": "Member added",
+    "updated": "Member updated",
+    "deleted": "Member deleted",
+    "selectSeo": "Select SEO Specialist",
+    "selectAm": "Select Account Manager",
+    "notAssigned": "Not assigned"
+  },
   "common": {
     "save": "Save",
     "cancel": "Cancel",
