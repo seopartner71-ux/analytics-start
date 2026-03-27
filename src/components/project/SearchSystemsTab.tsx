@@ -512,7 +512,7 @@ export function SearchSystemsTab({ projectId, projectName }: SearchSystemsTabPro
   const isRealData = !!realData?.phrases;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" ref={contentRef}>
       {/* Data source indicator */}
       {!isRealData && (
         <div className="text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2 flex items-center gap-2">

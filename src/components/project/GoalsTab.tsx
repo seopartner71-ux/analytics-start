@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { format, subDays, subYears, differenceInDays, parseISO } from "date-fns";
@@ -66,9 +66,10 @@ function ChangeIndicator({ value, className }: { value: number; className?: stri
   );
 }
 
-export function GoalsTab({ projectId }: GoalsTabProps) {
+export function GoalsTab({ projectId, projectName }: GoalsTabProps) {
   const { t, i18n } = useTranslation();
   const locale = i18n.language === "ru" ? ru : enUS;
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const today = new Date();
   const [range, setRange] = useState<DateRange>({ from: subDays(today, 30), to: today });

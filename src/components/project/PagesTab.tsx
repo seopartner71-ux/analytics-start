@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { format, subDays, subYears, differenceInDays } from "date-fns";
@@ -75,9 +75,10 @@ const CHART_COLORS = [
   "hsl(var(--chart-4))", "hsl(var(--chart-5))",
 ];
 
-export function PagesTab({ projectId }: PagesTabProps) {
+export function PagesTab({ projectId, projectName }: PagesTabProps) {
   const { t, i18n } = useTranslation();
   const locale = i18n.language === "ru" ? ru : enUS;
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const today = new Date();
   const [range, setRange] = useState<DateRange>({ from: subDays(today, 30), to: today });
