@@ -4,9 +4,10 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, ExternalLink, GripVertical, CheckCircle2, Circle } from "lucide-react";
+import { Plus, Trash2, GripVertical, CheckCircle2, Circle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { ArtifactCard } from "./ArtifactCard";
 import type { Tables } from "@/integrations/supabase/types";
 
 interface WorkLogTabProps {
@@ -63,7 +64,6 @@ export function WorkLogTab({ projectId, tasks, isAdmin }: WorkLogTabProps) {
     if (e.key === "Enter") addTask.mutate();
   };
 
-  // Group by month
   const grouped = tasks.reduce<Record<string, Tables<"work_logs">[]>>((acc, task) => {
     const d = new Date(task.task_date);
     const key = `${d.getFullYear()}-${d.getMonth()}`;
@@ -147,14 +147,10 @@ export function WorkLogTab({ projectId, tasks, isAdmin }: WorkLogTabProps) {
                         : "bg-warning/10 text-warning border-warning/20 hover:bg-warning/10"
                     }`}
                   >
-                    {task.status === "done" ? "Completed" : "In Progress"}
+                    {task.status === "done" ? t("project.worklog.completed") : t("project.worklog.inProgress")}
                   </Badge>
                   {task.link_url && (
-                    <a href={task.link_url} target="_blank" rel="noopener noreferrer">
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary">
-                        <ExternalLink className="h-3.5 w-3.5" />
-                      </Button>
-                    </a>
+                    <ArtifactCard url={task.link_url} />
                   )}
                   {isAdmin && (
                     <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => deleteTask.mutate(task.id)}>
