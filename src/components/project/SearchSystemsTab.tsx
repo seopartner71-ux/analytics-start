@@ -455,8 +455,26 @@ export function SearchSystemsTab({ projectId }: SearchSystemsTabProps) {
 
   const engineLabels: Record<string, string> = { yandex: "Яндекс", google: "Google", other: t("searchSystems.otherEngines") };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  const isRealData = !!realData?.phrases;
+
   return (
     <div className="space-y-6">
+      {/* Data source indicator */}
+      {!isRealData && (
+        <div className="text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2 flex items-center gap-2">
+          <Globe className="h-3.5 w-3.5" />
+          {t("searchSystems.demoDataHint")}
+        </div>
+      )}
+
       {/* ── Comparison toggle ── */}
       <div className="flex items-center gap-3">
         <Switch id="ss-comp" checked={showComparison} onCheckedChange={setShowComparison} />
