@@ -300,8 +300,57 @@ type SortKey = "visits" | "visitors" | "bounce" | "depth" | "duration";
 
 /* ══════════════════════ COMPONENT ══════════════════════ */
 export function SearchSystemsTab({ projectId }: SearchSystemsTabProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const dateFnsLocale = i18n.language === "ru" ? ru : enUS;
+
+  const today = new Date();
+  const [range, setRange] = useState<{ from: Date; to: Date }>({ from: subDays(today, 30), to: today });
+  const [appliedRange, setAppliedRange] = useState(range);
   const [showComparison, setShowComparison] = useState(false);
+  const [compRange, setCompRange] = useState<{ from: Date; to: Date }>({ from: subYears(subDays(today, 30), 1), to: subYears(today, 1) });
+  const [appliedCompRange, setAppliedCompRange] = useState(compRange);
+  const [activePreset, setActivePreset] = useState<string>("30d");
+
+  const PRESETS = [
+    { key: "7d", days: 7 },
+    { key: "14d", days: 14 },
+    { key: "30d", days: 30 },
+    { key: "90d", days: 90 },
+  ] as const;
+
+  const handlePreset = (key: string, days: number) => {
+    const nr = { from: subDays(today, days), to: today };
+    setActivePreset(key);
+    setRange(nr);
+    setAppliedRange(nr);
+    const cr = { from: subYears(nr.from, 1), to: subYears(nr.to, 1) };
+    setCompRange(cr);
+    setAppliedCompRange(cr);
+  };
+
+  const handleCompPreset = (type: "previous" | "lastYear") => {
+    const days = differenceInDays(range.to, range.from);
+    const nr = type === "previous"
+      ? { from: subDays(range.from, days + 1), to: subDays(range.from, 1) }
+      : { from: subYears(range.from, 1), to: subYears(range.to, 1) };
+    setCompRange(nr);
+  };
+
+  const handleToggleComparison = (on: boolean) => {
+    setShowComparison(on);
+    if (on) {
+      const nr = { from: subYears(range.from, 1), to: subYears(range.to, 1) };
+      setCompRange(nr);
+      setAppliedCompRange(nr);
+    }
+  };
+
+  const handleApply = () => {
+    setAppliedRange({ ...range });
+    setActivePreset("");
+    if (showComparison) setAppliedCompRange({ ...compRange });
+    toast.success(t("project.analytics.applied", "Период применён"));
+  };
 
   // Fetch integration info for this project
   const { data: integration } = useQuery({
