@@ -138,6 +138,7 @@ export type Database = {
       projects: {
         Row: {
           account_manager: string | null
+          account_manager_id: string | null
           client_email: string | null
           created_at: string
           description: string | null
@@ -146,12 +147,14 @@ export type Database = {
           name: string
           owner_id: string
           seo_specialist: string | null
+          seo_specialist_id: string | null
           share_token: string | null
           updated_at: string
           url: string | null
         }
         Insert: {
           account_manager?: string | null
+          account_manager_id?: string | null
           client_email?: string | null
           created_at?: string
           description?: string | null
@@ -160,12 +163,14 @@ export type Database = {
           name: string
           owner_id: string
           seo_specialist?: string | null
+          seo_specialist_id?: string | null
           share_token?: string | null
           updated_at?: string
           url?: string | null
         }
         Update: {
           account_manager?: string | null
+          account_manager_id?: string | null
           client_email?: string | null
           created_at?: string
           description?: string | null
@@ -174,9 +179,58 @@ export type Database = {
           name?: string
           owner_id?: string
           seo_specialist?: string | null
+          seo_specialist_id?: string | null
           share_token?: string | null
           updated_at?: string
           url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_account_manager_id_fkey"
+            columns: ["account_manager_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_seo_specialist_id_fkey"
+            columns: ["seo_specialist_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_members: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string
+          id: string
+          owner_id: string
+          phone: string | null
+          role: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name: string
+          id?: string
+          owner_id: string
+          phone?: string | null
+          role?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          owner_id?: string
+          phone?: string | null
+          role?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -251,6 +305,7 @@ export type Database = {
         Args: { p_share_token: string }
         Returns: {
           account_manager: string | null
+          account_manager_id: string | null
           client_email: string | null
           created_at: string
           description: string | null
@@ -259,6 +314,7 @@ export type Database = {
           name: string
           owner_id: string
           seo_specialist: string | null
+          seo_specialist_id: string | null
           share_token: string | null
           updated_at: string
           url: string | null
