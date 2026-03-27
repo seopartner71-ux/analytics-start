@@ -1,0 +1,1 @@
+ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS share_link_expires_at timestamptz DEFAULT NULL;

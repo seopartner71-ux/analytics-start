@@ -148,6 +148,7 @@ export type Database = {
           owner_id: string
           seo_specialist: string | null
           seo_specialist_id: string | null
+          share_link_expires_at: string | null
           share_token: string | null
           updated_at: string
           url: string | null
@@ -164,6 +165,7 @@ export type Database = {
           owner_id: string
           seo_specialist?: string | null
           seo_specialist_id?: string | null
+          share_link_expires_at?: string | null
           share_token?: string | null
           updated_at?: string
           url?: string | null
@@ -180,6 +182,7 @@ export type Database = {
           owner_id?: string
           seo_specialist?: string | null
           seo_specialist_id?: string | null
+          share_link_expires_at?: string | null
           share_token?: string | null
           updated_at?: string
           url?: string | null
@@ -315,6 +318,7 @@ export type Database = {
           owner_id: string
           seo_specialist: string | null
           seo_specialist_id: string | null
+          share_link_expires_at: string | null
           share_token: string | null
           updated_at: string
           url: string | null
