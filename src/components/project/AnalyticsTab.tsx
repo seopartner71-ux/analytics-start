@@ -23,6 +23,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface AnalyticsTabProps {
   projectId: string;
+  onSwitchToGoals?: () => void;
 }
 
 type DateRange = { from: Date; to: Date };
@@ -97,7 +98,7 @@ function ChangeIndicator({ value, className }: { value: number; className?: stri
   );
 }
 
-export function AnalyticsTab({ projectId }: AnalyticsTabProps) {
+export function AnalyticsTab({ projectId, onSwitchToGoals }: AnalyticsTabProps) {
   const { t, i18n } = useTranslation();
   const locale = i18n.language === "ru" ? ru : enUS;
 
@@ -514,7 +515,7 @@ export function AnalyticsTab({ projectId }: AnalyticsTabProps) {
       )}
 
       {/* Goals Performance Module */}
-      <GoalsPerformance projectId={projectId} dateFrom={dateFromStr} dateTo={dateToStr} />
+      <GoalsPerformance projectId={projectId} dateFrom={dateFromStr} dateTo={dateToStr} onShowAllGoals={onSwitchToGoals} />
 
       {/* Summary stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
