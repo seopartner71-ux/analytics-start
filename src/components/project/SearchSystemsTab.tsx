@@ -97,69 +97,168 @@ interface TrendPoint {
   otherPrev?: number;
 }
 
-/* ── Demo data builder ── */
-function buildDemoData(comparison: boolean): { engines: EngineData[]; trend: TrendPoint[] } {
+/* ── Parse real Metrika API response into our data structures ── */
+function parseMetrikaData(raw: any): { engines: EngineData[]; trend: TrendPoint[] } {
+  const engineMap = new Map<string, { phrases: Phrase[]; visits: number; visitors: number; bounce: number; depth: number; duration: number }>();
+
+  // Parse phrases grouped by engine
+  const rows = raw?.phrases?.data || [];
+  for (const row of rows) {
+    const dims = row.dimensions || [];
+    const mets = row.metrics || [];
+    const engineName = dims[0]?.name || "Другие";
+    const phrase = dims[1]?.name || "(not set)";
+
+    if (!engineMap.has(engineName)) {
+      engineMap.set(engineName, { phrases: [], visits: 0, visitors: 0, bounce: 0, depth: 0, duration: 0 });
+    }
+    const entry = engineMap.get(engineName)!;
+    entry.phrases.push({
+      name: phrase,
+      visits: Math.round(mets[0] || 0),
+      visitors: Math.round(mets[1] || 0),
+      bounce: Math.round((mets[2] || 0) * 10) / 10,
+      depth: Math.round((mets[3] || 0) * 10) / 10,
+      duration: Math.round(mets[4] || 0),
+    });
+  }
+
+  // Engine-level totals from API
+  const engineRows = raw?.engines?.data || [];
+  for (const row of engineRows) {
+    const name = row.dimensions?.[0]?.name || "Другие";
+    if (engineMap.has(name)) {
+      const e = engineMap.get(name)!;
+      e.visits = Math.round(row.metrics?.[0] || 0);
+      e.visitors = Math.round(row.metrics?.[1] || 0);
+      e.bounce = Math.round((row.metrics?.[2] || 0) * 10) / 10;
+      e.depth = Math.round((row.metrics?.[3] || 0) * 10) / 10;
+      e.duration = Math.round(row.metrics?.[4] || 0);
+    }
+  }
+
+  const classifyEngine = (name: string): { key: string; label: string; icon: React.ReactNode } => {
+    const lower = name.toLowerCase();
+    if (lower.includes("yandex") || lower.includes("яндекс"))
+      return { key: "yandex", label: name, icon: <YandexIcon /> };
+    if (lower.includes("google"))
+      return { key: "google", label: name, icon: <GoogleIcon /> };
+    return { key: "other", label: name, icon: <Globe className="h-4 w-4 text-muted-foreground" /> };
+  };
+
+  // Group by our 3 buckets: yandex, google, other
+  const buckets = new Map<string, EngineData>();
+  for (const [engineName, data] of engineMap.entries()) {
+    const cls = classifyEngine(engineName);
+    if (!buckets.has(cls.key)) {
+      buckets.set(cls.key, {
+        engine: cls.key === "yandex" ? "Яндекс" : cls.key === "google" ? "Google" : "Другие",
+        key: cls.key,
+        icon: cls.icon,
+        visits: 0, visitors: 0, bounce: 0, depth: 0, duration: 0,
+        subChannels: [],
+      });
+    }
+    const bucket = buckets.get(cls.key)!;
+    bucket.subChannels.push({
+      name: engineName,
+      visits: data.visits || data.phrases.reduce((s, p) => s + p.visits, 0),
+      visitors: data.visitors || data.phrases.reduce((s, p) => s + p.visitors, 0),
+      bounce: data.bounce || (data.phrases.length ? +(data.phrases.reduce((s, p) => s + p.bounce, 0) / data.phrases.length).toFixed(1) : 0),
+      depth: data.depth || (data.phrases.length ? +(data.phrases.reduce((s, p) => s + p.depth, 0) / data.phrases.length).toFixed(1) : 0),
+      duration: data.duration || (data.phrases.length ? Math.round(data.phrases.reduce((s, p) => s + p.duration, 0) / data.phrases.length) : 0),
+      phrases: data.phrases,
+    });
+  }
+
+  // Aggregate bucket totals
+  const engines: EngineData[] = [];
+  for (const [, bucket] of buckets) {
+    bucket.visits = bucket.subChannels.reduce((s, c) => s + c.visits, 0);
+    bucket.visitors = bucket.subChannels.reduce((s, c) => s + c.visitors, 0);
+    bucket.bounce = bucket.subChannels.length ? +(bucket.subChannels.reduce((s, c) => s + c.bounce, 0) / bucket.subChannels.length).toFixed(1) : 0;
+    bucket.depth = bucket.subChannels.length ? +(bucket.subChannels.reduce((s, c) => s + c.depth, 0) / bucket.subChannels.length).toFixed(1) : 0;
+    bucket.duration = bucket.subChannels.length ? Math.round(bucket.subChannels.reduce((s, c) => s + c.duration, 0) / bucket.subChannels.length) : 0;
+    engines.push(bucket);
+  }
+  // Sort by visits desc
+  engines.sort((a, b) => b.visits - a.visits);
+
+  // Ensure all 3 buckets exist
+  for (const key of ENGINE_KEYS) {
+    if (!engines.find((e) => e.key === key)) {
+      engines.push({
+        engine: key === "yandex" ? "Яндекс" : key === "google" ? "Google" : "Другие",
+        key, icon: key === "yandex" ? <YandexIcon /> : key === "google" ? <GoogleIcon /> : <Globe className="h-4 w-4 text-muted-foreground" />,
+        visits: 0, visitors: 0, bounce: 0, depth: 0, duration: 0, subChannels: [],
+      });
+    }
+  }
+
+  // Parse trend
+  const trendRows = raw?.trend?.data || [];
+  const timeLabels = raw?.trend?.time_intervals || [];
+  const trendMap = new Map<string, Partial<TrendPoint>>();
+
+  for (const row of trendRows) {
+    const engineName = row.dimensions?.[0]?.name || "";
+    const cls = classifyEngine(engineName);
+    const dailyVisits: number[] = row.metrics?.[0] || [];
+    dailyVisits.forEach((v: number, i: number) => {
+      const dateLabel = timeLabels[i] ? format(new Date(timeLabels[i][0]), "dd.MM") : String(i);
+      if (!trendMap.has(dateLabel)) trendMap.set(dateLabel, { date: dateLabel, yandex: 0, google: 0, other: 0 });
+      const pt = trendMap.get(dateLabel)!;
+      (pt as any)[cls.key] = ((pt as any)[cls.key] || 0) + Math.round(v);
+    });
+  }
+
+  const trend: TrendPoint[] = Array.from(trendMap.values()).map((p) => ({
+    date: p.date!, yandex: p.yandex || 0, google: p.google || 0, other: p.other || 0,
+  }));
+
+  return { engines, trend };
+}
+
+/* ── Demo data fallback ── */
+function buildDemoData(): { engines: EngineData[]; trend: TrendPoint[] } {
   const rnd = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
-  const mkPrev = (v: number) => comparison ? Math.round(v * (0.7 + Math.random() * 0.6)) : undefined;
 
   const mkPhrases = (prefix: string, n: number): Phrase[] =>
-    Array.from({ length: n }, (_, i) => {
-      const visits = rnd(10, 800);
-      const bounce = rnd(15, 65);
-      const depth = +(rnd(10, 50) / 10).toFixed(1);
-      const duration = rnd(20, 400);
-      return {
-        name: `${prefix} запрос ${i + 1}`,
-        visits, visitors: rnd(8, 600), bounce, depth, duration,
-        prevVisits: mkPrev(visits), prevBounce: mkPrev(bounce), prevDepth: mkPrev(depth), prevDuration: mkPrev(duration),
-      };
-    });
+    Array.from({ length: n }, (_, i) => ({
+      name: `${prefix} запрос ${i + 1}`,
+      visits: rnd(10, 800), visitors: rnd(8, 600), bounce: rnd(15, 65),
+      depth: +(rnd(10, 50) / 10).toFixed(1), duration: rnd(20, 400),
+    }));
 
-  const mkSub = (name: string, phrases: Phrase[]): SubChannel => {
-    const visits = phrases.reduce((s, p) => s + p.visits, 0);
-    const bounce = +(phrases.reduce((s, p) => s + p.bounce, 0) / phrases.length).toFixed(1);
-    const depth = +(phrases.reduce((s, p) => s + p.depth, 0) / phrases.length).toFixed(1);
-    const duration = Math.round(phrases.reduce((s, p) => s + p.duration, 0) / phrases.length);
-    return {
-      name, visits, visitors: phrases.reduce((s, p) => s + p.visitors, 0), bounce, depth, duration,
-      prevVisits: mkPrev(visits), prevBounce: mkPrev(bounce), prevDepth: mkPrev(depth), prevDuration: mkPrev(duration),
-      phrases,
-    };
-  };
+  const mkSub = (name: string, phrases: Phrase[]): SubChannel => ({
+    name,
+    visits: phrases.reduce((s, p) => s + p.visits, 0),
+    visitors: phrases.reduce((s, p) => s + p.visitors, 0),
+    bounce: +(phrases.reduce((s, p) => s + p.bounce, 0) / phrases.length).toFixed(1),
+    depth: +(phrases.reduce((s, p) => s + p.depth, 0) / phrases.length).toFixed(1),
+    duration: Math.round(phrases.reduce((s, p) => s + p.duration, 0) / phrases.length),
+    phrases,
+  });
 
-  const mkEngine = (engine: string, key: string, icon: React.ReactNode, subs: SubChannel[]): EngineData => {
-    const visits = subs.reduce((s, c) => s + c.visits, 0);
-    const bounce = +(subs.reduce((s, c) => s + c.bounce, 0) / subs.length).toFixed(1);
-    const depth = +(subs.reduce((s, c) => s + c.depth, 0) / subs.length).toFixed(1);
-    const duration = Math.round(subs.reduce((s, c) => s + c.duration, 0) / subs.length);
-    return {
-      engine, key, icon, visits, visitors: subs.reduce((s, c) => s + c.visitors, 0), bounce, depth, duration,
-      prevVisits: mkPrev(visits), prevBounce: mkPrev(bounce), prevDepth: mkPrev(depth), prevDuration: mkPrev(duration),
-      subChannels: subs,
-    };
-  };
+  const mkEngine = (engine: string, key: string, icon: React.ReactNode, subs: SubChannel[]): EngineData => ({
+    engine, key, icon,
+    visits: subs.reduce((s, c) => s + c.visits, 0),
+    visitors: subs.reduce((s, c) => s + c.visitors, 0),
+    bounce: +(subs.reduce((s, c) => s + c.bounce, 0) / subs.length).toFixed(1),
+    depth: +(subs.reduce((s, c) => s + c.depth, 0) / subs.length).toFixed(1),
+    duration: Math.round(subs.reduce((s, c) => s + c.duration, 0) / subs.length),
+    subChannels: subs,
+  });
 
   const engines = [
-    mkEngine("Яндекс", "yandex", <YandexIcon />, [
-      mkSub("Яндекс: Поиск", mkPhrases("ya-search", 8)),
-      mkSub("Яндекс: Картинки", mkPhrases("ya-img", 4)),
-    ]),
-    mkEngine("Google", "google", <GoogleIcon />, [
-      mkSub("Google: Поиск", mkPhrases("g-search", 10)),
-      mkSub("Google: Картинки", mkPhrases("g-img", 3)),
-    ]),
-    mkEngine("Другие", "other", <Globe className="h-4 w-4 text-muted-foreground" />, [
-      mkSub("Bing", mkPhrases("bing", 3)),
-      mkSub("DuckDuckGo", mkPhrases("ddg", 2)),
-    ]),
+    mkEngine("Яндекс", "yandex", <YandexIcon />, [mkSub("Яндекс: Поиск", mkPhrases("ya-search", 8))]),
+    mkEngine("Google", "google", <GoogleIcon />, [mkSub("Google: Поиск", mkPhrases("g-search", 10))]),
+    mkEngine("Другие", "other", <Globe className="h-4 w-4 text-muted-foreground" />, [mkSub("Bing", mkPhrases("bing", 3))]),
   ];
 
   const trend: TrendPoint[] = Array.from({ length: 30 }, (_, i) => ({
     date: format(subDays(new Date(), 29 - i), "dd.MM"),
-    yandex: rnd(200, 600),
-    google: rnd(300, 800),
-    other: rnd(30, 150),
-    ...(comparison ? { yandexPrev: rnd(180, 550), googlePrev: rnd(250, 700), otherPrev: rnd(20, 120) } : {}),
+    yandex: rnd(200, 600), google: rnd(300, 800), other: rnd(30, 150),
   }));
 
   return { engines, trend };
