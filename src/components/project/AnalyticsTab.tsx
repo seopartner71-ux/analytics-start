@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  Legend, LineChart, Line,
+  Legend, LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
 } from "recharts";
 import { KpiCard } from "@/components/KpiCard";
 import { supabase } from "@/integrations/supabase/client";
@@ -159,6 +159,20 @@ export function AnalyticsTab({ projectId }: AnalyticsTabProps) {
   const pageDepth = latestStat?.page_depth || 0;
   const avgDuration = latestStat?.avg_duration_seconds || 0;
   const sparkData = filteredData.map((d) => ({ v: d.visits }));
+
+  // Traffic sources
+  const TRAFFIC_COLORS = [
+    "hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))",
+    "hsl(var(--chart-4))", "hsl(var(--chart-5))", "hsl(210 70% 50%)",
+    "hsl(340 65% 50%)", "hsl(160 60% 40%)",
+  ];
+
+  const trafficSourcesData = useMemo(() => {
+    if (!latestStat) return [];
+    const sources = (latestStat as any).traffic_sources as { source: string; visits: number }[] | undefined;
+    if (!sources?.length) return [];
+    return sources.sort((a, b) => b.visits - a.visits);
+  }, [latestStat]);
 
   const compTotalVisits = filteredCompData.reduce((s, d) => s + d.visits, 0);
   const visitsChange = compTotalVisits > 0 ? ((totalVisits - compTotalVisits) / compTotalVisits) * 100 : 0;
@@ -368,6 +382,66 @@ export function AnalyticsTab({ projectId }: AnalyticsTabProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* Traffic Sources */}
+      {trafficSourcesData.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <Card className="border-border bg-card">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                {t("project.analytics.trafficSources", "Источники трафика")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={trafficSourcesData} layout="vertical" margin={{ left: 80 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.5} horizontal={false} />
+                  <XAxis type="number" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} />
+                  <YAxis type="category" dataKey="source" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} width={80} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar dataKey="visits" name={t("publicReport.kpi.visits", "Визиты")} radius={[0, 4, 4, 0]}>
+                    {trafficSourcesData.map((_, i) => (
+                      <Cell key={i} fill={TRAFFIC_COLORS[i % TRAFFIC_COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border bg-card">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                {t("project.analytics.trafficShare", "Доля трафика")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex items-center justify-center">
+              <ResponsiveContainer width="100%" height={280}>
+                <PieChart>
+                  <Pie
+                    data={trafficSourcesData}
+                    dataKey="visits"
+                    nameKey="source"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={100}
+                    innerRadius={50}
+                    paddingAngle={2}
+                    label={({ source, percent }) => `${source} ${(percent * 100).toFixed(0)}%`}
+                    labelLine={{ stroke: "hsl(var(--muted-foreground))", strokeWidth: 1 }}
+                    fontSize={11}
+                  >
+                    {trafficSourcesData.map((_, i) => (
+                      <Cell key={i} fill={TRAFFIC_COLORS[i % TRAFFIC_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<CustomTooltip />} />
+                </PieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Comparison Section */}
       {showComparison && (

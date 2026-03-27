@@ -1,0 +1,1 @@
+ALTER TABLE public.metrika_stats ADD COLUMN IF NOT EXISTS traffic_sources jsonb NOT NULL DEFAULT '[]'::jsonb;
