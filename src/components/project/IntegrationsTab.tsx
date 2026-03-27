@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   BarChart3, Globe, Search, Target,
-  CheckCircle2, Unplug, KeyRound,
+  CheckCircle2, Unplug, KeyRound, RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
