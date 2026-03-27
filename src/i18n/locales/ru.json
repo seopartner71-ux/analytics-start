@@ -62,7 +62,8 @@
       "worklog": "Список работ",
       "integrations": "Интеграции",
       "settings": "Настройки",
-      "builder": "Конструктор"
+      "builder": "Конструктор",
+      "searchSystems": "Поисковые системы"
     },
     "analytics": {
       "traffic": "Посещаемость",

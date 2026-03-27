@@ -25,6 +25,7 @@ const MODULES = [
   { key: "traffic", labelRu: "График посещаемости", labelEn: "Traffic Chart" },
   { key: "sources", labelRu: "Источники трафика", labelEn: "Traffic Sources" },
   { key: "seo", labelRu: "SEO-аналитика (запросы)", labelEn: "SEO Analytics (Queries)" },
+  { key: "searchSystems", labelRu: "Детальный отчёт по поисковикам", labelEn: "Search Systems Detail Report" },
   { key: "pages", labelRu: "Страницы входа", labelEn: "Landing Pages" },
   { key: "goals", labelRu: "Цели и конверсии", labelEn: "Goals & Conversions" },
   { key: "worklog", labelRu: "Список выполненных работ", labelEn: "Completed Work Log" },

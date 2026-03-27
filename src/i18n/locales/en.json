@@ -62,7 +62,8 @@
       "worklog": "Work Log",
       "integrations": "Integrations",
       "settings": "Settings",
-      "builder": "Report Builder"
+      "builder": "Report Builder",
+      "searchSystems": "Search Systems"
     },
     "analytics": {
       "traffic": "Website Traffic",
