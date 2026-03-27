@@ -54,8 +54,10 @@
     "shareLinkExpiryHint": "Leave empty for a permanent link",
     "editProject": "Edit",
     "tabs": {
-      "overview": "Overview",
+      "overview": "Dashboard",
       "analytics": "Analytics",
+      "seo": "SEO (Search)",
+      "pages": "Pages",
       "goals": "Goals",
       "worklog": "Work Log",
       "integrations": "Integrations",
@@ -353,5 +355,31 @@
     "delete": "Delete",
     "loading": "Loading...",
     "error": "Error"
+  },
+  "seoTab": {
+    "totalClicks": "Clicks",
+    "totalImpressions": "Impressions",
+    "avgPosition": "Avg. Position",
+    "visibility": "Visibility: Impressions vs Clicks",
+    "queriesTable": "Search Queries",
+    "query": "Query",
+    "clicks": "Clicks",
+    "impressions": "Impressions",
+    "position": "Avg. Position",
+    "trend": "Trend",
+    "change": "Δ Clicks",
+    "posChange": "Δ Position"
+  },
+  "pagesTab": {
+    "totalVisits": "Total Visits",
+    "avgBounce": "Avg. Bounce",
+    "pagesCount": "Pages",
+    "topGrowing": "Top 5 Fastest Growing Pages",
+    "topPages": "Top Pages",
+    "page": "Page",
+    "visits": "Visits",
+    "bounce": "Bounce %",
+    "avgTime": "Avg. Time",
+    "growth": "Growth"
   }
 }

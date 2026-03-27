@@ -23,6 +23,8 @@ import { supabase } from "@/integrations/supabase/client";
 interface AnalyticsTabProps {
   projectId: string;
   onSwitchToGoals?: () => void;
+  onSwitchToSeo?: () => void;
+  onSwitchToPages?: () => void;
 }
 
 type DateRange = { from: Date; to: Date };
@@ -102,7 +104,7 @@ function ChangeIndicator({ value, className }: { value: number; className?: stri
   );
 }
 
-export function AnalyticsTab({ projectId, onSwitchToGoals }: AnalyticsTabProps) {
+export function AnalyticsTab({ projectId, onSwitchToGoals, onSwitchToSeo, onSwitchToPages }: AnalyticsTabProps) {
   const { t, i18n } = useTranslation();
   const locale = i18n.language === "ru" ? ru : enUS;
 
