@@ -325,17 +325,6 @@ export function SearchSystemsTab({ projectId }: SearchSystemsTabProps) {
       const startDate = format(subDays(new Date(), 30), "yyyy-MM-dd");
       const endDate = format(new Date(), "yyyy-MM-dd");
 
-      const resp = await supabase.functions.invoke("yandex-metrika-auth", {
-        body: {
-          access_token: integration.access_token,
-          counter_id: integration.counter_id,
-          date1: startDate,
-          date2: endDate,
-        },
-        headers: { "Content-Type": "application/json" },
-      });
-
-      // Call with action query param
       const funcUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/yandex-metrika-auth?action=fetch-search-phrases`;
       const response = await fetch(funcUrl, {
         method: "POST",
