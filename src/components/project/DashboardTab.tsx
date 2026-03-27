@@ -261,7 +261,7 @@ export function DashboardTab({
   };
 
   return (
-    <div className="space-y-6">
+    <div className={cn("space-y-6 transition-opacity duration-300", isRefreshing && "opacity-60")}>
       {isRefreshing && (
         <div className="flex items-center gap-2 text-xs text-muted-foreground animate-pulse">
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
