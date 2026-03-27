@@ -7,7 +7,7 @@ import { Link2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  BarChart, Bar,
+  BarChart, Bar, Cell,
 } from "recharts";
 import { trafficData, sourcesData, kpiData } from "@/data/projects";
 import { KpiCard } from "@/components/KpiCard";
@@ -173,7 +173,7 @@ export function AnalyticsTab({ projectId }: AnalyticsTabProps) {
                 <Tooltip content={<CustomTooltip />} />
                 <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                   {labeledSources.map((_, index) => (
-                    <rect key={index} fill={barColors[index % barColors.length]} />
+                    <Cell key={index} fill={barColors[index % barColors.length]} />
                   ))}
                 </Bar>
               </BarChart>
