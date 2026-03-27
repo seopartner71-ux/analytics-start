@@ -129,7 +129,7 @@ export function PagesTab({ projectId, projectName }: PagesTabProps) {
               <PopoverContent className="w-auto p-0" align="start">
                 <Calendar mode="range" selected={{ from: range.from, to: range.to }}
                   onSelect={(r: any) => { if (r?.from) setRange({ from: r.from, to: r.to || r.from }); }}
-                  numberOfMonths={2} locale={locale} className="p-3 pointer-events-auto" />
+                  numberOfMonths={1} locale={locale} className="p-3 pointer-events-auto" />
               </PopoverContent>
             </Popover>
 

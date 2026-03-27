@@ -533,7 +533,7 @@ export function SearchSystemsTab({ projectId, projectName }: SearchSystemsTabPro
                   if (r?.from && r?.to) setRange({ from: r.from, to: r.to });
                   else if (r?.from) setRange({ from: r.from, to: r.from });
                 }}
-                numberOfMonths={2} locale={dateFnsLocale}
+                numberOfMonths={1} locale={dateFnsLocale}
                 className="p-3 pointer-events-auto"
               />
             </PopoverContent>
@@ -585,7 +585,7 @@ export function SearchSystemsTab({ projectId, projectName }: SearchSystemsTabPro
                     if (r?.from && r?.to) setCompRange({ from: r.from, to: r.to });
                     else if (r?.from) setCompRange({ from: r.from, to: r.from });
                   }}
-                  numberOfMonths={2} locale={dateFnsLocale}
+                  numberOfMonths={1} locale={dateFnsLocale}
                   className="p-3 pointer-events-auto"
                 />
               </PopoverContent>
