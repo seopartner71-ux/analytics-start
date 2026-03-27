@@ -290,9 +290,6 @@ const ProjectDetail = () => {
                   <DashboardTab
                     projectId={project.id}
                     projectName={project.name}
-                    dateFrom={new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10)}
-                    dateTo={new Date().toISOString().slice(0, 10)}
-                    showComparison={false}
                     onSwitchTab={setActiveTab}
                   />
                 </div>
