@@ -174,6 +174,7 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["integrations", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["metrika-stats", projectId] });
       toast.success(t("integrations.synced"));
       setSyncingId(null);
     },
