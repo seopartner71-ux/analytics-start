@@ -380,6 +380,14 @@
     "google": "Google",
     "other": "Other"
   },
+  "engineTable": {
+    "engine": "Search Engine",
+    "visits": "Visits",
+    "change": "Change (%)",
+    "share": "Share (%)",
+    "bounce": "Bounce (%)",
+    "was": "was"
+  },
   "pagesTab": {
     "totalVisits": "Total Visits",
     "avgBounce": "Avg. Bounce",

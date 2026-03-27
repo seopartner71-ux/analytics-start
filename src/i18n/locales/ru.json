@@ -380,6 +380,14 @@
     "google": "Google",
     "other": "Другие"
   },
+  "engineTable": {
+    "engine": "Поисковая система",
+    "visits": "Визиты",
+    "change": "Изменение (%)",
+    "share": "Доля (%)",
+    "bounce": "Отказы (%)",
+    "was": "было"
+  },
   "pagesTab": {
     "totalVisits": "Всего визитов",
     "avgBounce": "Ср. отказы",
