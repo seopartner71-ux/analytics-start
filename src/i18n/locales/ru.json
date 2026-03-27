@@ -54,8 +54,10 @@
     "shareLinkExpiryHint": "Оставьте пустым для бессрочной ссылки",
     "editProject": "Редактировать",
     "tabs": {
-      "overview": "Обзор",
+      "overview": "Дашборд",
       "analytics": "Аналитика",
+      "seo": "SEO (Поиск)",
+      "pages": "Страницы",
       "goals": "Цели",
       "worklog": "Список работ",
       "integrations": "Интеграции",
@@ -353,5 +355,31 @@
     "delete": "Удалить",
     "loading": "Загрузка...",
     "error": "Ошибка"
+  },
+  "seoTab": {
+    "totalClicks": "Клики",
+    "totalImpressions": "Показы",
+    "avgPosition": "Ср. позиция",
+    "visibility": "Видимость: Показы vs Клики",
+    "queriesTable": "Поисковые запросы",
+    "query": "Запрос",
+    "clicks": "Клики",
+    "impressions": "Показы",
+    "position": "Ср. позиция",
+    "trend": "Тренд",
+    "change": "Δ Клики",
+    "posChange": "Δ Позиция"
+  },
+  "pagesTab": {
+    "totalVisits": "Всего визитов",
+    "avgBounce": "Ср. отказы",
+    "pagesCount": "Страниц",
+    "topGrowing": "Топ-5 быстрорастущих страниц",
+    "topPages": "Топ страниц",
+    "page": "Страница",
+    "visits": "Визиты",
+    "bounce": "Отказы %",
+    "avgTime": "Ср. время",
+    "growth": "Рост"
   }
 }
