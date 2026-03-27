@@ -142,9 +142,12 @@ Deno.serve(async (req) => {
       const startDate = date1 || new Date(Date.now() - 30 * 86400000).toISOString().split("T")[0];
       const endDate = date2 || new Date().toISOString().split("T")[0];
 
+      // Common params for data accuracy: exclude robots, full accuracy, cross-device attribution
+      const accuracyParams = "robot_less=1&accuracy=full&attribution=cross_device_last_significant";
+
       // Fetch visits by day
       const visitsResp = await fetch(
-        `https://api-metrika.yandex.net/stat/v1/data/bytime?id=${counterId}&metrics=ym:s:visits,ym:s:bounceRate,ym:s:pageDepth,ym:s:avgVisitDurationSeconds&group=day&date1=${startDate}&date2=${endDate}`,
+        `https://api-metrika.yandex.net/stat/v1/data/bytime?id=${counterId}&metrics=ym:s:visits,ym:s:bounceRate,ym:s:pageDepth,ym:s:avgVisitDurationSeconds&group=day&date1=${startDate}&date2=${endDate}&${accuracyParams}`,
         { headers: { Authorization: `OAuth ${accessToken}` } }
       );
 
@@ -156,9 +159,9 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Fetch totals
+      // Fetch totals (including ym:s:users for Visitors count)
       const totalsResp = await fetch(
-        `https://api-metrika.yandex.net/stat/v1/data?id=${counterId}&metrics=ym:s:visits,ym:s:bounceRate,ym:s:pageDepth,ym:s:avgVisitDurationSeconds&date1=${startDate}&date2=${endDate}`,
+        `https://api-metrika.yandex.net/stat/v1/data?id=${counterId}&metrics=ym:s:visits,ym:s:users,ym:s:bounceRate,ym:s:pageDepth,ym:s:avgVisitDurationSeconds&date1=${startDate}&date2=${endDate}&${accuracyParams}`,
         { headers: { Authorization: `OAuth ${accessToken}` } }
       );
 
@@ -166,7 +169,7 @@ Deno.serve(async (req) => {
 
       // Fetch traffic sources
       const sourcesResp = await fetch(
-        `https://api-metrika.yandex.net/stat/v1/data?id=${counterId}&metrics=ym:s:visits&dimensions=ym:s:lastTrafficSource&date1=${startDate}&date2=${endDate}&limit=20`,
+        `https://api-metrika.yandex.net/stat/v1/data?id=${counterId}&metrics=ym:s:visits&dimensions=ym:s:lastTrafficSource&date1=${startDate}&date2=${endDate}&limit=20&${accuracyParams}`,
         { headers: { Authorization: `OAuth ${accessToken}` } }
       );
       const sourcesData = await sourcesResp.json();
