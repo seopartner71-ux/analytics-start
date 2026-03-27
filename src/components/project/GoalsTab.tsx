@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { format, subDays, subYears, differenceInDays, parseISO } from "date-fns";
 import { ru, enUS } from "date-fns/locale";
+import { useDateRange } from "@/contexts/DateRangeContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -71,17 +72,14 @@ export function GoalsTab({ projectId, projectName }: GoalsTabProps) {
   const locale = i18n.language === "ru" ? ru : enUS;
   const contentRef = useRef<HTMLDivElement>(null);
 
-  const today = new Date();
-  const [range, setRange] = useState<DateRange>({ from: subDays(today, 30), to: today });
-  const [appliedRange, setAppliedRange] = useState<DateRange>(range);
-  const [selectedGoal, setSelectedGoal] = useState<string>("all");
+  const {
+    range, setRange, appliedRange, apply,
+    showComparison, setShowComparison,
+    compRange, setCompRange, appliedCompRange,
+    applyCompPreset, resetToDefault,
+  } = useDateRange();
 
-  // Comparison
-  const [showComparison, setShowComparison] = useState(false);
-  const [compRange, setCompRange] = useState<DateRange>({
-    from: subDays(today, 61), to: subDays(today, 31),
-  });
-  const [appliedCompRange, setAppliedCompRange] = useState<DateRange>(compRange);
+  const [selectedGoal, setSelectedGoal] = useState<string>("all");
 
   const dateFrom = format(appliedRange.from, "yyyy-MM-dd");
   const dateTo = format(appliedRange.to, "yyyy-MM-dd");
@@ -202,19 +200,11 @@ export function GoalsTab({ projectId, projectName }: GoalsTabProps) {
   }, [chartData, compGoals, showComparison, selectedGoal]);
 
   const handleApply = () => {
-    setAppliedRange({ ...range });
-    if (showComparison) setAppliedCompRange({ ...compRange });
+    apply();
   };
 
   const handleCompPreset = (type: "previous" | "lastYear") => {
-    const days = differenceInDays(appliedRange.to, appliedRange.from);
-    if (type === "previous") {
-      const nr = { from: subDays(appliedRange.from, days + 1), to: subDays(appliedRange.from, 1) };
-      setCompRange(nr); setAppliedCompRange(nr);
-    } else {
-      const nr = { from: subYears(appliedRange.from, 1), to: subYears(appliedRange.to, 1) };
-      setCompRange(nr); setAppliedCompRange(nr);
-    }
+    applyCompPreset(type);
   };
 
   // Table with comparison delta
@@ -268,7 +258,7 @@ export function GoalsTab({ projectId, projectName }: GoalsTabProps) {
                   if (r?.from && r?.to) setRange({ from: r.from, to: r.to });
                   else if (r?.from) setRange({ from: r.from, to: r.from });
                 }}
-                numberOfMonths={2} locale={locale}
+                numberOfMonths={1} locale={locale}
                 className="p-3 pointer-events-auto"
               />
             </PopoverContent>
@@ -276,6 +266,9 @@ export function GoalsTab({ projectId, projectName }: GoalsTabProps) {
 
           <Button size="sm" className="h-8 text-xs" onClick={handleApply}>
             {t("project.analytics.apply", "Применить")}
+          </Button>
+          <Button size="sm" variant="ghost" className="h-8 text-xs text-muted-foreground" onClick={resetToDefault}>
+            {t("datePicker.reset", "Сбросить")}
           </Button>
 
           <ExportMenu
@@ -320,7 +313,7 @@ export function GoalsTab({ projectId, projectName }: GoalsTabProps) {
                     if (r?.from && r?.to) setCompRange({ from: r.from, to: r.to });
                     else if (r?.from) setCompRange({ from: r.from, to: r.from });
                   }}
-                  numberOfMonths={2} locale={locale}
+                  numberOfMonths={1} locale={locale}
                   className="p-3 pointer-events-auto"
                 />
               </PopoverContent>

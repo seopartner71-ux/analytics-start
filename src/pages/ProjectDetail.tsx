@@ -29,6 +29,7 @@ import { WebmasterWidget } from "@/components/widgets/WebmasterWidget";
 import { GSCWidget } from "@/components/widgets/GSCWidget";
 import { TopvisorWidget } from "@/components/widgets/TopvisorWidget";
 import { supabase } from "@/integrations/supabase/client";
+import { DateRangeProvider } from "@/contexts/DateRangeContext";
 
 const ProjectDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -234,6 +235,7 @@ const ProjectDetail = () => {
   }
 
   return (
+    <DateRangeProvider>
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
         <AppSidebar />
@@ -288,9 +290,6 @@ const ProjectDetail = () => {
                   <DashboardTab
                     projectId={project.id}
                     projectName={project.name}
-                    dateFrom={new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10)}
-                    dateTo={new Date().toISOString().slice(0, 10)}
-                    showComparison={false}
                     onSwitchTab={setActiveTab}
                   />
                 </div>
@@ -468,6 +467,7 @@ const ProjectDetail = () => {
         <MobileBottomNav activeTab={activeTab} onTabChange={setActiveTab} />
       </div>
     </SidebarProvider>
+    </DateRangeProvider>
   );
 };
 

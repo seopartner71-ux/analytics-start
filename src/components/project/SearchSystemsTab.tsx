@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
+import { useDateRange } from "@/contexts/DateRangeContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -309,28 +310,21 @@ export function SearchSystemsTab({ projectId, projectName }: SearchSystemsTabPro
   const dateFnsLocale = i18n.language === "ru" ? ru : enUS;
   const contentRef = useRef<HTMLDivElement>(null);
 
-  const today = new Date();
-  const [range, setRange] = useState<{ from: Date; to: Date }>({ from: subDays(today, 30), to: today });
-  const [appliedRange, setAppliedRange] = useState(range);
-  const [showComparison, setShowComparison] = useState(false);
-  const [compRange, setCompRange] = useState<{ from: Date; to: Date }>({ from: subDays(today, 61), to: subDays(today, 31) });
-  const [appliedCompRange, setAppliedCompRange] = useState(compRange);
+  const {
+    range, setRange, appliedRange, apply,
+    showComparison, setShowComparison,
+    compRange, setCompRange, appliedCompRange,
+    applyCompPreset, resetToDefault,
+  } = useDateRange();
+
   const [selectedEngine, setSelectedEngine] = useState<string>("all");
 
   const handleCompPreset = (type: "previous" | "lastYear") => {
-    const days = differenceInDays(appliedRange.to, appliedRange.from);
-    if (type === "previous") {
-      const nr = { from: subDays(appliedRange.from, days + 1), to: subDays(appliedRange.from, 1) };
-      setCompRange(nr); setAppliedCompRange(nr);
-    } else {
-      const nr = { from: subYears(appliedRange.from, 1), to: subYears(appliedRange.to, 1) };
-      setCompRange(nr); setAppliedCompRange(nr);
-    }
+    applyCompPreset(type);
   };
 
   const handleApply = () => {
-    setAppliedRange({ ...range });
-    if (showComparison) setAppliedCompRange({ ...compRange });
+    apply();
     toast.success(t("project.analytics.applied", "Период применён"));
   };
 
@@ -533,7 +527,7 @@ export function SearchSystemsTab({ projectId, projectName }: SearchSystemsTabPro
                   if (r?.from && r?.to) setRange({ from: r.from, to: r.to });
                   else if (r?.from) setRange({ from: r.from, to: r.from });
                 }}
-                numberOfMonths={2} locale={dateFnsLocale}
+                numberOfMonths={1} locale={dateFnsLocale}
                 className="p-3 pointer-events-auto"
               />
             </PopoverContent>
@@ -541,6 +535,9 @@ export function SearchSystemsTab({ projectId, projectName }: SearchSystemsTabPro
 
           <Button size="sm" className="h-8 text-xs" onClick={handleApply}>
             {t("project.analytics.apply", "Применить")}
+          </Button>
+          <Button size="sm" variant="ghost" className="h-8 text-xs text-muted-foreground" onClick={resetToDefault}>
+            {t("datePicker.reset", "Сбросить")}
           </Button>
 
           <ExportMenu
@@ -585,7 +582,7 @@ export function SearchSystemsTab({ projectId, projectName }: SearchSystemsTabPro
                     if (r?.from && r?.to) setCompRange({ from: r.from, to: r.to });
                     else if (r?.from) setCompRange({ from: r.from, to: r.from });
                   }}
-                  numberOfMonths={2} locale={dateFnsLocale}
+                  numberOfMonths={1} locale={dateFnsLocale}
                   className="p-3 pointer-events-auto"
                 />
               </PopoverContent>

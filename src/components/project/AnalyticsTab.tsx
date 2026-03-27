@@ -375,7 +375,7 @@ export function AnalyticsTab({ projectId, onSwitchToGoals, onSwitchToSeo, onSwit
                       if (r?.from && r?.to) { setRange({ from: r.from, to: r.to }); setActivePreset(""); }
                       else if (r?.from) { setRange({ from: r.from, to: r.from }); setActivePreset(""); }
                     }}
-                    numberOfMonths={2} locale={locale}
+                    numberOfMonths={1} locale={locale}
                     className="p-3 pointer-events-auto"
                   />
                 </PopoverContent>
@@ -405,7 +405,7 @@ export function AnalyticsTab({ projectId, onSwitchToGoals, onSwitchToSeo, onSwit
                       if (r?.from && r?.to) setCompRange({ from: r.from, to: r.to });
                       else if (r?.from) setCompRange({ from: r.from, to: r.from });
                     }}
-                    numberOfMonths={2} locale={locale}
+                    numberOfMonths={1} locale={locale}
                     className="p-3 pointer-events-auto"
                   />
                 </PopoverContent>
