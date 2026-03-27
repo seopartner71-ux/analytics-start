@@ -433,5 +433,17 @@
     "change": "Change %",
     "otherEngines": "Other",
     "demoDataHint": "Showing demo data. Connect Yandex.Metrika in Settings to display real search queries."
+  },
+  "dashboardTab": {
+    "goalsWidget": "Goal Performance",
+    "searchWidget": "Search Engines",
+    "contentWidget": "Top Content",
+    "recentWork": "Recent Work",
+    "details": "Details",
+    "allPages": "All Pages",
+    "allWork": "Full Work Log",
+    "goalOrder": "Order Placement",
+    "goalCallback": "Callback Request",
+    "goalSubscribe": "Subscription"
   }
 }
