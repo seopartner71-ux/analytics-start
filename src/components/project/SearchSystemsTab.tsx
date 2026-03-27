@@ -406,6 +406,10 @@ export function SearchSystemsTab({ projectId, projectName }: SearchSystemsTabPro
   const filteredData = useMemo(() => {
     const q = search.toLowerCase();
     let d = engines;
+    // Filter by selected engine
+    if (selectedEngine !== "all") {
+      d = d.filter((eng) => eng.key === selectedEngine);
+    }
     if (q) {
       d = d.map((eng) => ({
         ...eng,
@@ -416,7 +420,7 @@ export function SearchSystemsTab({ projectId, projectName }: SearchSystemsTabPro
       })).filter((eng) => eng.subChannels.length > 0);
     }
     return d.filter((eng) => visibleEngines.has(eng.key));
-  }, [engines, search, visibleEngines]);
+  }, [engines, search, visibleEngines, selectedEngine]);
 
   const sortFn = (a: any, b: any) => (sortAsc ? a[sortKey] - b[sortKey] : b[sortKey] - a[sortKey]);
 
