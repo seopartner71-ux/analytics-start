@@ -25,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
 const INTEGRATION_KEYS = [
+  { key: "openrouter_api_key", label: "OpenRouter API Key", service: "ai", secret: true },
   { key: "yandex_metrika_client_id", label: "Яндекс.Метрика Client ID", service: "yandexMetrika" },
   { key: "yandex_metrika_client_secret", label: "Яндекс.Метрика Client Secret", service: "yandexMetrika", secret: true },
   { key: "yandex_webmaster_client_id", label: "Яндекс.Вебмастер Client ID", service: "yandexWebmaster" },
