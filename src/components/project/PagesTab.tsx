@@ -121,7 +121,13 @@ export function PagesTab({ projectId, projectName }: PagesTabProps) {
   const compAvgBounce = compPages.length > 0 ? Math.round((compPages.reduce((s, p) => s + p.bounceRate, 0) / compPages.length) * 10) / 10 : 0;
 
   return (
-    <div className="space-y-6" ref={contentRef}>
+    <div className={cn("space-y-6 transition-opacity duration-300", isRefreshing && "opacity-60")} ref={contentRef}>
+      {isRefreshing && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground animate-pulse">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          {t("project.analytics.loading", "Загрузка данных...")}
+        </div>
+      )}
       {/* Filter Bar */}
       <Card className="border-border bg-card">
         <CardContent className="p-4">
@@ -174,14 +180,20 @@ export function PagesTab({ projectId, projectName }: PagesTabProps) {
         <Card className="border-border bg-card p-4">
           <p className="text-xs text-muted-foreground">{t("pagesTab.totalVisits", "Всего визитов")}</p>
           <p className="text-2xl font-bold text-foreground mt-1">{totalVisits.toLocaleString()}</p>
+          {showComparison && compTotalVisits > 0 && (
+            <p className={cn("text-xs font-medium mt-1", totalVisits >= compTotalVisits ? "text-emerald-500" : "text-destructive")}>
+              {totalVisits >= compTotalVisits ? "+" : ""}{calcDelta(totalVisits, compTotalVisits)}% <span className="text-muted-foreground font-normal">vs {compTotalVisits.toLocaleString()}</span>
+            </p>
+          )}
         </Card>
         <Card className="border-border bg-card p-4">
           <p className="text-xs text-muted-foreground">{t("pagesTab.avgBounce", "Ср. отказы")}</p>
           <p className="text-2xl font-bold text-foreground mt-1">{avgBounce}%</p>
-        </Card>
-        <Card className="border-border bg-card p-4">
-          <p className="text-xs text-muted-foreground">{t("pagesTab.pagesCount", "Страниц")}</p>
-          <p className="text-2xl font-bold text-foreground mt-1">{pages.length}</p>
+          {showComparison && compAvgBounce > 0 && (
+            <p className={cn("text-xs font-medium mt-1", avgBounce <= compAvgBounce ? "text-emerald-500" : "text-destructive")}>
+              {avgBounce <= compAvgBounce ? "" : "+"}{calcDelta(avgBounce, compAvgBounce)}% <span className="text-muted-foreground font-normal">vs {compAvgBounce}%</span>
+            </p>
+          )}
         </Card>
       </div>
 
