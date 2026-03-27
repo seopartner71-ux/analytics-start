@@ -427,6 +427,10 @@
     "duration": "Time on Site",
     "share": "Share",
     "shareChart": "Search Engine Share",
-    "subChannelChart": "Visits by Sub-channel"
+    "subChannelChart": "Visits by Sub-channel",
+    "trendTitle": "Search Traffic Dynamics",
+    "enableComparison": "Compare Periods",
+    "change": "Change %",
+    "otherEngines": "Other"
   }
 }
