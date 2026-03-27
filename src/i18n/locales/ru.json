@@ -17,7 +17,8 @@
   "nav": {
     "projects": "Проекты",
     "team": "Команда",
-    "settings": "Настройки"
+    "settings": "Настройки",
+    "admin": "Админ-панель"
   },
   "dashboard": {
     "title": "Мои проекты",

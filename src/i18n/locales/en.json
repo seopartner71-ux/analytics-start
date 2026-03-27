@@ -17,7 +17,8 @@
   "nav": {
     "projects": "Projects",
     "team": "Team",
-    "settings": "Settings"
+    "settings": "Settings",
+    "admin": "Admin Panel"
   },
   "dashboard": {
     "title": "My Projects",
