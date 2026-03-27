@@ -273,7 +273,7 @@ const ProjectDetail = () => {
                     summary={aiSummary}
                     isAdmin={true}
                     onSave={(summary) => saveAiSummary.mutate(summary)}
-                    trafficSources={[]}
+                    trafficSources={(latestMetrikaStats?.traffic_sources as any[]) || []}
                   />
 
                   <div className="grid gap-6 lg:grid-cols-2">
