@@ -13,6 +13,7 @@ interface GoalsPerformanceProps {
   projectId: string;
   dateFrom: string;
   dateTo: string;
+  onShowAllGoals?: () => void;
 }
 
 interface GoalStat {
@@ -48,7 +49,7 @@ function ChangeIndicator({ value }: { value: number }) {
   );
 }
 
-export function GoalsPerformance({ projectId, dateFrom, dateTo }: GoalsPerformanceProps) {
+export function GoalsPerformance({ projectId, dateFrom, dateTo, onShowAllGoals }: GoalsPerformanceProps) {
   const { t } = useTranslation();
   const [showAll, setShowAll] = useState(false);
 
@@ -125,8 +126,9 @@ export function GoalsPerformance({ projectId, dateFrom, dateTo }: GoalsPerforman
               <Target className="h-4 w-4" />
               {t("goals.title", "Эффективность целей")}
             </CardTitle>
-            {goals.length > 5 && (
-              <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => setShowAll(true)}>
+            {goals.length > 0 && (
+              <Button variant="ghost" size="sm" className="h-7 text-xs gap-1"
+                onClick={() => onShowAllGoals ? onShowAllGoals() : setShowAll(true)}>
                 {t("goals.showAll", "Показать все цели")}
                 <ChevronRight className="h-3 w-3" />
               </Button>
