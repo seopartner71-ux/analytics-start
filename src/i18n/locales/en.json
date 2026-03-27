@@ -266,7 +266,21 @@
     "saved": "AI summary saved",
     "generate": "Generate",
     "generating": "AI is analyzing data...",
-    "generated": "AI summary generated"
+    "generated": "AI summary generated",
+    "noChannelData": "No data for this channel",
+    "channels": {
+      "general": "Overview",
+      "search": "Search (SEO)",
+      "direct": "Direct",
+      "ad": "Ads",
+      "social": "Social",
+      "referral": "Referral"
+    },
+    "trend": {
+      "up": "Growing",
+      "down": "Declining",
+      "stable": "Stable"
+    }
   },
   "goals": {
     "title": "Goals Performance",
