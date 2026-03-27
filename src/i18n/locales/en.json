@@ -400,5 +400,15 @@
     "bounce": "Bounce %",
     "avgTime": "Avg. Time",
     "growth": "Growth"
+  },
+  "reportBuilder": {
+    "title": "Report Builder",
+    "description": "Select modules to include in the public report for your client.",
+    "selectAll": "Select All",
+    "deselectAll": "Deselect All",
+    "selectHint": "Select at least one module to include in the report",
+    "generate": "Generate Public Report",
+    "linkPreview": "Report Link",
+    "linkCopied": "Report created! Link copied to clipboard"
   }
 }
