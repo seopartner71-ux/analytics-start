@@ -257,6 +257,32 @@
     "charts": "Charts",
     "tasks": "Tasks"
   },
+  "admin": {
+    "title": "Admin Panel",
+    "subtitle": "Manage projects, users, and integration keys",
+    "accessDenied": "Access Denied",
+    "accessDeniedDesc": "You don't have admin permissions",
+    "tabs": {
+      "projects": "Projects",
+      "users": "Users",
+      "keys": "Integration Keys"
+    },
+    "allProjects": "All Projects",
+    "projectName": "Name",
+    "owner": "Owner",
+    "integrations": "Integrations",
+    "created": "Created",
+    "noProjects": "No projects yet",
+    "allUsers": "All Users",
+    "userName": "Name",
+    "agency": "Agency",
+    "projectCount": "Projects",
+    "registered": "Registered",
+    "integrationKeys": "Integration Keys",
+    "keysDesc": "Global OAuth and API keys for all services. These keys are used when connecting integrations.",
+    "saveKeys": "Save Keys",
+    "keysSaved": "Keys saved"
+  },
   "common": {
     "save": "Save",
     "cancel": "Cancel",
