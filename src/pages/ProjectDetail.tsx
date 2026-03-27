@@ -235,6 +235,7 @@ const ProjectDetail = () => {
   }
 
   return (
+    <DateRangeProvider>
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
         <AppSidebar />
