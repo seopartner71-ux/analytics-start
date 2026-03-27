@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -302,9 +302,10 @@ const PrevLabel = ({ value, comparison }: { value?: number; comparison: boolean 
 type SortKey = "visits" | "visitors" | "bounce" | "depth" | "duration";
 
 /* ══════════════════════ COMPONENT ══════════════════════ */
-export function SearchSystemsTab({ projectId }: SearchSystemsTabProps) {
+export function SearchSystemsTab({ projectId, projectName }: SearchSystemsTabProps) {
   const { t, i18n } = useTranslation();
   const dateFnsLocale = i18n.language === "ru" ? ru : enUS;
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const today = new Date();
   const [range, setRange] = useState<{ from: Date; to: Date }>({ from: subDays(today, 30), to: today });
