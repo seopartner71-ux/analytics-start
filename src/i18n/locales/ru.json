@@ -49,6 +49,7 @@
   "project": {
     "breadcrumbProjects": "Проекты",
     "shareLink": "Публичная ссылка для клиента",
+    "editProject": "Редактировать",
     "tabs": {
       "overview": "Обзор",
       "analytics": "Аналитика",
