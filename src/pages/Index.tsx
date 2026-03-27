@@ -7,6 +7,8 @@ import { ProjectCard } from "@/components/ProjectCard";
 import { AddProjectDialog } from "@/components/AddProjectDialog";
 import { Button } from "@/components/ui/button";
 import { Globe } from "lucide-react";
+import { demoProjects, defaultIntegrations } from "@/data/projects";
+import type { ProjectData } from "@/data/projects";
 
 const COLORS = [
   "hsl(230, 80%, 56%)",
@@ -17,28 +19,19 @@ const COLORS = [
   "hsl(190, 75%, 42%)",
 ];
 
-const initialProjects = [
-  { id: "1", name: "TechStart", url: "techstart.io", description: "", reportStatusKey: "oct_ready", reportReady: true },
-  { id: "2", name: "GreenShop", url: "greenshop.ru", description: "", reportStatusKey: "oct_ready", reportReady: true },
-  { id: "3", name: "MediaFlow", url: "mediaflow.com", description: "", reportStatusKey: "sep_progress", reportReady: false },
-  { id: "4", name: "FinTrack", url: "fintrack.app", description: "", reportStatusKey: "oct_ready", reportReady: true },
-  { id: "5", name: "EduPlatform", url: "eduplatform.org", description: "", reportStatusKey: "none", reportReady: false },
-];
-
 function getInitials(name: string) {
   return name.slice(0, 2).toUpperCase();
 }
 
-function getReportLabel(key: string, t: (k: string) => string) {
-  switch (key) {
-    case "oct_ready": return `${t("reports.ready")} — Oct`;
-    case "sep_progress": return `${t("reports.inProgress")} — Sep`;
-    default: return t("reports.none");
-  }
+function getReportLabel(project: ProjectData, t: (k: string) => string): { label: string; ready: boolean } {
+  const doneTasks = project.tasks.filter((task) => task.done).length;
+  if (doneTasks > 0) return { label: `${t("reports.ready")} — ${doneTasks} ✓`, ready: true };
+  if (project.tasks.length > 0) return { label: t("reports.inProgress"), ready: false };
+  return { label: t("reports.none"), ready: false };
 }
 
 const Index = () => {
-  const [projects, setProjects] = useState(initialProjects);
+  const [projects, setProjects] = useState<ProjectData[]>(demoProjects);
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
 
@@ -54,8 +47,8 @@ const Index = () => {
         name: p.name,
         url: p.url,
         description: p.description,
-        reportStatusKey: "none",
-        reportReady: false,
+        integrations: [...defaultIntegrations],
+        tasks: [],
       },
     ]);
   };
@@ -86,18 +79,21 @@ const Index = () => {
               <AddProjectDialog onAdd={handleAdd} />
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {projects.map((project, i) => (
-                <ProjectCard
-                  key={project.id}
-                  name={project.name}
-                  url={project.url}
-                  initials={getInitials(project.name)}
-                  color={COLORS[i % COLORS.length]}
-                  reportStatus={getReportLabel(project.reportStatusKey, t)}
-                  reportReady={project.reportReady}
-                  onClick={() => navigate(`/project/${project.id}`)}
-                />
-              ))}
+              {projects.map((project, i) => {
+                const report = getReportLabel(project, t);
+                return (
+                  <ProjectCard
+                    key={project.id}
+                    name={project.name}
+                    url={project.url}
+                    initials={getInitials(project.name)}
+                    color={COLORS[i % COLORS.length]}
+                    reportStatus={report.label}
+                    reportReady={report.ready}
+                    onClick={() => navigate(`/project/${project.id}`)}
+                  />
+                );
+              })}
             </div>
           </main>
         </div>
