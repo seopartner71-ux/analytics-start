@@ -29,6 +29,7 @@ import { WebmasterWidget } from "@/components/widgets/WebmasterWidget";
 import { GSCWidget } from "@/components/widgets/GSCWidget";
 import { TopvisorWidget } from "@/components/widgets/TopvisorWidget";
 import { supabase } from "@/integrations/supabase/client";
+import { DateRangeProvider } from "@/contexts/DateRangeContext";
 
 const ProjectDetail = () => {
   const { id } = useParams<{ id: string }>();
