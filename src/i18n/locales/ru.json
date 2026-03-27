@@ -416,5 +416,14 @@
     "noCustomFields": "Добавьте свой текстовый блок, который будет включён в отчёт",
     "fieldTitlePlaceholder": "Заголовок блока",
     "fieldContentPlaceholder": "Введите текст для отображения в отчёте…"
+  },
+  "searchSystems": {
+    "searchPlaceholder": "Поиск по фразе…",
+    "name": "Название",
+    "visits": "Визиты",
+    "visitors": "Посетители",
+    "bounce": "Отказы %",
+    "depth": "Глубина просмотра",
+    "duration": "Время на сайте"
   }
 }
