@@ -49,6 +49,7 @@
   "project": {
     "breadcrumbProjects": "Projects",
     "shareLink": "Public link for client",
+    "editProject": "Edit",
     "tabs": {
       "overview": "Overview",
       "analytics": "Analytics",

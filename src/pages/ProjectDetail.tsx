@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ChevronRight, Globe, LogOut, Copy } from "lucide-react";
+import { ChevronRight, Globe, LogOut, Copy, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { IntegrationsTab } from "@/components/project/IntegrationsTab";
 import { AnalyticsTab } from "@/components/project/AnalyticsTab";
@@ -120,13 +120,23 @@ const ProjectDetail = () => {
           </header>
 
           <main className="flex-1 p-6 lg:p-8">
-            <nav className="flex items-center gap-1.5 text-sm text-muted-foreground mb-6">
-              <Link to="/" className="hover:text-foreground transition-colors">
-                {t("project.breadcrumbProjects")}
-              </Link>
-              <ChevronRight className="h-3.5 w-3.5" />
-              <span className="text-foreground font-medium">{project.name}</span>
-            </nav>
+            <div className="flex items-center justify-between mb-6">
+              <nav className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <Link to="/" className="hover:text-foreground transition-colors">
+                  {t("project.breadcrumbProjects")}
+                </Link>
+                <ChevronRight className="h-3.5 w-3.5" />
+                <span className="text-foreground font-medium">{project.name}</span>
+              </nav>
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => {
+                const tabsEl = document.querySelector('[data-state="active"][value="settings"]') ||
+                  document.querySelector('[value="settings"]');
+                if (tabsEl instanceof HTMLElement) tabsEl.click();
+              }}>
+                <Pencil className="h-3.5 w-3.5" />
+                {t("project.editProject")}
+              </Button>
+            </div>
 
             <Tabs defaultValue="overview" className="space-y-6">
               <TabsList className="bg-muted/60">
