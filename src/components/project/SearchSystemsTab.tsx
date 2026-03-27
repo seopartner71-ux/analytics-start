@@ -6,17 +6,21 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { ChevronRight, ChevronDown, Search, Globe, ArrowUpDown, TrendingUp, TrendingDown, Loader2 } from "lucide-react";
+import { ChevronRight, ChevronDown, Search, Globe, ArrowUpDown, TrendingUp, TrendingDown, Loader2, CalendarIcon, ArrowRightLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell, PieChart, Pie,
 } from "recharts";
-import { format, subDays } from "date-fns";
+import { format, subDays, subYears, differenceInDays } from "date-fns";
+import { ru, enUS } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface SearchSystemsTabProps {
   projectId: string;
