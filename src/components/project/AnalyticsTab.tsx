@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Link2, CalendarIcon, ArrowRightLeft, Loader2, TrendingUp, TrendingDown } from "lucide-react";
@@ -35,14 +34,50 @@ const PRESETS = [
   { key: "90d", days: 90 },
 ] as const;
 
-type MetricKey = "visits" | "bounceRate" | "pageDepth" | "avgDuration";
-
 const COMPARISON_COLORS = {
   current: "hsl(var(--chart-1))",
   previous: "hsl(var(--chart-3))",
 };
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+// Dual-period tooltip
+const DualTooltip = ({ active, payload, label, showComparison, periodALabel, periodBLabel }: any) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="bg-card border border-border rounded-lg shadow-lg px-3 py-2 min-w-[160px]">
+      <p className="text-xs text-muted-foreground mb-1 font-medium">{label}</p>
+      {payload.map((p: any, i: number) => {
+        const isPeriodB = p.dataKey === "previous";
+        return (
+          <div key={i} className="flex items-center justify-between gap-3">
+            <span className="flex items-center gap-1.5 text-xs">
+              <span
+                className="w-2.5 h-2.5 rounded-full"
+                style={{ background: p.color }}
+              />
+              {isPeriodB ? (periodBLabel || "Б") : (periodALabel || "А")}
+            </span>
+            <span className="text-sm font-semibold tabular-nums" style={{ color: p.color }}>
+              {typeof p.value === "number" ? p.value.toLocaleString() : p.value}
+            </span>
+          </div>
+        );
+      })}
+      {showComparison && payload.length === 2 && payload[0].value > 0 && payload[1].value > 0 && (
+        <div className="border-t border-border mt-1.5 pt-1">
+          <span className={cn(
+            "text-xs font-semibold",
+            payload[0].value >= payload[1].value ? "text-emerald-500" : "text-red-500"
+          )}>
+            Δ {payload[0].value >= payload[1].value ? "+" : ""}
+            {Math.round(((payload[0].value - payload[1].value) / payload[1].value) * 1000) / 10}%
+          </span>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const SimpleTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-card border border-border rounded-md shadow-sm px-3 py-2">
@@ -55,37 +90,6 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     </div>
   );
 };
-
-function DateRangePicker({ range, onChange, locale, label }: {
-  range: DateRange; onChange: (r: DateRange) => void; locale: any; label: string;
-}) {
-  return (
-    <div className="flex items-center gap-1.5">
-      <span className="text-xs text-muted-foreground whitespace-nowrap">{label}:</span>
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5 px-2">
-            <CalendarIcon className="h-3 w-3" />
-            {format(range.from, "dd.MM.yy", { locale })} — {format(range.to, "dd.MM.yy", { locale })}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
-          <Calendar
-            mode="range"
-            selected={{ from: range.from, to: range.to }}
-            onSelect={(r: any) => {
-              if (r?.from && r?.to) onChange({ from: r.from, to: r.to });
-              else if (r?.from) onChange({ from: r.from, to: r.from });
-            }}
-            numberOfMonths={2}
-            locale={locale}
-            className="p-3 pointer-events-auto"
-          />
-        </PopoverContent>
-      </Popover>
-    </div>
-  );
-}
 
 function ChangeIndicator({ value, className }: { value: number; className?: string }) {
   if (value === 0) return <span className="text-xs text-muted-foreground">—</span>;
@@ -110,10 +114,10 @@ export function AnalyticsTab({ projectId, onSwitchToGoals }: AnalyticsTabProps) 
   // Comparison state
   const [showComparison, setShowComparison] = useState(false);
   const [compRange, setCompRange] = useState<DateRange>({
-    from: subDays(today, 61), to: subDays(today, 31),
+    from: subYears(subDays(today, 30), 1),
+    to: subYears(today, 1),
   });
   const [appliedCompRange, setAppliedCompRange] = useState<DateRange>(compRange);
-  const [compMetric, setCompMetric] = useState<MetricKey>("visits");
   const [showCurrentLine, setShowCurrentLine] = useState(true);
   const [showPreviousLine, setShowPreviousLine] = useState(true);
 
@@ -164,7 +168,9 @@ export function AnalyticsTab({ projectId, onSwitchToGoals }: AnalyticsTabProps) 
   const sparkData = filteredData.map((d) => ({ v: d.visits }));
 
   const compTotalVisits = filteredCompData.reduce((s, d) => s + d.visits, 0);
+  const compAvgVisits = filteredCompData.length > 0 ? Math.round(compTotalVisits / filteredCompData.length) : 0;
   const visitsChange = compTotalVisits > 0 ? ((totalVisits - compTotalVisits) / compTotalVisits) * 100 : 0;
+  const avgVisitsChange = compAvgVisits > 0 ? ((avgVisits - compAvgVisits) / compAvgVisits) * 100 : 0;
 
   // Traffic sources
   const TRAFFIC_COLORS = [
@@ -185,41 +191,46 @@ export function AnalyticsTab({ projectId, onSwitchToGoals }: AnalyticsTabProps) 
     const maxLen = Math.max(filteredData.length, filteredCompData.length);
     const result = [];
     for (let i = 0; i < maxLen; i++) {
+      const currentDate = filteredData[i]?.date;
+      const compDate = filteredCompData[i]?.date;
       result.push({
         day: filteredData[i]?.dateStr || `${i + 1}`,
+        dayLabel: currentDate
+          ? `${format(currentDate, "dd.MM.yy", { locale })}${compDate ? ` | ${format(compDate, "dd.MM.yy", { locale })}` : ""}`
+          : `${i + 1}`,
         current: filteredData[i]?.visits || 0,
         previous: filteredCompData[i]?.visits || 0,
       });
     }
     return result;
-  }, [filteredData, filteredCompData]);
-
-  // Merged main chart data for overlay mode
-  const mainChartData = useMemo(() => {
-    if (!showComparison) return filteredData;
-    return filteredData.map((d, i) => ({
-      ...d,
-      previousVisits: filteredCompData[i]?.visits || 0,
-    }));
-  }, [filteredData, filteredCompData, showComparison]);
+  }, [filteredData, filteredCompData, locale]);
 
   const handlePreset = (key: string, days: number) => {
     const newRange = { from: subDays(today, days), to: today };
     setActivePreset(key);
     setRange(newRange);
     setAppliedRange(newRange);
-    setCompRange({ from: subDays(today, days * 2 + 1), to: subDays(today, days + 1) });
-    setAppliedCompRange({ from: subDays(today, days * 2 + 1), to: subDays(today, days + 1) });
+    // Default comparison: YoY
+    setCompRange({ from: subYears(newRange.from, 1), to: subYears(newRange.to, 1) });
+    setAppliedCompRange({ from: subYears(newRange.from, 1), to: subYears(newRange.to, 1) });
   };
 
   const handleCompPreset = (type: "previous" | "lastYear") => {
-    const days = differenceInDays(appliedRange.to, appliedRange.from);
+    const days = differenceInDays(range.to, range.from);
+    let nr: DateRange;
     if (type === "previous") {
-      const nr = { from: subDays(appliedRange.from, days + 1), to: subDays(appliedRange.from, 1) };
-      setCompRange(nr);
-      setAppliedCompRange(nr);
+      nr = { from: subDays(range.from, days + 1), to: subDays(range.from, 1) };
     } else {
-      const nr = { from: subYears(appliedRange.from, 1), to: subYears(appliedRange.to, 1) };
+      nr = { from: subYears(range.from, 1), to: subYears(range.to, 1) };
+    }
+    setCompRange(nr);
+  };
+
+  const handleToggleComparison = (on: boolean) => {
+    setShowComparison(on);
+    if (on) {
+      // Default to YoY when turning on
+      const nr = { from: subYears(range.from, 1), to: subYears(range.to, 1) };
       setCompRange(nr);
       setAppliedCompRange(nr);
     }
@@ -244,18 +255,44 @@ export function AnalyticsTab({ projectId, onSwitchToGoals }: AnalyticsTabProps) 
     return `${m}:${String(s).padStart(2, "0")}`;
   };
 
-  const kpis = [
-    { label: t("publicReport.kpi.visits", "Визиты"), value: totalVisits.toLocaleString(), change: showComparison ? Math.round(visitsChange * 10) / 10 : 0, positive: visitsChange >= 0, sparkData, color: "hsl(var(--chart-1))" },
-    { label: t("project.analytics.avgVisits", "Ср. визитов/день"), value: avgVisits.toLocaleString(), change: 0, positive: true, sparkData, color: "hsl(var(--chart-5))" },
-    { label: t("publicReport.kpi.bounceRate", "Отказы"), value: `${bounceRate}%`, change: 0, positive: false, sparkData: [], color: "hsl(var(--chart-3))" },
-    { label: t("project.analytics.pageDepth", "Глубина просмотра"), value: String(pageDepth), change: 0, positive: true, sparkData: [], color: "hsl(var(--chart-2))" },
-  ];
+  const periodALabel = t("comparison.periodA", "Период А");
+  const periodBLabel = t("comparison.periodB", "Период Б");
 
-  const metricOptions: { value: MetricKey; label: string }[] = [
-    { value: "visits", label: t("publicReport.kpi.visits", "Визиты") },
-    { value: "bounceRate", label: t("publicReport.kpi.bounceRate", "Отказы") },
-    { value: "pageDepth", label: t("project.analytics.pageDepth", "Глубина просмотра") },
-    { value: "avgDuration", label: t("project.analytics.avgDuration", "Ср. время на сайте") },
+  const kpis = [
+    {
+      label: t("publicReport.kpi.visits", "Визиты"),
+      value: totalVisits.toLocaleString(),
+      change: showComparison ? Math.round(visitsChange * 10) / 10 : 0,
+      positive: visitsChange >= 0,
+      sparkData,
+      color: "hsl(var(--chart-1))",
+      compValue: showComparison ? compTotalVisits.toLocaleString() : undefined,
+    },
+    {
+      label: t("project.analytics.avgVisits", "Ср. визитов/день"),
+      value: avgVisits.toLocaleString(),
+      change: showComparison ? Math.round(avgVisitsChange * 10) / 10 : 0,
+      positive: avgVisitsChange >= 0,
+      sparkData,
+      color: "hsl(var(--chart-5))",
+      compValue: showComparison ? compAvgVisits.toLocaleString() : undefined,
+    },
+    {
+      label: t("publicReport.kpi.bounceRate", "Отказы"),
+      value: `${bounceRate}%`,
+      change: 0,
+      positive: false,
+      sparkData: [],
+      color: "hsl(var(--chart-3))",
+    },
+    {
+      label: t("project.analytics.pageDepth", "Глубина просмотра"),
+      value: String(pageDepth),
+      change: 0,
+      positive: true,
+      sparkData: [],
+      color: "hsl(var(--chart-2))",
+    },
   ];
 
   const dateFromStr = format(appliedRange.from, "yyyy-MM-dd");
@@ -271,104 +308,145 @@ export function AnalyticsTab({ projectId, onSwitchToGoals }: AnalyticsTabProps) 
 
   return (
     <div className="space-y-6">
-      {/* Row 1: Presets + date range + apply */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-2 flex-wrap">
-          {PRESETS.map((p) => (
-            <Button
-              key={p.key}
-              variant={activePreset === p.key ? "default" : "outline"}
-              size="sm" className="h-8 text-xs"
-              onClick={() => handlePreset(p.key, p.days)}
-            >
-              {`${p.days}д`}
-            </Button>
-          ))}
-
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5">
-                <CalendarIcon className="h-3.5 w-3.5" />
-                {format(range.from, "dd.MM.yy", { locale })} — {format(range.to, "dd.MM.yy", { locale })}
+      {/* ═══════════════ NEW FILTER BAR ═══════════════ */}
+      <Card className="border-border bg-card">
+        <CardContent className="p-4">
+          {/* Row 1: Presets */}
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
+            {PRESETS.map((p) => (
+              <Button
+                key={p.key}
+                variant={activePreset === p.key ? "default" : "outline"}
+                size="sm" className="h-7 text-xs px-3"
+                onClick={() => handlePreset(p.key, p.days)}
+              >
+                {`${p.days}${i18n.language === "ru" ? "д" : "d"}`}
               </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="range"
-                selected={{ from: range.from, to: range.to }}
-                onSelect={(r: any) => {
-                  if (r?.from && r?.to) { setRange({ from: r.from, to: r.to }); setActivePreset(""); }
-                  else if (r?.from) { setRange({ from: r.from, to: r.from }); setActivePreset(""); }
-                }}
-                numberOfMonths={2} locale={locale}
-                className="p-3 pointer-events-auto"
-              />
-            </PopoverContent>
-          </Popover>
-
-          <Button size="sm" className="h-8 text-xs" onClick={handleApply}>
-            {t("project.analytics.apply", "Применить")}
-          </Button>
-
-          {/* Comparison toggle */}
-          <div className="flex items-center gap-2 ml-2">
-            <Switch id="comp-toggle" checked={showComparison} onCheckedChange={setShowComparison} className="scale-90" />
-            <Label htmlFor="comp-toggle" className="text-xs text-muted-foreground cursor-pointer flex items-center gap-1">
-              <ArrowRightLeft className="h-3 w-3" />
-              {t("project.analytics.comparisonTab", "Сравнение")}
-            </Label>
-          </div>
-        </div>
-
-        <Button onClick={handleGenerateReport} size="sm" className="gap-2 h-8">
-          <Link2 className="h-3.5 w-3.5" />
-          {t("project.analytics.generateReport")}
-        </Button>
-      </div>
-
-      {/* Row 2: Comparison controls */}
-      {showComparison && (
-        <div className="flex items-center gap-3 flex-wrap p-3 rounded-lg border border-border bg-muted/30">
-          <DateRangePicker range={compRange} onChange={setCompRange} locale={locale} label={t("project.analytics.compareTo", "Сравнить с")} />
-
-          <div className="flex gap-1.5">
-            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => handleCompPreset("previous")}>
-              {t("project.analytics.prevPeriod", "Предыдущий период")}
-            </Button>
-            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => handleCompPreset("lastYear")}>
-              {t("project.analytics.lastYear", "Год назад")}
+            ))}
+            <Button onClick={handleGenerateReport} variant="ghost" size="sm" className="gap-1.5 h-7 text-xs ml-auto">
+              <Link2 className="h-3.5 w-3.5" />
+              {t("project.analytics.generateReport")}
             </Button>
           </div>
 
-          <Select value={compMetric} onValueChange={(v) => setCompMetric(v as MetricKey)}>
-            <SelectTrigger className="w-[160px] h-7 text-xs"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {metricOptions.map((m) => (
-                <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {/* Row 2: Period A | VS | Period B | Toggle | Apply */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Period A */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-primary bg-primary/10 px-1.5 py-0.5 rounded">
+                {t("comparison.a", "А")}
+              </span>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5 min-w-[170px]">
+                    <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                    {format(range.from, "dd.MM.yy", { locale })} — {format(range.to, "dd.MM.yy", { locale })}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="range"
+                    selected={{ from: range.from, to: range.to }}
+                    onSelect={(r: any) => {
+                      if (r?.from && r?.to) { setRange({ from: r.from, to: r.to }); setActivePreset(""); }
+                      else if (r?.from) { setRange({ from: r.from, to: r.from }); setActivePreset(""); }
+                    }}
+                    numberOfMonths={2} locale={locale}
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
 
-          <Button size="sm" variant="secondary" className="h-7 text-xs" onClick={handleApply}>
-            {t("project.analytics.apply", "Применить")}
-          </Button>
-        </div>
-      )}
+            {/* VS separator */}
+            <span className="text-xs font-bold text-muted-foreground px-1">VS</span>
+
+            {/* Period B */}
+            <div className={cn("flex items-center gap-1.5 transition-opacity", !showComparison && "opacity-40 pointer-events-none")}>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                {t("comparison.b", "Б")}
+              </span>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5 min-w-[170px]" disabled={!showComparison}>
+                    <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                    {format(compRange.from, "dd.MM.yy", { locale })} — {format(compRange.to, "dd.MM.yy", { locale })}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="range"
+                    selected={{ from: compRange.from, to: compRange.to }}
+                    onSelect={(r: any) => {
+                      if (r?.from && r?.to) setCompRange({ from: r.from, to: r.to });
+                      else if (r?.from) setCompRange({ from: r.from, to: r.from });
+                    }}
+                    numberOfMonths={2} locale={locale}
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* Toggle */}
+            <div className="flex items-center gap-2 ml-1">
+              <Switch id="comp-toggle" checked={showComparison} onCheckedChange={handleToggleComparison} className="scale-90" />
+              <Label htmlFor="comp-toggle" className="text-xs text-muted-foreground cursor-pointer flex items-center gap-1">
+                <ArrowRightLeft className="h-3 w-3" />
+                {t("comparison.enable", "Сравнение")}
+              </Label>
+            </div>
+
+            {/* Apply */}
+            <Button size="sm" className="h-8 text-xs ml-auto" onClick={handleApply}>
+              {t("project.analytics.apply", "Применить")}
+            </Button>
+          </div>
+
+          {/* Row 3: Comparison presets (only when comparison on) */}
+          {showComparison && (
+            <div className="flex items-center gap-2 mt-2 pt-2 border-t border-border">
+              <span className="text-xs text-muted-foreground">{t("comparison.presets", "Пресеты")}:</span>
+              <Button variant="outline" size="sm" className="h-6 text-[11px] px-2" onClick={() => handleCompPreset("previous")}>
+                {t("project.analytics.prevPeriod", "Предыдущий период")}
+              </Button>
+              <Button variant="outline" size="sm" className="h-6 text-[11px] px-2" onClick={() => handleCompPreset("lastYear")}>
+                {t("project.analytics.lastYear", "Год назад")}
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map((kpi, i) => (
-          <KpiCard key={i} label={kpi.label} value={kpi.value} change={kpi.change} positive={kpi.positive} sparkData={kpi.sparkData} chartColor={kpi.color} />
+          <KpiCard
+            key={i}
+            label={kpi.label}
+            value={kpi.value}
+            change={kpi.change}
+            positive={kpi.positive}
+            sparkData={kpi.sparkData}
+            chartColor={kpi.color}
+            compValue={kpi.compValue}
+            showComparison={showComparison}
+          />
         ))}
       </div>
 
-      {/* Traffic Chart - with optional comparison overlay */}
+      {/* Traffic Chart */}
       <Card className="border-border bg-card">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">
             {t("project.analytics.traffic")}
             <span className="ml-2 text-xs font-normal">
               {format(appliedRange.from, "dd.MM.yy", { locale })} — {format(appliedRange.to, "dd.MM.yy", { locale })}
+              {showComparison && (
+                <span className="text-muted-foreground/60 ml-1">
+                  vs {format(appliedCompRange.from, "dd.MM.yy", { locale })} — {format(appliedCompRange.to, "dd.MM.yy", { locale })}
+                </span>
+              )}
             </span>
           </CardTitle>
         </CardHeader>
@@ -381,14 +459,14 @@ export function AnalyticsTab({ projectId, onSwitchToGoals }: AnalyticsTabProps) 
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.5} />
                     <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} />
                     <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} />
-                    <Tooltip content={<CustomTooltip />} />
+                    <Tooltip content={<DualTooltip showComparison periodALabel={periodALabel} periodBLabel={periodBLabel} />} />
                     <Legend />
                     {showCurrentLine && (
-                      <Line type="monotone" dataKey="current" name={t("project.analytics.currentPeriod", "Текущий период")}
+                      <Line type="monotone" dataKey="current" name={periodALabel}
                         stroke={COMPARISON_COLORS.current} strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} />
                     )}
                     {showPreviousLine && (
-                      <Line type="monotone" dataKey="previous" name={t("project.analytics.previousPeriod", "Период сравнения")}
+                      <Line type="monotone" dataKey="previous" name={periodBLabel}
                         stroke={COMPARISON_COLORS.previous} strokeWidth={2} strokeDasharray="6 3" dot={false} activeDot={{ r: 4 }} />
                     )}
                   </LineChart>
@@ -403,7 +481,7 @@ export function AnalyticsTab({ projectId, onSwitchToGoals }: AnalyticsTabProps) 
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.5} />
                     <XAxis dataKey="dateStr" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} />
                     <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} />
-                    <Tooltip content={<CustomTooltip />} />
+                    <Tooltip content={<SimpleTooltip />} />
                     <Area type="monotone" dataKey="visits" name={t("project.analytics.visitors", "Визиты")} stroke="hsl(var(--chart-1))" strokeWidth={2} fill="url(#analyticsGrad)" dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: "hsl(var(--card))" }} />
                   </AreaChart>
                 )}
@@ -413,17 +491,17 @@ export function AnalyticsTab({ projectId, onSwitchToGoals }: AnalyticsTabProps) 
               {showComparison && (
                 <div className="flex items-center gap-4 mt-3 ml-4">
                   <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" checked={showCurrentLine} onChange={(e) => setShowCurrentLine(e.target.checked)} className="accent-[hsl(var(--chart-1))]" />
+                    <input type="checkbox" checked={showCurrentLine} onChange={(e) => setShowCurrentLine(e.target.checked)} className="accent-primary" />
                     <span className="text-xs text-muted-foreground flex items-center gap-1">
                       <span className="w-4 h-0.5 rounded" style={{ background: COMPARISON_COLORS.current }} />
-                      {t("project.analytics.currentPeriod", "Текущий период")}
+                      {periodALabel}
                     </span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" checked={showPreviousLine} onChange={(e) => setShowPreviousLine(e.target.checked)} className="accent-[hsl(var(--chart-3))]" />
+                    <input type="checkbox" checked={showPreviousLine} onChange={(e) => setShowPreviousLine(e.target.checked)} className="accent-muted-foreground" />
                     <span className="text-xs text-muted-foreground flex items-center gap-1">
                       <span className="w-4 h-0.5 rounded border-b border-dashed" style={{ borderColor: COMPARISON_COLORS.previous }} />
-                      {t("project.analytics.previousPeriod", "Период сравнения")}
+                      {periodBLabel}
                     </span>
                   </label>
                 </div>
@@ -437,11 +515,16 @@ export function AnalyticsTab({ projectId, onSwitchToGoals }: AnalyticsTabProps) 
         </CardContent>
       </Card>
 
-      {/* Comparison period cards */}
+      {/* Comparison period summary cards */}
       {showComparison && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Card className="border-border bg-card p-4">
-            <p className="text-xs text-muted-foreground mb-1">{t("project.analytics.currentPeriod", "Текущий период")}</p>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-primary bg-primary/10 px-1.5 py-0.5 rounded">
+                {t("comparison.a", "А")}
+              </span>
+              <p className="text-xs text-muted-foreground">{periodALabel}</p>
+            </div>
             <p className="text-sm font-semibold text-foreground">
               {format(appliedRange.from, "dd.MM.yy", { locale })} — {format(appliedRange.to, "dd.MM.yy", { locale })}
             </p>
@@ -451,7 +534,12 @@ export function AnalyticsTab({ projectId, onSwitchToGoals }: AnalyticsTabProps) 
             </p>
           </Card>
           <Card className="border-border bg-card p-4">
-            <p className="text-xs text-muted-foreground mb-1">{t("project.analytics.previousPeriod", "Период сравнения")}</p>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                {t("comparison.b", "Б")}
+              </span>
+              <p className="text-xs text-muted-foreground">{periodBLabel}</p>
+            </div>
             <p className="text-sm font-semibold text-foreground">
               {format(appliedCompRange.from, "dd.MM.yy", { locale })} — {format(appliedCompRange.to, "dd.MM.yy", { locale })}
             </p>
@@ -479,7 +567,7 @@ export function AnalyticsTab({ projectId, onSwitchToGoals }: AnalyticsTabProps) 
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.5} horizontal={false} />
                   <XAxis type="number" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} />
                   <YAxis type="category" dataKey="source" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} width={80} />
-                  <Tooltip content={<CustomTooltip />} />
+                  <Tooltip content={<SimpleTooltip />} />
                   <Bar dataKey="visits" name={t("publicReport.kpi.visits", "Визиты")} radius={[0, 4, 4, 0]}>
                     {trafficSourcesData.map((_, i) => (
                       <Cell key={i} fill={TRAFFIC_COLORS[i % TRAFFIC_COLORS.length]} />
@@ -506,7 +594,7 @@ export function AnalyticsTab({ projectId, onSwitchToGoals }: AnalyticsTabProps) 
                       <Cell key={i} fill={TRAFFIC_COLORS[i % TRAFFIC_COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip content={<CustomTooltip />} />
+                  <Tooltip content={<SimpleTooltip />} />
                 </PieChart>
               </ResponsiveContainer>
             </CardContent>
