@@ -56,6 +56,7 @@
     "tabs": {
       "overview": "Обзор",
       "analytics": "Аналитика",
+      "goals": "Цели",
       "worklog": "Список работ",
       "integrations": "Интеграции",
       "settings": "Настройки"
@@ -292,6 +293,16 @@
     "showAll": "Показать все цели",
     "allGoals": "Все цели",
     "empty": "В Яндекс.Метрике не настроены цели. Добавьте их для отслеживания конверсий."
+  },
+  "goalsTab": {
+    "allGoals": "Все цели",
+    "totalReaches": "Всего достижений",
+    "avgCR": "Средний CR%",
+    "goalsCount": "Целей отслеживается",
+    "conversionDynamics": "Динамика конверсий",
+    "detailedTable": "Детальная таблица целей",
+    "periodDelta": "Δ период",
+    "reaches": "Достижения"
   },
   "artifacts": {
     "openExternal": "Открыть",
