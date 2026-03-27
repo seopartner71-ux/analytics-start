@@ -281,6 +281,14 @@ const ProjectDetail = () => {
                     trafficSources={(latestMetrikaStats?.traffic_sources as any[]) || []}
                   />
 
+                  {/* Main Analytics (Dashboard) */}
+                  <AnalyticsTab
+                    projectId={project.id}
+                    onSwitchToGoals={() => setActiveTab("goals")}
+                    onSwitchToSeo={() => setActiveTab("seo")}
+                    onSwitchToPages={() => setActiveTab("pages")}
+                  />
+
                   <div className="grid gap-6 lg:grid-cols-2">
                     {isConnected("yandexMetrika") && <MetrikaWidget projectId={id} />}
                     {isConnected("yandexWebmaster") && <WebmasterWidget />}
@@ -293,10 +301,6 @@ const ProjectDetail = () => {
                     ) : null}
                   </div>
                 </div>
-              </TabsContent>
-
-              <TabsContent value="analytics">
-                <AnalyticsTab projectId={project.id} onSwitchToGoals={() => setActiveTab("goals")} onSwitchToSeo={() => setActiveTab("seo")} onSwitchToPages={() => setActiveTab("pages")} />
               </TabsContent>
 
               <TabsContent value="seo">
