@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { format, subDays, subYears, differenceInDays, parseISO } from "date-fns";
@@ -76,10 +76,22 @@ export function GoalsTab({ projectId, projectName }: GoalsTabProps) {
     range, setRange, appliedRange, apply,
     showComparison, setShowComparison,
     compRange, setCompRange, appliedCompRange,
-    applyCompPreset, resetToDefault,
+    applyCompPreset, resetToDefault, applyVersion,
   } = useDateRange();
 
   const [selectedGoal, setSelectedGoal] = useState<string>("all");
+
+  // Loading animation on apply
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const prevVersion = useRef(applyVersion);
+  useEffect(() => {
+    if (applyVersion !== prevVersion.current) {
+      prevVersion.current = applyVersion;
+      setIsRefreshing(true);
+      const timer = setTimeout(() => setIsRefreshing(false), 600);
+      return () => clearTimeout(timer);
+    }
+  }, [applyVersion]);
 
   const dateFrom = format(appliedRange.from, "yyyy-MM-dd");
   const dateTo = format(appliedRange.to, "yyyy-MM-dd");

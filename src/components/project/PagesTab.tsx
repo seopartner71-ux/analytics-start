@@ -195,6 +195,10 @@ export function PagesTab({ projectId, projectName }: PagesTabProps) {
             </p>
           )}
         </Card>
+        <Card className="border-border bg-card p-4">
+          <p className="text-xs text-muted-foreground">{t("pagesTab.pagesCount", "Страниц")}</p>
+          <p className="text-2xl font-bold text-foreground mt-1">{pages.length}</p>
+        </Card>
       </div>
 
       {/* Top Growing Pages Chart */}
