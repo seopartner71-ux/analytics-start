@@ -1,0 +1,164 @@
+{
+  "nav": {
+    "projects": "Projects",
+    "team": "Team",
+    "settings": "Settings"
+  },
+  "dashboard": {
+    "title": "My Projects",
+    "projectsCount": "{{count}} projects",
+    "addProject": "Add Project"
+  },
+  "addProjectDialog": {
+    "title": "New Project",
+    "description": "Add project information",
+    "name": "Name",
+    "namePlaceholder": "My project",
+    "site": "Website",
+    "sitePlaceholder": "https://example.com",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Brief project description...",
+    "logo": "Logo",
+    "logoHint": "Drag & drop or click to upload",
+    "cancel": "Cancel",
+    "create": "Create",
+    "required": "Please fill in required fields",
+    "success": "Project added"
+  },
+  "reports": {
+    "ready": "Ready",
+    "inProgress": "In progress",
+    "none": "No reports"
+  },
+  "project": {
+    "breadcrumbProjects": "Projects",
+    "tabs": {
+      "overview": "Overview",
+      "analytics": "Analytics",
+      "worklog": "Work Log",
+      "integrations": "Integrations",
+      "settings": "Settings"
+    },
+    "analytics": {
+      "traffic": "Website Traffic",
+      "sources": "Traffic Sources",
+      "period": "Period",
+      "month": "Month",
+      "year": "Year",
+      "generateReport": "Generate Public Report",
+      "linkCopied": "Link copied to clipboard",
+      "visitors": "Visitors",
+      "organic": "Organic",
+      "direct": "Direct",
+      "social": "Social",
+      "referral": "Referral"
+    },
+    "worklog": {
+      "title": "Work Log",
+      "placeholder": "What was done?",
+      "linkPlaceholder": "Link to document (optional)",
+      "addTask": "Add Task",
+      "deleteTask": "Delete",
+      "viewResult": "View Result",
+      "noTasks": "No tasks yet"
+    },
+    "settingsTab": {
+      "title": "Project Settings",
+      "nameLabel": "Project Name",
+      "urlLabel": "Website URL",
+      "save": "Save",
+      "saved": "Settings saved"
+    }
+  },
+  "integrations": {
+    "title": "Integration Settings",
+    "connect": "Connect",
+    "disconnect": "Disconnect",
+    "active": "Active",
+    "lastSync": "Last sync",
+    "connected": "Service connected",
+    "disconnected": "Service disconnected",
+    "fillFields": "Please fill in all fields",
+    "noConnected": "No connected services. Go to the Integrations tab to set up.",
+    "oauthTitle": "Authorize {{service}}",
+    "oauthDesc": "You will be redirected for OAuth authorization",
+    "oauthPlaceholder": "OAuth authorization window will appear here",
+    "authorize": "Authorize",
+    "topvisorTitle": "Connect Topvisor",
+    "topvisorDesc": "Enter API Key and Project ID from your Topvisor dashboard",
+    "names": {
+      "yandexMetrika": "Yandex Metrika",
+      "yandexWebmaster": "Yandex Webmaster",
+      "googleSearchConsole": "Google Search Console",
+      "topvisor": "Topvisor"
+    },
+    "desc": {
+      "yandexMetrika": "Traffic data, bounce rates, and user behavior",
+      "yandexWebmaster": "Indexing errors and page status in search",
+      "gsc": "Search queries, clicks, and Google positions",
+      "topvisor": "Keyword position monitoring"
+    }
+  },
+  "widgets": {
+    "metrika": {
+      "title": "Yandex Metrika — Visits",
+      "bounceRate": "Bounce Rate",
+      "pageDepth": "Page Depth",
+      "avgTime": "Avg. Time"
+    },
+    "webmaster": {
+      "title": "Yandex Webmaster",
+      "pagesInSearch": "Pages in search",
+      "criticalErrors": "Critical Errors"
+    },
+    "gsc": {
+      "title": "Google Search Console — Top Queries",
+      "query": "Query",
+      "clicks": "Clicks",
+      "impressions": "Impressions",
+      "position": "Avg. Position"
+    },
+    "topvisor": {
+      "title": "Topvisor — Position Dynamics",
+      "top3": "Top 3",
+      "top10": "Top 10",
+      "top30": "Top 30",
+      "outside": "Outside Top",
+      "topGrowth": "Top growth this month"
+    }
+  },
+  "publicReport": {
+    "title": "Promotion Report for {{month}}",
+    "downloadPdf": "Download PDF",
+    "langSwitch": "Русский",
+    "kpi": {
+      "title": "Key Metrics",
+      "visits": "Visits",
+      "bounceRate": "Bounce Rate",
+      "depth": "Page Depth",
+      "positions": "Search Positions"
+    },
+    "growth": "monthly growth",
+    "decline": "monthly decline",
+    "trafficDynamics": "Traffic Dynamics",
+    "completedWork": "Completed Work",
+    "viewResult": "View Result",
+    "footer": {
+      "manager": "Your Manager",
+      "email": "Email",
+      "phone": "Phone"
+    },
+    "months": {
+      "0": "January", "1": "February", "2": "March", "3": "April",
+      "4": "May", "5": "June", "6": "July", "7": "August",
+      "8": "September", "9": "October", "10": "November", "11": "December"
+    }
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "loading": "Loading...",
+    "error": "Error"
+  }
+}
