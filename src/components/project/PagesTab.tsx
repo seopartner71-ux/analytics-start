@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { format, subDays, subYears, differenceInDays } from "date-fns";
 import { ru, enUS } from "date-fns/locale";
+import { useDateRange } from "@/contexts/DateRangeContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -80,13 +81,12 @@ export function PagesTab({ projectId, projectName }: PagesTabProps) {
   const locale = i18n.language === "ru" ? ru : enUS;
   const contentRef = useRef<HTMLDivElement>(null);
 
-  const today = new Date();
-  const [range, setRange] = useState<DateRange>({ from: subDays(today, 30), to: today });
-  const [appliedRange, setAppliedRange] = useState<DateRange>(range);
-  const [showComparison, setShowComparison] = useState(false);
-  const [compRange, setCompRange] = useState<DateRange>({
-    from: subYears(subDays(today, 30), 1), to: subYears(today, 1),
-  });
+  const {
+    range, setRange, appliedRange, apply,
+    showComparison, setShowComparison,
+    compRange, setCompRange, appliedCompRange,
+    resetToDefault,
+  } = useDateRange();
 
   const pages = useMemo(() => generatePagesData(), []);
   const top5Growing = useMemo(() => [...pages].sort((a, b) => b.growth - a.growth).slice(0, 5), [pages]);
@@ -106,7 +106,7 @@ export function PagesTab({ projectId, projectName }: PagesTabProps) {
   const aiSummary = cachedReport?.report_data && typeof cachedReport.report_data === 'object' && 'ai_summary' in (cachedReport.report_data as any)
     ? (cachedReport.report_data as any).ai_summary : undefined;
 
-  const handleApply = () => setAppliedRange({ ...range });
+  const handleApply = () => apply();
 
   const formatDuration = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 
