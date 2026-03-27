@@ -263,7 +263,7 @@ const ProjectDetail = () => {
                   />
 
                   <div className="grid gap-6 lg:grid-cols-2">
-                    {isConnected("yandexMetrika") && <MetrikaWidget />}
+                    {isConnected("yandexMetrika") && <MetrikaWidget projectId={id} />}
                     {isConnected("yandexWebmaster") && <WebmasterWidget />}
                     {isConnected("googleSearchConsole") && <GSCWidget />}
                     {isConnected("topvisor") && <TopvisorWidget />}
