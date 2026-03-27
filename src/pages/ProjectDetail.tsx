@@ -457,8 +457,17 @@ const ProjectDetail = () => {
                       />
                       <p className="text-[11px] text-muted-foreground">{t("project.shareLinkExpiryHint")}</p>
                     </div>
+                    </div>
                   </div>
-                </div>
+
+                  {/* Integrations */}
+                  <div className="border-t border-border pt-6">
+                    <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-4">
+                      <Plug className="h-4 w-4" />
+                      {t("project.tabs.integrations")}
+                    </h3>
+                    <IntegrationsTab projectId={project.id} integrations={integrations} />
+                  </div>
               </TabsContent>
             </Tabs>
           </main>
