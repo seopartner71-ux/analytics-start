@@ -2,15 +2,16 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import { PageHeader } from "@/components/PageHeader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronRight, Globe, LogOut, Copy, Pencil, Upload, X, User, Search, Sun, Moon } from "lucide-react";
+import { ChevronRight, Copy, Pencil, Upload, X, User } from "lucide-react";
 import { toast } from "sonner";
 import { IntegrationsTab } from "@/components/project/IntegrationsTab";
 import { AnalyticsTab } from "@/components/project/AnalyticsTab";
@@ -20,18 +21,14 @@ import { WebmasterWidget } from "@/components/widgets/WebmasterWidget";
 import { GSCWidget } from "@/components/widgets/GSCWidget";
 import { TopvisorWidget } from "@/components/widgets/TopvisorWidget";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 
 const ProjectDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const { t, i18n } = useTranslation();
-  const { signOut } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("overview");
 
-  const toggleLang = () => i18n.changeLanguage(i18n.language === "ru" ? "en" : "ru");
 
   const { data: project, isLoading } = useQuery({
     queryKey: ["project", id],
@@ -189,28 +186,8 @@ const ProjectDetail = () => {
       <div className="min-h-screen flex w-full">
         <AppSidebar />
         <div className="flex-1 flex flex-col">
-          <header className="h-14 flex items-center justify-between border-b border-border/60 px-4 bg-card">
-            <div className="flex items-center">
-              <SidebarTrigger className="mr-4" />
-              <span className="text-sm font-medium text-muted-foreground">StatPulse</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" onClick={toggleTheme} className="h-8 w-8">
-                {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-              </Button>
-              <Button variant="ghost" size="sm" onClick={toggleLang} className="gap-1.5 text-xs">
-                <Globe className="h-3.5 w-3.5" />
-                {i18n.language === "ru" ? "EN" : "RU"}
-              </Button>
-              <Button variant="ghost" size="sm" onClick={signOut} className="gap-1.5 text-xs text-muted-foreground">
-                <LogOut className="h-3.5 w-3.5" />
-                {t("auth.logout")}
-              </Button>
-            </div>
-          </header>
-
-          <main className="flex-1 p-6 lg:p-8">
-            <div className="flex items-center justify-between mb-6">
+          <PageHeader
+            breadcrumbs={
               <nav className="flex items-center gap-1.5 text-sm text-muted-foreground">
                 <Link to="/" className="hover:text-foreground transition-colors">
                   {t("project.breadcrumbProjects")}
@@ -218,16 +195,19 @@ const ProjectDetail = () => {
                 <ChevronRight className="h-3.5 w-3.5" />
                 <div className="flex items-center gap-2">
                   {logoPreview && (
-                    <img src={logoPreview} alt={project.name} className="h-6 w-6 rounded-full object-cover" />
+                    <img src={logoPreview} alt={project.name} className="h-5 w-5 rounded object-cover" />
                   )}
                   <span className="text-foreground font-medium">{project.name}</span>
                 </div>
               </nav>
-              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setActiveTab("settings")}>
-                <Pencil className="h-3.5 w-3.5" />
+            }
+            actions={
+              <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs mr-2" onClick={() => setActiveTab("settings")}>
+                <Pencil className="h-3 w-3" />
                 {t("project.editProject")}
               </Button>
-            </div>
+            }
+          />
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
               <TabsList className="bg-muted/60">
