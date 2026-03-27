@@ -139,6 +139,16 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
           }
         }
 
+        // Parse traffic sources
+        const trafficSources: { source: string; visits: number }[] = [];
+        if (data.trafficSources?.data) {
+          for (const row of data.trafficSources.data) {
+            const sourceName = row.dimensions?.[0]?.name || row.dimensions?.[0]?.id || "unknown";
+            const visits = Math.round(row.metrics?.[0] || 0);
+            trafficSources.push({ source: sourceName, visits });
+          }
+        }
+
         const now = new Date();
         const dateFrom = new Date(now.getTime() - 30 * 86400000).toISOString().split("T")[0];
         const dateTo = now.toISOString().split("T")[0];
@@ -157,7 +167,8 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
           page_depth: Number((totals[2] || 0).toFixed(2)),
           avg_duration_seconds: Math.round(totals[3] || 0),
           fetched_at: now.toISOString(),
-        });
+          traffic_sources: trafficSources,
+        } as any);
         if (insertError) throw insertError;
 
         // Update last_sync timestamp

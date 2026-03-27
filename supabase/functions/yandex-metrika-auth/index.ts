@@ -164,10 +164,18 @@ Deno.serve(async (req) => {
 
       const totalsData = await totalsResp.json();
 
+      // Fetch traffic sources
+      const sourcesResp = await fetch(
+        `https://api-metrika.yandex.net/stat/v1/data?id=${counterId}&metrics=ym:s:visits&dimensions=ym:s:lastTrafficSource&date1=${startDate}&date2=${endDate}&limit=20`,
+        { headers: { Authorization: `OAuth ${accessToken}` } }
+      );
+      const sourcesData = await sourcesResp.json();
+
       return new Response(
         JSON.stringify({
           timeSeries: visitsData,
           totals: totalsData,
+          trafficSources: sourcesData,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
