@@ -361,6 +361,7 @@
     "totalImpressions": "Impressions",
     "avgPosition": "Avg. Position",
     "visibility": "Visibility: Impressions vs Clicks",
+    "engineDynamics": "Search Engine Dynamics",
     "queriesTable": "Search Queries",
     "query": "Query",
     "clicks": "Clicks",
@@ -368,7 +369,16 @@
     "position": "Avg. Position",
     "trend": "Trend",
     "change": "Δ Clicks",
-    "posChange": "Δ Position"
+    "posChange": "Δ Position",
+    "yandexShare": "Yandex Share",
+    "googleShare": "Google Share",
+    "yandexLandings": "Top 5 Pages from Yandex",
+    "googleLandings": "Top 5 Pages from Google"
+  },
+  "engines": {
+    "yandex": "Yandex",
+    "google": "Google",
+    "other": "Other"
   },
   "pagesTab": {
     "totalVisits": "Total Visits",

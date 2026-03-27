@@ -361,6 +361,7 @@
     "totalImpressions": "Показы",
     "avgPosition": "Ср. позиция",
     "visibility": "Видимость: Показы vs Клики",
+    "engineDynamics": "Динамика по поисковым системам",
     "queriesTable": "Поисковые запросы",
     "query": "Запрос",
     "clicks": "Клики",
@@ -368,7 +369,16 @@
     "position": "Ср. позиция",
     "trend": "Тренд",
     "change": "Δ Клики",
-    "posChange": "Δ Позиция"
+    "posChange": "Δ Позиция",
+    "yandexShare": "Доля Яндекса",
+    "googleShare": "Доля Google",
+    "yandexLandings": "Топ-5 страниц из Яндекса",
+    "googleLandings": "Топ-5 страниц из Google"
+  },
+  "engines": {
+    "yandex": "Яндекс",
+    "google": "Google",
+    "other": "Другие"
   },
   "pagesTab": {
     "totalVisits": "Всего визитов",
