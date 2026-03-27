@@ -424,6 +424,9 @@
     "visitors": "Visitors",
     "bounce": "Bounce %",
     "depth": "Page Depth",
-    "duration": "Time on Site"
+    "duration": "Time on Site",
+    "share": "Share",
+    "shareChart": "Search Engine Share",
+    "subChannelChart": "Visits by Sub-channel"
   }
 }
