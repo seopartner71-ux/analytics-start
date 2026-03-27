@@ -20,11 +20,13 @@ import { GSCWidget } from "@/components/widgets/GSCWidget";
 import { TopvisorWidget } from "@/components/widgets/TopvisorWidget";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
 
 const ProjectDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { t, i18n } = useTranslation();
   const { signOut } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("overview");
 
