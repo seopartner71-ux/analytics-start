@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { format, subDays, subYears, differenceInDays, parseISO } from "date-fns";
@@ -20,10 +20,13 @@ import {
   Legend, LineChart, Line,
 } from "recharts";
 import { KpiCard } from "@/components/KpiCard";
+import { ExportMenu } from "@/components/ExportMenu";
+import { exportToPdf, exportToExcel, exportToWord, type ExcelSheet, type WordSection } from "@/lib/export-utils";
 import { supabase } from "@/integrations/supabase/client";
 
 interface GoalsTabProps {
   projectId: string;
+  projectName: string;
 }
 
 interface GoalStat {
@@ -63,9 +66,10 @@ function ChangeIndicator({ value, className }: { value: number; className?: stri
   );
 }
 
-export function GoalsTab({ projectId }: GoalsTabProps) {
+export function GoalsTab({ projectId, projectName }: GoalsTabProps) {
   const { t, i18n } = useTranslation();
   const locale = i18n.language === "ru" ? ru : enUS;
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const today = new Date();
   const [range, setRange] = useState<DateRange>({ from: subDays(today, 30), to: today });
@@ -233,7 +237,7 @@ export function GoalsTab({ projectId }: GoalsTabProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" ref={contentRef}>
       {/* Filters */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-2 flex-wrap">
@@ -273,6 +277,18 @@ export function GoalsTab({ projectId }: GoalsTabProps) {
           <Button size="sm" className="h-8 text-xs" onClick={handleApply}>
             {t("project.analytics.apply", "Применить")}
           </Button>
+
+          <ExportMenu
+            onExportPdf={async () => { if (contentRef.current) await exportToPdf(contentRef.current, { projectName, tabName: t("project.tabs.goals"), periodA: dateFrom + " — " + dateTo, periodB: showComparison ? compDateFrom + " — " + compDateTo : undefined, language: i18n.language }); }}
+            onExportExcel={async () => {
+              const sheets: ExcelSheet[] = [{ name: t("project.tabs.goals"), headers: [t("goals.goalName"), t("goals.reaches"), t("goals.conversion"), t("goals.change")], rows: goalsWithDelta.map(g => [g.name, g.reaches, `${g.conversionRate}%`, `${g.delta > 0 ? "+" : ""}${Math.round(g.delta)}%`]) }];
+              exportToExcel(sheets, { projectName, tabName: t("project.tabs.goals"), periodA: dateFrom + " — " + dateTo, language: i18n.language });
+            }}
+            onExportWord={async () => {
+              const sections: WordSection[] = [{ title: t("project.tabs.goals"), table: { headers: [t("goals.goalName"), t("goals.reaches"), t("goals.conversion")], rows: goalsWithDelta.map(g => [g.name, g.reaches, `${g.conversionRate}%`]) } }];
+              await exportToWord(sections, { projectName, tabName: t("project.tabs.goals"), periodA: dateFrom + " — " + dateTo, language: i18n.language });
+            }}
+          />
 
           <div className="flex items-center gap-2 ml-2">
             <Switch id="goals-comp" checked={showComparison} onCheckedChange={setShowComparison} className="scale-90" />

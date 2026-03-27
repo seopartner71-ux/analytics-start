@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { format, subDays, subYears, differenceInDays } from "date-fns";
@@ -18,10 +18,13 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from "recharts";
 import { AiInsightsBlock } from "@/components/project/AiInsightsBlock";
+import { ExportMenu } from "@/components/ExportMenu";
+import { exportToPdf, exportToExcel, exportToWord, type ExcelSheet, type WordSection } from "@/lib/export-utils";
 import { supabase } from "@/integrations/supabase/client";
 
 interface PagesTabProps {
   projectId: string;
+  projectName: string;
 }
 
 type DateRange = { from: Date; to: Date };
@@ -72,9 +75,10 @@ const CHART_COLORS = [
   "hsl(var(--chart-4))", "hsl(var(--chart-5))",
 ];
 
-export function PagesTab({ projectId }: PagesTabProps) {
+export function PagesTab({ projectId, projectName }: PagesTabProps) {
   const { t, i18n } = useTranslation();
   const locale = i18n.language === "ru" ? ru : enUS;
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const today = new Date();
   const [range, setRange] = useState<DateRange>({ from: subDays(today, 30), to: today });
@@ -110,7 +114,7 @@ export function PagesTab({ projectId }: PagesTabProps) {
   const avgBounce = pages.length > 0 ? Math.round((pages.reduce((s, p) => s + p.bounceRate, 0) / pages.length) * 10) / 10 : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" ref={contentRef}>
       {/* Filter Bar */}
       <Card className="border-border bg-card">
         <CardContent className="p-4">
@@ -140,6 +144,17 @@ export function PagesTab({ projectId }: PagesTabProps) {
             <Button size="sm" className="h-8 text-xs ml-auto" onClick={handleApply}>
               {t("project.analytics.apply")}
             </Button>
+            <ExportMenu
+              onExportPdf={async () => { if (contentRef.current) await exportToPdf(contentRef.current, { projectName, tabName: t("project.tabs.pages"), periodA: format(appliedRange.from, "dd.MM.yy") + " — " + format(appliedRange.to, "dd.MM.yy"), language: i18n.language }); }}
+              onExportExcel={async () => {
+                const sheets: ExcelSheet[] = [{ name: t("project.tabs.pages"), headers: ["URL", t("pagesTab.title", "Страница"), t("publicReport.kpi.visits"), t("publicReport.kpi.bounceRate"), t("pagesTab.avgTime", "Ср. время")], rows: pages.map(p => [p.url, p.title, p.visits, `${p.bounceRate}%`, formatDuration(p.avgTime)]) }];
+                exportToExcel(sheets, { projectName, tabName: t("project.tabs.pages"), periodA: format(appliedRange.from, "dd.MM.yy") + " — " + format(appliedRange.to, "dd.MM.yy"), language: i18n.language });
+              }}
+              onExportWord={async () => {
+                const sections: WordSection[] = [{ title: t("project.tabs.pages"), table: { headers: ["URL", t("publicReport.kpi.visits"), t("publicReport.kpi.bounceRate")], rows: pages.map(p => [p.url, p.visits, `${p.bounceRate}%`]) } }];
+                await exportToWord(sections, { projectName, tabName: t("project.tabs.pages"), periodA: format(appliedRange.from, "dd.MM.yy") + " — " + format(appliedRange.to, "dd.MM.yy"), language: i18n.language });
+              }}
+            />
           </div>
         </CardContent>
       </Card>

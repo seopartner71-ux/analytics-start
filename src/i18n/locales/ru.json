@@ -445,5 +445,11 @@
     "goalOrder": "Оформление заказа",
     "goalCallback": "Заявка на звонок",
     "goalSubscribe": "Подписка"
+  },
+  "export": {
+    "title": "Экспорт",
+    "pdf": "PDF (.pdf)",
+    "excel": "Excel (.xlsx)",
+    "word": "Word (.docx)"
   }
 }

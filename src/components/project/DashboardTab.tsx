@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useRef, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
@@ -15,11 +15,14 @@ import {
   ResponsiveContainer, PieChart, Pie, Cell,
 } from "recharts";
 import { KpiCard } from "@/components/KpiCard";
+import { ExportMenu } from "@/components/ExportMenu";
+import { exportToPdf, exportToExcel, exportToWord, type ExcelSheet, type WordSection } from "@/lib/export-utils";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
 interface DashboardTabProps {
   projectId: string;
+  projectName: string;
   dateFrom: string;
   dateTo: string;
   compDateFrom?: string;
@@ -62,11 +65,12 @@ function ChangeIndicator({ value }: { value: number }) {
 }
 
 export function DashboardTab({
-  projectId, dateFrom, dateTo, compDateFrom, compDateTo,
+  projectId, projectName, dateFrom, dateTo, compDateFrom, compDateTo,
   showComparison, onSwitchTab,
 }: DashboardTabProps) {
   const { t, i18n } = useTranslation();
   const locale = i18n.language === "ru" ? ru : enUS;
+  const contentRef = useRef<HTMLDivElement>(null);
 
   // Fetch metrika stats
   const { data: allStats = [], isLoading } = useQuery({
@@ -211,8 +215,47 @@ export function DashboardTab({
     );
   }
 
+  const exportMeta = {
+    projectName,
+    tabName: t("project.tabs.overview", "Дашборд"),
+    periodA: `${dateFrom} — ${dateTo}`,
+    periodB: showComparison && compDateFrom && compDateTo ? `${compDateFrom} — ${compDateTo}` : undefined,
+    language: i18n.language,
+  };
+
+  const handleExportPdf = async () => {
+    if (contentRef.current) await exportToPdf(contentRef.current, exportMeta);
+  };
+
+  const handleExportExcel = async () => {
+    const sheets: ExcelSheet[] = [{
+      name: t("project.tabs.overview"),
+      headers: [t("publicReport.kpi.visits"), t("project.analytics.visitors"), t("project.analytics.conversions"), t("publicReport.kpi.bounceRate")],
+      rows: [[totalVisits, totalVisitors, conversions, `${bounceRate}%`]],
+    }];
+    exportToExcel(sheets, exportMeta);
+  };
+
+  const handleExportWord = async () => {
+    const sections: WordSection[] = [
+      { title: t("project.tabs.overview"), paragraphs: [
+        `${t("publicReport.kpi.visits")}: ${totalVisits.toLocaleString()}`,
+        `${t("project.analytics.visitors")}: ${totalVisitors.toLocaleString()}`,
+        `${t("project.analytics.conversions")}: ${conversions}`,
+        `${t("publicReport.kpi.bounceRate")}: ${bounceRate}%`,
+      ]},
+    ];
+    await exportToWord(sections, exportMeta);
+  };
+
   return (
     <div className="space-y-6">
+      {/* Export button */}
+      <div className="flex justify-end" data-export-ignore>
+        <ExportMenu onExportPdf={handleExportPdf} onExportExcel={handleExportExcel} onExportWord={handleExportWord} />
+      </div>
+
+      <div ref={contentRef} className="space-y-6">
       {/* Block 2: KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map((kpi, i) => (
@@ -433,6 +476,7 @@ export function DashboardTab({
           )}
         </CardContent>
       </Card>
+      </div>{/* close contentRef */}
     </div>
   );
 }

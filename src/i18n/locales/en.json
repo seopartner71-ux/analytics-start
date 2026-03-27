@@ -445,5 +445,11 @@
     "goalOrder": "Order Placement",
     "goalCallback": "Callback Request",
     "goalSubscribe": "Subscription"
+  },
+  "export": {
+    "title": "Export",
+    "pdf": "PDF (.pdf)",
+    "excel": "Excel (.xlsx)",
+    "word": "Word (.docx)"
   }
 }

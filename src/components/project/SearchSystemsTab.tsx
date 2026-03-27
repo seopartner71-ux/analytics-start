@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,9 +21,12 @@ import { format, subDays, subYears, differenceInDays } from "date-fns";
 import { ru, enUS } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { ExportMenu } from "@/components/ExportMenu";
+import { exportToPdf, exportToExcel, exportToWord, type ExcelSheet, type WordSection } from "@/lib/export-utils";
 
 interface SearchSystemsTabProps {
   projectId: string;
+  projectName: string;
 }
 
 /* ── Brand icons ── */
@@ -299,9 +302,10 @@ const PrevLabel = ({ value, comparison }: { value?: number; comparison: boolean 
 type SortKey = "visits" | "visitors" | "bounce" | "depth" | "duration";
 
 /* ══════════════════════ COMPONENT ══════════════════════ */
-export function SearchSystemsTab({ projectId }: SearchSystemsTabProps) {
+export function SearchSystemsTab({ projectId, projectName }: SearchSystemsTabProps) {
   const { t, i18n } = useTranslation();
   const dateFnsLocale = i18n.language === "ru" ? ru : enUS;
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const today = new Date();
   const [range, setRange] = useState<{ from: Date; to: Date }>({ from: subDays(today, 30), to: today });
@@ -508,7 +512,7 @@ export function SearchSystemsTab({ projectId }: SearchSystemsTabProps) {
   const isRealData = !!realData?.phrases;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" ref={contentRef}>
       {/* Data source indicator */}
       {!isRealData && (
         <div className="text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2 flex items-center gap-2">
@@ -602,10 +606,23 @@ export function SearchSystemsTab({ projectId }: SearchSystemsTabProps) {
               </Label>
             </div>
 
-            {/* Apply */}
-            <Button size="sm" className="h-8 text-xs ml-auto" onClick={handleApply}>
-              {t("project.analytics.apply", "Применить")}
-            </Button>
+            {/* Apply + Export */}
+            <div className="flex items-center gap-2 ml-auto">
+              <Button size="sm" className="h-8 text-xs" onClick={handleApply}>
+                {t("project.analytics.apply", "Применить")}
+              </Button>
+              <ExportMenu
+                onExportPdf={async () => { if (contentRef.current) await exportToPdf(contentRef.current, { projectName, tabName: t("project.tabs.searchSystems"), periodA: format(appliedRange.from, "dd.MM.yy"), periodB: showComparison ? format(appliedCompRange.from, "dd.MM.yy") + " — " + format(appliedCompRange.to, "dd.MM.yy") : undefined, language: i18n.language }); }}
+                onExportExcel={async () => {
+                  const sheets: ExcelSheet[] = [{ name: t("project.tabs.searchSystems"), headers: [t("searchSystems.engine"), t("searchSystems.visits"), t("searchSystems.visitors"), t("searchSystems.bounce"), t("searchSystems.depth"), t("searchSystems.timeOnSite")], rows: engines.map(e => [e.engine, e.visits, e.visitors, e.bounce, e.depth, formatTime(e.duration)]) }];
+                  exportToExcel(sheets, { projectName, tabName: t("project.tabs.searchSystems"), periodA: format(appliedRange.from, "dd.MM.yy") + " — " + format(appliedRange.to, "dd.MM.yy"), language: i18n.language });
+                }}
+                onExportWord={async () => {
+                  const sections: WordSection[] = [{ title: t("project.tabs.searchSystems"), table: { headers: [t("searchSystems.engine"), t("searchSystems.visits"), t("searchSystems.bounce")], rows: engines.map(e => [e.engine, e.visits, `${e.bounce}%`]) } }];
+                  await exportToWord(sections, { projectName, tabName: t("project.tabs.searchSystems"), periodA: format(appliedRange.from, "dd.MM.yy") + " — " + format(appliedRange.to, "dd.MM.yy"), language: i18n.language });
+                }}
+              />
+            </div>
           </div>
 
           {/* Comparison presets */}
