@@ -3,8 +3,8 @@ import { useTranslation } from "react-i18next";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, ExternalLink, GripVertical } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Trash2, ExternalLink, GripVertical, CheckCircle2, Circle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
@@ -83,17 +83,17 @@ export function WorkLogTab({ projectId, tasks, isAdmin }: WorkLogTabProps) {
             onChange={(e) => setNewText(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={t("project.worklog.placeholder")}
-            className="flex-1"
+            className="flex-1 h-9"
           />
           <Input
             value={newLink}
             onChange={(e) => setNewLink(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={t("project.worklog.linkPlaceholder")}
-            className="flex-1 sm:max-w-[260px]"
+            className="flex-1 sm:max-w-[260px] h-9"
           />
-          <Button onClick={() => addTask.mutate()} className="gap-2 shrink-0">
-            <Plus className="h-4 w-4" />
+          <Button onClick={() => addTask.mutate()} size="sm" className="gap-2 shrink-0 h-9">
+            <Plus className="h-3.5 w-3.5" />
             {t("project.worklog.addTask")}
           </Button>
         </div>
@@ -106,34 +106,58 @@ export function WorkLogTab({ projectId, tasks, isAdmin }: WorkLogTabProps) {
       {sortedKeys.map((key) => {
         const [year, monthStr] = key.split("-");
         const label = `${t(`publicReport.months.${monthStr}`)} ${year}`;
+        const doneCount = grouped[key].filter(t => t.status === "done").length;
+        const totalCount = grouped[key].length;
+
         return (
           <div key={key} className="space-y-2">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{label}</h3>
-            <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{label}</h3>
+              <span className="text-xs text-muted-foreground">{doneCount}/{totalCount}</span>
+            </div>
+            <div className="space-y-1.5">
               {grouped[key].map((task) => (
                 <div
                   key={task.id}
-                  className={`flex items-center gap-3 rounded-lg border border-border/60 bg-card px-3 py-2.5 transition-colors ${task.status === "done" ? "opacity-70" : ""}`}
+                  className={`flex items-center gap-3 rounded-md border border-border bg-card px-4 py-3 transition-all ${
+                    task.status === "done" ? "opacity-60" : ""
+                  }`}
                 >
-                  {isAdmin && <GripVertical className="h-4 w-4 text-muted-foreground/40 cursor-grab shrink-0" />}
-                  <Checkbox
-                    checked={task.status === "done"}
-                    onCheckedChange={() => isAdmin && toggleStatus.mutate(task)}
+                  {isAdmin && <GripVertical className="h-4 w-4 text-muted-foreground/30 cursor-grab shrink-0" />}
+                  <button
+                    onClick={() => isAdmin && toggleStatus.mutate(task)}
                     disabled={!isAdmin}
-                  />
+                    className="shrink-0"
+                  >
+                    {task.status === "done" ? (
+                      <CheckCircle2 className="h-4.5 w-4.5 text-success" />
+                    ) : (
+                      <Circle className="h-4.5 w-4.5 text-muted-foreground/40" />
+                    )}
+                  </button>
                   <span className={`flex-1 text-sm ${task.status === "done" ? "line-through text-muted-foreground" : "text-foreground"}`}>
                     {task.description}
                   </span>
-                  <span className="text-xs text-muted-foreground">{task.task_date}</span>
+                  <span className="text-xs text-muted-foreground shrink-0">{task.task_date}</span>
+                  <Badge
+                    variant={task.status === "done" ? "default" : "secondary"}
+                    className={`text-[10px] px-2 py-0.5 shrink-0 ${
+                      task.status === "done"
+                        ? "bg-success/10 text-success border-success/20 hover:bg-success/10"
+                        : "bg-warning/10 text-warning border-warning/20 hover:bg-warning/10"
+                    }`}
+                  >
+                    {task.status === "done" ? "Completed" : "In Progress"}
+                  </Badge>
                   {task.link_url && (
                     <a href={task.link_url} target="_blank" rel="noopener noreferrer">
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary">
                         <ExternalLink className="h-3.5 w-3.5" />
                       </Button>
                     </a>
                   )}
                   {isAdmin && (
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => deleteTask.mutate(task.id)}>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => deleteTask.mutate(task.id)}>
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   )}
