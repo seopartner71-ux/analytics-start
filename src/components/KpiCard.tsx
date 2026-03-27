@@ -9,9 +9,11 @@ interface KpiCardProps {
   positive: boolean;
   sparkData?: { v: number }[];
   chartColor?: string;
+  compValue?: string;
+  showComparison?: boolean;
 }
 
-export function KpiCard({ label, value, change, positive, sparkData, chartColor }: KpiCardProps) {
+export function KpiCard({ label, value, change, positive, sparkData, chartColor, compValue, showComparison }: KpiCardProps) {
   const color = chartColor || "hsl(var(--primary))";
 
   return (
@@ -21,10 +23,17 @@ export function KpiCard({ label, value, change, positive, sparkData, chartColor 
         <div className="flex items-end justify-between">
           <div>
             <p className="kpi-value">{value}</p>
-            <div className={`flex items-center gap-1 mt-1 text-xs font-medium ${positive ? "text-success" : "text-destructive"}`}>
-              {positive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-              <span>{Math.abs(change)}%</span>
-            </div>
+            {showComparison && compValue && (
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Б: {compValue}
+              </p>
+            )}
+            {change !== 0 && (
+              <div className={`flex items-center gap-1 mt-1 text-xs font-medium ${positive ? "text-success" : "text-destructive"}`}>
+                {positive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                <span>{change > 0 ? "+" : ""}{Math.abs(change)}%</span>
+              </div>
+            )}
           </div>
           {sparkData && sparkData.length > 0 && (
             <div className="w-20 h-10">
