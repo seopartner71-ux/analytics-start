@@ -12,6 +12,7 @@ interface DateRangeContextType {
   showComparison: boolean;
   compRange: DateRange;
   appliedCompRange: DateRange;
+  applyVersion: number;
   setRange: (r: DateRange) => void;
   setCompRange: (r: DateRange) => void;
   setShowComparison: (v: boolean) => void;
@@ -32,10 +33,12 @@ export function DateRangeProvider({ children }: { children: ReactNode }) {
   const [showComparison, setShowComparison] = useState(false);
   const [compRange, setCompRange] = useState<DateRange>(defaultCompRange);
   const [appliedCompRange, setAppliedCompRange] = useState<DateRange>(defaultCompRange);
+  const [applyVersion, setApplyVersion] = useState(0);
 
   const apply = useCallback(() => {
     setAppliedRange({ ...range });
     if (showComparison) setAppliedCompRange({ ...compRange });
+    setApplyVersion(v => v + 1);
   }, [range, compRange, showComparison]);
 
   const applyCompPreset = useCallback((type: "previous" | "lastYear") => {
@@ -63,7 +66,7 @@ export function DateRangeProvider({ children }: { children: ReactNode }) {
 
   return (
     <DateRangeContext.Provider value={{
-      range, appliedRange, showComparison, compRange, appliedCompRange,
+      range, appliedRange, showComparison, compRange, appliedCompRange, applyVersion,
       setRange, setCompRange, setShowComparison,
       apply, applyCompPreset, resetToDefault,
     }}>
