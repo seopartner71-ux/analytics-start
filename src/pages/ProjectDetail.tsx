@@ -50,6 +50,18 @@ const ProjectDetail = () => {
     enabled: !!id,
   });
 
+  const { data: latestMetrikaStats } = useQuery({
+    queryKey: ["metrika-stats-latest", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("metrika_stats").select("traffic_sources")
+        .eq("project_id", id!).order("fetched_at", { ascending: false }).limit(1).maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!id,
+  });
+
   const { data: workLogs = [] } = useQuery({
     queryKey: ["work_logs", id],
     queryFn: async () => {
