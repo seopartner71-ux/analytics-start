@@ -409,6 +409,11 @@
     "selectHint": "Select at least one module to include in the report",
     "generate": "Generate Public Report",
     "linkPreview": "Report Link",
-    "linkCopied": "Report created! Link copied to clipboard"
+    "linkCopied": "Report created! Link copied to clipboard",
+    "customFields": "Custom Blocks",
+    "addField": "Add Block",
+    "noCustomFields": "Add a custom text block to include in the report",
+    "fieldTitlePlaceholder": "Block title",
+    "fieldContentPlaceholder": "Enter text to display in the report…"
   }
 }
