@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -311,47 +312,23 @@ export function SearchSystemsTab({ projectId, projectName }: SearchSystemsTabPro
   const [range, setRange] = useState<{ from: Date; to: Date }>({ from: subDays(today, 30), to: today });
   const [appliedRange, setAppliedRange] = useState(range);
   const [showComparison, setShowComparison] = useState(false);
-  const [compRange, setCompRange] = useState<{ from: Date; to: Date }>({ from: subYears(subDays(today, 30), 1), to: subYears(today, 1) });
+  const [compRange, setCompRange] = useState<{ from: Date; to: Date }>({ from: subDays(today, 61), to: subDays(today, 31) });
   const [appliedCompRange, setAppliedCompRange] = useState(compRange);
-  const [activePreset, setActivePreset] = useState<string>("30d");
-
-  const PRESETS = [
-    { key: "7d", days: 7 },
-    { key: "14d", days: 14 },
-    { key: "30d", days: 30 },
-    { key: "90d", days: 90 },
-  ] as const;
-
-  const handlePreset = (key: string, days: number) => {
-    const nr = { from: subDays(today, days), to: today };
-    setActivePreset(key);
-    setRange(nr);
-    setAppliedRange(nr);
-    const cr = { from: subYears(nr.from, 1), to: subYears(nr.to, 1) };
-    setCompRange(cr);
-    setAppliedCompRange(cr);
-  };
+  const [selectedEngine, setSelectedEngine] = useState<string>("all");
 
   const handleCompPreset = (type: "previous" | "lastYear") => {
-    const days = differenceInDays(range.to, range.from);
-    const nr = type === "previous"
-      ? { from: subDays(range.from, days + 1), to: subDays(range.from, 1) }
-      : { from: subYears(range.from, 1), to: subYears(range.to, 1) };
-    setCompRange(nr);
-  };
-
-  const handleToggleComparison = (on: boolean) => {
-    setShowComparison(on);
-    if (on) {
-      const nr = { from: subYears(range.from, 1), to: subYears(range.to, 1) };
-      setCompRange(nr);
-      setAppliedCompRange(nr);
+    const days = differenceInDays(appliedRange.to, appliedRange.from);
+    if (type === "previous") {
+      const nr = { from: subDays(appliedRange.from, days + 1), to: subDays(appliedRange.from, 1) };
+      setCompRange(nr); setAppliedCompRange(nr);
+    } else {
+      const nr = { from: subYears(appliedRange.from, 1), to: subYears(appliedRange.to, 1) };
+      setCompRange(nr); setAppliedCompRange(nr);
     }
   };
 
   const handleApply = () => {
     setAppliedRange({ ...range });
-    setActivePreset("");
     if (showComparison) setAppliedCompRange({ ...compRange });
     toast.success(t("project.analytics.applied", "Период применён"));
   };
@@ -429,6 +406,10 @@ export function SearchSystemsTab({ projectId, projectName }: SearchSystemsTabPro
   const filteredData = useMemo(() => {
     const q = search.toLowerCase();
     let d = engines;
+    // Filter by selected engine
+    if (selectedEngine !== "all") {
+      d = d.filter((eng) => eng.key === selectedEngine);
+    }
     if (q) {
       d = d.map((eng) => ({
         ...eng,
@@ -439,7 +420,7 @@ export function SearchSystemsTab({ projectId, projectName }: SearchSystemsTabPro
       })).filter((eng) => eng.subChannels.length > 0);
     }
     return d.filter((eng) => visibleEngines.has(eng.key));
-  }, [engines, search, visibleEngines]);
+  }, [engines, search, visibleEngines, selectedEngine]);
 
   const sortFn = (a: any, b: any) => (sortAsc ? a[sortKey] - b[sortKey] : b[sortKey] - a[sortKey]);
 
@@ -521,124 +502,107 @@ export function SearchSystemsTab({ projectId, projectName }: SearchSystemsTabPro
         </div>
       )}
 
-      {/* ── Full Filter Bar ── */}
-      <Card className="border-border bg-card">
-        <CardContent className="p-4">
-          {/* Presets */}
-          <div className="flex items-center gap-2 mb-3 flex-wrap">
-            {PRESETS.map((p) => (
-              <Button
-                key={p.key}
-                variant={activePreset === p.key ? "default" : "outline"}
-                size="sm" className="h-7 text-xs px-3"
-                onClick={() => handlePreset(p.key, p.days)}
-              >
-                {`${p.days}${i18n.language === "ru" ? "д" : "d"}`}
+      {/* ── Filter Bar (synced with GoalsTab style) ── */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Select value={selectedEngine} onValueChange={setSelectedEngine}>
+            <SelectTrigger className="w-[200px] h-8 text-xs">
+              <SelectValue placeholder={t("searchSystems.allEngines", "Все поисковые системы")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t("searchSystems.allEngines", "Все поисковые системы")}</SelectItem>
+              <SelectItem value="yandex">Яндекс</SelectItem>
+              <SelectItem value="google">Google</SelectItem>
+              <SelectItem value="other">{t("searchSystems.otherEngines", "Другие")}</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5">
+                <CalendarIcon className="h-3.5 w-3.5" />
+                {format(range.from, "dd.MM.yy", { locale: dateFnsLocale })} — {format(range.to, "dd.MM.yy", { locale: dateFnsLocale })}
               </Button>
-            ))}
-          </div>
-
-          {/* Period A | VS | Period B | Toggle | Apply */}
-          <div className="flex items-center gap-2 flex-wrap">
-            {/* Period A */}
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-primary bg-primary/10 px-1.5 py-0.5 rounded">
-                {t("comparison.a", "А")}
-              </span>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5 min-w-[170px]">
-                    <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" />
-                    {format(range.from, "dd.MM.yy", { locale: dateFnsLocale })} — {format(range.to, "dd.MM.yy", { locale: dateFnsLocale })}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="range"
-                    selected={{ from: range.from, to: range.to }}
-                    onSelect={(r: any) => {
-                      if (r?.from && r?.to) { setRange({ from: r.from, to: r.to }); setActivePreset(""); }
-                      else if (r?.from) { setRange({ from: r.from, to: r.from }); setActivePreset(""); }
-                    }}
-                    numberOfMonths={2} locale={dateFnsLocale}
-                    className="p-3 pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            {/* VS */}
-            <span className="text-xs font-bold text-muted-foreground px-1">VS</span>
-
-            {/* Period B */}
-            <div className={cn("flex items-center gap-1.5 transition-opacity", !showComparison && "opacity-40 pointer-events-none")}>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                {t("comparison.b", "Б")}
-              </span>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5 min-w-[170px]" disabled={!showComparison}>
-                    <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" />
-                    {format(compRange.from, "dd.MM.yy", { locale: dateFnsLocale })} — {format(compRange.to, "dd.MM.yy", { locale: dateFnsLocale })}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="range"
-                    selected={{ from: compRange.from, to: compRange.to }}
-                    onSelect={(r: any) => {
-                      if (r?.from && r?.to) setCompRange({ from: r.from, to: r.to });
-                      else if (r?.from) setCompRange({ from: r.from, to: r.from });
-                    }}
-                    numberOfMonths={2} locale={dateFnsLocale}
-                    className="p-3 pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            {/* Toggle */}
-            <div className="flex items-center gap-2 ml-1">
-              <Switch id="ss-comp" checked={showComparison} onCheckedChange={handleToggleComparison} className="scale-90" />
-              <Label htmlFor="ss-comp" className="text-xs text-muted-foreground cursor-pointer flex items-center gap-1">
-                <ArrowRightLeft className="h-3 w-3" />
-                {t("comparison.enable", "Сравнение")}
-              </Label>
-            </div>
-
-            {/* Apply + Export */}
-            <div className="flex items-center gap-2 ml-auto">
-              <Button size="sm" className="h-8 text-xs" onClick={handleApply}>
-                {t("project.analytics.apply", "Применить")}
-              </Button>
-              <ExportMenu
-                onExportPdf={async () => { if (contentRef.current) await exportToPdf(contentRef.current, { projectName, tabName: t("project.tabs.searchSystems"), periodA: format(appliedRange.from, "dd.MM.yy"), periodB: showComparison ? format(appliedCompRange.from, "dd.MM.yy") + " — " + format(appliedCompRange.to, "dd.MM.yy") : undefined, language: i18n.language }); }}
-                onExportExcel={async () => {
-                  const sheets: ExcelSheet[] = [{ name: t("project.tabs.searchSystems"), headers: [t("searchSystems.engine"), t("searchSystems.visits"), t("searchSystems.visitors"), t("searchSystems.bounce"), t("searchSystems.depth"), t("searchSystems.timeOnSite")], rows: engines.map(e => [e.engine, e.visits, e.visitors, e.bounce, e.depth, formatTime(e.duration)]) }];
-                  exportToExcel(sheets, { projectName, tabName: t("project.tabs.searchSystems"), periodA: format(appliedRange.from, "dd.MM.yy") + " — " + format(appliedRange.to, "dd.MM.yy"), language: i18n.language });
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="range"
+                selected={{ from: range.from, to: range.to }}
+                onSelect={(r: any) => {
+                  if (r?.from && r?.to) setRange({ from: r.from, to: r.to });
+                  else if (r?.from) setRange({ from: r.from, to: r.from });
                 }}
-                onExportWord={async () => {
-                  const sections: WordSection[] = [{ title: t("project.tabs.searchSystems"), table: { headers: [t("searchSystems.engine"), t("searchSystems.visits"), t("searchSystems.bounce")], rows: engines.map(e => [e.engine, e.visits, `${e.bounce}%`]) } }];
-                  await exportToWord(sections, { projectName, tabName: t("project.tabs.searchSystems"), periodA: format(appliedRange.from, "dd.MM.yy") + " — " + format(appliedRange.to, "dd.MM.yy"), language: i18n.language });
-                }}
+                numberOfMonths={2} locale={dateFnsLocale}
+                className="p-3 pointer-events-auto"
               />
-            </div>
-          </div>
+            </PopoverContent>
+          </Popover>
 
-          {/* Comparison presets */}
-          {showComparison && (
-            <div className="flex items-center gap-2 mt-2 pt-2 border-t border-border">
-              <span className="text-xs text-muted-foreground">{t("comparison.presets", "Пресеты")}:</span>
-              <Button variant="outline" size="sm" className="h-6 text-[11px] px-2" onClick={() => handleCompPreset("previous")}>
-                {t("project.analytics.prevPeriod", "Предыдущий период")}
-              </Button>
-              <Button variant="outline" size="sm" className="h-6 text-[11px] px-2" onClick={() => handleCompPreset("lastYear")}>
-                {t("project.analytics.lastYear", "Год назад")}
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+          <Button size="sm" className="h-8 text-xs" onClick={handleApply}>
+            {t("project.analytics.apply", "Применить")}
+          </Button>
+
+          <ExportMenu
+            onExportPdf={async () => { if (contentRef.current) await exportToPdf(contentRef.current, { projectName, tabName: t("project.tabs.searchSystems"), periodA: format(appliedRange.from, "dd.MM.yy") + " — " + format(appliedRange.to, "dd.MM.yy"), periodB: showComparison ? format(appliedCompRange.from, "dd.MM.yy") + " — " + format(appliedCompRange.to, "dd.MM.yy") : undefined, language: i18n.language }); }}
+            onExportExcel={async () => {
+              const sheets: ExcelSheet[] = [{ name: t("project.tabs.searchSystems"), headers: [t("searchSystems.engine"), t("searchSystems.visits"), t("searchSystems.visitors"), t("searchSystems.bounce"), t("searchSystems.depth"), t("searchSystems.timeOnSite")], rows: engines.map(e => [e.engine, e.visits, e.visitors, e.bounce, e.depth, formatTime(e.duration)]) }];
+              exportToExcel(sheets, { projectName, tabName: t("project.tabs.searchSystems"), periodA: format(appliedRange.from, "dd.MM.yy") + " — " + format(appliedRange.to, "dd.MM.yy"), language: i18n.language });
+            }}
+            onExportWord={async () => {
+              const sections: WordSection[] = [{ title: t("project.tabs.searchSystems"), table: { headers: [t("searchSystems.engine"), t("searchSystems.visits"), t("searchSystems.bounce")], rows: engines.map(e => [e.engine, e.visits, `${e.bounce}%`]) } }];
+              await exportToWord(sections, { projectName, tabName: t("project.tabs.searchSystems"), periodA: format(appliedRange.from, "dd.MM.yy") + " — " + format(appliedRange.to, "dd.MM.yy"), language: i18n.language });
+            }}
+          />
+
+          <div className="flex items-center gap-2 ml-2">
+            <Switch id="ss-comp" checked={showComparison} onCheckedChange={setShowComparison} className="scale-90" />
+            <Label htmlFor="ss-comp" className="text-xs text-muted-foreground cursor-pointer flex items-center gap-1">
+              <ArrowRightLeft className="h-3 w-3" />
+              {t("project.analytics.comparisonTab", "Сравнение")}
+            </Label>
+          </div>
+        </div>
+      </div>
+
+      {/* Comparison row */}
+      {showComparison && (
+        <div className="flex items-center gap-3 flex-wrap p-3 rounded-lg border border-border bg-muted/30">
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-muted-foreground whitespace-nowrap">{t("project.analytics.compareTo", "Сравнить с")}:</span>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5 px-2">
+                  <CalendarIcon className="h-3 w-3" />
+                  {format(compRange.from, "dd.MM.yy", { locale: dateFnsLocale })} — {format(compRange.to, "dd.MM.yy", { locale: dateFnsLocale })}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="range"
+                  selected={{ from: compRange.from, to: compRange.to }}
+                  onSelect={(r: any) => {
+                    if (r?.from && r?.to) setCompRange({ from: r.from, to: r.to });
+                    else if (r?.from) setCompRange({ from: r.from, to: r.from });
+                  }}
+                  numberOfMonths={2} locale={dateFnsLocale}
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+          <div className="flex gap-1.5">
+            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => handleCompPreset("previous")}>
+              {t("project.analytics.prevPeriod", "Предыдущий период")}
+            </Button>
+            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => handleCompPreset("lastYear")}>
+              {t("project.analytics.lastYear", "Год назад")}
+            </Button>
+          </div>
+          <Button size="sm" variant="secondary" className="h-7 text-xs" onClick={handleApply}>
+            {t("project.analytics.apply", "Применить")}
+          </Button>
+        </div>
+      )}
 
       {/* ── Trend Area Chart ── */}
       <Card className="border-border bg-card">
