@@ -293,7 +293,7 @@ const ProjectDetail = () => {
               </TabsContent>
 
               <TabsContent value="analytics">
-                <AnalyticsTab projectId={project.id} />
+                <AnalyticsTab projectId={project.id} onSwitchToGoals={() => setActiveTab("goals")} />
               </TabsContent>
 
               <TabsContent value="goals">
