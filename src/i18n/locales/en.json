@@ -1,4 +1,19 @@
 {
+  "auth": {
+    "subtitle": "Analytics reporting platform for agencies",
+    "signIn": "Sign In",
+    "signUp": "Sign Up",
+    "email": "Email",
+    "password": "Password",
+    "fullName": "Full Name",
+    "fullNamePlaceholder": "John Doe",
+    "or": "or",
+    "magicLink": "Sign in with Magic Link",
+    "magicLinkSent": "Magic link sent to your email",
+    "checkEmail": "Check your email to confirm registration",
+    "enterEmail": "Enter your email",
+    "logout": "Logout"
+  },
   "nav": {
     "projects": "Projects",
     "team": "Team",
@@ -7,7 +22,8 @@
   "dashboard": {
     "title": "My Projects",
     "projectsCount": "{{count}} projects",
-    "addProject": "Add Project"
+    "addProject": "Add Project",
+    "noProjects": "No projects yet. Create your first one!"
   },
   "addProjectDialog": {
     "title": "New Project",
@@ -32,6 +48,7 @@
   },
   "project": {
     "breadcrumbProjects": "Projects",
+    "shareLink": "Public link for client",
     "tabs": {
       "overview": "Overview",
       "analytics": "Analytics",
@@ -43,11 +60,16 @@
       "traffic": "Website Traffic",
       "sources": "Traffic Sources",
       "period": "Period",
+      "week": "Week",
       "month": "Month",
       "year": "Year",
+      "prevWeek": "vs. Previous Week",
+      "prevMonth": "vs. Previous Month",
       "generateReport": "Generate Public Report",
       "linkCopied": "Link copied to clipboard",
       "visitors": "Visitors",
+      "users": "Users",
+      "conversions": "Conversions",
       "organic": "Organic",
       "direct": "Direct",
       "social": "Social",
