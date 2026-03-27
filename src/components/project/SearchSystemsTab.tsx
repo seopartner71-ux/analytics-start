@@ -298,7 +298,72 @@ type SortKey = "visits" | "visitors" | "bounce" | "depth" | "duration";
 export function SearchSystemsTab({ projectId }: SearchSystemsTabProps) {
   const { t } = useTranslation();
   const [showComparison, setShowComparison] = useState(false);
-  const [{ engines, trend }] = useState(() => buildDemoData(true)); // always build with prev data available
+
+  // Fetch integration info for this project
+  const { data: integration } = useQuery({
+    queryKey: ["integration-metrika", projectId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("integrations")
+        .select("access_token, counter_id")
+        .eq("project_id", projectId)
+        .eq("service_name", "yandexMetrika")
+        .eq("connected", true)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!projectId,
+  });
+
+  // Fetch real search phrases from Metrika
+  const { data: realData, isLoading } = useQuery({
+    queryKey: ["search-phrases", projectId, integration?.counter_id],
+    queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session || !integration?.access_token || !integration?.counter_id) return null;
+
+      const startDate = format(subDays(new Date(), 30), "yyyy-MM-dd");
+      const endDate = format(new Date(), "yyyy-MM-dd");
+
+      const resp = await supabase.functions.invoke("yandex-metrika-auth", {
+        body: {
+          access_token: integration.access_token,
+          counter_id: integration.counter_id,
+          date1: startDate,
+          date2: endDate,
+        },
+        headers: { "Content-Type": "application/json" },
+      });
+
+      // Call with action query param
+      const funcUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/yandex-metrika-auth?action=fetch-search-phrases`;
+      const response = await fetch(funcUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          access_token: integration.access_token,
+          counter_id: integration.counter_id,
+          date1: startDate,
+          date2: endDate,
+        }),
+      });
+
+      if (!response.ok) return null;
+      return response.json();
+    },
+    enabled: !!integration?.access_token && !!integration?.counter_id,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { engines, trend } = useMemo(() => {
+    if (realData?.phrases) {
+      return parseMetrikaData(realData);
+    }
+    return buildDemoData();
+  }, [realData]);
   const [expandedEngines, setExpandedEngines] = useState<Set<string>>(new Set());
   const [expandedSubs, setExpandedSubs] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
