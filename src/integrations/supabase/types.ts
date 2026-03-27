@@ -136,6 +136,7 @@ export type Database = {
           page_depth: number
           project_id: string
           total_visits: number
+          traffic_sources: Json
           visits_by_day: Json
         }
         Insert: {
@@ -150,6 +151,7 @@ export type Database = {
           page_depth?: number
           project_id: string
           total_visits?: number
+          traffic_sources?: Json
           visits_by_day?: Json
         }
         Update: {
@@ -164,6 +166,7 @@ export type Database = {
           page_depth?: number
           project_id?: string
           total_visits?: number
+          traffic_sources?: Json
           visits_by_day?: Json
         }
         Relationships: [
