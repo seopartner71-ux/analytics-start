@@ -294,6 +294,16 @@
     "allGoals": "All Goals",
     "empty": "No goals configured in Yandex Metrika. Add them to track conversions."
   },
+  "goalsTab": {
+    "allGoals": "All Goals",
+    "totalReaches": "Total Completions",
+    "avgCR": "Average CR%",
+    "goalsCount": "Goals Tracked",
+    "conversionDynamics": "Conversion Dynamics",
+    "detailedTable": "Detailed Goals Table",
+    "periodDelta": "Δ Period",
+    "reaches": "Completions"
+  },
   "artifacts": {
     "openExternal": "Open",
     "quickPreview": "Preview"
