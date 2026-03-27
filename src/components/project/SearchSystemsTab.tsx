@@ -131,18 +131,19 @@ function parseMetrikaData(raw: any): { engines: EngineData[]; trend: TrendPoint[
     });
   }
 
-  // Engine-level totals from API
+  // Engine-level totals from API — create entries even if not in phrases
   const engineRows = raw?.engines?.data || [];
   for (const row of engineRows) {
     const name = row.dimensions?.[0]?.name || "Другие";
-    if (engineMap.has(name)) {
-      const e = engineMap.get(name)!;
-      e.visits = Math.round(row.metrics?.[0] || 0);
-      e.visitors = Math.round(row.metrics?.[1] || 0);
-      e.bounce = Math.round((row.metrics?.[2] || 0) * 10) / 10;
-      e.depth = Math.round((row.metrics?.[3] || 0) * 10) / 10;
-      e.duration = Math.round(row.metrics?.[4] || 0);
+    if (!engineMap.has(name)) {
+      engineMap.set(name, { phrases: [], visits: 0, visitors: 0, bounce: 0, depth: 0, duration: 0 });
     }
+    const e = engineMap.get(name)!;
+    e.visits = Math.round(row.metrics?.[0] || 0);
+    e.visitors = Math.round(row.metrics?.[1] || 0);
+    e.bounce = Math.round((row.metrics?.[2] || 0) * 10) / 10;
+    e.depth = Math.round((row.metrics?.[3] || 0) * 10) / 10;
+    e.duration = Math.round(row.metrics?.[4] || 0);
   }
 
   const classifyEngine = (name: string): { key: string; label: string; icon: React.ReactNode } => {
