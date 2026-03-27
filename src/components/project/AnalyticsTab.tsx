@@ -3,13 +3,13 @@ import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Link2 } from "lucide-react";
+import { Link2, TrendingUp, TrendingDown } from "lucide-react";
 import { toast } from "sonner";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   BarChart, Bar,
 } from "recharts";
-import { trafficData, sourcesData } from "@/data/projects";
+import { trafficData, sourcesData, kpiData } from "@/data/projects";
 
 interface AnalyticsTabProps {
   projectId: string;
@@ -18,6 +18,7 @@ interface AnalyticsTabProps {
 export function AnalyticsTab({ projectId }: AnalyticsTabProps) {
   const { t } = useTranslation();
   const [period, setPeriod] = useState("month");
+  const [comparison, setComparison] = useState("prev_month");
 
   const handleGenerateReport = () => {
     const url = `${window.location.origin}/report/${projectId}`;
@@ -37,18 +38,34 @@ export function AnalyticsTab({ projectId }: AnalyticsTabProps) {
     label: sourceLabels[s.name] || s.name,
   }));
 
+  const kpis = [
+    { label: t("publicReport.kpi.visits"), value: kpiData.visits.value.toLocaleString(), change: kpiData.visits.change, positive: true },
+    { label: t("project.analytics.users"), value: "8,240", change: 12.3, positive: true },
+    { label: t("publicReport.kpi.bounceRate"), value: `${kpiData.bounceRate.value}%`, change: kpiData.bounceRate.change, positive: kpiData.bounceRate.change < 0 },
+    { label: t("project.analytics.conversions"), value: "342", change: 24.5, positive: true },
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <span className="text-sm font-medium text-muted-foreground">{t("project.analytics.period")}:</span>
           <Select value={period} onValueChange={setPeriod}>
             <SelectTrigger className="w-[140px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="week">{t("project.analytics.week")}</SelectItem>
               <SelectItem value="month">{t("project.analytics.month")}</SelectItem>
               <SelectItem value="year">{t("project.analytics.year")}</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={comparison} onValueChange={setComparison}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="prev_week">{t("project.analytics.prevWeek")}</SelectItem>
+              <SelectItem value="prev_month">{t("project.analytics.prevMonth")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -56,6 +73,22 @@ export function AnalyticsTab({ projectId }: AnalyticsTabProps) {
           <Link2 className="h-4 w-4" />
           {t("project.analytics.generateReport")}
         </Button>
+      </div>
+
+      {/* KPI Row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {kpis.map((kpi, i) => (
+          <Card key={i} className="border-border/60">
+            <CardContent className="p-4">
+              <p className="text-xs text-muted-foreground mb-1">{kpi.label}</p>
+              <p className="text-2xl font-bold text-foreground">{kpi.value}</p>
+              <div className={`flex items-center gap-1 mt-1 text-xs font-medium ${kpi.positive ? "text-[hsl(var(--success))]" : "text-destructive"}`}>
+                {kpi.positive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                <span>{Math.abs(kpi.change)}%</span>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -69,23 +102,8 @@ export function AnalyticsTab({ projectId }: AnalyticsTabProps) {
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} />
                 <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "8px",
-                    fontSize: "13px",
-                  }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="visitors"
-                  name={t("project.analytics.visitors")}
-                  stroke="hsl(var(--primary))"
-                  strokeWidth={2.5}
-                  dot={{ fill: "hsl(var(--primary))", r: 4 }}
-                  activeDot={{ r: 6 }}
-                />
+                <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "13px" }} />
+                <Line type="monotone" dataKey="visitors" name={t("project.analytics.visitors")} stroke="hsl(var(--primary))" strokeWidth={2.5} dot={{ fill: "hsl(var(--primary))", r: 3 }} activeDot={{ r: 5 }} />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
@@ -101,14 +119,7 @@ export function AnalyticsTab({ projectId }: AnalyticsTabProps) {
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={12} />
                 <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "8px",
-                    fontSize: "13px",
-                  }}
-                />
+                <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "13px" }} />
                 <Bar dataKey="value" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>

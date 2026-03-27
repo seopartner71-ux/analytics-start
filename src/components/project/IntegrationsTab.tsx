@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +14,8 @@ import {
   CheckCircle2, Unplug, KeyRound,
 } from "lucide-react";
 import { toast } from "sonner";
-import type { Integration } from "@/data/projects";
+import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 
 interface IntegrationMeta {
   key: string;
@@ -30,18 +32,67 @@ const integrationsMeta: IntegrationMeta[] = [
 ];
 
 interface IntegrationsTabProps {
-  integrations: Integration[];
-  onIntegrationsChange: (integrations: Integration[]) => void;
+  projectId: string;
+  integrations: Tables<"integrations">[];
 }
 
-export function IntegrationsTab({ integrations, onIntegrationsChange }: IntegrationsTabProps) {
+export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProps) {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const [oauthDialog, setOauthDialog] = useState<string | null>(null);
   const [topvisorDialog, setTopvisorDialog] = useState(false);
   const [tvApiKey, setTvApiKey] = useState("");
   const [tvProjectId, setTvProjectId] = useState("");
 
-  const getIntegration = (key: string) => integrations.find((i) => i.key === key);
+  const getIntegration = (key: string) => integrations.find((i) => i.service_name === key);
+
+  const connectMutation = useMutation({
+    mutationFn: async ({ serviceName, apiKey, externalProjectId }: { serviceName: string; apiKey?: string; externalProjectId?: string }) => {
+      const existing = getIntegration(serviceName);
+      if (existing) {
+        const { error } = await supabase.from("integrations").update({
+          connected: true,
+          last_sync: new Date().toISOString(),
+          access_token: "mock_token_" + Date.now(),
+          api_key: apiKey || null,
+          external_project_id: externalProjectId || null,
+        }).eq("id", existing.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("integrations").insert({
+          project_id: projectId,
+          service_name: serviceName,
+          connected: true,
+          last_sync: new Date().toISOString(),
+          access_token: "mock_token_" + Date.now(),
+          api_key: apiKey || null,
+          external_project_id: externalProjectId || null,
+        });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["integrations", projectId] });
+      toast.success(t("integrations.connected"));
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const disconnectMutation = useMutation({
+    mutationFn: async (integrationId: string) => {
+      const { error } = await supabase.from("integrations").update({
+        connected: false,
+        access_token: null,
+        api_key: null,
+        external_project_id: null,
+      }).eq("id", integrationId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["integrations", projectId] });
+      toast.success(t("integrations.disconnected"));
+    },
+  });
 
   const handleConnect = (meta: IntegrationMeta) => {
     if (meta.authType === "oauth") {
@@ -53,11 +104,7 @@ export function IntegrationsTab({ integrations, onIntegrationsChange }: Integrat
 
   const handleOAuthConfirm = () => {
     if (!oauthDialog) return;
-    const updated = integrations.map((i) =>
-      i.key === oauthDialog ? { ...i, connected: true, lastSync: new Date().toISOString() } : i
-    );
-    onIntegrationsChange(updated);
-    toast.success(t("integrations.connected"));
+    connectMutation.mutate({ serviceName: oauthDialog });
     setOauthDialog(null);
   };
 
@@ -66,24 +113,10 @@ export function IntegrationsTab({ integrations, onIntegrationsChange }: Integrat
       toast.error(t("integrations.fillFields"));
       return;
     }
-    const updated = integrations.map((i) =>
-      i.key === "topvisor"
-        ? { ...i, connected: true, lastSync: new Date().toISOString(), apiKey: tvApiKey.trim(), projectId: tvProjectId.trim() }
-        : i
-    );
-    onIntegrationsChange(updated);
-    toast.success(t("integrations.connected"));
+    connectMutation.mutate({ serviceName: "topvisor", apiKey: tvApiKey.trim(), externalProjectId: tvProjectId.trim() });
     setTopvisorDialog(false);
     setTvApiKey("");
     setTvProjectId("");
-  };
-
-  const handleDisconnect = (key: string) => {
-    const updated = integrations.map((i) =>
-      i.key === key ? { ...i, connected: false, lastSync: undefined, apiKey: undefined, projectId: undefined } : i
-    );
-    onIntegrationsChange(updated);
-    toast.success(t("integrations.disconnected"));
   };
 
   const oauthMeta = integrationsMeta.find((m) => m.key === oauthDialog);
@@ -116,14 +149,14 @@ export function IntegrationsTab({ integrations, onIntegrationsChange }: Integrat
                     </div>
                     <p className="text-sm text-muted-foreground mb-3">{t(meta.descriptionKey)}</p>
 
-                    {connected && integration?.lastSync && (
+                    {connected && integration?.last_sync && (
                       <p className="text-xs text-muted-foreground mb-3">
-                        {t("integrations.lastSync")}: {new Date(integration.lastSync).toLocaleDateString()}
+                        {t("integrations.lastSync")}: {new Date(integration.last_sync).toLocaleDateString()}
                       </p>
                     )}
 
                     {connected ? (
-                      <Button variant="outline" size="sm" className="gap-1.5 text-destructive hover:text-destructive" onClick={() => handleDisconnect(meta.key)}>
+                      <Button variant="outline" size="sm" className="gap-1.5 text-destructive hover:text-destructive" onClick={() => disconnectMutation.mutate(integration!.id)}>
                         <Unplug className="h-3.5 w-3.5" />
                         {t("integrations.disconnect")}
                       </Button>
@@ -157,7 +190,7 @@ export function IntegrationsTab({ integrations, onIntegrationsChange }: Integrat
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOauthDialog(null)}>{t("addProjectDialog.cancel")}</Button>
+            <Button variant="outline" onClick={() => setOauthDialog(null)}>{t("common.cancel")}</Button>
             <Button onClick={handleOAuthConfirm}>{t("integrations.authorize")}</Button>
           </DialogFooter>
         </DialogContent>
@@ -181,7 +214,7 @@ export function IntegrationsTab({ integrations, onIntegrationsChange }: Integrat
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setTopvisorDialog(false)}>{t("addProjectDialog.cancel")}</Button>
+            <Button variant="outline" onClick={() => setTopvisorDialog(false)}>{t("common.cancel")}</Button>
             <Button onClick={handleTopvisorConnect}>{t("integrations.connect")}</Button>
           </DialogFooter>
         </DialogContent>

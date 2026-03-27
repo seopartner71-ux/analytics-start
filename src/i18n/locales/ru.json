@@ -1,4 +1,19 @@
 {
+  "auth": {
+    "subtitle": "Платформа аналитической отчётности для агентств",
+    "signIn": "Войти",
+    "signUp": "Регистрация",
+    "email": "Email",
+    "password": "Пароль",
+    "fullName": "Имя",
+    "fullNamePlaceholder": "Иван Петров",
+    "or": "или",
+    "magicLink": "Войти по ссылке (Magic Link)",
+    "magicLinkSent": "Ссылка для входа отправлена на email",
+    "checkEmail": "Проверьте почту для подтверждения регистрации",
+    "enterEmail": "Введите email",
+    "logout": "Выйти"
+  },
   "nav": {
     "projects": "Проекты",
     "team": "Команда",
@@ -7,7 +22,8 @@
   "dashboard": {
     "title": "Мои проекты",
     "projectsCount": "{{count}} проектов",
-    "addProject": "Добавить проект"
+    "addProject": "Добавить проект",
+    "noProjects": "Проектов пока нет. Создайте первый!"
   },
   "addProjectDialog": {
     "title": "Новый проект",
@@ -32,6 +48,7 @@
   },
   "project": {
     "breadcrumbProjects": "Проекты",
+    "shareLink": "Публичная ссылка для клиента",
     "tabs": {
       "overview": "Обзор",
       "analytics": "Аналитика",
@@ -43,11 +60,16 @@
       "traffic": "Посещаемость",
       "sources": "Источники трафика",
       "period": "Период",
+      "week": "Неделя",
       "month": "Месяц",
       "year": "Год",
+      "prevWeek": "vs. Прошлая неделя",
+      "prevMonth": "vs. Прошлый месяц",
       "generateReport": "Сгенерировать публичный отчёт",
       "linkCopied": "Ссылка скопирована в буфер обмена",
       "visitors": "Посетители",
+      "users": "Пользователи",
+      "conversions": "Конверсии",
       "organic": "Органика",
       "direct": "Прямой",
       "social": "Соц. сети",
