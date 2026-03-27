@@ -257,6 +257,7 @@ const ProjectDetail = () => {
                 <div className="space-y-6">
                   {/* AI Insights Block */}
                   <AiInsightsBlock
+                    projectId={id}
                     summary={aiSummary}
                     isAdmin={true}
                     onSave={(summary) => saveAiSummary.mutate(summary)}
