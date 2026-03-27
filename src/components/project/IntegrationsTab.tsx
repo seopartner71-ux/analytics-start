@@ -16,6 +16,7 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
+import { MetrikaOAuthDialog } from "./MetrikaOAuthDialog";
 
 interface IntegrationMeta {
   key: string;
@@ -40,6 +41,7 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [oauthDialog, setOauthDialog] = useState<string | null>(null);
+  const [metrikaDialog, setMetrikaDialog] = useState(false);
   const [topvisorDialog, setTopvisorDialog] = useState(false);
   const [tvApiKey, setTvApiKey] = useState("");
   const [tvProjectId, setTvProjectId] = useState("");
@@ -95,7 +97,9 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
   });
 
   const handleConnect = (meta: IntegrationMeta) => {
-    if (meta.authType === "oauth") {
+    if (meta.key === "yandexMetrika") {
+      setMetrikaDialog(true);
+    } else if (meta.authType === "oauth") {
       setOauthDialog(meta.key);
     } else {
       setTopvisorDialog(true);
@@ -195,6 +199,14 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Metrika OAuth Dialog */}
+      <MetrikaOAuthDialog
+        open={metrikaDialog}
+        onOpenChange={setMetrikaDialog}
+        projectId={projectId}
+        existingIntegrationId={getIntegration("yandexMetrika")?.id}
+      />
 
       {/* Topvisor Dialog */}
       <Dialog open={topvisorDialog} onOpenChange={setTopvisorDialog}>
