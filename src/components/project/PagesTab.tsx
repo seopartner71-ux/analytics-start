@@ -1,9 +1,10 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { format, subDays, subYears, differenceInDays } from "date-fns";
 import { ru, enUS } from "date-fns/locale";
 import { useDateRange } from "@/contexts/DateRangeContext";
+import { generatePagesData, calcDelta } from "@/lib/data-generators";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -85,10 +86,28 @@ export function PagesTab({ projectId, projectName }: PagesTabProps) {
     range, setRange, appliedRange, apply,
     showComparison, setShowComparison,
     compRange, setCompRange, appliedCompRange,
-    resetToDefault,
+    resetToDefault, applyVersion,
   } = useDateRange();
 
-  const pages = useMemo(() => generatePagesData(), []);
+  // Loading animation on apply
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const prevVersion = useRef(applyVersion);
+  useEffect(() => {
+    if (applyVersion !== prevVersion.current) {
+      prevVersion.current = applyVersion;
+      setIsRefreshing(true);
+      const timer = setTimeout(() => setIsRefreshing(false), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [applyVersion]);
+
+  // Dynamic pages data based on applied date range
+  const pages = useMemo(() => generatePagesData(appliedRange), [appliedRange]);
+  const compPages = useMemo(
+    () => showComparison ? generatePagesData(appliedCompRange) : [],
+    [appliedCompRange, showComparison]
+  );
+
   const top5Growing = useMemo(() => [...pages].sort((a, b) => b.growth - a.growth).slice(0, 5), [pages]);
 
   // AI summary
@@ -112,6 +131,9 @@ export function PagesTab({ projectId, projectName }: PagesTabProps) {
 
   const totalVisits = pages.reduce((s, p) => s + p.visits, 0);
   const avgBounce = pages.length > 0 ? Math.round((pages.reduce((s, p) => s + p.bounceRate, 0) / pages.length) * 10) / 10 : 0;
+
+  const compTotalVisits = compPages.reduce((s, p) => s + p.visits, 0);
+  const compAvgBounce = compPages.length > 0 ? Math.round((compPages.reduce((s, p) => s + p.bounceRate, 0) / compPages.length) * 10) / 10 : 0;
 
   return (
     <div className="space-y-6" ref={contentRef}>
