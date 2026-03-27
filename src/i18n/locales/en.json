@@ -433,6 +433,7 @@
     "change": "Change %",
     "otherEngines": "Other",
     "allEngines": "All Search Engines",
+    "totals": "Total / Averages",
     "demoDataHint": "Showing demo data. Connect Yandex.Metrika in Settings to display real search queries."
   },
   "dashboardTab": {
