@@ -242,7 +242,10 @@
     "empty": "AI summary not yet filled. Click 'Edit' to add analytics.",
     "addSummary": "Add Summary",
     "placeholder": "Enter text...",
-    "saved": "AI summary saved"
+    "saved": "AI summary saved",
+    "generate": "Generate",
+    "generating": "AI is analyzing data...",
+    "generated": "AI summary generated"
   },
   "artifacts": {
     "openExternal": "Open",
