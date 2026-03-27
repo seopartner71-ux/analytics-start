@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -7,8 +7,9 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { ChevronRight, Globe, LogOut, Copy, Pencil } from "lucide-react";
+import { ChevronRight, Globe, LogOut, Copy, Pencil, Upload, X, User, Search } from "lucide-react";
 import { toast } from "sonner";
 import { IntegrationsTab } from "@/components/project/IntegrationsTab";
 import { AnalyticsTab } from "@/components/project/AnalyticsTab";
@@ -19,13 +20,13 @@ import { GSCWidget } from "@/components/widgets/GSCWidget";
 import { TopvisorWidget } from "@/components/widgets/TopvisorWidget";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import type { Tables } from "@/integrations/supabase/types";
 
 const ProjectDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { t, i18n } = useTranslation();
   const { signOut } = useAuth();
   const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState("overview");
 
   const toggleLang = () => i18n.changeLanguage(i18n.language === "ru" ? "en" : "ru");
 
@@ -59,25 +60,95 @@ const ProjectDetail = () => {
     enabled: !!id,
   });
 
+  // Edit form state
+  const [editName, setEditName] = useState("");
+  const [editUrl, setEditUrl] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editSeoSpecialist, setEditSeoSpecialist] = useState("");
+  const [editAccountManager, setEditAccountManager] = useState("");
+  const [editClientEmail, setEditClientEmail] = useState("");
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [initialized, setInitialized] = useState(false);
+
+  useEffect(() => {
+    if (project && !initialized) {
+      setEditName(project.name);
+      setEditUrl(project.url || "");
+      setEditDescription(project.description || "");
+      setEditSeoSpecialist((project as any).seo_specialist || "");
+      setEditAccountManager((project as any).account_manager || "");
+      setEditClientEmail(project.client_email || "");
+      setLogoPreview(project.logo_url || null);
+      setInitialized(true);
+    }
+  }, [project, initialized]);
+
   const updateProject = useMutation({
-    mutationFn: async (updates: { name: string; url: string }) => {
+    mutationFn: async (updates: Record<string, any>) => {
       const { error } = await supabase.from("projects").update(updates).eq("id", id!);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["project", id] });
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
       toast.success(t("project.settingsTab.saved"));
     },
+    onError: (err: Error) => toast.error(err.message),
   });
 
-  const [editName, setEditName] = useState("");
-  const [editUrl, setEditUrl] = useState("");
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-  // Initialize edit fields when project loads
-  if (project && editName === "" && editUrl === "") {
-    setEditName(project.name);
-    setEditUrl(project.url || "");
-  }
+    if (!file.type.startsWith("image/")) {
+      toast.error(t("project.settingsTab.logoError"));
+      return;
+    }
+
+    setUploading(true);
+    const ext = file.name.split(".").pop();
+    const filePath = `${id}/${Date.now()}.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("project-logos")
+      .upload(filePath, file, { upsert: true });
+
+    if (uploadError) {
+      toast.error(uploadError.message);
+      setUploading(false);
+      return;
+    }
+
+    const { data: publicUrl } = supabase.storage
+      .from("project-logos")
+      .getPublicUrl(filePath);
+
+    setLogoPreview(publicUrl.publicUrl);
+
+    await supabase.from("projects").update({ logo_url: publicUrl.publicUrl }).eq("id", id!);
+    queryClient.invalidateQueries({ queryKey: ["project", id] });
+    toast.success(t("project.settingsTab.logoUploaded"));
+    setUploading(false);
+  };
+
+  const handleRemoveLogo = async () => {
+    setLogoPreview(null);
+    await supabase.from("projects").update({ logo_url: null }).eq("id", id!);
+    queryClient.invalidateQueries({ queryKey: ["project", id] });
+  };
+
+  const handleSaveSettings = () => {
+    updateProject.mutate({
+      name: editName,
+      url: editUrl,
+      description: editDescription,
+      seo_specialist: editSeoSpecialist,
+      account_manager: editAccountManager,
+      client_email: editClientEmail,
+    });
+  };
 
   const handleCopyShareLink = () => {
     if (project?.share_token) {
@@ -126,19 +197,20 @@ const ProjectDetail = () => {
                   {t("project.breadcrumbProjects")}
                 </Link>
                 <ChevronRight className="h-3.5 w-3.5" />
-                <span className="text-foreground font-medium">{project.name}</span>
+                <div className="flex items-center gap-2">
+                  {logoPreview && (
+                    <img src={logoPreview} alt={project.name} className="h-6 w-6 rounded-full object-cover" />
+                  )}
+                  <span className="text-foreground font-medium">{project.name}</span>
+                </div>
               </nav>
-              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => {
-                const tabsEl = document.querySelector('[data-state="active"][value="settings"]') ||
-                  document.querySelector('[value="settings"]');
-                if (tabsEl instanceof HTMLElement) tabsEl.click();
-              }}>
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setActiveTab("settings")}>
                 <Pencil className="h-3.5 w-3.5" />
                 {t("project.editProject")}
               </Button>
             </div>
 
-            <Tabs defaultValue="overview" className="space-y-6">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
               <TabsList className="bg-muted/60">
                 <TabsTrigger value="overview">{t("project.tabs.overview")}</TabsTrigger>
                 <TabsTrigger value="analytics">{t("project.tabs.analytics")}</TabsTrigger>
@@ -174,8 +246,42 @@ const ProjectDetail = () => {
               </TabsContent>
 
               <TabsContent value="settings">
-                <div className="max-w-md space-y-6">
+                <div className="max-w-lg space-y-8">
                   <h2 className="text-lg font-semibold text-foreground">{t("project.settingsTab.title")}</h2>
+
+                  {/* Logo */}
+                  <div className="space-y-3">
+                    <Label>{t("project.settingsTab.logoLabel")}</Label>
+                    <div className="flex items-center gap-4">
+                      {logoPreview ? (
+                        <div className="relative">
+                          <img src={logoPreview} alt="Logo" className="h-20 w-20 rounded-xl object-cover border border-border" />
+                          <button
+                            onClick={handleRemoveLogo}
+                            className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div
+                          onClick={() => fileInputRef.current?.click()}
+                          className="h-20 w-20 rounded-xl border-2 border-dashed border-muted-foreground/25 flex items-center justify-center cursor-pointer hover:border-primary/40 transition-colors"
+                        >
+                          <Upload className="h-6 w-6 text-muted-foreground/50" />
+                        </div>
+                      )}
+                      <div>
+                        <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+                          {uploading ? t("common.loading") : t("project.settingsTab.uploadLogo")}
+                        </Button>
+                        <p className="text-xs text-muted-foreground mt-1">{t("project.settingsTab.logoHint")}</p>
+                      </div>
+                    </div>
+                    <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+                  </div>
+
+                  {/* Basic info */}
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <Label>{t("project.settingsTab.nameLabel")}</Label>
@@ -183,13 +289,52 @@ const ProjectDetail = () => {
                     </div>
                     <div className="space-y-2">
                       <Label>{t("project.settingsTab.urlLabel")}</Label>
-                      <Input value={editUrl} onChange={(e) => setEditUrl(e.target.value)} />
+                      <Input value={editUrl} onChange={(e) => setEditUrl(e.target.value)} placeholder="https://example.com" />
                     </div>
-                    <Button onClick={() => updateProject.mutate({ name: editName, url: editUrl })}>
-                      {t("project.settingsTab.save")}
-                    </Button>
+                    <div className="space-y-2">
+                      <Label>{t("project.settingsTab.descriptionLabel")}</Label>
+                      <Textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} rows={3} />
+                    </div>
                   </div>
 
+                  {/* Team */}
+                  <div className="border-t border-border pt-6 space-y-4">
+                    <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      {t("project.settingsTab.teamTitle")}
+                    </h3>
+                    <div className="space-y-2">
+                      <Label>{t("project.settingsTab.seoSpecialist")}</Label>
+                      <Input
+                        value={editSeoSpecialist}
+                        onChange={(e) => setEditSeoSpecialist(e.target.value)}
+                        placeholder={t("project.settingsTab.seoPlaceholder")}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{t("project.settingsTab.accountManager")}</Label>
+                      <Input
+                        value={editAccountManager}
+                        onChange={(e) => setEditAccountManager(e.target.value)}
+                        placeholder={t("project.settingsTab.managerPlaceholder")}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{t("project.settingsTab.clientEmail")}</Label>
+                      <Input
+                        type="email"
+                        value={editClientEmail}
+                        onChange={(e) => setEditClientEmail(e.target.value)}
+                        placeholder="client@company.com"
+                      />
+                    </div>
+                  </div>
+
+                  <Button onClick={handleSaveSettings} disabled={updateProject.isPending}>
+                    {updateProject.isPending ? t("common.loading") : t("project.settingsTab.save")}
+                  </Button>
+
+                  {/* Share link */}
                   <div className="border-t border-border pt-6 space-y-3">
                     <h3 className="text-sm font-semibold text-foreground">{t("project.shareLink")}</h3>
                     <div className="flex gap-2">
