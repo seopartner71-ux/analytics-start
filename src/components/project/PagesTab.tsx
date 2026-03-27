@@ -18,10 +18,13 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from "recharts";
 import { AiInsightsBlock } from "@/components/project/AiInsightsBlock";
+import { ExportMenu } from "@/components/ExportMenu";
+import { exportToPdf, exportToExcel, exportToWord, type ExcelSheet, type WordSection } from "@/lib/export-utils";
 import { supabase } from "@/integrations/supabase/client";
 
 interface PagesTabProps {
   projectId: string;
+  projectName: string;
 }
 
 type DateRange = { from: Date; to: Date };

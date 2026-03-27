@@ -21,9 +21,12 @@ import { format, subDays, subYears, differenceInDays } from "date-fns";
 import { ru, enUS } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { ExportMenu } from "@/components/ExportMenu";
+import { exportToPdf, exportToExcel, exportToWord, type ExcelSheet, type WordSection } from "@/lib/export-utils";
 
 interface SearchSystemsTabProps {
   projectId: string;
+  projectName: string;
 }
 
 /* ── Brand icons ── */

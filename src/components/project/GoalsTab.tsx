@@ -20,10 +20,13 @@ import {
   Legend, LineChart, Line,
 } from "recharts";
 import { KpiCard } from "@/components/KpiCard";
+import { ExportMenu } from "@/components/ExportMenu";
+import { exportToPdf, exportToExcel, exportToWord, type ExcelSheet, type WordSection } from "@/lib/export-utils";
 import { supabase } from "@/integrations/supabase/client";
 
 interface GoalsTabProps {
   projectId: string;
+  projectName: string;
 }
 
 interface GoalStat {

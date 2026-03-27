@@ -255,9 +255,9 @@ export function DashboardTab({
         <ExportMenu onExportPdf={handleExportPdf} onExportExcel={handleExportExcel} onExportWord={handleExportWord} />
       </div>
 
-      <div ref={contentRef}>
+      <div ref={contentRef} className="space-y-6">
       {/* Block 2: KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">{/* mb-6 replaces space-y inside ref */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map((kpi, i) => (
           <KpiCard
             key={i}
