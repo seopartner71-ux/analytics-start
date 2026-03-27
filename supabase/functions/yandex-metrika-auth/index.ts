@@ -233,8 +233,8 @@ Deno.serve(async (req) => {
       );
       const statsData = await statsResp.json();
 
-      // Fetch daily reaches for sparklines (top 5 goals only)
-      const top5Ids = goalIds.slice(0, 5);
+      // Fetch daily reaches for sparklines (all goals)
+      const top5Ids = goalIds;
       const dailyMetrics = top5Ids.map((gid: number) => `ym:s:goal${gid}reaches`).join(",");
       const dailyResp = await fetch(
         `https://api-metrika.yandex.net/stat/v1/data/bytime?id=${counterId}&metrics=${dailyMetrics}&group=day&date1=${startDate}&date2=${endDate}`,
