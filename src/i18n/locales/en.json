@@ -62,7 +62,8 @@
       "worklog": "Work Log",
       "integrations": "Integrations",
       "settings": "Settings",
-      "builder": "Report Builder"
+      "builder": "Report Builder",
+      "searchSystems": "Search Systems"
     },
     "analytics": {
       "traffic": "Website Traffic",
@@ -415,5 +416,14 @@
     "noCustomFields": "Add a custom text block to include in the report",
     "fieldTitlePlaceholder": "Block title",
     "fieldContentPlaceholder": "Enter text to display in the report…"
+  },
+  "searchSystems": {
+    "searchPlaceholder": "Search by phrase…",
+    "name": "Name",
+    "visits": "Visits",
+    "visitors": "Visitors",
+    "bounce": "Bounce %",
+    "depth": "Page Depth",
+    "duration": "Time on Site"
   }
 }

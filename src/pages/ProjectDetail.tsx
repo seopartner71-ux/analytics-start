@@ -18,6 +18,7 @@ import { AnalyticsTab } from "@/components/project/AnalyticsTab";
 import { WorkLogTab } from "@/components/project/WorkLogTab";
 import { GoalsTab } from "@/components/project/GoalsTab";
 import { SeoTab } from "@/components/project/SeoTab";
+import { SearchSystemsTab } from "@/components/project/SearchSystemsTab";
 import { PagesTab } from "@/components/project/PagesTab";
 import { AiInsightsBlock } from "@/components/project/AiInsightsBlock";
 import { ReportBuilderTab } from "@/components/project/ReportBuilderTab";
@@ -263,12 +264,11 @@ const ProjectDetail = () => {
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
               <TabsList className="bg-muted/60 hidden md:inline-flex">
                 <TabsTrigger value="overview">{t("project.tabs.overview")}</TabsTrigger>
-                <TabsTrigger value="seo">{t("project.tabs.seo")}</TabsTrigger>
-                <TabsTrigger value="pages">{t("project.tabs.pages")}</TabsTrigger>
                 <TabsTrigger value="goals">{t("project.tabs.goals")}</TabsTrigger>
+                <TabsTrigger value="searchSystems">{t("project.tabs.searchSystems")}</TabsTrigger>
+                <TabsTrigger value="pages">{t("project.tabs.pages")}</TabsTrigger>
                 <TabsTrigger value="worklog">{t("project.tabs.worklog")}</TabsTrigger>
                 <TabsTrigger value="builder">{t("project.tabs.builder")}</TabsTrigger>
-                <TabsTrigger value="integrations">{t("project.tabs.integrations")}</TabsTrigger>
                 <TabsTrigger value="settings">{t("project.tabs.settings")}</TabsTrigger>
               </TabsList>
 
@@ -307,6 +307,10 @@ const ProjectDetail = () => {
 
               <TabsContent value="seo">
                 <SeoTab projectId={project.id} />
+              </TabsContent>
+
+              <TabsContent value="searchSystems">
+                <SearchSystemsTab projectId={project.id} />
               </TabsContent>
 
               <TabsContent value="pages">
