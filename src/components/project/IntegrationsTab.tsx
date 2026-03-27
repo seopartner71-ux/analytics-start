@@ -210,10 +210,22 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
                     )}
 
                     {connected ? (
-                      <Button variant="outline" size="sm" className="gap-1.5 text-destructive hover:text-destructive" onClick={() => disconnectMutation.mutate(integration!.id)}>
-                        <Unplug className="h-3.5 w-3.5" />
-                        {t("integrations.disconnect")}
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1.5"
+                          onClick={() => syncMutation.mutate(integration!)}
+                          disabled={syncingId === integration!.id}
+                        >
+                          <RefreshCw className={`h-3.5 w-3.5 ${syncingId === integration!.id ? "animate-spin" : ""}`} />
+                          {t("integrations.sync")}
+                        </Button>
+                        <Button variant="outline" size="sm" className="gap-1.5 text-destructive hover:text-destructive" onClick={() => disconnectMutation.mutate(integration!.id)}>
+                          <Unplug className="h-3.5 w-3.5" />
+                          {t("integrations.disconnect")}
+                        </Button>
+                      </div>
                     ) : (
                       <Button size="sm" className="gap-1.5" onClick={() => handleConnect(meta)}>
                         <KeyRound className="h-3.5 w-3.5" />
