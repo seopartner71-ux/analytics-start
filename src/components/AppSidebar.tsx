@@ -1,5 +1,6 @@
-import { FolderKanban, Users, Settings, BarChart3, LayoutDashboard, Search as SearchIcon, TrendingUp } from "lucide-react";
+import { FolderKanban, Users, Settings, BarChart3, LayoutDashboard, Search as SearchIcon, TrendingUp, Shield } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
+import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
   Sidebar,
@@ -14,6 +15,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const mainNav = [
   { titleKey: "nav.projects", url: "/", icon: FolderKanban },
@@ -25,6 +27,15 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const { t } = useTranslation();
   const { user } = useAuth();
+
+  const { data: isAdmin } = useQuery({
+    queryKey: ["user-role", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase.rpc("has_role", { _user_id: user!.id, _role: "admin" });
+      return data === true;
+    },
+    enabled: !!user,
+  });
 
   return (
     <Sidebar collapsible="icon">
@@ -61,6 +72,20 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+              {isAdmin && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to="/admin"
+                      className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors rounded-md"
+                      activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                    >
+                      <Shield className="mr-2.5 h-4 w-4 shrink-0" />
+                      {!collapsed && <span className="text-[13px]">{t("nav.admin")}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
