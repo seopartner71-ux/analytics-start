@@ -711,6 +711,41 @@ export function SearchSystemsTab({ projectId, projectName }: SearchSystemsTabPro
               </TableRow>
             </TableHeader>
             <TableBody>
+              {/* ── Totals / Averages row ── */}
+              {(() => {
+                const totalVisits = filteredData.reduce((s, e) => s + e.visits, 0);
+                const totalVisitors = filteredData.reduce((s, e) => s + e.visitors, 0);
+                const avgBounce = filteredData.length ? +(filteredData.reduce((s, e) => s + e.bounce, 0) / filteredData.length).toFixed(1) : 0;
+                const avgDepth = filteredData.length ? +(filteredData.reduce((s, e) => s + e.depth, 0) / filteredData.length).toFixed(1) : 0;
+                const avgDuration = filteredData.length ? Math.round(filteredData.reduce((s, e) => s + e.duration, 0) / filteredData.length) : 0;
+                const totalPrevVisits = filteredData.reduce((s, e) => s + (e.prevVisits || 0), 0);
+                const totalPrevVisitors = filteredData.reduce((s, e) => s + (e.prevVisits || 0), 0);
+                const avgPrevBounce = filteredData.length ? +(filteredData.reduce((s, e) => s + (e.prevBounce || 0), 0) / filteredData.length).toFixed(1) : 0;
+                const avgPrevDepth = filteredData.length ? +(filteredData.reduce((s, e) => s + (e.prevDepth || 0), 0) / filteredData.length).toFixed(1) : 0;
+                const avgPrevDuration = filteredData.length ? Math.round(filteredData.reduce((s, e) => s + (e.prevDuration || 0), 0) / filteredData.length) : 0;
+                return (
+                  <TableRow className="border-border bg-muted/20 font-semibold">
+                    <TableCell className="text-sm">
+                      <span className="text-foreground">{t("searchSystems.totals", "Итого / Средние")}</span>
+                    </TableCell>
+                    <TableCell className="text-right text-sm font-bold">
+                      {totalVisits.toLocaleString()}
+                      <PrevLabel value={showComparison ? totalPrevVisits : undefined} comparison={showComparison} />
+                    </TableCell>
+                    {showComparison && <TableCell className="text-right text-sm"><DeltaBadge current={totalVisits} prev={totalPrevVisits} /></TableCell>}
+                    <TableCell className="text-right text-sm font-bold">{totalVisitors.toLocaleString()}</TableCell>
+                    <TableCell className={cn("text-right text-sm", bounceColor(avgBounce))}>
+                      {avgBounce}%{showComparison && <DeltaBadge current={avgBounce} prev={avgPrevBounce} />}
+                    </TableCell>
+                    <TableCell className="text-right text-sm">
+                      {avgDepth}{showComparison && <DeltaBadge current={avgDepth} prev={avgPrevDepth} />}
+                    </TableCell>
+                    <TableCell className="text-right text-sm">
+                      {formatTime(avgDuration)}{showComparison && <DeltaBadge current={avgDuration} prev={avgPrevDuration} />}
+                    </TableCell>
+                  </TableRow>
+                );
+              })()}
               {[...filteredData].sort(sortFn).map((eng) => {
                 const engOpen = expandedEngines.has(eng.engine);
                 return (
