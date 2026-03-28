@@ -221,6 +221,7 @@ export function DashboardTab({ projectId, projectName, onSwitchTab }: DashboardT
       change: showComparison ? pctChange(totalVisits, compVisits) : 0,
       sparkData: visitsSparkData,
       color: "hsl(var(--chart-1))",
+      tooltipKey: "visits",
     },
     {
       label: t("publicReport.kpi.bounceRate", "Отказы"),
@@ -229,6 +230,8 @@ export function DashboardTab({ projectId, projectName, onSwitchTab }: DashboardT
       change: showComparison ? pctChange(avgBounce, compBounce) : 0,
       sparkData: bounceSparkData,
       color: "hsl(var(--chart-3))",
+      tooltipKey: "bounceRate",
+      invertChange: true,
     },
     {
       label: t("project.analytics.pageDepth", "Глубина просмотра"),
@@ -236,6 +239,7 @@ export function DashboardTab({ projectId, projectName, onSwitchTab }: DashboardT
       change: showComparison ? pctChange(avgDepth, compDepth) : 0,
       sparkData: depthSparkData,
       color: "hsl(var(--chart-2))",
+      tooltipKey: "pageDepth",
     },
     {
       label: t("project.analytics.avgDuration", "Время на сайте"),
@@ -243,6 +247,7 @@ export function DashboardTab({ projectId, projectName, onSwitchTab }: DashboardT
       change: showComparison ? pctChange(avgDuration, compDuration) : 0,
       sparkData: durationSparkData,
       color: "hsl(var(--chart-5))",
+      tooltipKey: "avgDuration",
     },
   ];
 
@@ -299,7 +304,7 @@ export function DashboardTab({ projectId, projectName, onSwitchTab }: DashboardT
         {/* === 1. KPI GRID === */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {kpiCards.map((kpi, i) => (
-            <OverviewKpiCard key={i} {...kpi} />
+            <StandardKpiCard key={i} {...kpi} loading={isRefreshing} />
           ))}
         </div>
 
@@ -336,7 +341,7 @@ export function DashboardTab({ projectId, projectName, onSwitchTab }: DashboardT
                     axisLine={false}
                     tickFormatter={(v) => v.toLocaleString()}
                   />
-                  <Tooltip content={<SimpleTooltip />} />
+                  <Tooltip content={<StandardChartTooltip />} />
                   <Area
                     type="monotone"
                     dataKey="visits"
