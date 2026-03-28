@@ -24,6 +24,7 @@ import { KpiCard } from "@/components/KpiCard";
 import { ExportMenu } from "@/components/ExportMenu";
 import { exportToPdf, exportToExcel, exportToWord, type ExcelSheet, type WordSection } from "@/lib/export-utils";
 import { supabase } from "@/integrations/supabase/client";
+import { ChannelFilter } from "@/components/project/ChannelFilter";
 
 interface GoalsTabProps {
   projectId: string;
@@ -260,6 +261,8 @@ export function GoalsTab({ projectId, projectName }: GoalsTabProps) {
               ))}
             </SelectContent>
           </Select>
+
+          <ChannelFilter />
 
           <Popover>
             <PopoverTrigger asChild>

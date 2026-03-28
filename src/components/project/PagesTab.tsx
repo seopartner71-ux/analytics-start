@@ -23,6 +23,7 @@ import { AiInsightsBlock } from "@/components/project/AiInsightsBlock";
 import { ExportMenu } from "@/components/ExportMenu";
 import { exportToPdf, exportToExcel, exportToWord, type ExcelSheet, type WordSection } from "@/lib/export-utils";
 import { supabase } from "@/integrations/supabase/client";
+import { ChannelFilter } from "@/components/project/ChannelFilter";
 
 interface PagesTabProps {
   projectId: string;
@@ -133,6 +134,7 @@ export function PagesTab({ projectId, projectName, projectUrl }: PagesTabProps) 
       <Card className="border-border bg-card">
         <CardContent className="p-4">
           <div className="flex items-center gap-2 flex-wrap">
+            <ChannelFilter />
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5 min-w-[170px]">

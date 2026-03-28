@@ -461,5 +461,13 @@
     "reset": "Reset",
     "allTime": "All time",
     "apply": "Apply"
+  },
+  "channels": {
+    "all": "All channels",
+    "organic": "Organic Search",
+    "direct": "Direct",
+    "referral": "Referral",
+    "social": "Social",
+    "ad": "Ads"
   }
 }
