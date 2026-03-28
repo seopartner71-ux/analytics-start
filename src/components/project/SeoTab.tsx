@@ -196,7 +196,9 @@ export function SeoTab({ projectId }: SeoTabProps) {
   }), [keywords]);
 
   return (
-    <div className="space-y-6">
+    <div className={cn("space-y-6 transition-opacity duration-300", isRefreshing && "opacity-60")}>
+      <TabLoadingOverlay show={isRefreshing} />
+
       {/* Query Type Filter */}
       <Card className="border-border bg-card">
         <CardContent className="p-4">
@@ -217,17 +219,11 @@ export function SeoTab({ projectId }: SeoTabProps) {
 
       {/* KPI Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: t("seoTab.totalClicks", "Клики"), value: totalClicks.toLocaleString() },
-          { label: t("seoTab.totalImpressions", "Показы"), value: totalImpressions.toLocaleString() },
-          { label: "CTR", value: `${avgCtr}%` },
-          { label: t("seoTab.avgPosition", "Ср. позиция"), value: String(avgPosition) },
-        ].map((kpi, i) => (
-          <Card key={i} className="border-border bg-card p-4">
-            <p className="text-xs text-muted-foreground">{kpi.label}</p>
-            <p className="text-2xl font-bold text-foreground mt-1">{kpi.value}</p>
-          </Card>
-        ))}
+        <StandardKpiCard label={t("seoTab.totalClicks", "Клики")} value={totalClicks.toLocaleString()} tooltipKey="visits" loading={isRefreshing} />
+        <StandardKpiCard label={t("seoTab.totalImpressions", "Показы")} value={totalImpressions.toLocaleString()} loading={isRefreshing} />
+        <StandardKpiCard label="CTR" value={`${avgCtr}%`} tooltipKey="ctr" loading={isRefreshing} />
+        <StandardKpiCard label={t("seoTab.avgPosition", "Ср. позиция")} value={String(avgPosition)} tooltipKey="avgPosition" loading={isRefreshing} />
+      </div>
       </div>
 
       {/* Visibility Chart */}
