@@ -42,7 +42,7 @@ serve(async (req) => {
     switch (action) {
       case "get-projects":
         url = `${TV_BASE}/get/projects_2/projects`;
-        fetchBody = JSON.stringify({ show_site_stat: false, show_searchers_and_regions: false });
+        fetchBody = JSON.stringify({});
         break;
 
       case "get-positions": {
@@ -59,7 +59,7 @@ serve(async (req) => {
 
       case "test-connection":
         url = `${TV_BASE}/get/projects_2/projects`;
-        fetchBody = JSON.stringify({ show_site_stat: false, show_searchers_and_regions: false, limit: 1 });
+        fetchBody = JSON.stringify({ limit: 1 });
         break;
 
       default:
