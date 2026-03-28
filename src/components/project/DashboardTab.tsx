@@ -20,6 +20,7 @@ import { exportToPdf, exportToExcel, exportToWord, type ExcelSheet, type WordSec
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useDateRange } from "@/contexts/DateRangeContext";
+import { ChannelFilter } from "@/components/project/ChannelFilter";
 
 interface DashboardTabProps {
   projectId: string;
@@ -269,7 +270,8 @@ export function DashboardTab({
         </div>
       )}
       {/* Export button */}
-      <div className="flex justify-end" data-export-ignore>
+      <div className="flex items-center justify-between" data-export-ignore>
+        <ChannelFilter />
         <ExportMenu onExportPdf={handleExportPdf} onExportExcel={handleExportExcel} onExportWord={handleExportWord} />
       </div>
 
