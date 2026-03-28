@@ -254,6 +254,19 @@ export function TrafficTab({ projectId, projectName, projectUrl }: TrafficTabPro
     );
   }
 
+  if (!integration?.access_token || !integration?.counter_id) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-3">
+        <Globe className="h-10 w-10 text-muted-foreground/30" />
+        <p className="text-sm text-muted-foreground">
+          {i18n.language === "ru"
+            ? "Подключите Яндекс.Метрику в Интеграциях для отображения данных о трафике"
+            : "Connect Yandex.Metrika in Integrations to view traffic data"}
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className={cn("space-y-6 transition-opacity duration-300", isRefreshing && "opacity-60")}>
       {isRefreshing && (
