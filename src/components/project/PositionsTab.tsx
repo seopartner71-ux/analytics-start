@@ -360,6 +360,45 @@ export function PositionsTab({
 }
 
 /* ═══════════════════════════════════════════════════════
+   Region Selector
+   ═══════════════════════════════════════════════════════ */
+function RegionSelector({
+  regions, selectedIndex, onSelect,
+}: {
+  regions: TvRegion[];
+  selectedIndex: string;
+  onSelect: (idx: string) => void;
+}) {
+  const { i18n } = useTranslation();
+  const isRu = i18n.language === "ru";
+
+  if (regions.length <= 1) return null;
+
+  const searcherName = (key: number) => {
+    switch (key) {
+      case 0: return "Yandex";
+      case 1: return "Google";
+      default: return `SE ${key}`;
+    }
+  };
+
+  return (
+    <Select value={selectedIndex} onValueChange={onSelect}>
+      <SelectTrigger className="w-[260px] h-9 text-sm">
+        <SelectValue placeholder={isRu ? "Выберите регион…" : "Select region…"} />
+      </SelectTrigger>
+      <SelectContent>
+        {regions.map((r) => (
+          <SelectItem key={r.index} value={r.index}>
+            {searcherName(r.searcher_key)} — {r.name} ({r.device_name || "PC"})
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
    Dashboard (after project selected)
    ═══════════════════════════════════════════════════════ */
 function PositionsDashboard({
@@ -384,18 +423,32 @@ function PositionsDashboard({
   const isRu = i18n.language === "ru";
   const queryClient = useQueryClient();
 
+  const [regions, setRegions] = useState<TvRegion[]>([]);
+  const [selectedRegion, setSelectedRegion] = useState<string>("");
+
+  const handleRegionsLoaded = useCallback((r: TvRegion[]) => {
+    setRegions(r);
+    if (r.length > 0 && !selectedRegion) {
+      setSelectedRegion(r[0].index);
+    }
+  }, [selectedRegion]);
+
+  const regionIndex = selectedRegion || (regions[0]?.index ?? "");
+
   // Fetch positions
   const { data: positionsData, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ["topvisor-positions", tvProjectId, dateFrom, dateTo],
+    queryKey: ["topvisor-positions", tvProjectId, dateFrom, dateTo, regionIndex],
     queryFn: async () => {
       const data = await callTopvisor("get-positions", apiKey, userId, {
         project_id: tvProjectId,
+        regions_indexes: regionIndex ? [regionIndex] : undefined,
         dates: [dateFrom, dateTo],
         show_headers: 1,
         positions_fields: ["position"],
       });
       return data;
     },
+    enabled: !!regionIndex,
     retry: 1,
   });
 
