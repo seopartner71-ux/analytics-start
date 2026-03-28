@@ -1,15 +1,13 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { ProjectCard } from "@/components/ProjectCard";
-import { AddProjectDialog } from "@/components/AddProjectDialog";
+import { AddProjectWizard } from "@/components/AddProjectWizard";
 import { PageHeader } from "@/components/PageHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { toast } from "sonner";
 
 const COLORS = [
   "hsl(239, 84%, 67%)",
@@ -28,7 +26,6 @@ const Index = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { user } = useAuth();
-  const queryClient = useQueryClient();
 
   const { data: projects = [], isLoading } = useQuery({
     queryKey: ["projects"],
@@ -37,23 +34,6 @@ const Index = () => {
       if (error) throw error;
       return data;
     },
-  });
-
-  const addProject = useMutation({
-    mutationFn: async (p: { name: string; url: string; description: string }) => {
-      const { error } = await supabase.from("projects").insert({
-        name: p.name,
-        url: p.url,
-        description: p.description,
-        owner_id: user!.id,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["projects"] });
-      toast.success(t("addProjectDialog.success"));
-    },
-    onError: (err: Error) => toast.error(err.message),
   });
 
   return (
@@ -70,7 +50,7 @@ const Index = () => {
                   {t("dashboard.projectsCount", { count: projects.length })}
                 </p>
               </div>
-              <AddProjectDialog onAdd={(p) => addProject.mutate(p)} />
+              <AddProjectWizard onCreated={(id) => navigate(`/project/${id}`)} />
             </div>
             {isLoading ? (
               <div className="flex justify-center py-20">
