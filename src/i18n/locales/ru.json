@@ -462,6 +462,27 @@
     "allTime": "За всё время",
     "apply": "Применить"
   },
+  "portalNav": {
+    "overview": "Обзор",
+    "traffic": "Трафик",
+    "conversions": "Конверсии",
+    "keywords": "Ключевые слова",
+    "indexing": "Индексация",
+    "workLog": "Журнал работ",
+    "aiAnalytics": "AI Аналитика",
+    "comparison": "Отчёты",
+    "integrations": "Интеграции",
+    "settings": "Настройки",
+    "analytics": "Аналитика",
+    "manage": "Управление",
+    "updated": "Обновлено"
+  },
+  "datePresets": {
+    "7d": "7 дней",
+    "30d": "30 дней",
+    "thisMonth": "Тек. месяц",
+    "lastMonth": "Прош. месяц"
+  },
   "channels": {
     "all": "Все каналы",
     "organic": "Поисковые",

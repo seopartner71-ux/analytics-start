@@ -1,20 +1,18 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { PageHeader } from "@/components/PageHeader";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronRight, Copy, Pencil, Upload, X, User, Link2, Calendar, Plug } from "lucide-react";
+import { Copy, Pencil, Upload, X, User, Link2, Calendar, Plug } from "lucide-react";
 import { toast } from "sonner";
 import { IntegrationsTab } from "@/components/project/IntegrationsTab";
-import { AnalyticsTab } from "@/components/project/AnalyticsTab";
 import { WorkLogTab } from "@/components/project/WorkLogTab";
 import { GoalsTab } from "@/components/project/GoalsTab";
 import { SeoTab } from "@/components/project/SeoTab";
@@ -24,18 +22,21 @@ import { AiInsightsBlock } from "@/components/project/AiInsightsBlock";
 import { ReportBuilderTab } from "@/components/project/ReportBuilderTab";
 import { DashboardTab } from "@/components/project/DashboardTab";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
-import { MetrikaWidget } from "@/components/widgets/MetrikaWidget";
-import { WebmasterWidget } from "@/components/widgets/WebmasterWidget";
-import { GSCWidget } from "@/components/widgets/GSCWidget";
-import { TopvisorWidget } from "@/components/widgets/TopvisorWidget";
 import { supabase } from "@/integrations/supabase/client";
-import { DateRangeProvider } from "@/contexts/DateRangeContext";
+import { DateRangeProvider, useDateRange } from "@/contexts/DateRangeContext";
+import { format } from "date-fns";
 
-const ProjectDetail = () => {
+/** Inner component that can use DateRange context */
+function ProjectDetailInner() {
   const { id } = useParams<{ id: string }>();
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("overview");
+
+  const {
+    range, setRange, compRange, setCompRange,
+    showComparison, setShowComparison, apply,
+  } = useDateRange();
 
   const { data: project, isLoading } = useQuery({
     queryKey: ["project", id],
@@ -61,7 +62,7 @@ const ProjectDetail = () => {
     queryKey: ["metrika-stats-latest", id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("metrika_stats").select("traffic_sources")
+        .from("metrika_stats").select("traffic_sources, fetched_at")
         .eq("project_id", id!).order("fetched_at", { ascending: false }).limit(1).maybeSingle();
       if (error) throw error;
       return data;
@@ -93,8 +94,7 @@ const ProjectDetail = () => {
     queryFn: async () => {
       const now = new Date();
       const { data, error } = await supabase
-        .from("cached_reports")
-        .select("*")
+        .from("cached_reports").select("*")
         .eq("project_id", id!)
         .eq("report_year", now.getFullYear())
         .eq("report_month", now.getMonth())
@@ -147,7 +147,6 @@ const ProjectDetail = () => {
   const saveAiSummary = useMutation({
     mutationFn: async (summary: any) => {
       const now = new Date();
-      const reportData = { ai_summary: summary };
       const existing = cachedReport;
       if (existing) {
         const merged = { ...(typeof existing.report_data === 'object' && existing.report_data ? existing.report_data : {}), ai_summary: summary };
@@ -158,7 +157,7 @@ const ProjectDetail = () => {
           project_id: id!,
           report_year: now.getFullYear(),
           report_month: now.getMonth(),
-          report_data: reportData as any,
+          report_data: { ai_summary: summary } as any,
         });
         if (error) throw error;
       }
@@ -173,10 +172,7 @@ const ProjectDetail = () => {
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      toast.error(t("project.settingsTab.logoError"));
-      return;
-    }
+    if (!file.type.startsWith("image/")) { toast.error(t("project.settingsTab.logoError")); return; }
     setUploading(true);
     const ext = file.name.split(".").pop();
     const filePath = `${id}/${Date.now()}.${ext}`;
@@ -200,9 +196,7 @@ const ProjectDetail = () => {
     const seoMember = teamMembers.find(m => m.id === editSeoSpecialistId);
     const amMember = teamMembers.find(m => m.id === editAccountManagerId);
     updateProject.mutate({
-      name: editName,
-      url: editUrl,
-      description: editDescription,
+      name: editName, url: editUrl, description: editDescription,
       seo_specialist: seoMember?.full_name || null,
       account_manager: amMember?.full_name || null,
       seo_specialist_id: editSeoSpecialistId || null,
@@ -219,12 +213,20 @@ const ProjectDetail = () => {
     }
   };
 
-  const isConnected = (serviceName: string) =>
-    integrations.some((i) => i.service_name === serviceName && i.connected);
+  const handleRefresh = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["metrika-stats-latest", id] });
+    queryClient.invalidateQueries({ queryKey: ["work_logs", id] });
+    queryClient.invalidateQueries({ queryKey: ["integrations", id] });
+    toast.success(t("integrations.synced"));
+  }, [queryClient, id, t]);
 
   const aiSummary = cachedReport?.report_data && typeof cachedReport.report_data === 'object' && 'ai_summary' in (cachedReport.report_data as any)
     ? (cachedReport.report_data as any).ai_summary
     : undefined;
+
+  const lastUpdated = latestMetrikaStats?.fetched_at
+    ? format(new Date(latestMetrikaStats.fetched_at), "dd.MM HH:mm")
+    : null;
 
   if (isLoading || !project) {
     return (
@@ -234,241 +236,198 @@ const ProjectDetail = () => {
     );
   }
 
+  const renderContent = () => {
+    switch (activeTab) {
+      case "overview":
+        return (
+          <div className="space-y-6">
+            <AiInsightsBlock
+              projectId={id}
+              summary={aiSummary}
+              isAdmin={true}
+              onSave={(summary) => saveAiSummary.mutate(summary)}
+              trafficSources={(latestMetrikaStats?.traffic_sources as any[]) || []}
+            />
+            <DashboardTab projectId={project.id} projectName={project.name} onSwitchTab={setActiveTab} />
+          </div>
+        );
+      case "searchSystems":
+        return <SearchSystemsTab projectId={project.id} projectName={project.name} />;
+      case "goals":
+        return <GoalsTab projectId={project.id} projectName={project.name} />;
+      case "seo":
+        return <SeoTab projectId={project.id} />;
+      case "pages":
+        return <PagesTab projectId={project.id} projectName={project.name} projectUrl={project.url || undefined} />;
+      case "worklog":
+        return <WorkLogTab projectId={project.id} tasks={workLogs} isAdmin={true} />;
+      case "ai":
+        return (
+          <AiInsightsBlock
+            projectId={id}
+            summary={aiSummary}
+            isAdmin={true}
+            onSave={(summary) => saveAiSummary.mutate(summary)}
+            trafficSources={(latestMetrikaStats?.traffic_sources as any[]) || []}
+          />
+        );
+      case "builder":
+        return <ReportBuilderTab projectId={project.id} shareToken={project.share_token} />;
+      case "integrations":
+        return <IntegrationsTab projectId={project.id} integrations={integrations} />;
+      case "settings":
+        return (
+          <div className="max-w-lg space-y-8">
+            <h2 className="text-lg font-semibold text-foreground">{t("project.settingsTab.title")}</h2>
+            {/* Logo */}
+            <div className="space-y-3">
+              <Label>{t("project.settingsTab.logoLabel")}</Label>
+              <div className="flex items-center gap-4">
+                {logoPreview ? (
+                  <div className="relative">
+                    <img src={logoPreview} alt="Logo" className="h-20 w-20 rounded-xl object-cover border border-border" />
+                    <button onClick={handleRemoveLogo} className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <div onClick={() => fileInputRef.current?.click()} className="h-20 w-20 rounded-xl border-2 border-dashed border-muted-foreground/25 flex items-center justify-center cursor-pointer hover:border-primary/40 transition-colors">
+                    <Upload className="h-6 w-6 text-muted-foreground/50" />
+                  </div>
+                )}
+                <div>
+                  <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+                    {uploading ? t("common.loading") : t("project.settingsTab.uploadLogo")}
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-1">{t("project.settingsTab.logoHint")}</p>
+                </div>
+              </div>
+              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+            </div>
+            {/* Basic info */}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>{t("project.settingsTab.nameLabel")}</Label>
+                <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>{t("project.settingsTab.urlLabel")}</Label>
+                <Input value={editUrl} onChange={(e) => setEditUrl(e.target.value)} placeholder="https://example.com" />
+              </div>
+              <div className="space-y-2">
+                <Label>{t("project.settingsTab.descriptionLabel")}</Label>
+                <Textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} rows={3} />
+              </div>
+            </div>
+            {/* Team */}
+            <div className="border-t border-border pt-6 space-y-4">
+              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <User className="h-4 w-4" />
+                {t("project.settingsTab.teamTitle")}
+              </h3>
+              <div className="space-y-2">
+                <Label>{t("project.settingsTab.seoSpecialist")}</Label>
+                <Select value={editSeoSpecialistId} onValueChange={setEditSeoSpecialistId}>
+                  <SelectTrigger><SelectValue placeholder={t("team.selectSeo")} /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">{t("team.notAssigned")}</SelectItem>
+                    {teamMembers.filter(m => m.role === "seo").map(m => (
+                      <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>{t("project.settingsTab.accountManager")}</Label>
+                <Select value={editAccountManagerId} onValueChange={setEditAccountManagerId}>
+                  <SelectTrigger><SelectValue placeholder={t("team.selectAm")} /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">{t("team.notAssigned")}</SelectItem>
+                    {teamMembers.filter(m => m.role === "account_manager").map(m => (
+                      <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>{t("project.settingsTab.clientEmail")}</Label>
+                <Input type="email" value={editClientEmail} onChange={(e) => setEditClientEmail(e.target.value)} placeholder="client@company.com" />
+              </div>
+            </div>
+            <Button onClick={handleSaveSettings} disabled={updateProject.isPending}>
+              {updateProject.isPending ? t("common.loading") : t("project.settingsTab.save")}
+            </Button>
+            {/* Share link */}
+            <div className="border-t border-border pt-6 space-y-4">
+              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Link2 className="h-4 w-4" />
+                {t("project.shareLink")}
+              </h3>
+              <div className="flex gap-2">
+                <Input readOnly value={project.share_token ? `${window.location.origin}/share/${project.share_token}` : ""} className="text-xs" />
+                <Button variant="outline" size="icon" onClick={handleCopyShareLink}><Copy className="h-4 w-4" /></Button>
+              </div>
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1.5 text-xs">
+                  <Calendar className="h-3.5 w-3.5" />
+                  {t("project.shareLinkExpiry")}
+                </Label>
+                <Input type="date" value={editShareExpiry} onChange={(e) => setEditShareExpiry(e.target.value)} className="max-w-[200px] h-8 text-xs" min={new Date().toISOString().slice(0, 10)} />
+                <p className="text-[11px] text-muted-foreground">{t("project.shareLinkExpiryHint")}</p>
+              </div>
+            </div>
+            {/* Integrations inside settings */}
+            <div className="border-t border-border pt-6">
+              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-4">
+                <Plug className="h-4 w-4" />
+                {t("project.tabs.integrations")}
+              </h3>
+              <IntegrationsTab projectId={project.id} integrations={integrations} />
+            </div>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
-    <DateRangeProvider>
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
-        <AppSidebar />
+        <AppSidebar
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          projectName={project.name}
+          projectLogo={project.logo_url}
+        />
         <div className="flex-1 flex flex-col">
           <PageHeader
-            breadcrumbs={
-              <nav className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                <Link to="/" className="hover:text-foreground transition-colors">
-                  {t("project.breadcrumbProjects")}
-                </Link>
-                <ChevronRight className="h-3.5 w-3.5" />
-                <div className="flex items-center gap-2">
-                  {logoPreview && (
-                    <img src={logoPreview} alt={project.name} className="h-5 w-5 rounded object-cover" />
-                  )}
-                  <span className="text-foreground font-medium">{project.name}</span>
-                </div>
-              </nav>
-            }
-            actions={
-              <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs mr-2" onClick={() => setActiveTab("settings")}>
-                <Pencil className="h-3 w-3" />
-                {t("project.editProject")}
-              </Button>
-            }
+            projectId={id}
+            showDatePicker={!["settings", "integrations"].includes(activeTab)}
+            dateRange={range}
+            onDateRangeChange={setRange}
+            compRange={compRange}
+            onCompRangeChange={setCompRange}
+            showComparison={showComparison}
+            onShowComparisonChange={setShowComparison}
+            onApply={apply}
+            onRefresh={handleRefresh}
+            lastUpdated={lastUpdated}
           />
-
           <main className="flex-1 p-4 sm:p-6 lg:p-8 pb-20 md:pb-8">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-              <TabsList className="bg-muted/60 hidden md:inline-flex">
-                <TabsTrigger value="overview">{t("project.tabs.overview")}</TabsTrigger>
-                <TabsTrigger value="goals">{t("project.tabs.goals")}</TabsTrigger>
-                <TabsTrigger value="searchSystems">{t("project.tabs.searchSystems")}</TabsTrigger>
-                <TabsTrigger value="pages">{t("project.tabs.pages")}</TabsTrigger>
-                <TabsTrigger value="worklog">{t("project.tabs.worklog")}</TabsTrigger>
-                <TabsTrigger value="builder">{t("project.tabs.builder")}</TabsTrigger>
-                <TabsTrigger value="settings">{t("project.tabs.settings")}</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="overview">
-                <div className="space-y-6">
-                  {/* AI Insights Block */}
-                  <AiInsightsBlock
-                    projectId={id}
-                    summary={aiSummary}
-                    isAdmin={true}
-                    onSave={(summary) => saveAiSummary.mutate(summary)}
-                    trafficSources={(latestMetrikaStats?.traffic_sources as any[]) || []}
-                  />
-
-                  {/* Dashboard Summary */}
-                  <DashboardTab
-                    projectId={project.id}
-                    projectName={project.name}
-                    onSwitchTab={setActiveTab}
-                  />
-                </div>
-              </TabsContent>
-
-              <TabsContent value="seo">
-                <SeoTab projectId={project.id} />
-              </TabsContent>
-
-              <TabsContent value="searchSystems">
-                <SearchSystemsTab projectId={project.id} projectName={project.name} />
-              </TabsContent>
-
-              <TabsContent value="pages">
-                <PagesTab projectId={project.id} projectName={project.name} projectUrl={project.url || undefined} />
-              </TabsContent>
-
-              <TabsContent value="goals">
-                <GoalsTab projectId={project.id} projectName={project.name} />
-              </TabsContent>
-
-              <TabsContent value="worklog">
-                <WorkLogTab projectId={project.id} tasks={workLogs} isAdmin={true} />
-              </TabsContent>
-
-              <TabsContent value="builder">
-                <ReportBuilderTab projectId={project.id} shareToken={project.share_token} />
-              </TabsContent>
-
-
-              <TabsContent value="settings">
-                <div className="max-w-lg space-y-8">
-                  <h2 className="text-lg font-semibold text-foreground">{t("project.settingsTab.title")}</h2>
-
-                  {/* Logo */}
-                  <div className="space-y-3">
-                    <Label>{t("project.settingsTab.logoLabel")}</Label>
-                    <div className="flex items-center gap-4">
-                      {logoPreview ? (
-                        <div className="relative">
-                          <img src={logoPreview} alt="Logo" className="h-20 w-20 rounded-xl object-cover border border-border" />
-                          <button
-                            onClick={handleRemoveLogo}
-                            className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </div>
-                      ) : (
-                        <div
-                          onClick={() => fileInputRef.current?.click()}
-                          className="h-20 w-20 rounded-xl border-2 border-dashed border-muted-foreground/25 flex items-center justify-center cursor-pointer hover:border-primary/40 transition-colors"
-                        >
-                          <Upload className="h-6 w-6 text-muted-foreground/50" />
-                        </div>
-                      )}
-                      <div>
-                        <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-                          {uploading ? t("common.loading") : t("project.settingsTab.uploadLogo")}
-                        </Button>
-                        <p className="text-xs text-muted-foreground mt-1">{t("project.settingsTab.logoHint")}</p>
-                      </div>
-                    </div>
-                    <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
-                  </div>
-
-                  {/* Basic info */}
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>{t("project.settingsTab.nameLabel")}</Label>
-                      <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>{t("project.settingsTab.urlLabel")}</Label>
-                      <Input value={editUrl} onChange={(e) => setEditUrl(e.target.value)} placeholder="https://example.com" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>{t("project.settingsTab.descriptionLabel")}</Label>
-                      <Textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} rows={3} />
-                    </div>
-                  </div>
-
-                  {/* Team */}
-                  <div className="border-t border-border pt-6 space-y-4">
-                    <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                      <User className="h-4 w-4" />
-                      {t("project.settingsTab.teamTitle")}
-                    </h3>
-                    <div className="space-y-2">
-                      <Label>{t("project.settingsTab.seoSpecialist")}</Label>
-                      <Select value={editSeoSpecialistId} onValueChange={setEditSeoSpecialistId}>
-                        <SelectTrigger>
-                          <SelectValue placeholder={t("team.selectSeo")} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">{t("team.notAssigned")}</SelectItem>
-                          {teamMembers.filter(m => m.role === "seo").map(m => (
-                            <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>{t("project.settingsTab.accountManager")}</Label>
-                      <Select value={editAccountManagerId} onValueChange={setEditAccountManagerId}>
-                        <SelectTrigger>
-                          <SelectValue placeholder={t("team.selectAm")} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">{t("team.notAssigned")}</SelectItem>
-                          {teamMembers.filter(m => m.role === "account_manager").map(m => (
-                            <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>{t("project.settingsTab.clientEmail")}</Label>
-                      <Input
-                        type="email"
-                        value={editClientEmail}
-                        onChange={(e) => setEditClientEmail(e.target.value)}
-                        placeholder="client@company.com"
-                      />
-                    </div>
-                  </div>
-
-                  <Button onClick={handleSaveSettings} disabled={updateProject.isPending}>
-                    {updateProject.isPending ? t("common.loading") : t("project.settingsTab.save")}
-                  </Button>
-
-                  {/* Share link */}
-                  <div className="border-t border-border pt-6 space-y-4">
-                    <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                      <Link2 className="h-4 w-4" />
-                      {t("project.shareLink")}
-                    </h3>
-                    <div className="flex gap-2">
-                      <Input readOnly value={project.share_token ? `${window.location.origin}/share/${project.share_token}` : ""} className="text-xs" />
-                      <Button variant="outline" size="icon" onClick={handleCopyShareLink}>
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="flex items-center gap-1.5 text-xs">
-                        <Calendar className="h-3.5 w-3.5" />
-                        {t("project.shareLinkExpiry")}
-                      </Label>
-                      <Input
-                        type="date"
-                        value={editShareExpiry}
-                        onChange={(e) => setEditShareExpiry(e.target.value)}
-                        className="max-w-[200px] h-8 text-xs"
-                        min={new Date().toISOString().slice(0, 10)}
-                      />
-                      <p className="text-[11px] text-muted-foreground">{t("project.shareLinkExpiryHint")}</p>
-                    </div>
-                    </div>
-                  </div>
-
-                  {/* Integrations */}
-                  <div className="border-t border-border pt-6">
-                    <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-4">
-                      <Plug className="h-4 w-4" />
-                      {t("project.tabs.integrations")}
-                    </h3>
-                    <IntegrationsTab projectId={project.id} integrations={integrations} />
-                  </div>
-              </TabsContent>
-            </Tabs>
+            {renderContent()}
           </main>
         </div>
-
-        {/* Mobile Bottom Nav */}
         <MobileBottomNav activeTab={activeTab} onTabChange={setActiveTab} />
       </div>
     </SidebarProvider>
-    </DateRangeProvider>
   );
-};
+}
+
+const ProjectDetail = () => (
+  <DateRangeProvider>
+    <ProjectDetailInner />
+  </DateRangeProvider>
+);
 
 export default ProjectDetail;
