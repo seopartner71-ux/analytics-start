@@ -437,6 +437,11 @@
     "totals": "Total / Averages",
     "demoDataHint": "Showing demo data. Connect Yandex.Metrika in Settings to display real search queries."
   },
+  "trafficTab": {
+    "source": "Source",
+    "visits": "Visits",
+    "share": "Share"
+  },
   "dashboardTab": {
     "goalsWidget": "Goal Performance",
     "searchWidget": "Search Engines",
