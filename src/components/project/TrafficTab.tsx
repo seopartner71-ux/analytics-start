@@ -141,30 +141,11 @@ export function TrafficTab({ projectId, projectName, projectUrl }: TrafficTabPro
     pct: sourceTotal > 0 ? Math.round((s.value / sourceTotal) * 1000) / 10 : 0,
   })).filter(s => s.value > 0);
 
-  // === 2. TOP PAGES ===
-  const topPages = useMemo(() => {
-    const pages = getPagesForProject(projectUrl);
-    const weights = [0.32, 0.22, 0.18, 0.15, 0.13];
-    return pages.map((p, i) => ({
-      ...p,
-      visits: Math.round(totalVisits * weights[i]),
-      pct: Math.round(weights[i] * 1000) / 10,
-      fullUrl: projectUrl ? `${projectUrl.replace(/\/$/, "")}${p.path}` : undefined,
-    }));
-  }, [totalVisits, projectUrl]);
+  // === 2. TOP PAGES (empty — no demo data) ===
+  const topPages: { path: string; title: string; visits: number; pct: number; fullUrl?: string }[] = [];
 
-  // === 3. DEVICE DISTRIBUTION ===
-  const deviceData = useMemo(() => {
-    // Deterministic based on totalVisits
-    const desktopPct = 58 + (totalVisits % 7);
-    const mobilePct = 100 - desktopPct - 6;
-    const tabletPct = 6;
-    return [
-      { name: "Desktop", key: "desktop", value: Math.round(totalVisits * desktopPct / 100), pct: desktopPct, icon: <Monitor className="h-5 w-5" /> },
-      { name: "Mobile", key: "mobile", value: Math.round(totalVisits * mobilePct / 100), pct: mobilePct, icon: <Smartphone className="h-5 w-5" /> },
-      { name: "Tablet", key: "tablet", value: Math.round(totalVisits * tabletPct / 100), pct: tabletPct, icon: <Tablet className="h-5 w-5" /> },
-    ];
-  }, [totalVisits]);
+  // === 3. DEVICE DISTRIBUTION (empty — no demo data) ===
+  const deviceData: { name: string; key: string; value: number; pct: number; icon: React.ReactNode }[] = [];
 
   // Export
   const exportMeta = { projectName, tabName: t("portalNav.traffic"), periodA: `${format(appliedRange.from, "yyyy-MM-dd")} — ${format(appliedRange.to, "yyyy-MM-dd")}`, language: i18n.language };
