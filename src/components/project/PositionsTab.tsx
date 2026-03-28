@@ -115,7 +115,7 @@ export function PositionsTab({ projectId, hasTopvisor = false, onNavigateSetting
 
   return (
     <div className="space-y-6 relative">
-      {loading && <TabLoadingOverlay />}
+      {isRefreshing && <TabLoadingOverlay show={isRefreshing} />}
 
       {/* KPI row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -126,14 +126,14 @@ export function PositionsTab({ projectId, hasTopvisor = false, onNavigateSetting
           invertChange
           tooltipKey="avgPosition"
           sparkData={sparkData}
-          loading={loading}
+          loading={isRefreshing}
         />
         <StandardKpiCard
           label={t("positions.visibility")}
           value={`${visibility}%`}
           change={5.2}
           sparkData={sparkData}
-          loading={loading}
+          loading={isRefreshing}
         />
 
         {/* Distribution bar */}
