@@ -49,7 +49,7 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
   const getIntegration = (key: string) => integrations.find((i) => i.service_name === key);
 
   const connectMutation = useMutation({
-    mutationFn: async ({ serviceName, apiKey, externalProjectId }: { serviceName: string; apiKey?: string; externalProjectId?: string }) => {
+    mutationFn: async ({ serviceName, apiKey, externalProjectId, counterId }: { serviceName: string; apiKey?: string; externalProjectId?: string; counterId?: string }) => {
       const existing = getIntegration(serviceName);
       if (existing) {
         const { error } = await supabase.from("integrations").update({
@@ -58,6 +58,7 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
           access_token: "mock_token_" + Date.now(),
           api_key: apiKey || null,
           external_project_id: externalProjectId || null,
+          counter_id: counterId || null,
         }).eq("id", existing.id);
         if (error) throw error;
       } else {
@@ -69,6 +70,7 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
           access_token: "mock_token_" + Date.now(),
           api_key: apiKey || null,
           external_project_id: externalProjectId || null,
+          counter_id: counterId || null,
         });
         if (error) throw error;
       }
@@ -218,7 +220,8 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
       toast.error(t("integrations.fillFields"));
       return;
     }
-    connectMutation.mutate({ serviceName: "topvisor", apiKey: tvApiKey.trim(), externalProjectId: tvProjectId.trim() });
+    // tvProjectId here is actually the User ID for Topvisor
+    connectMutation.mutate({ serviceName: "topvisor", apiKey: tvApiKey.trim(), counterId: tvProjectId.trim() });
     setTopvisorDialog(false);
     setTvApiKey("");
     setTvProjectId("");
