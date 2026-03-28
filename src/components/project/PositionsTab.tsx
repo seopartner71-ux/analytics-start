@@ -469,6 +469,24 @@ function PositionsDashboard({
     }
   }, [selectedRegion]);
 
+  // Load regions from Topvisor projects list
+  useQuery({
+    queryKey: ["topvisor-regions", tvProjectId, apiKey, userId],
+    queryFn: async () => {
+      const data = await callTopvisor("get-projects", apiKey, userId);
+      const projects = (data?.result || []) as TvProject[];
+      const found = projects.find((p) => String(p.id) === tvProjectId);
+      if (found?.searchers) {
+        const r = found.searchers.flatMap((s) =>
+          (s.regions || []).map((reg) => ({ ...reg, searcher_key: s.key }))
+        );
+        handleRegionsLoaded(r);
+      }
+      return null;
+    },
+    enabled: regions.length === 0,
+  });
+
   const regionIndex = selectedRegion || (regions[0]?.index ?? "");
 
   // Fetch positions
