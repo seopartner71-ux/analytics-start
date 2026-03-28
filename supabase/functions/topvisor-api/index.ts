@@ -203,9 +203,15 @@ serve(async (req) => {
       if (action === "get-positions" && topvisorCode === 54 && requestedProjectId) {
         const fallbackRegions = await resolveRegionIndexes(requestedProjectId, headers);
         const tried = new Set(normalizedRegionsIndexes);
-        const retryBody = isRecord(fetchBody ? JSON.parse(fetchBody) : null)
-          ? (JSON.parse(fetchBody as string) as JsonRecord)
-          : null;
+        const retryBody = (() => {
+          if (typeof fetchBody !== "string") return null;
+          try {
+            const parsed = JSON.parse(fetchBody);
+            return isRecord(parsed) ? (parsed as JsonRecord) : null;
+          } catch {
+            return null;
+          }
+        })();
 
         if (retryBody) {
           for (const idx of fallbackRegions) {
