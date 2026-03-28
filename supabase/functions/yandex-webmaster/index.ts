@@ -103,8 +103,13 @@ Deno.serve(async (req) => {
         const userId = await getWmUserId();
         const encodedHost = encodeURIComponent(host_id);
         const resp = await fetch(`${WM_BASE}/user/${userId}/hosts/${encodedHost}/sqi-history`, { headers: wmHeaders });
+        if (!resp.ok) {
+          return new Response(JSON.stringify({ sqi_history: [], sqi: 0 }), {
+            status: 200,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
         const data = await resp.json();
-        if (!resp.ok) throw new Error(data?.error_message || "Failed to get SQI");
         return new Response(JSON.stringify(data), {
           status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -116,8 +121,13 @@ Deno.serve(async (req) => {
         const userId = await getWmUserId();
         const encodedHost = encodeURIComponent(host_id);
         const resp = await fetch(`${WM_BASE}/user/${userId}/hosts/${encodedHost}/indexing/history`, { headers: wmHeaders });
+        if (!resp.ok) {
+          return new Response(JSON.stringify({ indicators: {} }), {
+            status: 200,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
         const data = await resp.json();
-        if (!resp.ok) throw new Error(data?.error_message || "Failed to get indexing history");
         return new Response(JSON.stringify(data), {
           status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -129,8 +139,13 @@ Deno.serve(async (req) => {
         const userId = await getWmUserId();
         const encodedHost = encodeURIComponent(host_id);
         const resp = await fetch(`${WM_BASE}/user/${userId}/hosts/${encodedHost}/diagnostics`, { headers: wmHeaders });
+        if (!resp.ok) {
+          return new Response(JSON.stringify({ problems: [] }), {
+            status: 200,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
         const data = await resp.json();
-        if (!resp.ok) throw new Error(data?.error_message || "Failed to get diagnostics");
         return new Response(JSON.stringify(data), {
           status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
