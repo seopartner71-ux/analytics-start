@@ -230,49 +230,17 @@ function parseMetrikaData(raw: any): { engines: EngineData[]; trend: TrendPoint[
   return { engines, trend };
 }
 
-/* ── Demo data fallback ── */
-function buildDemoData(): { engines: EngineData[]; trend: TrendPoint[] } {
-  const rnd = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
-
-  const mkPhrases = (prefix: string, n: number): Phrase[] =>
-    Array.from({ length: n }, (_, i) => ({
-      name: `${prefix} запрос ${i + 1}`,
-      visits: rnd(10, 800), visitors: rnd(8, 600), bounce: rnd(15, 65),
-      depth: +(rnd(10, 50) / 10).toFixed(1), duration: rnd(20, 400),
-    }));
-
-  const mkSub = (name: string, phrases: Phrase[]): SubChannel => ({
-    name,
-    visits: phrases.reduce((s, p) => s + p.visits, 0),
-    visitors: phrases.reduce((s, p) => s + p.visitors, 0),
-    bounce: +(phrases.reduce((s, p) => s + p.bounce, 0) / phrases.length).toFixed(1),
-    depth: +(phrases.reduce((s, p) => s + p.depth, 0) / phrases.length).toFixed(1),
-    duration: Math.round(phrases.reduce((s, p) => s + p.duration, 0) / phrases.length),
-    phrases,
-  });
-
-  const mkEngine = (engine: string, key: string, icon: React.ReactNode, subs: SubChannel[]): EngineData => ({
-    engine, key, icon,
-    visits: subs.reduce((s, c) => s + c.visits, 0),
-    visitors: subs.reduce((s, c) => s + c.visitors, 0),
-    bounce: +(subs.reduce((s, c) => s + c.bounce, 0) / subs.length).toFixed(1),
-    depth: +(subs.reduce((s, c) => s + c.depth, 0) / subs.length).toFixed(1),
-    duration: Math.round(subs.reduce((s, c) => s + c.duration, 0) / subs.length),
-    subChannels: subs,
-  });
-
-  const engines = [
-    mkEngine("Яндекс", "yandex", <YandexIcon />, [mkSub("Яндекс: Поиск", mkPhrases("ya-search", 8))]),
-    mkEngine("Google", "google", <GoogleIcon />, [mkSub("Google: Поиск", mkPhrases("g-search", 10))]),
-    mkEngine("Другие", "other", <Globe className="h-4 w-4 text-muted-foreground" />, [mkSub("Bing", mkPhrases("bing", 3))]),
-  ];
-
-  const trend: TrendPoint[] = Array.from({ length: 30 }, (_, i) => ({
-    date: format(subDays(new Date(), 29 - i), "dd.MM"),
-    yandex: rnd(200, 600), google: rnd(300, 800), other: rnd(30, 150),
-  }));
-
-  return { engines, trend };
+/* ── No demo data fallback — return empty structures ── */
+function buildEmptyData(): { engines: EngineData[]; trend: TrendPoint[] } {
+  return {
+    engines: ENGINE_KEYS.map((key) => ({
+      engine: key === "yandex" ? "Яндекс" : key === "google" ? "Google" : "Другие",
+      key,
+      icon: key === "yandex" ? <YandexIcon /> : key === "google" ? <GoogleIcon /> : <Globe className="h-4 w-4 text-muted-foreground" />,
+      visits: 0, visitors: 0, bounce: 0, depth: 0, duration: 0, subChannels: [],
+    })),
+    trend: [],
+  };
 }
 
 /* ── Helpers ── */
@@ -454,7 +422,7 @@ export function SearchSystemsTab({ projectId, projectName }: SearchSystemsTabPro
       }
       return parsed;
     }
-    return buildDemoData();
+    return buildEmptyData();
   }, [realData, compData, showComparison]);
   const [expandedEngines, setExpandedEngines] = useState<Set<string>>(new Set());
   const [expandedSubs, setExpandedSubs] = useState<Set<string>>(new Set());
