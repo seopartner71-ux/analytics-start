@@ -1,31 +1,24 @@
 import { useState, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Badge } from "@/components/ui/badge";
 import {
-  ExternalLink, Search, TrendingUp, TrendingDown,
-  Minus, Settings, Trophy, RefreshCw, Loader2,
+  Search, TrendingUp, TrendingDown,
+  Minus, Trophy, RefreshCw, Loader2,
   KeyRound, CheckCircle2, AlertCircle, Link as LinkIcon,
-  CalendarIcon,
+  ArrowUp, ArrowDown, Filter,
 } from "lucide-react";
-import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip as RechartsTooltip, ResponsiveContainer, Legend,
-} from "recharts";
-import { GlassCard, StandardKpiCard, MetricTooltip, useTabRefresh, TabLoadingOverlay } from "./shared-ui";
+import { GlassCard, StandardKpiCard, useTabRefresh, TabLoadingOverlay } from "./shared-ui";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { format, subMonths } from "date-fns";
-import { ru } from "date-fns/locale";
+import { format, subDays } from "date-fns";
 import { cn } from "@/lib/utils";
 
 /* ═══════════════════════════════════════════════════════
@@ -64,13 +57,12 @@ interface TvProject {
   searchers?: TvSearcher[];
 }
 
-interface KeywordPosition {
+interface KeywordRow {
   keyword: string;
-  position: number | null;
-  prevPosition: number | null;
-  url: string;
-  volume: number;
-  lastChecked: string | null;
+  group?: string;
+  isBrand: boolean;
+  /** position per date, keyed by "date:regionIndex" */
+  positions: Record<string, number | null>;
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -98,7 +90,7 @@ async function callTopvisor(action: string, apiKey: string, userId: string, payl
    Setup Form (Empty State)
    ═══════════════════════════════════════════════════════ */
 function TopvisorSetupForm({ projectId, onConnected }: { projectId: string; onConnected: () => void }) {
-  const { t, i18n } = useTranslation();
+  const { i18n } = useTranslation();
   const isRu = i18n.language === "ru";
   const [apiKey, setApiKey] = useState("");
   const [userId, setUserId] = useState("");
@@ -112,28 +104,19 @@ function TopvisorSetupForm({ projectId, onConnected }: { projectId: string; onCo
     setTesting(true);
     try {
       await callTopvisor("test-connection", apiKey.trim(), userId.trim());
-      // Save to projects table
       await supabase.from("projects").update({
         topvisor_api_key: apiKey.trim(),
         topvisor_user_id: userId.trim(),
       } as any).eq("id", projectId);
-      // Also save to integrations table for backwards compatibility
       const existing = await supabase.from("integrations").select("id").eq("project_id", projectId).eq("service_name", "topvisor").maybeSingle();
       if (existing.data) {
         await supabase.from("integrations").update({
-          api_key: apiKey.trim(),
-          counter_id: userId.trim(),
-          connected: true,
-          last_sync: new Date().toISOString(),
+          api_key: apiKey.trim(), counter_id: userId.trim(), connected: true, last_sync: new Date().toISOString(),
         }).eq("id", existing.data.id);
       } else {
         await supabase.from("integrations").insert({
-          project_id: projectId,
-          service_name: "topvisor",
-          api_key: apiKey.trim(),
-          counter_id: userId.trim(),
-          connected: true,
-          last_sync: new Date().toISOString(),
+          project_id: projectId, service_name: "topvisor", api_key: apiKey.trim(),
+          counter_id: userId.trim(), connected: true, last_sync: new Date().toISOString(),
         });
       }
       toast.success(isRu ? "Topvisor подключен!" : "Topvisor connected!");
@@ -158,7 +141,6 @@ function TopvisorSetupForm({ projectId, onConnected }: { projectId: string; onCo
           ? "Введите User ID и API Key из личного кабинета Topvisor для автоматического отслеживания позиций."
           : "Enter your User ID and API Key from Topvisor to automatically track keyword positions."}
       </p>
-
       <GlassCard className="w-full max-w-md">
         <CardContent className="p-6 space-y-4">
           <div className="space-y-2">
@@ -169,12 +151,8 @@ function TopvisorSetupForm({ projectId, onConnected }: { projectId: string; onCo
             <Label>API Key *</Label>
             <Input value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="tv_xxxxxxxxxxxxxxxx" type="password" />
           </div>
-          <a
-            href="https://topvisor.com/ru/support/api/getting-started/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-          >
+          <a href="https://topvisor.com/ru/support/api/getting-started/" target="_blank" rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
             <LinkIcon className="h-3 w-3" />
             {isRu ? "Где взять ключи в Topvisor?" : "Where to get Topvisor keys?"}
           </a>
@@ -189,100 +167,6 @@ function TopvisorSetupForm({ projectId, onConnected }: { projectId: string; onCo
 }
 
 /* ═══════════════════════════════════════════════════════
-   Project Selector
-   ═══════════════════════════════════════════════════════ */
-function TopvisorProjectSelector({
-  apiKey, userId, projectId, currentExternalId, integrationId, onSelect,
-  onRegionsLoaded,
-}: {
-  apiKey: string;
-  userId: string;
-  projectId: string;
-  currentExternalId: string | null;
-  integrationId: string;
-  onSelect: (tvProjectId: string) => void;
-  onRegionsLoaded?: (regions: TvRegion[]) => void;
-}) {
-  const { i18n } = useTranslation();
-  const isRu = i18n.language === "ru";
-  const queryClient = useQueryClient();
-
-  const { data: tvProjects, isLoading } = useQuery({
-    queryKey: ["topvisor-projects", apiKey, userId],
-    queryFn: async () => {
-      const data = await callTopvisor("get-projects", apiKey, userId);
-      return (data?.result || []) as TvProject[];
-    },
-  });
-
-  // When projects load or selection changes, extract regions for the selected project
-  const selectedProject = tvProjects?.find((p) => String(p.id) === currentExternalId);
-  const regions: TvRegion[] = useMemo(() => {
-    if (!selectedProject?.searchers) return [];
-    return selectedProject.searchers.flatMap((s) =>
-      (s.regions || []).map((r) => ({ ...r, searcher_key: s.key }))
-    );
-  }, [selectedProject]);
-
-  // Notify parent about regions
-  useMemo(() => {
-    if (regions.length > 0 && onRegionsLoaded) {
-      onRegionsLoaded(regions);
-    }
-  }, [regions, onRegionsLoaded]);
-
-  const linkMutation = useMutation({
-    mutationFn: async (tvId: string) => {
-      // Save to projects table
-      await supabase.from("projects").update({ topvisor_project_id: tvId } as any).eq("id", projectId);
-      // Also update integrations for backwards compat
-      if (integrationId) {
-        await supabase.from("integrations").update({ external_project_id: tvId }).eq("id", integrationId);
-      }
-    },
-    onSuccess: (_, tvId) => {
-      queryClient.invalidateQueries({ queryKey: ["integrations", projectId] });
-      onSelect(tvId);
-      // Also update regions for newly selected project
-      const newProject = tvProjects?.find((p) => String(p.id) === tvId);
-      if (newProject?.searchers && onRegionsLoaded) {
-        const newRegions = newProject.searchers.flatMap((s) =>
-          (s.regions || []).map((r) => ({ ...r, searcher_key: s.key }))
-        );
-        onRegionsLoaded(newRegions);
-      }
-      toast.success(isRu ? "Проект привязан" : "Project linked");
-    },
-  });
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center gap-3">
-        <Skeleton className="h-9 w-[280px]" />
-      </div>
-    );
-  }
-
-  return (
-    <Select
-      value={currentExternalId || ""}
-      onValueChange={(v) => linkMutation.mutate(v)}
-    >
-      <SelectTrigger className="w-[320px] h-9 text-sm">
-        <SelectValue placeholder={isRu ? "Выберите проект Topvisor…" : "Select Topvisor project…"} />
-      </SelectTrigger>
-      <SelectContent>
-        {tvProjects?.map((p) => (
-          <SelectItem key={p.id} value={String(p.id)}>
-            {p.name || p.site} — {p.site}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════
    Position color helpers
    ═══════════════════════════════════════════════════════ */
 function positionColor(pos: number | null) {
@@ -293,38 +177,49 @@ function positionColor(pos: number | null) {
   return "text-muted-foreground font-bold";
 }
 
+function positionBg(pos: number | null) {
+  if (pos === null || pos <= 0) return "";
+  if (pos <= 3) return "bg-amber-400/10";
+  if (pos <= 10) return "bg-emerald-500/10";
+  if (pos <= 30) return "bg-primary/10";
+  return "";
+}
+
+/* ═══════════════════════════════════════════════════════
+   Brand detection
+   ═══════════════════════════════════════════════════════ */
+function isBrandKeyword(keyword: string, projectUrl?: string | null): boolean {
+  const lower = keyword.toLowerCase();
+  // Extract domain name without TLD for brand detection
+  if (projectUrl) {
+    const domain = projectUrl.replace(/^https?:\/\//, "").replace(/\/$/, "").split(".")[0];
+    if (domain && domain.length > 2 && lower.includes(domain.toLowerCase())) return true;
+  }
+  return false;
+}
+
 /* ═══════════════════════════════════════════════════════
    Main PositionsTab
    ═══════════════════════════════════════════════════════ */
 export function PositionsTab({
-  projectId,
-  projectName,
-  projectUrl,
-  hasTopvisor = false,
-  topvisorApiKey,
-  topvisorUserId,
-  topvisorExternalProjectId,
-  integrationId,
-  onNavigateSettings,
+  projectId, projectName, projectUrl,
+  hasTopvisor = false, topvisorApiKey, topvisorUserId,
+  topvisorExternalProjectId, integrationId, onNavigateSettings,
 }: PositionsTabProps) {
-  const { t, i18n } = useTranslation();
+  const { i18n } = useTranslation();
   const isRu = i18n.language === "ru";
   const isRefreshing = useTabRefresh();
   const queryClient = useQueryClient();
   const { appliedRange } = useDateRange();
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedTvProject, setSelectedTvProject] = useState<string | null>(topvisorExternalProjectId || null);
   const [showReconnect, setShowReconnect] = useState(false);
+  const [brandFilter, setBrandFilter] = useState<"all" | "brand" | "nonbrand">("all");
 
-  const tvProjectId = selectedTvProject || topvisorExternalProjectId;
+  const tvProjectId = topvisorExternalProjectId;
   const apiKey = topvisorApiKey;
   const userId = topvisorUserId;
 
-  const dateFrom = format(appliedRange.from, "yyyy-MM-dd");
-  const dateTo = format(appliedRange.to, "yyyy-MM-dd");
-
-  // If no integration or user wants to reconnect, show setup form
   if (!hasTopvisor || !apiKey || !userId || showReconnect) {
     return (
       <TopvisorSetupForm
@@ -337,30 +232,18 @@ export function PositionsTab({
     );
   }
 
-  // If no project selected, show selector only
   if (!tvProjectId) {
     return (
-      <div className="space-y-6">
-        <GlassCard>
-          <CardContent className="p-6">
-            <h3 className="text-sm font-semibold text-foreground mb-4">
-              {isRu ? "Выберите проект Topvisor" : "Select Topvisor project"}
-            </h3>
-            <p className="text-xs text-muted-foreground mb-4">
-              {isRu
-                ? "Привяжите один из ваших проектов Topvisor к этому проекту StatPulse."
-                : "Link one of your Topvisor projects to this StatPulse project."}
-            </p>
-            <TopvisorProjectSelector
-              apiKey={apiKey}
-              userId={userId}
-              projectId={projectId}
-              currentExternalId={null}
-              integrationId={integrationId!}
-              onSelect={setSelectedTvProject}
-            />
-          </CardContent>
-        </GlassCard>
+      <div className="flex flex-col items-center justify-center py-16">
+        <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
+        <h3 className="text-lg font-semibold text-foreground mb-2">
+          {isRu ? "Проект Topvisor не привязан" : "Topvisor project not linked"}
+        </h3>
+        <p className="text-sm text-muted-foreground text-center max-w-md">
+          {isRu
+            ? "Привяжите проект Topvisor в настройках интеграции."
+            : "Link a Topvisor project in integration settings."}
+        </p>
       </div>
     );
   }
@@ -374,12 +257,10 @@ export function PositionsTab({
       projectName={projectName}
       projectUrl={projectUrl}
       integrationId={integrationId!}
-      dateFrom={dateFrom}
-      dateTo={dateTo}
       searchQuery={searchQuery}
       setSearchQuery={setSearchQuery}
-      selectedTvProject={selectedTvProject}
-      setSelectedTvProject={setSelectedTvProject}
+      brandFilter={brandFilter}
+      setBrandFilter={setBrandFilter}
       isRefreshing={isRefreshing}
       onReconnect={() => setShowReconnect(true)}
     />
@@ -387,385 +268,187 @@ export function PositionsTab({
 }
 
 /* ═══════════════════════════════════════════════════════
-   Region Selector
+   Dashboard with Google/Yandex tabs & date columns
    ═══════════════════════════════════════════════════════ */
-function RegionSelector({
-  regions, selectedIndex, onSelect,
+function PositionsDashboard({
+  apiKey, userId, tvProjectId, projectId, projectName, projectUrl, integrationId,
+  searchQuery, setSearchQuery, brandFilter, setBrandFilter, isRefreshing, onReconnect,
 }: {
-  regions: TvRegion[];
-  selectedIndex: string;
-  onSelect: (idx: string) => void;
+  apiKey: string; userId: string; tvProjectId: string; projectId: string;
+  projectName?: string; projectUrl?: string | null; integrationId: string;
+  searchQuery: string; setSearchQuery: (v: string) => void;
+  brandFilter: "all" | "brand" | "nonbrand"; setBrandFilter: (v: "all" | "brand" | "nonbrand") => void;
+  isRefreshing: boolean; onReconnect?: () => void;
 }) {
   const { i18n } = useTranslation();
   const isRu = i18n.language === "ru";
 
-  if (regions.length <= 1) return null;
-
-  const searcherName = (key: number) => {
-    switch (key) {
-      case 0: return "Yandex";
-      case 1: return "Google";
-      default: return `SE ${key}`;
-    }
-  };
-
-  return (
-    <Select value={selectedIndex} onValueChange={onSelect}>
-      <SelectTrigger className="w-[260px] h-9 text-sm">
-        <SelectValue placeholder={isRu ? "Выберите регион…" : "Select region…"} />
-      </SelectTrigger>
-      <SelectContent>
-        {regions.map((r) => (
-          <SelectItem key={r.index} value={r.index}>
-            {searcherName(r.searcher_key)} — {r.name} ({r.device_name || "PC"})
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════
-   Dashboard (after project selected)
-   ═══════════════════════════════════════════════════════ */
-function PositionsDashboard({
-  apiKey, userId, tvProjectId, projectId, projectName, projectUrl, integrationId,
-  dateFrom, dateTo, searchQuery, setSearchQuery,
-  selectedTvProject, setSelectedTvProject, isRefreshing,
-  onReconnect,
-}: {
-  apiKey: string;
-  userId: string;
-  tvProjectId: string;
-  projectId: string;
-  projectName?: string;
-  projectUrl?: string | null;
-  integrationId: string;
-  dateFrom: string;
-  dateTo: string;
-  searchQuery: string;
-  setSearchQuery: (v: string) => void;
-  selectedTvProject: string | null;
-  setSelectedTvProject: (v: string) => void;
-  isRefreshing: boolean;
-  onReconnect?: () => void;
-}) {
-  const { t, i18n } = useTranslation();
-  const isRu = i18n.language === "ru";
-  const queryClient = useQueryClient();
-
   const [regions, setRegions] = useState<TvRegion[]>([]);
-  const [selectedRegion, setSelectedRegion] = useState<string>("");
-  const [activeSearcher, setActiveSearcher] = useState<string>("all");
 
-  // Local date overrides
-  const [localDateFrom, setLocalDateFrom] = useState<Date>(new Date(dateFrom));
-  const [localDateTo, setLocalDateTo] = useState<Date>(new Date(dateTo));
+  const dateFrom = format(subDays(new Date(), 30), "yyyy-MM-dd");
+  const dateTo = format(new Date(), "yyyy-MM-dd");
 
-  const effectiveDateFrom = format(localDateFrom, "yyyy-MM-dd");
-  const effectiveDateTo = format(localDateTo, "yyyy-MM-dd");
-
-  const handleRegionsLoaded = useCallback((r: TvRegion[]) => {
-    setRegions(r);
-    if (r.length > 0 && !selectedRegion) {
-      setSelectedRegion(r[0].index);
-    }
-  }, [selectedRegion]);
-
-  // Load regions from Topvisor projects list
-  useQuery({
+  // Load regions from projects
+  const { data: regionsData } = useQuery({
     queryKey: ["topvisor-regions", tvProjectId, apiKey, userId],
     queryFn: async () => {
       const data = await callTopvisor("get-projects", apiKey, userId);
       const projects = (data?.result || []) as TvProject[];
       const found = projects.find((p) => String(p.id) === tvProjectId);
-      if (found?.searchers) {
-        const r = found.searchers.flatMap((s) =>
-          (s.regions || []).map((reg) => ({ ...reg, searcher_key: s.key }))
-        );
-        handleRegionsLoaded(r);
-      }
-      return null;
+      if (!found?.searchers) return { searchers: [] as TvSearcher[], allRegions: [] as TvRegion[] };
+
+      const allRegions = found.searchers.flatMap((s) =>
+        (s.regions || []).map((r) => ({ ...r, searcher_key: s.key }))
+      );
+      setRegions(allRegions);
+      return { searchers: found.searchers, allRegions };
     },
-    enabled: regions.length === 0,
   });
 
-  // Group regions by searcher for tabs
-  const searcherGroups = useMemo(() => {
-    const groups: Record<string, { name: string; regions: TvRegion[] }> = {};
-    for (const r of regions) {
-      const key = String(r.searcher_key);
-      if (!groups[key]) {
-        const name = r.searcher_key === 0 ? "Yandex" : r.searcher_key === 1 ? "Google" : `SE ${r.searcher_key}`;
-        groups[key] = { name, regions: [] };
+  // Group regions by searcher
+  const searcherTabs = useMemo(() => {
+    const tabs: { key: string; name: string; regionIndexes: string[] }[] = [];
+    const searchers = regionsData?.searchers || [];
+    for (const s of searchers) {
+      const name = s.key === 0 ? "Yandex" : s.key === 1 ? "Google" : `SE ${s.key}`;
+      const indexes = (s.regions || []).map((r) => String(r.index));
+      if (indexes.length > 0) {
+        tabs.push({ key: String(s.key), name, regionIndexes: indexes });
       }
-      groups[key].regions.push(r);
     }
-    return groups;
+    return tabs;
+  }, [regionsData]);
+
+  // Collect ALL region indexes for the API call
+  const allRegionIndexes = useMemo(() => {
+    return regions.map((r) => Number(r.index)).filter((n) => n > 0);
   }, [regions]);
 
-  const searcherKeys = Object.keys(searcherGroups);
-  const hasMultipleSearchers = searcherKeys.length > 1;
-
-  // Filter regions by active searcher tab
-  const filteredRegions = useMemo(() => {
-    if (activeSearcher === "all") return regions;
-    return regions.filter((r) => String(r.searcher_key) === activeSearcher);
-  }, [regions, activeSearcher]);
-
-  // Auto-select first region when searcher tab changes
-  const effectiveRegion = useMemo(() => {
-    if (filteredRegions.find((r) => r.index === selectedRegion)) return selectedRegion;
-    return filteredRegions[0]?.index ?? "";
-  }, [filteredRegions, selectedRegion]);
-
-  // Fetch positions
-  const { data: positionsData, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ["topvisor-positions", tvProjectId, effectiveDateFrom, effectiveDateTo, effectiveRegion],
+  // Fetch rankings history with all regions
+  const { data: rankingsData, isLoading, isError, error, refetch } = useQuery({
+    queryKey: ["topvisor-rankings-history", tvProjectId, dateFrom, dateTo, allRegionIndexes.join(",")],
     queryFn: async () => {
-      const data = await callTopvisor("get-positions", apiKey, userId, {
+      const data = await callTopvisor("get-rankings-history", apiKey, userId, {
         project_id: tvProjectId,
-        regions_indexes: effectiveRegion ? [effectiveRegion] : undefined,
-        dates: [effectiveDateFrom, effectiveDateTo],
-        show_headers: 1,
-        positions_fields: ["position"],
+        regions_indexes: allRegionIndexes,
+        date_from: dateFrom,
+        date_to: dateTo,
       });
       return data;
     },
-    enabled: !!effectiveRegion,
+    enabled: allRegionIndexes.length > 0,
     retry: 1,
   });
 
-  // Parse positions
-  const { keywords, lastCheckedDate } = useMemo(() => {
-    if (!positionsData?.result) return { keywords: [] as KeywordPosition[], lastCheckedDate: null as string | null };
+  // Parse response into structured data
+  const { dates, keywordRows } = useMemo(() => {
+    if (!rankingsData?.result) return { dates: [] as string[], keywordRows: [] as KeywordRow[] };
 
-    const result = positionsData.result;
-    const dateKeys: string[] = Array.isArray(result?.headers?.dates) ? result.headers.dates : [];
+    const result = rankingsData.result;
+    const headerDates: string[] = Array.isArray(result?.headers?.dates) ? result.headers.dates : [];
+    const existsDates: string[] = Array.isArray(result?.exists_dates) ? result.exists_dates : headerDates;
     const rows = Array.isArray(result?.keywords) ? result.keywords : [];
 
-    // Determine actual last checked date from the data
-    let globalLastChecked: string | null = null;
+    // Use exists_dates if available, otherwise header dates
+    const allDates = existsDates.length > 0 ? existsDates : headerDates;
+    // Take last 7 dates, sorted newest first
+    const displayDates = [...allDates].sort().slice(-7).reverse();
 
-    const kws: KeywordPosition[] = rows.map((row: any) => {
+    const kwRows: KeywordRow[] = rows.map((row: any) => {
       const positionsObj = row.positionsData && typeof row.positionsData === "object" ? row.positionsData : {};
-      const allKeys = Object.keys(positionsObj).sort();
+      const positions: Record<string, number | null> = {};
 
-      // Extract all positions with their dates
-      const parsed: { date: string; position: number | null }[] = allKeys.map((key) => {
-        const datePart = key.split(":")[0];
-        const value = positionsObj[key]?.position;
-        if (value === null || value === undefined || value === "--" || value === "") {
-          return { date: datePart, position: null };
+      // positionsData keys are "date:projectId:regionIndex"
+      for (const [key, val] of Object.entries(positionsObj)) {
+        const parts = key.split(":");
+        const date = parts[0];
+        const regionIdx = parts[2] || parts[1]; // "date:projectId:regionIdx"
+
+        const posVal = (val as any)?.position;
+        let numPos: number | null = null;
+        if (posVal !== null && posVal !== undefined && posVal !== "--" && posVal !== "" && posVal !== "0") {
+          const n = Number(posVal);
+          numPos = Number.isFinite(n) && n > 0 ? n : null;
         }
-        const num = Number(value);
-        return { date: datePart, position: Number.isFinite(num) && num > 0 ? num : null };
-      });
 
-      // Use the last available entry as "current", the one before as "previous"
-      const withValues = parsed.filter((p) => p.position !== null);
-      const current = withValues.at(-1) ?? null;
-      const previous = withValues.length > 1 ? withValues.at(-2) ?? null : null;
-
-      // Track global last checked date
-      const checkedDate = parsed.at(-1)?.date ?? null;
-      if (checkedDate && (!globalLastChecked || checkedDate > globalLastChecked)) {
-        globalLastChecked = checkedDate;
+        positions[`${date}:${regionIdx}`] = numPos;
       }
 
       return {
         keyword: row.name || "",
-        position: current?.position ?? null,
-        prevPosition: previous?.position ?? null,
-        url: row.landing_page || "",
-        volume: row.target || 0,
-        lastChecked: checkedDate,
+        group: row.group_name || undefined,
+        isBrand: isBrandKeyword(row.name || "", projectUrl),
+        positions,
       };
     });
 
-    return { keywords: kws, lastCheckedDate: globalLastChecked };
-  }, [positionsData]);
+    return { dates: displayDates, keywordRows: kwRows };
+  }, [rankingsData, projectUrl]);
 
-  // Filtered keywords
+  // Filter keywords
   const filtered = useMemo(() => {
-    if (!searchQuery.trim()) return keywords;
-    const q = searchQuery.toLowerCase();
-    return keywords.filter((k) => k.keyword.toLowerCase().includes(q));
-  }, [keywords, searchQuery]);
-
-  // KPI calculations
-  const withPos = filtered.filter((k) => k.position !== null && k.position > 0);
-  const avgPos = withPos.length > 0 ? withPos.reduce((s, k) => s + k.position!, 0) / withPos.length : 0;
-  const prevAvgPos = withPos.filter(k => k.prevPosition).length > 0
-    ? withPos.filter(k => k.prevPosition).reduce((s, k) => s + (k.prevPosition || 0), 0) / withPos.filter(k => k.prevPosition).length
-    : 0;
-  const posChange = prevAvgPos > 0 ? prevAvgPos - avgPos : 0;
-
-  const top3 = withPos.filter((k) => k.position! <= 3).length;
-  const top10 = withPos.filter((k) => k.position! <= 10).length;
-  const top30 = withPos.filter((k) => k.position! <= 30).length;
-  const outside = withPos.length - top30;
-  const total = withPos.length || 1;
-  const visibility = Math.round((top10 / total) * 100);
-
-  const ups = withPos.filter((k) => k.prevPosition && k.position! < k.prevPosition).length;
-  const downs = withPos.filter((k) => k.prevPosition && k.position! > k.prevPosition).length;
-  const stable = withPos.filter((k) => k.prevPosition && k.position === k.prevPosition).length;
+    let result = keywordRows;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter((k) => k.keyword.toLowerCase().includes(q));
+    }
+    if (brandFilter === "brand") result = result.filter((k) => k.isBrand);
+    if (brandFilter === "nonbrand") result = result.filter((k) => !k.isBrand);
+    return result;
+  }, [keywordRows, searchQuery, brandFilter]);
 
   const handleSync = () => {
     refetch();
     toast.success(isRu ? "Данные обновлены" : "Data refreshed");
   };
 
-  // Current region info label
-  const currentRegion = regions.find((r) => r.index === effectiveRegion);
-  const regionLabel = currentRegion ? `${currentRegion.name} (${currentRegion.device_name || "PC"})` : "";
+  /* ── Render table for a specific searcher ── */
+  const renderTable = (regionIndexes: string[], searcherName: string) => {
+    // For each keyword, extract positions only for these regions
+    const hasAnyData = filtered.some((kw) =>
+      dates.some((d) => regionIndexes.some((ri) => kw.positions[`${d}:${ri}`] !== undefined))
+    );
 
-  /* ── Header bar ── */
-  const headerBar = (
-    <div className="flex items-center gap-3 flex-wrap">
-      <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border border-border/60">
-        <span className="text-xs font-medium text-foreground">{projectName || "—"}</span>
-        {projectUrl && (
-          <>
-            <span className="text-xs text-muted-foreground">—</span>
-            <span className="text-xs text-primary font-medium">{projectUrl.replace(/^https?:\/\//, "")}</span>
-          </>
-        )}
-      </div>
-
-      {/* Region selector for current searcher */}
-      {filteredRegions.length > 1 && (
-        <Select value={effectiveRegion} onValueChange={setSelectedRegion}>
-          <SelectTrigger className="w-[220px] h-9 text-sm">
-            <SelectValue placeholder={isRu ? "Регион…" : "Region…"} />
-          </SelectTrigger>
-          <SelectContent>
-            {filteredRegions.map((r) => (
-              <SelectItem key={r.index} value={r.index}>
-                {r.name} ({r.device_name || "PC"})
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      )}
-
-      {/* Date pickers */}
-      <div className="flex items-center gap-2">
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" className="gap-1.5 text-xs h-9">
-              <CalendarIcon className="h-3.5 w-3.5" />
-              {format(localDateFrom, "dd.MM.yyyy")}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={localDateFrom}
-              onSelect={(d) => d && setLocalDateFrom(d)}
-              disabled={(d) => d > localDateTo || d > new Date()}
-              locale={isRu ? ru : undefined}
-              className="p-3 pointer-events-auto"
-            />
-          </PopoverContent>
-        </Popover>
-        <span className="text-xs text-muted-foreground">→</span>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" className="gap-1.5 text-xs h-9">
-              <CalendarIcon className="h-3.5 w-3.5" />
-              {format(localDateTo, "dd.MM.yyyy")}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={localDateTo}
-              onSelect={(d) => d && setLocalDateTo(d)}
-              disabled={(d) => d < localDateFrom || d > new Date()}
-              locale={isRu ? ru : undefined}
-              className="p-3 pointer-events-auto"
-            />
-          </PopoverContent>
-        </Popover>
-      </div>
-
-      <Button variant="outline" size="sm" className="gap-1.5" onClick={handleSync}>
-        <RefreshCw className={cn("h-3.5 w-3.5", isLoading && "animate-spin")} />
-        {isRu ? "Обновить" : "Refresh"}
-      </Button>
-
-      {lastCheckedDate && (
-        <span className="text-[10px] text-muted-foreground ml-auto">
-          {isRu ? "Последняя проверка:" : "Last check:"}{" "}
-          <span className="font-medium text-foreground">{lastCheckedDate}</span>
-        </span>
-      )}
-    </div>
-  );
-
-  /* ── Content (KPIs + Table) ── */
-  const renderContent = () => {
-    if (isLoading) {
+    if (!hasAnyData && !isLoading) {
       return (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <GlassCard key={i}><CardContent className="p-4"><Skeleton className="h-20" /></CardContent></GlassCard>
-            ))}
-          </div>
-          <GlassCard><CardContent className="p-5"><Skeleton className="h-[300px]" /></CardContent></GlassCard>
-        </div>
-      );
-    }
-
-    if (isError) {
-      return (
-        <GlassCard>
-          <CardContent className="p-6 space-y-4">
-            <div className="flex items-center gap-3 text-destructive">
-              <AlertCircle className="h-5 w-5" />
-              <p className="text-sm font-medium">{(error as Error)?.message || "Error loading data"}</p>
-            </div>
-            {((error as Error)?.message || "").includes("доступ") && onReconnect && (
-              <div className="flex items-center gap-3">
-                <p className="text-xs text-muted-foreground">
-                  {isRu
-                    ? "У текущего API-ключа нет прав на этот проект. Переподключите с корректными ключами."
-                    : "Current API key lacks permissions. Reconnect with correct credentials."}
-                </p>
-                <Button variant="outline" size="sm" className="gap-1.5 shrink-0" onClick={onReconnect}>
-                  <KeyRound className="h-3.5 w-3.5" />
-                  {isRu ? "Переподключить" : "Reconnect"}
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </GlassCard>
-      );
-    }
-
-    if (keywords.length === 0) {
-      return (
-        <div className="flex flex-col items-center justify-center py-16">
-          <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-semibold text-foreground mb-2">
-            {isRu ? "Нет данных за выбранный период" : "No data for selected period"}
-          </h3>
-          <p className="text-sm text-muted-foreground text-center max-w-md">
-            {isRu
-              ? "В Topvisor нет данных по позициям за выбранные даты. Попробуйте другой период."
-              : "Topvisor has no position data for the selected dates. Try a different period."}
+        <div className="flex flex-col items-center justify-center py-12">
+          <AlertCircle className="h-10 w-10 text-muted-foreground mb-3" />
+          <p className="text-sm text-muted-foreground">
+            {isRu ? "Нет данных о проверках за выбранный период" : "No ranking data for selected period"}
           </p>
         </div>
       );
     }
 
+    // KPI for this searcher
+    const allPositions: number[] = [];
+    const prevPositions: number[] = [];
+    filtered.forEach((kw) => {
+      const latestDate = dates[0];
+      const prevDate = dates[1];
+      regionIndexes.forEach((ri) => {
+        const cur = kw.positions[`${latestDate}:${ri}`];
+        const prev = kw.positions[`${prevDate}:${ri}`];
+        if (cur !== null && cur !== undefined) allPositions.push(cur);
+        if (prev !== null && prev !== undefined) prevPositions.push(prev);
+      });
+    });
+
+    const avgPos = allPositions.length > 0 ? allPositions.reduce((a, b) => a + b, 0) / allPositions.length : 0;
+    const prevAvgPos = prevPositions.length > 0 ? prevPositions.reduce((a, b) => a + b, 0) / prevPositions.length : 0;
+    const posChange = prevAvgPos > 0 ? prevAvgPos - avgPos : 0;
+
+    const top3 = allPositions.filter((p) => p <= 3).length;
+    const top10 = allPositions.filter((p) => p <= 10).length;
+    const top30 = allPositions.filter((p) => p <= 30).length;
+    const outside = allPositions.length - top30;
+    const total = allPositions.length || 1;
+    const visibility = Math.round((top10 / total) * 100);
+
     return (
-      <>
+      <div className="space-y-4">
         {/* KPI row */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <StandardKpiCard
             label={isRu ? "Средняя позиция" : "Avg Position"}
             value={avgPos > 0 ? avgPos.toFixed(1) : "—"}
@@ -780,8 +463,6 @@ function PositionsDashboard({
             change={0}
             loading={isRefreshing}
           />
-
-          {/* Distribution */}
           <GlassCard>
             <CardContent className="p-4 space-y-2">
               <span className="text-xs text-muted-foreground font-medium">
@@ -797,47 +478,24 @@ function PositionsDashboard({
                 <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-400" />Top 3: {top3}</span>
                 <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-500" />Top 10: {top10 - top3}</span>
                 <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-primary" />Top 30: {top30 - top10}</span>
-                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-muted-foreground/30" />{isRu ? "Вне топ" : "Outside"}: {outside}</span>
+                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-muted-foreground/30" />{isRu ? "Вне" : "Out"}: {outside}</span>
               </div>
             </CardContent>
           </GlassCard>
-
-          {/* Movement */}
           <GlassCard>
             <CardContent className="p-4 space-y-2">
               <span className="text-xs text-muted-foreground font-medium">
-                {isRu ? "Динамика" : "Movement"}
+                {isRu ? "Запросов" : "Keywords"}
               </span>
-              <div className="flex items-baseline gap-4">
-                <div className="flex items-center gap-1 text-emerald-500">
-                  <TrendingUp className="h-4 w-4" /><span className="text-lg font-bold">{ups}</span>
-                </div>
-                <div className="flex items-center gap-1 text-destructive">
-                  <TrendingDown className="h-4 w-4" /><span className="text-lg font-bold">{downs}</span>
-                </div>
-                <div className="flex items-center gap-1 text-muted-foreground">
-                  <Minus className="h-4 w-4" /><span className="text-lg font-bold">{stable}</span>
-                </div>
-              </div>
+              <p className="text-2xl font-bold text-foreground">{filtered.length}</p>
               <p className="text-[10px] text-muted-foreground">
-                {isRu ? "Изменения за период" : "Changes for period"}
+                {isRu ? `${searcherName} • ${regionIndexes.length} рег.` : `${searcherName} • ${regionIndexes.length} reg.`}
               </p>
             </CardContent>
           </GlassCard>
         </div>
 
-        {/* Search */}
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={isRu ? "Поиск по запросу…" : "Search keywords…"}
-            className="pl-9 h-9 text-sm"
-          />
-        </div>
-
-        {/* Table */}
+        {/* Rankings table with date columns */}
         <GlassCard>
           <CardContent className="p-0">
             <div className="px-5 pt-4 pb-2 flex items-center justify-between">
@@ -846,81 +504,89 @@ function PositionsDashboard({
                   {isRu ? "Запросы и позиции" : "Keywords & Positions"}
                 </h3>
                 <p className="text-xs text-muted-foreground">
-                  {filtered.length} {isRu ? "запросов отслеживается" : "keywords tracked"}
+                  {filtered.length} {isRu ? "запросов" : "keywords"} • {searcherName}
                 </p>
               </div>
-              {regionLabel && (
-                <span className="text-[10px] text-muted-foreground bg-muted/50 px-2 py-1 rounded">
-                  {regionLabel}
-                </span>
-              )}
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border bg-muted/30">
-                    <th className="text-left p-3 font-medium text-muted-foreground">
+                    <th className="text-left p-3 font-medium text-muted-foreground sticky left-0 bg-muted/30 z-10 min-w-[200px]">
                       {isRu ? "Запрос" : "Keyword"}
                     </th>
-                    <th className="text-center p-3 font-medium text-muted-foreground">
-                      {isRu ? "Позиция" : "Position"}
+                    <th className="text-center p-2 font-medium text-muted-foreground text-xs min-w-[60px]">
+                      {isRu ? "Группа" : "Group"}
                     </th>
-                    <th className="text-center p-3 font-medium text-muted-foreground">
-                      {isRu ? "Изменение" : "Change"}
-                    </th>
-                    <th className="text-center p-3 font-medium text-muted-foreground">
-                      {isRu ? "Дата проверки" : "Last Checked"}
-                    </th>
-                    <th className="text-left p-3 font-medium text-muted-foreground">URL</th>
+                    {dates.map((date) => (
+                      <th key={date} className="text-center p-2 font-medium text-muted-foreground text-xs min-w-[70px]">
+                        {date.slice(5).replace("-", ".")}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((k, i) => {
-                    const delta = k.prevPosition && k.position ? k.prevPosition - k.position : null;
-                    return (
-                      <tr key={i} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
-                        <td className="p-3 text-foreground font-medium">{k.keyword}</td>
-                        <td className="p-3 text-center">
-                          <span className={cn("text-base", positionColor(k.position))}>
-                            {k.position ?? "—"}
+                  {filtered.map((kw, i) => (
+                    <tr key={i} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
+                      <td className="p-3 sticky left-0 bg-background z-10">
+                        <div className="flex items-center gap-2">
+                          <span className="text-foreground font-medium text-sm truncate max-w-[250px]">
+                            {kw.keyword}
                           </span>
-                        </td>
-                        <td className="p-3 text-center">
-                          {delta !== null && delta > 0 ? (
-                            <span className="inline-flex items-center gap-0.5 text-emerald-500 font-medium">
-                              <TrendingUp className="h-3.5 w-3.5" />+{delta}
-                            </span>
-                          ) : delta !== null && delta < 0 ? (
-                            <span className="inline-flex items-center gap-0.5 text-destructive font-medium">
-                              <TrendingDown className="h-3.5 w-3.5" />{delta}
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground"><Minus className="h-3.5 w-3.5 inline" /></span>
+                          {kw.isBrand && (
+                            <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-amber-400/50 text-amber-400 shrink-0">
+                              Brand
+                            </Badge>
                           )}
-                        </td>
-                        <td className="p-3 text-center text-xs text-muted-foreground">
-                          {k.lastChecked || "—"}
-                        </td>
-                        <td className="p-3">
-                          {k.url ? (
-                            <a
-                              href={k.url.startsWith("http") ? k.url : `https://${k.url}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-xs text-primary hover:underline max-w-[200px] truncate"
-                            >
-                              {k.url} <ExternalLink className="h-3 w-3 shrink-0" />
-                            </a>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">—</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
+                        </div>
+                      </td>
+                      <td className="p-2 text-center text-xs text-muted-foreground truncate max-w-[80px]">
+                        {kw.group || "—"}
+                      </td>
+                      {dates.map((date, dateIdx) => {
+                        // Find position for this date across all region indexes for this searcher
+                        let pos: number | null = null;
+                        for (const ri of regionIndexes) {
+                          const p = kw.positions[`${date}:${ri}`];
+                          if (p !== null && p !== undefined) { pos = p; break; }
+                        }
+
+                        // Previous date for delta
+                        let prevPos: number | null = null;
+                        const prevDate = dates[dateIdx + 1];
+                        if (prevDate) {
+                          for (const ri of regionIndexes) {
+                            const p = kw.positions[`${prevDate}:${ri}`];
+                            if (p !== null && p !== undefined) { prevPos = p; break; }
+                          }
+                        }
+
+                        const delta = prevPos !== null && pos !== null ? prevPos - pos : null;
+
+                        return (
+                          <td key={date} className={cn("p-2 text-center", positionBg(pos))}>
+                            <div className="flex flex-col items-center">
+                              <span className={cn("text-sm", positionColor(pos))}>
+                                {pos ?? "—"}
+                              </span>
+                              {delta !== null && delta !== 0 && (
+                                <span className={cn(
+                                  "text-[9px] flex items-center gap-0.5",
+                                  delta > 0 ? "text-emerald-500" : "text-destructive"
+                                )}>
+                                  {delta > 0 ? <ArrowUp className="h-2.5 w-2.5" /> : <ArrowDown className="h-2.5 w-2.5" />}
+                                  {Math.abs(delta)}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
                   {filtered.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="p-8 text-center text-muted-foreground">
+                      <td colSpan={dates.length + 2} className="p-8 text-center text-muted-foreground">
                         {isRu ? "Ничего не найдено" : "Nothing found"}
                       </td>
                     </tr>
@@ -930,43 +596,136 @@ function PositionsDashboard({
             </div>
           </CardContent>
         </GlassCard>
-      </>
+      </div>
     );
   };
 
+  /* ── Loading skeleton ── */
+  const renderSkeleton = () => (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <GlassCard key={i}><CardContent className="p-4"><Skeleton className="h-20" /></CardContent></GlassCard>
+        ))}
+      </div>
+      <GlassCard>
+        <CardContent className="p-5 space-y-3">
+          <Skeleton className="h-8 w-full" />
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Skeleton key={i} className="h-10 w-full" />
+          ))}
+        </CardContent>
+      </GlassCard>
+    </div>
+  );
+
   return (
-    <div className="space-y-6 relative">
+    <div className="space-y-5 relative">
       {isRefreshing && <TabLoadingOverlay show={isRefreshing} />}
 
-      {headerBar}
+      {/* Header bar */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border border-border/60">
+          <span className="text-xs font-medium text-foreground">{projectName || "—"}</span>
+          {projectUrl && (
+            <>
+              <span className="text-xs text-muted-foreground">—</span>
+              <span className="text-xs text-primary font-medium">{projectUrl.replace(/^https?:\/\//, "")}</span>
+            </>
+          )}
+        </div>
 
-      {/* Search engine tabs */}
-      {hasMultipleSearchers ? (
-        <Tabs
-          value={activeSearcher}
-          onValueChange={(v) => {
-            setActiveSearcher(v);
-            setSearchQuery("");
-          }}
-          className="space-y-4"
-        >
-          <TabsList className="bg-muted/50">
-            <TabsTrigger value="all" className="text-xs gap-1.5">
-              {isRu ? "Все" : "All"}
-            </TabsTrigger>
-            {searcherKeys.map((key) => (
-              <TabsTrigger key={key} value={key} className="text-xs gap-1.5">
-                {searcherGroups[key].name}
-                <span className="text-[10px] text-muted-foreground">
-                  ({searcherGroups[key].regions.length})
-                </span>
-              </TabsTrigger>
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border border-border/60 text-xs text-muted-foreground">
+          {dateFrom.slice(5).replace("-", ".")} — {dateTo.slice(5).replace("-", ".")}
+        </div>
+
+        <Button variant="outline" size="sm" className="gap-1.5" onClick={handleSync}>
+          <RefreshCw className={cn("h-3.5 w-3.5", isLoading && "animate-spin")} />
+          {isRu ? "Обновить" : "Refresh"}
+        </Button>
+
+        {/* Brand filter */}
+        <div className="flex items-center gap-1 ml-auto">
+          <Button
+            variant={brandFilter === "all" ? "secondary" : "ghost"}
+            size="sm" className="text-xs h-7 px-2"
+            onClick={() => setBrandFilter("all")}
+          >
+            {isRu ? "Все" : "All"}
+          </Button>
+          <Button
+            variant={brandFilter === "brand" ? "secondary" : "ghost"}
+            size="sm" className="text-xs h-7 px-2"
+            onClick={() => setBrandFilter("brand")}
+          >
+            Brand
+          </Button>
+          <Button
+            variant={brandFilter === "nonbrand" ? "secondary" : "ghost"}
+            size="sm" className="text-xs h-7 px-2"
+            onClick={() => setBrandFilter("nonbrand")}
+          >
+            Non-brand
+          </Button>
+        </div>
+      </div>
+
+      {/* Search */}
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder={isRu ? "Поиск по запросу…" : "Search keywords…"}
+          className="pl-9 h-9 text-sm"
+        />
+      </div>
+
+      {/* Error */}
+      {isError && (
+        <GlassCard>
+          <CardContent className="p-6 space-y-4">
+            <div className="flex items-center gap-3 text-destructive">
+              <AlertCircle className="h-5 w-5" />
+              <p className="text-sm font-medium">{(error as Error)?.message || "Error loading data"}</p>
+            </div>
+            {onReconnect && (
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={onReconnect}>
+                <KeyRound className="h-3.5 w-3.5" />
+                {isRu ? "Переподключить" : "Reconnect"}
+              </Button>
+            )}
+          </CardContent>
+        </GlassCard>
+      )}
+
+      {/* Searcher tabs */}
+      {!isError && (
+        searcherTabs.length > 0 ? (
+          <Tabs defaultValue={searcherTabs[0]?.key} className="space-y-4">
+            <TabsList className="bg-muted/50">
+              {searcherTabs.map((tab) => (
+                <TabsTrigger key={tab.key} value={tab.key} className="text-xs gap-1.5">
+                  {tab.name}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            {searcherTabs.map((tab) => (
+              <TabsContent key={tab.key} value={tab.key}>
+                {isLoading ? renderSkeleton() : renderTable(tab.regionIndexes, tab.name)}
+              </TabsContent>
             ))}
-          </TabsList>
-          <div>{renderContent()}</div>
-        </Tabs>
-      ) : (
-        renderContent()
+          </Tabs>
+        ) : isLoading ? (
+          renderSkeleton()
+        ) : (
+          <div className="flex flex-col items-center justify-center py-16">
+            <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
+            <p className="text-sm text-muted-foreground">
+              {isRu ? "Нет данных о регионах" : "No regions found"}
+            </p>
+          </div>
+        )
       )}
     </div>
   );
