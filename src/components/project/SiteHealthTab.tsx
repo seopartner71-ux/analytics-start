@@ -298,8 +298,10 @@ function SiteHealthDashboard({ projectId, accessToken, hostId }: {
   /* ── Parse indexing chart ── */
   const indexingChart = useMemo(() => {
     const history = indexingData?.indicators || indexingData?.history || {};
-    const searchable = history?.SEARCHABLE || history?.searchable || [];
-    const excluded = history?.NOT_SEARCHABLE || history?.not_searchable || [];
+    // v4 returns HTTP_2XX, HTTP_3XX, HTTP_4XX, HTTP_5XX etc.
+    // v3 returned SEARCHABLE, NOT_SEARCHABLE
+    const searchable = history?.SEARCHABLE || history?.searchable || history?.HTTP_2XX || [];
+    const excluded = history?.NOT_SEARCHABLE || history?.not_searchable || history?.HTTP_4XX || [];
     if (Array.isArray(searchable) && searchable.length > 0) {
       return searchable.map((item: any, i: number) => ({
         date: item.date ? format(new Date(item.date), "dd.MM") : "",
