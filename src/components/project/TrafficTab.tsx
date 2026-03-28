@@ -419,49 +419,56 @@ export function TrafficTab({ projectId, projectName, projectUrl }: TrafficTabPro
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {deviceData.map((device) => (
-                <div
-                  key={device.key}
-                  className="flex items-center gap-4 p-4 rounded-xl bg-muted/30 border border-border/50"
-                >
-                  <div
-                    className="h-12 w-12 rounded-lg flex items-center justify-center shrink-0"
-                    style={{ background: `${(DEVICE_COLORS as any)[device.key]}20` }}
-                  >
-                    <div style={{ color: (DEVICE_COLORS as any)[device.key] }}>
-                      {device.icon}
+            {deviceData.length === 0 ? (
+              <div className="py-8 text-center text-sm text-muted-foreground">
+                {i18n.language === "ru" ? "Данные отсутствуют" : "No data available"}
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {deviceData.map((device) => (
+                    <div
+                      key={device.key}
+                      className="flex items-center gap-4 p-4 rounded-xl bg-muted/30 border border-border/50"
+                    >
+                      <div
+                        className="h-12 w-12 rounded-lg flex items-center justify-center shrink-0"
+                        style={{ background: `${(DEVICE_COLORS as any)[device.key]}20` }}
+                      >
+                        <div style={{ color: (DEVICE_COLORS as any)[device.key] }}>
+                          {device.icon}
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground">{device.name}</p>
+                        <p className="text-xl font-bold text-foreground tabular-nums">{device.value.toLocaleString()}</p>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-lg font-bold tabular-nums" style={{ color: (DEVICE_COLORS as any)[device.key] }}>
+                          {device.pct}%
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground">{device.name}</p>
-                    <p className="text-xl font-bold text-foreground tabular-nums">{device.value.toLocaleString()}</p>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-lg font-bold tabular-nums" style={{ color: (DEVICE_COLORS as any)[device.key] }}>
-                      {device.pct}%
-                    </span>
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
 
-            {/* Bar chart */}
-            <div className="mt-6">
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={deviceData} layout="vertical" barCategoryGap="30%">
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.5} horizontal={false} />
-                  <XAxis type="number" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => v.toLocaleString()} />
-                  <YAxis type="category" dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} width={70} />
-                  <Tooltip content={<StandardChartTooltip />} />
-                  <Bar dataKey="value" name={i18n.language === "ru" ? "Визиты" : "Visits"} radius={[0, 6, 6, 0]}>
-                    {deviceData.map((d) => (
-                      <Cell key={d.key} fill={(DEVICE_COLORS as any)[d.key]} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+                <div className="mt-6">
+                  <ResponsiveContainer width="100%" height={200}>
+                    <BarChart data={deviceData} layout="vertical" barCategoryGap="30%">
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.5} horizontal={false} />
+                      <XAxis type="number" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => v.toLocaleString()} />
+                      <YAxis type="category" dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} width={70} />
+                      <Tooltip content={<StandardChartTooltip />} />
+                      <Bar dataKey="value" name={i18n.language === "ru" ? "Визиты" : "Visits"} radius={[0, 6, 6, 0]}>
+                        {deviceData.map((d) => (
+                          <Cell key={d.key} fill={(DEVICE_COLORS as any)[d.key]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
