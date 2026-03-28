@@ -221,7 +221,7 @@ export function AddProjectWizard({ onCreated }: AddProjectWizardProps) {
       if (tvApiKey.trim()) insertData.topvisor_api_key = tvApiKey.trim();
       if (selectedTvProject) insertData.topvisor_project_id = selectedTvProject;
 
-      const { data: newProject, error } = await supabase.from("projects").insert(insertData).select("id").single();
+      const { data: newProject, error } = await supabase.from("projects").insert(insertData as any).select("id").single();
       if (error) throw error;
 
       // Save Yandex integration if token present
