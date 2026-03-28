@@ -134,21 +134,16 @@ serve(async (req) => {
               : [];
 
         const availableRegionIndexes = await resolveRegionIndexes(projectId, headers);
-        if (availableRegionIndexes.length === 0) {
-          return new Response(JSON.stringify({ error: "No available regions found for this project" }), {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-
         let regionsIndexes = uniqPositiveNumbers(directRegions);
 
-        if (regionsIndexes.length === 0) {
-          regionsIndexes = [availableRegionIndexes[0]];
-        } else {
-          const allowed = new Set(availableRegionIndexes);
-          const filtered = regionsIndexes.filter((idx) => allowed.has(idx));
-          regionsIndexes = filtered.length > 0 ? filtered : [availableRegionIndexes[0]];
+        if (availableRegionIndexes.length > 0) {
+          if (regionsIndexes.length === 0) {
+            regionsIndexes = [availableRegionIndexes[0]];
+          } else {
+            const allowed = new Set(availableRegionIndexes);
+            const filtered = regionsIndexes.filter((idx) => allowed.has(idx));
+            regionsIndexes = filtered.length > 0 ? filtered : [availableRegionIndexes[0]];
+          }
         }
 
         normalizedRegionsIndexes = regionsIndexes;
@@ -164,14 +159,19 @@ serve(async (req) => {
           });
         }
 
-        url = `${TV_BASE}/get/positions_2/history`;
-        fetchBody = JSON.stringify({
+        const requestBody: JsonRecord = {
           project_id: String(projectId),
-          regions_indexes: regionsIndexes.map((idx) => String(idx)),
           dates: [dates[0], dates[1]],
           show_headers: payload.show_headers ?? 1,
           positions_fields: payload.positions_fields ?? ["position"],
-        });
+        };
+
+        if (regionsIndexes.length > 0) {
+          requestBody.regions_indexes = regionsIndexes.map((idx) => String(idx));
+        }
+
+        url = `${TV_BASE}/get/positions_2/history`;
+        fetchBody = JSON.stringify(requestBody);
         break;
       }
 
