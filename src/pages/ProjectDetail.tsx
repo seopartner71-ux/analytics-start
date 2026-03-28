@@ -276,13 +276,10 @@ function ProjectDetailInner() {
             trafficSources={(latestMetrikaStats?.traffic_sources as any[]) || []}
           />
         );
+      case "comparison":
+        return <ComparisonTab projectId={project.id} projectName={project.name} />;
       case "builder":
-        return (
-          <div className="space-y-6">
-            <ComparisonTab projectId={project.id} projectName={project.name} />
-            <ReportBuilderTab projectId={project.id} shareToken={project.share_token} />
-          </div>
-        );
+        return <ReportBuilderTab projectId={project.id} shareToken={project.share_token} projectLogo={project.logo_url} />;
       case "integrations":
         return <IntegrationsTab projectId={project.id} integrations={integrations} />;
       case "settings":
