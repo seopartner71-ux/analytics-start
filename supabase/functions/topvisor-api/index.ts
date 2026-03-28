@@ -130,20 +130,22 @@ serve(async (req) => {
               ? [Number(payload.region_index)]
               : [];
 
-        let regionsIndexes = uniqPositiveNumbers(directRegions);
-
-        if (regionsIndexes.length === 0) {
-          const resolved = await resolveRegionIndex(projectId, headers);
-          if (resolved) {
-            regionsIndexes = [resolved];
-          }
-        }
-
-        if (regionsIndexes.length === 0) {
-          return new Response(JSON.stringify({ error: "No valid region index found for this project" }), {
+        const availableRegionIndexes = await resolveRegionIndexes(projectId, headers);
+        if (availableRegionIndexes.length === 0) {
+          return new Response(JSON.stringify({ error: "No available regions found for this project" }), {
             status: 400,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
+        }
+
+        let regionsIndexes = uniqPositiveNumbers(directRegions);
+
+        if (regionsIndexes.length === 0) {
+          regionsIndexes = [availableRegionIndexes[0]];
+        } else {
+          const allowed = new Set(availableRegionIndexes);
+          const filtered = regionsIndexes.filter((idx) => allowed.has(idx));
+          regionsIndexes = filtered.length > 0 ? filtered : [availableRegionIndexes[0]];
         }
 
         const dates = Array.isArray(payload.dates)
