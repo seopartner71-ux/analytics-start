@@ -572,5 +572,28 @@
       "depth": "Глубина просмотра",
       "avgTime": "Ср. время на сайте"
     }
+  },
+  "positions": {
+    "emptyTitle": "Подключите Topvisor",
+    "emptyDesc": "Для автоматического отслеживания позиций подключите сервис Topvisor в настройках интеграций",
+    "configure": "Настроить",
+    "avgPosition": "Средняя позиция",
+    "visibility": "Видимость",
+    "distribution": "Распределение по топам",
+    "outside": "Вне топа",
+    "movement": "Взлёты / Падения",
+    "movementHint": "Изменения позиций за период",
+    "allGroups": "Все группы",
+    "searchPlaceholder": "Поиск по запросу…",
+    "visibilityChart": "Динамика видимости",
+    "currentPeriod": "Текущий период",
+    "prevPeriod": "Прошлый период",
+    "tableTitle": "Запросы и позиции",
+    "tableSubtitle": "{{count}} запросов отслеживается",
+    "colQuery": "Запрос",
+    "colPosition": "Позиция",
+    "colDelta": "Динамика",
+    "colUrl": "Релевантная страница",
+    "colFreq": "Частотность (WS)"
   }
 }
