@@ -427,7 +427,7 @@ function RegionSelector({
    Dashboard (after project selected)
    ═══════════════════════════════════════════════════════ */
 function PositionsDashboard({
-  apiKey, userId, tvProjectId, projectId, integrationId,
+  apiKey, userId, tvProjectId, projectId, projectName, projectUrl, integrationId,
   dateFrom, dateTo, searchQuery, setSearchQuery,
   selectedTvProject, setSelectedTvProject, isRefreshing,
   onReconnect,
@@ -436,6 +436,8 @@ function PositionsDashboard({
   userId: string;
   tvProjectId: string;
   projectId: string;
+  projectName?: string;
+  projectUrl?: string | null;
   integrationId: string;
   dateFrom: string;
   dateTo: string;
