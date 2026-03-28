@@ -224,7 +224,6 @@ export function SeoTab({ projectId }: SeoTabProps) {
         <StandardKpiCard label="CTR" value={`${avgCtr}%`} tooltipKey="ctr" loading={isRefreshing} />
         <StandardKpiCard label={t("seoTab.avgPosition", "Ср. позиция")} value={String(avgPosition)} tooltipKey="avgPosition" loading={isRefreshing} />
       </div>
-      </div>
 
       {/* Visibility Chart */}
       <Card className="border-border bg-card">
