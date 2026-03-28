@@ -262,8 +262,16 @@ function ProjectDetailInner() {
         return <GoalsTab projectId={project.id} projectName={project.name} />;
       case "seo":
         return <SeoTab projectId={project.id} />;
-      case "pages":
-        return <SiteHealthTab projectId={project.id} />;
+      case "pages": {
+        const metrikaIntegration = integrations.find((i) => i.service_name === "yandex_metrika");
+        return (
+          <SiteHealthTab
+            projectId={project.id}
+            accessToken={metrikaIntegration?.access_token}
+            hostId={(project as any).yandex_webmaster_host_id}
+          />
+        );
+      }
       case "worklog":
         return <WorkLogTab projectId={project.id} tasks={workLogs} isAdmin={true} />;
       case "ai":
