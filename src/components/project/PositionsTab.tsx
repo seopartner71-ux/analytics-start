@@ -601,6 +601,7 @@ function PositionsDashboard({
               </>
             )}
           </div>
+          <RegionSelector regions={regions} selectedIndex={selectedRegion} onSelect={setSelectedRegion} />
           <div className="flex items-center gap-2">
             <Popover>
               <PopoverTrigger asChild>
@@ -674,6 +675,7 @@ function PositionsDashboard({
             </>
           )}
         </div>
+        <RegionSelector regions={regions} selectedIndex={selectedRegion} onSelect={setSelectedRegion} />
 
         {/* Date pickers */}
         <div className="flex items-center gap-2">
