@@ -25,6 +25,12 @@ import {
   StandardChartTooltip, SkeletonChart,
 } from "./shared-ui";
 
+interface DashboardTabProps {
+  projectId: string;
+  projectName: string;
+  onSwitchTab: (tab: string) => void;
+}
+
 export function DashboardTab({ projectId, projectName, onSwitchTab }: DashboardTabProps) {
   const { t, i18n } = useTranslation();
   const locale = i18n.language === "ru" ? ru : enUS;
