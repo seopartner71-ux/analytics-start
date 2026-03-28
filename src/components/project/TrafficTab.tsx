@@ -74,7 +74,7 @@ export function TrafficTab({ projectId, projectName, projectUrl }: TrafficTabPro
     queryFn: async () => {
       const { data } = await supabase
         .from("integrations").select("*")
-        .eq("project_id", projectId).eq("service_name", "yandex_metrika").eq("connected", true).maybeSingle();
+        .eq("project_id", projectId).eq("service_name", "yandexMetrika").eq("connected", true).maybeSingle();
       return data;
     },
     enabled: !!projectId,
