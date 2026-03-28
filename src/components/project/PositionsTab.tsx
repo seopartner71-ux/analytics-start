@@ -352,9 +352,7 @@ function PositionsDashboard({
     queryFn: async () => {
       const data = await callTopvisor("get-positions", apiKey, userId, {
         project_id: tvProjectId,
-        regions_indexes: [0],
-        date1: dateFrom,
-        date2: dateTo,
+        dates: [dateFrom, dateTo],
         show_headers: 1,
         positions_fields: ["position"],
       });
@@ -368,26 +366,26 @@ function PositionsDashboard({
     if (!positionsData?.result) return [];
 
     const result = positionsData.result;
-    const headers = result.headers || [];
-    const rows = result.keywords || [];
+    const dateKeys: string[] = Array.isArray(result?.headers?.dates) ? result.headers.dates : [];
+    const rows = Array.isArray(result?.keywords) ? result.keywords : [];
 
-    // headers is an array of date strings; last two are date2 and date1
-    const dateKeys = headers;
-    const lastIdx = dateKeys.length - 1;
-    const prevIdx = lastIdx - 1;
+    const lastDate = dateKeys.at(-1);
+    const prevDate = dateKeys.at(-2) ?? null;
 
     return rows.map((row: any) => {
-      const positions = row.positionsData?.[0]?.positions || {};
-      const lastDate = dateKeys[lastIdx];
-      const prevDate = prevIdx >= 0 ? dateKeys[prevIdx] : null;
+      const positionsObj = row.positionsData && typeof row.positionsData === "object" ? row.positionsData : {};
 
-      const currentPos = lastDate ? (positions[lastDate]?.position ?? null) : null;
-      const prevPos = prevDate ? (positions[prevDate]?.position ?? null) : null;
+      const findPositionForDate = (date: string | null) => {
+        if (!date) return null;
+        const key = Object.keys(positionsObj).find((k) => k.startsWith(`${date}:`));
+        const value = key ? positionsObj[key]?.position : null;
+        return value !== null && value !== undefined ? Number(value) : null;
+      };
 
       return {
         keyword: row.name || "",
-        position: currentPos !== null ? Number(currentPos) : null,
-        prevPosition: prevPos !== null ? Number(prevPos) : null,
+        position: findPositionForDate(lastDate),
+        prevPosition: findPositionForDate(prevDate),
         url: row.landing_page || "",
         volume: row.target || 0,
       } as KeywordPosition;
