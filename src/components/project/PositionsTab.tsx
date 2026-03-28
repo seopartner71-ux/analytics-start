@@ -574,17 +574,15 @@ function PositionsDashboard({
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-3 flex-wrap">
-          <TopvisorProjectSelector
-            apiKey={apiKey} userId={userId} projectId={projectId}
-            currentExternalId={tvProjectId} integrationId={integrationId}
-            onSelect={(id) => { setSelectedTvProject(id); setSelectedRegion(""); }}
-            onRegionsLoaded={handleRegionsLoaded}
-          />
-          <RegionSelector
-            regions={regions}
-            selectedIndex={selectedRegion}
-            onSelect={setSelectedRegion}
-          />
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border border-border/60">
+            <span className="text-xs font-medium text-muted-foreground">{projectName || "—"}</span>
+            {projectUrl && (
+              <>
+                <span className="text-xs text-muted-foreground">—</span>
+                <span className="text-xs text-primary">{projectUrl.replace(/^https?:\/\//, "")}</span>
+              </>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             <Popover>
               <PopoverTrigger asChild>
@@ -649,17 +647,15 @@ function PositionsDashboard({
 
       {/* Project selector + region + dates + sync */}
       <div className="flex items-center gap-3 flex-wrap">
-        <TopvisorProjectSelector
-          apiKey={apiKey} userId={userId} projectId={projectId}
-          currentExternalId={tvProjectId} integrationId={integrationId}
-          onSelect={(id) => { setSelectedTvProject(id); setSelectedRegion(""); }}
-          onRegionsLoaded={handleRegionsLoaded}
-        />
-        <RegionSelector
-          regions={regions}
-          selectedIndex={selectedRegion}
-          onSelect={setSelectedRegion}
-        />
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border border-border/60">
+          <span className="text-xs font-medium text-muted-foreground">{projectName || "—"}</span>
+          {projectUrl && (
+            <>
+              <span className="text-xs text-muted-foreground">—</span>
+              <span className="text-xs text-primary">{projectUrl.replace(/^https?:\/\//, "")}</span>
+            </>
+          )}
+        </div>
 
         {/* Date pickers */}
         <div className="flex items-center gap-2">
