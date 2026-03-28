@@ -27,6 +27,7 @@ import { supabase } from "@/integrations/supabase/client";
 interface PagesTabProps {
   projectId: string;
   projectName: string;
+  projectUrl?: string;
 }
 
 type DateRange = { from: Date; to: Date };
@@ -62,7 +63,7 @@ const CHART_COLORS = [
   "hsl(var(--chart-4))", "hsl(var(--chart-5))",
 ];
 
-export function PagesTab({ projectId, projectName }: PagesTabProps) {
+export function PagesTab({ projectId, projectName, projectUrl }: PagesTabProps) {
   const { t, i18n } = useTranslation();
   const locale = i18n.language === "ru" ? ru : enUS;
   const contentRef = useRef<HTMLDivElement>(null);
@@ -87,10 +88,10 @@ export function PagesTab({ projectId, projectName }: PagesTabProps) {
   }, [applyVersion]);
 
   // Dynamic pages data based on applied date range
-  const pages = useMemo(() => generatePagesData(appliedRange), [appliedRange]);
+  const pages = useMemo(() => generatePagesData(appliedRange, projectUrl), [appliedRange, projectUrl]);
   const compPages = useMemo(
-    () => showComparison ? generatePagesData(appliedCompRange) : [],
-    [appliedCompRange, showComparison]
+    () => showComparison ? generatePagesData(appliedCompRange, projectUrl) : [],
+    [appliedCompRange, showComparison, projectUrl]
   );
 
   const top5Growing = useMemo(() => [...pages].sort((a, b) => b.growth - a.growth).slice(0, 5), [pages]);
