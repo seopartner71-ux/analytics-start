@@ -36,10 +36,25 @@ interface PositionsTabProps {
   onNavigateSettings?: () => void;
 }
 
+interface TvRegion {
+  index: string;
+  name: string;
+  areaName?: string;
+  device_name?: string;
+  searcher_key: number;
+}
+
+interface TvSearcher {
+  key: number;
+  name: string;
+  regions: TvRegion[];
+}
+
 interface TvProject {
   id: number;
   name: string;
   site: string;
+  searchers?: TvSearcher[];
 }
 
 interface KeywordPosition {
@@ -165,6 +180,7 @@ function TopvisorSetupForm({ projectId, onConnected }: { projectId: string; onCo
    ═══════════════════════════════════════════════════════ */
 function TopvisorProjectSelector({
   apiKey, userId, projectId, currentExternalId, integrationId, onSelect,
+  onRegionsLoaded,
 }: {
   apiKey: string;
   userId: string;
@@ -172,8 +188,9 @@ function TopvisorProjectSelector({
   currentExternalId: string | null;
   integrationId: string;
   onSelect: (tvProjectId: string) => void;
+  onRegionsLoaded?: (regions: TvRegion[]) => void;
 }) {
-  const { t, i18n } = useTranslation();
+  const { i18n } = useTranslation();
   const isRu = i18n.language === "ru";
   const queryClient = useQueryClient();
 
@@ -185,6 +202,22 @@ function TopvisorProjectSelector({
     },
   });
 
+  // When projects load or selection changes, extract regions for the selected project
+  const selectedProject = tvProjects?.find((p) => String(p.id) === currentExternalId);
+  const regions: TvRegion[] = useMemo(() => {
+    if (!selectedProject?.searchers) return [];
+    return selectedProject.searchers.flatMap((s) =>
+      (s.regions || []).map((r) => ({ ...r, searcher_key: s.key }))
+    );
+  }, [selectedProject]);
+
+  // Notify parent about regions
+  useMemo(() => {
+    if (regions.length > 0 && onRegionsLoaded) {
+      onRegionsLoaded(regions);
+    }
+  }, [regions, onRegionsLoaded]);
+
   const linkMutation = useMutation({
     mutationFn: async (tvId: string) => {
       await supabase.from("integrations").update({ external_project_id: tvId }).eq("id", integrationId);
@@ -192,6 +225,14 @@ function TopvisorProjectSelector({
     onSuccess: (_, tvId) => {
       queryClient.invalidateQueries({ queryKey: ["integrations", projectId] });
       onSelect(tvId);
+      // Also update regions for newly selected project
+      const newProject = tvProjects?.find((p) => String(p.id) === tvId);
+      if (newProject?.searchers && onRegionsLoaded) {
+        const newRegions = newProject.searchers.flatMap((s) =>
+          (s.regions || []).map((r) => ({ ...r, searcher_key: s.key }))
+        );
+        onRegionsLoaded(newRegions);
+      }
       toast.success(isRu ? "Проект привязан" : "Project linked");
     },
   });
@@ -200,29 +241,26 @@ function TopvisorProjectSelector({
     return (
       <div className="flex items-center gap-3">
         <Skeleton className="h-9 w-[280px]" />
-        <Skeleton className="h-9 w-9" />
       </div>
     );
   }
 
   return (
-    <div className="flex items-center gap-3 flex-wrap">
-      <Select
-        value={currentExternalId || ""}
-        onValueChange={(v) => linkMutation.mutate(v)}
-      >
-        <SelectTrigger className="w-[320px] h-9 text-sm">
-          <SelectValue placeholder={isRu ? "Выберите проект Topvisor…" : "Select Topvisor project…"} />
-        </SelectTrigger>
-        <SelectContent>
-          {tvProjects?.map((p) => (
-            <SelectItem key={p.id} value={String(p.id)}>
-              {p.name || p.site} — {p.site}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
+    <Select
+      value={currentExternalId || ""}
+      onValueChange={(v) => linkMutation.mutate(v)}
+    >
+      <SelectTrigger className="w-[320px] h-9 text-sm">
+        <SelectValue placeholder={isRu ? "Выберите проект Topvisor…" : "Select Topvisor project…"} />
+      </SelectTrigger>
+      <SelectContent>
+        {tvProjects?.map((p) => (
+          <SelectItem key={p.id} value={String(p.id)}>
+            {p.name || p.site} — {p.site}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 
@@ -322,6 +360,45 @@ export function PositionsTab({
 }
 
 /* ═══════════════════════════════════════════════════════
+   Region Selector
+   ═══════════════════════════════════════════════════════ */
+function RegionSelector({
+  regions, selectedIndex, onSelect,
+}: {
+  regions: TvRegion[];
+  selectedIndex: string;
+  onSelect: (idx: string) => void;
+}) {
+  const { i18n } = useTranslation();
+  const isRu = i18n.language === "ru";
+
+  if (regions.length <= 1) return null;
+
+  const searcherName = (key: number) => {
+    switch (key) {
+      case 0: return "Yandex";
+      case 1: return "Google";
+      default: return `SE ${key}`;
+    }
+  };
+
+  return (
+    <Select value={selectedIndex} onValueChange={onSelect}>
+      <SelectTrigger className="w-[260px] h-9 text-sm">
+        <SelectValue placeholder={isRu ? "Выберите регион…" : "Select region…"} />
+      </SelectTrigger>
+      <SelectContent>
+        {regions.map((r) => (
+          <SelectItem key={r.index} value={r.index}>
+            {searcherName(r.searcher_key)} — {r.name} ({r.device_name || "PC"})
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
    Dashboard (after project selected)
    ═══════════════════════════════════════════════════════ */
 function PositionsDashboard({
@@ -346,18 +423,32 @@ function PositionsDashboard({
   const isRu = i18n.language === "ru";
   const queryClient = useQueryClient();
 
+  const [regions, setRegions] = useState<TvRegion[]>([]);
+  const [selectedRegion, setSelectedRegion] = useState<string>("");
+
+  const handleRegionsLoaded = useCallback((r: TvRegion[]) => {
+    setRegions(r);
+    if (r.length > 0 && !selectedRegion) {
+      setSelectedRegion(r[0].index);
+    }
+  }, [selectedRegion]);
+
+  const regionIndex = selectedRegion || (regions[0]?.index ?? "");
+
   // Fetch positions
   const { data: positionsData, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ["topvisor-positions", tvProjectId, dateFrom, dateTo],
+    queryKey: ["topvisor-positions", tvProjectId, dateFrom, dateTo, regionIndex],
     queryFn: async () => {
       const data = await callTopvisor("get-positions", apiKey, userId, {
         project_id: tvProjectId,
+        regions_indexes: regionIndex ? [regionIndex] : undefined,
         dates: [dateFrom, dateTo],
         show_headers: 1,
         positions_fields: ["position"],
       });
       return data;
     },
+    enabled: !!regionIndex,
     retry: 1,
   });
 
@@ -431,7 +522,13 @@ function PositionsDashboard({
           <TopvisorProjectSelector
             apiKey={apiKey} userId={userId} projectId={projectId}
             currentExternalId={tvProjectId} integrationId={integrationId}
-            onSelect={setSelectedTvProject}
+            onSelect={(id) => { setSelectedTvProject(id); setSelectedRegion(""); }}
+            onRegionsLoaded={handleRegionsLoaded}
+          />
+          <RegionSelector
+            regions={regions}
+            selectedIndex={selectedRegion}
+            onSelect={setSelectedRegion}
           />
           <Button variant="outline" size="sm" className="gap-1.5" onClick={handleSync}>
             <RefreshCw className="h-3.5 w-3.5" /> {t("integrations.sync")}
@@ -456,12 +553,18 @@ function PositionsDashboard({
     <div className="space-y-6 relative">
       {isRefreshing && <TabLoadingOverlay show={isRefreshing} />}
 
-      {/* Project selector + sync */}
+      {/* Project selector + region + sync */}
       <div className="flex items-center gap-3 flex-wrap">
         <TopvisorProjectSelector
           apiKey={apiKey} userId={userId} projectId={projectId}
           currentExternalId={tvProjectId} integrationId={integrationId}
-          onSelect={setSelectedTvProject}
+          onSelect={(id) => { setSelectedTvProject(id); setSelectedRegion(""); }}
+          onRegionsLoaded={handleRegionsLoaded}
+        />
+        <RegionSelector
+          regions={regions}
+          selectedIndex={selectedRegion}
+          onSelect={setSelectedRegion}
         />
         <Button variant="outline" size="sm" className="gap-1.5" onClick={handleSync}>
           <RefreshCw className={cn("h-3.5 w-3.5", isLoading && "animate-spin")} />
