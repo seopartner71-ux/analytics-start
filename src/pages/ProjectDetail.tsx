@@ -259,7 +259,7 @@ function ProjectDetailInner() {
       case "seo":
         return <SeoTab projectId={project.id} />;
       case "pages":
-        return <PagesTab projectId={project.id} projectName={project.name} projectUrl={project.url || undefined} />;
+        return <SiteHealthTab projectId={project.id} />;
       case "worklog":
         return <WorkLogTab projectId={project.id} tasks={workLogs} isAdmin={true} />;
       case "ai":
