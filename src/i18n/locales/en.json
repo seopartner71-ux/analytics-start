@@ -508,5 +508,22 @@
     "referral": "Referral",
     "social": "Social",
     "ad": "Ads"
+  },
+  "aiAnalytics": {
+    "title": "AI Analytics",
+    "subtitle": "Intelligent project data analysis",
+    "generateFull": "Full Analysis",
+    "businessMeaning": "What This Means for Business",
+    "noAnalysis": "Click 'Full Analysis' to generate insights",
+    "runAnalysis": "Run Analysis",
+    "recommendations": "Next Month Recommendations",
+    "recommendationsSubtitle": "Actionable steps for growth",
+    "steps": "steps",
+    "noRecommendations": "Recommendations will appear after analysis",
+    "priority": {
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    }
   }
 }
