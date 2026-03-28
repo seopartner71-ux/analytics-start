@@ -107,14 +107,27 @@
     },
     "worklog": {
       "title": "Журнал работ",
-      "placeholder": "Что было сделано?",
-      "linkPlaceholder": "Ссылка на документ (необязательно)",
-      "addTask": "Добавить задачу",
+      "summary": "Всего: {{total}} · Выполнено: {{done}}",
+      "placeholder": "Опишите выполненную работу…",
+      "linkPlaceholder": "https://docs.google.com/...",
+      "addEntry": "Добавить запись",
       "deleteTask": "Удалить",
       "viewResult": "Посмотреть результат",
-      "noTasks": "Задач пока нет",
+      "noTasks": "Записей пока нет",
       "completed": "Выполнено",
-      "inProgress": "В работе"
+      "inProgress": "В работе",
+      "taskAdded": "Запись добавлена",
+      "allCategories": "Все",
+      "fieldDate": "Дата",
+      "fieldCategory": "Категория",
+      "fieldDescription": "Описание работы",
+      "fieldLink": "Ссылка на результат",
+      "cat": {
+        "seo": "SEO",
+        "tech": "Техничка",
+        "content": "Контент",
+        "links": "Ссылки"
+      }
     },
     "settingsTab": {
       "title": "Настройки проекта",

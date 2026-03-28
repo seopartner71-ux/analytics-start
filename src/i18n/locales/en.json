@@ -107,14 +107,27 @@
     },
     "worklog": {
       "title": "Work Log",
-      "placeholder": "What was done?",
-      "linkPlaceholder": "Link to document (optional)",
-      "addTask": "Add Task",
+      "summary": "Total: {{total}} · Done: {{done}}",
+      "placeholder": "Describe the work done…",
+      "linkPlaceholder": "https://docs.google.com/...",
+      "addEntry": "Add Entry",
       "deleteTask": "Delete",
       "viewResult": "View Result",
-      "noTasks": "No tasks yet",
+      "noTasks": "No entries yet",
       "completed": "Completed",
-      "inProgress": "In Progress"
+      "inProgress": "In Progress",
+      "taskAdded": "Entry added",
+      "allCategories": "All",
+      "fieldDate": "Date",
+      "fieldCategory": "Category",
+      "fieldDescription": "Work description",
+      "fieldLink": "Link to result",
+      "cat": {
+        "seo": "SEO",
+        "tech": "Technical",
+        "content": "Content",
+        "links": "Links"
+      }
     },
     "settingsTab": {
       "title": "Project Settings",

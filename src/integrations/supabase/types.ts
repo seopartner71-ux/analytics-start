@@ -340,6 +340,7 @@ export type Database = {
       }
       work_logs: {
         Row: {
+          category: string
           created_at: string
           description: string
           id: string
@@ -351,6 +352,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          category?: string
           created_at?: string
           description: string
           id?: string
@@ -362,6 +364,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          category?: string
           created_at?: string
           description?: string
           id?: string
@@ -416,6 +419,7 @@ export type Database = {
       get_shared_work_logs: {
         Args: { p_project_id: string }
         Returns: {
+          category: string
           created_at: string
           description: string
           id: string
