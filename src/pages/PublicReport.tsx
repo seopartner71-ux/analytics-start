@@ -77,7 +77,7 @@ const PublicReport = () => {
   const kpis = [
     { label: t("publicReport.kpi.visits"), value: kpiBase.totalVisits.toLocaleString(), change: 12.3, suffix: "" },
     { label: t("publicReport.kpi.bounceRate"), value: kpiBase.bounceRate.toFixed(1), change: -3.1, suffix: "%" },
-    { label: t("publicReport.kpi.depth"), value: kpiBase.depth.toFixed(1), change: 5.2, suffix: "" },
+    { label: t("publicReport.kpi.depth"), value: "2.8", change: 5.2, suffix: "" },
     { label: t("publicReport.kpi.positions"), value: "14.2", change: -8.5, suffix: "" },
   ];
 
@@ -174,7 +174,7 @@ const PublicReport = () => {
             <Card className="border-border/60">
               <CardContent className="p-6">
                 <ResponsiveContainer width="100%" height={320}>
-                  <AreaChart data={trafficData}>
+                  <AreaChart data={dailyVisits}>
                     <defs>
                       <linearGradient id="reportGrad" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
