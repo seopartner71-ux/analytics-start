@@ -560,6 +560,45 @@ function PositionsDashboard({
             selectedIndex={selectedRegion}
             onSelect={setSelectedRegion}
           />
+          <div className="flex items-center gap-2">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1.5 text-xs h-9">
+                  <CalendarIcon className="h-3.5 w-3.5" />
+                  {format(localDateFrom, "dd.MM.yyyy")}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={localDateFrom}
+                  onSelect={(d) => d && setLocalDateFrom(d)}
+                  disabled={(d) => d > localDateTo || d > new Date()}
+                  locale={isRu ? ru : undefined}
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+            <span className="text-xs text-muted-foreground">→</span>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1.5 text-xs h-9">
+                  <CalendarIcon className="h-3.5 w-3.5" />
+                  {format(localDateTo, "dd.MM.yyyy")}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={localDateTo}
+                  onSelect={(d) => d && setLocalDateTo(d)}
+                  disabled={(d) => d < localDateFrom || d > new Date()}
+                  locale={isRu ? ru : undefined}
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
           <Button variant="outline" size="sm" className="gap-1.5" onClick={handleSync}>
             <RefreshCw className="h-3.5 w-3.5" /> {t("integrations.sync")}
           </Button>
