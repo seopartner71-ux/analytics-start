@@ -470,17 +470,8 @@ function SiteHealthDashboard({ projectId, accessToken, hostId }: {
           </div>
         </CardContent>
       </GlassCard>
-                {criticalCount > 0 && (
-                  <span className="text-xs text-destructive font-medium">{criticalCount} {isRu ? "крит." : "crit."}</span>
-                )}
-                {warningCount > 0 && (
-                  <span className="text-xs text-amber-500 font-medium">{warningCount} {isRu ? "пред." : "warn."}</span>
-                )}
-              </div>
-            </CardContent>
-          </GlassCard>
-        </KpiSkeleton>
-      </div>
+
+
 
       {/* ── Indexing History Chart ── */}
       <GlassCard>
