@@ -41,7 +41,7 @@ function extractNestedIndexes(source: unknown): number[] {
   return uniqPositiveNumbers(acc);
 }
 
-async function resolveRegionIndex(projectId: number, headers: Record<string, string>) {
+async function resolveRegionIndexes(projectId: number, headers: Record<string, string>) {
   const resp = await fetch(`${TV_BASE}/get/projects_2/projects`, {
     method: "POST",
     headers,
@@ -54,15 +54,14 @@ async function resolveRegionIndex(projectId: number, headers: Record<string, str
 
   const data = await resp.json();
   if (!resp.ok || data?.errors?.length) {
-    return null;
+    return [] as number[];
   }
 
   const projects = Array.isArray(data?.result) ? data.result : [];
   const currentProject = projects.find((p) => Number(p?.id) === projectId);
-  if (!currentProject) return null;
+  if (!currentProject) return [] as number[];
 
-  const indexes = extractNestedIndexes((currentProject as JsonRecord).searchers_and_regions ?? currentProject);
-  return indexes[0] ?? null;
+  return extractNestedIndexes((currentProject as JsonRecord).searchers_and_regions ?? currentProject);
 }
 
 serve(async (req) => {
@@ -95,6 +94,8 @@ serve(async (req) => {
     let url: string;
     let method = "POST";
     let fetchBody: string | undefined;
+    let requestedProjectId: number | null = null;
+    let normalizedRegionsIndexes: number[] = [];
 
     switch (action) {
       case "get-projects":
@@ -122,6 +123,7 @@ serve(async (req) => {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
+        requestedProjectId = projectId;
 
         const directRegions = Array.isArray(payload.regions_indexes)
           ? payload.regions_indexes.map((v) => Number(v))
@@ -131,21 +133,20 @@ serve(async (req) => {
               ? [Number(payload.region_index)]
               : [];
 
+        const availableRegionIndexes = await resolveRegionIndexes(projectId, headers);
         let regionsIndexes = uniqPositiveNumbers(directRegions);
 
-        if (regionsIndexes.length === 0) {
-          const resolved = await resolveRegionIndex(projectId, headers);
-          if (resolved) {
-            regionsIndexes = [resolved];
+        if (availableRegionIndexes.length > 0) {
+          if (regionsIndexes.length === 0) {
+            regionsIndexes = [availableRegionIndexes[0]];
+          } else {
+            const allowed = new Set(availableRegionIndexes);
+            const filtered = regionsIndexes.filter((idx) => allowed.has(idx));
+            regionsIndexes = filtered.length > 0 ? filtered : [availableRegionIndexes[0]];
           }
         }
 
-        if (regionsIndexes.length === 0) {
-          return new Response(JSON.stringify({ error: "No valid region index found for this project" }), {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
+        normalizedRegionsIndexes = regionsIndexes;
 
         const dates = Array.isArray(payload.dates)
           ? payload.dates.filter((d): d is string => typeof d === "string" && d.length > 0).slice(0, 2)
@@ -158,14 +159,19 @@ serve(async (req) => {
           });
         }
 
-        url = `${TV_BASE}/get/positions_2/history`;
-        fetchBody = JSON.stringify({
+        const requestBody: JsonRecord = {
           project_id: String(projectId),
-          regions_indexes: regionsIndexes.map((idx) => String(idx)),
           dates: [dates[0], dates[1]],
           show_headers: payload.show_headers ?? 1,
           positions_fields: payload.positions_fields ?? ["position"],
-        });
+        };
+
+        if (regionsIndexes.length > 0) {
+          requestBody.regions_indexes = regionsIndexes.map((idx) => String(idx));
+        }
+
+        url = `${TV_BASE}/get/positions_2/history`;
+        fetchBody = JSON.stringify(requestBody);
         break;
       }
 
@@ -191,6 +197,48 @@ serve(async (req) => {
     const data = await resp.json();
 
     if (!resp.ok || data?.errors?.length) {
+      const topvisorCode = Number(data?.errors?.[0]?.code);
+
+      // Fallback for access errors: try other available regions for the same project
+      if (action === "get-positions" && topvisorCode === 54 && requestedProjectId) {
+        const fallbackRegions = await resolveRegionIndexes(requestedProjectId, headers);
+        const tried = new Set(normalizedRegionsIndexes);
+        const retryBody = (() => {
+          if (typeof fetchBody !== "string") return null;
+          try {
+            const parsed = JSON.parse(fetchBody);
+            return isRecord(parsed) ? (parsed as JsonRecord) : null;
+          } catch {
+            return null;
+          }
+        })();
+
+        if (retryBody) {
+          for (const idx of fallbackRegions) {
+            if (tried.has(idx)) continue;
+
+            const nextBody: JsonRecord = {
+              ...retryBody,
+              regions_indexes: [String(idx)],
+            };
+
+            const retryResp = await fetch(url, {
+              method,
+              headers,
+              body: JSON.stringify(nextBody),
+            });
+            const retryData = await retryResp.json();
+
+            if (retryResp.ok && !retryData?.errors?.length) {
+              return new Response(JSON.stringify(retryData), {
+                status: 200,
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+              });
+            }
+          }
+        }
+      }
+
       const errMsg = data?.errors?.[0]?.string || data?.message || `Topvisor API error (${resp.status})`;
       return new Response(JSON.stringify({ error: errMsg, raw: data }), {
         status: resp.status >= 400 ? resp.status : 502,
