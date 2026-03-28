@@ -15,7 +15,6 @@ import {
 } from "recharts";
 import { cn } from "@/lib/utils";
 import { useDateRange } from "@/contexts/DateRangeContext";
-import { generateDailyVisits } from "@/lib/data-generators";
 import { supabase } from "@/integrations/supabase/client";
 import { ExportMenu } from "@/components/ExportMenu";
 import { exportToPdf, exportToExcel, exportToWord, type ExcelSheet, type WordSection } from "@/lib/export-utils";
@@ -55,44 +54,7 @@ const DEVICE_COLORS = {
 
 /* ── Tooltip uses shared component ── */
 
-/* ── Deterministic page set per project ── */
-function getPagesForProject(projectUrl?: string) {
-  if (!projectUrl) {
-    return [
-      { path: "/", title: "Главная" },
-      { path: "/catalog", title: "Каталог" },
-      { path: "/about", title: "О компании" },
-      { path: "/contacts", title: "Контакты" },
-      { path: "/blog", title: "Блог" },
-    ];
-  }
-  const lower = projectUrl.toLowerCase();
-  if (lower.includes("lingua") || lower.includes("лингу")) {
-    return [
-      { path: "/", title: "Главная — Курсы иностранных языков" },
-      { path: "/english", title: "Английский язык" },
-      { path: "/german", title: "Немецкий язык" },
-      { path: "/prices", title: "Цены и тарифы" },
-      { path: "/contacts", title: "Контакты школы" },
-    ];
-  }
-  if (lower.includes("cvet") || lower.includes("цвет") || lower.includes("flor")) {
-    return [
-      { path: "/", title: "Каталог букетов" },
-      { path: "/roses", title: "Розы" },
-      { path: "/wedding", title: "Свадебная флористика" },
-      { path: "/delivery", title: "Доставка цветов" },
-      { path: "/corporate", title: "Корпоративные заказы" },
-    ];
-  }
-  return [
-    { path: "/", title: "Главная" },
-    { path: "/services", title: "Услуги" },
-    { path: "/portfolio", title: "Портфолио" },
-    { path: "/blog", title: "Блог" },
-    { path: "/contacts", title: "Контакты" },
-  ];
-}
+/* ── No demo data — top pages come from real API or show empty ── */
 
 /* ══════════════════════ COMPONENT ══════════════════════ */
 export function TrafficTab({ projectId, projectName, projectUrl }: TrafficTabProps) {
@@ -118,7 +80,7 @@ export function TrafficTab({ projectId, projectName, projectUrl }: TrafficTabPro
 
   const latestStat = allStats[0];
 
-  // Build daily visits data
+  // Build daily visits data from real stats only
   const dailyData = useMemo(() => {
     if (latestStat) {
       const visitsByDay = (latestStat.visits_by_day as any[]) || [];
@@ -129,8 +91,8 @@ export function TrafficTab({ projectId, projectName, projectUrl }: TrafficTabPro
         return { date, visits: entry.visits || 0 };
       });
     }
-    return generateDailyVisits(appliedRange);
-  }, [latestStat, appliedRange]);
+    return [];
+  }, [latestStat]);
 
   // Filter to applied range
   const filteredData = useMemo(() => {
@@ -168,14 +130,8 @@ export function TrafficTab({ projectId, projectName, projectUrl }: TrafficTabPro
       }));
     }
 
-    // Fallback: deterministic split
-    return [
-      { key: "organic", name: t("channels.organic"), value: Math.round(totalVisits * 0.45), pct: 0 },
-      { key: "direct", name: t("channels.direct"), value: Math.round(totalVisits * 0.25), pct: 0 },
-      { key: "ad", name: t("channels.ad"), value: Math.round(totalVisits * 0.12), pct: 0 },
-      { key: "social", name: t("channels.social"), value: Math.round(totalVisits * 0.10), pct: 0 },
-      { key: "referral", name: t("channels.referral"), value: Math.round(totalVisits * 0.08), pct: 0 },
-    ];
+    // Fallback: show empty if no real data
+    return [];
   }, [latestStat, totalVisits, t]);
 
   // Calc percentages
