@@ -282,8 +282,19 @@ function ProjectDetailInner() {
       case "builder":
         return <ReportBuilderTab projectId={project.id} shareToken={project.share_token} projectLogo={project.logo_url} />;
       case "positions": {
-        const hasTopvisor = integrations.some((i) => i.service_name === "topvisor" && i.connected);
-        return <PositionsTab projectId={project.id} hasTopvisor={hasTopvisor} onNavigateSettings={() => setActiveTab("settings")} />;
+        const tvIntegration = integrations.find((i) => i.service_name === "topvisor");
+        const hasTopvisor = tvIntegration?.connected ?? false;
+        return (
+          <PositionsTab
+            projectId={project.id}
+            hasTopvisor={hasTopvisor}
+            topvisorApiKey={tvIntegration?.api_key}
+            topvisorUserId={tvIntegration?.counter_id}
+            topvisorExternalProjectId={tvIntegration?.external_project_id}
+            integrationId={tvIntegration?.id}
+            onNavigateSettings={() => setActiveTab("settings")}
+          />
+        );
       }
       case "integrations":
         return <IntegrationsTab projectId={project.id} integrations={integrations} />;
