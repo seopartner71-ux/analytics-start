@@ -69,17 +69,15 @@ const PublicReport = () => {
   const currentMonth = new Date().getMonth();
   const monthName = t(`publicReport.months.${currentMonth}`);
 
-  // Generate demo data
-  const trafficData = generateTrafficByDay(30, "all");
-  const totalVisits = trafficData.reduce((s, d) => s + d.visits, 0);
-  const avgBounce = 38.2;
-  const avgDepth = 2.8;
-  const avgTime = 185;
+  const now = new Date();
+  const range: DateRange = { from: new Date(now.getFullYear(), now.getMonth(), 1), to: now };
+  const dailyVisits = generateDailyVisits(range);
+  const kpiBase = computeKpis(dailyVisits);
 
   const kpis = [
-    { label: t("publicReport.kpi.visits"), value: totalVisits.toLocaleString(), change: 12.3, suffix: "" },
-    { label: t("publicReport.kpi.bounceRate"), value: avgBounce.toFixed(1), change: -3.1, suffix: "%" },
-    { label: t("publicReport.kpi.depth"), value: avgDepth.toFixed(1), change: 5.2, suffix: "" },
+    { label: t("publicReport.kpi.visits"), value: kpiBase.totalVisits.toLocaleString(), change: 12.3, suffix: "" },
+    { label: t("publicReport.kpi.bounceRate"), value: kpiBase.bounceRate.toFixed(1), change: -3.1, suffix: "%" },
+    { label: t("publicReport.kpi.depth"), value: kpiBase.depth.toFixed(1), change: 5.2, suffix: "" },
     { label: t("publicReport.kpi.positions"), value: "14.2", change: -8.5, suffix: "" },
   ];
 
@@ -95,8 +93,14 @@ const PublicReport = () => {
     { name: t("project.analytics.referral"), value: 10 },
   ];
 
-  const seoQueries = generateSeoQueries();
-  const goals = generateGoals();
+  const seoQueries = [
+    { query: "seo продвижение", clicks: 342, impressions: 4200, ctr: 8.1, position: 5.2 },
+    { query: "раскрутка сайта", clicks: 218, impressions: 3800, ctr: 5.7, position: 8.4 },
+    { query: "аналитика трафика", clicks: 156, impressions: 2100, ctr: 7.4, position: 6.1 },
+    { query: "контекстная реклама", clicks: 134, impressions: 1900, ctr: 7.1, position: 9.3 },
+    { query: "оптимизация сайта", clicks: 98, impressions: 1500, ctr: 6.5, position: 11.2 },
+  ];
+
   const clientLogoUrl = template?.client_logo_url || project?.logo_url;
 
   if (isLoading) {
