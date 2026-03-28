@@ -42,7 +42,8 @@ const projectSections: ProjectSection[] = [
   { titleKey: "portalNav.indexing", tab: "pages", icon: FileSearch },
   { titleKey: "portalNav.workLog", tab: "worklog", icon: ClipboardList },
   { titleKey: "portalNav.aiAnalytics", tab: "ai", icon: Sparkles },
-  { titleKey: "portalNav.comparison", tab: "builder", icon: FileText },
+  { titleKey: "portalNav.comparison", tab: "comparison", icon: GitCompare },
+  { titleKey: "portalNav.reports", tab: "builder", icon: FileText },
 ];
 
 const projectUtilSections: ProjectSection[] = [
