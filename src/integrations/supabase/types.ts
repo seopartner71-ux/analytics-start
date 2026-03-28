@@ -227,6 +227,7 @@ export type Database = {
           description: string | null
           id: string
           logo_url: string | null
+          metrika_counter_id: string | null
           name: string
           owner_id: string
           seo_specialist: string | null
@@ -248,6 +249,7 @@ export type Database = {
           description?: string | null
           id?: string
           logo_url?: string | null
+          metrika_counter_id?: string | null
           name: string
           owner_id: string
           seo_specialist?: string | null
@@ -269,6 +271,7 @@ export type Database = {
           description?: string | null
           id?: string
           logo_url?: string | null
+          metrika_counter_id?: string | null
           name?: string
           owner_id?: string
           seo_specialist?: string | null
@@ -456,6 +459,7 @@ export type Database = {
           description: string | null
           id: string
           logo_url: string | null
+          metrika_counter_id: string | null
           name: string
           owner_id: string
           seo_specialist: string | null
