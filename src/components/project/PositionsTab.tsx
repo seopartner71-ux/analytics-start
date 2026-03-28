@@ -544,58 +544,46 @@ function PositionsDashboard({
     const dateKeys: string[] = Array.isArray(result?.headers?.dates) ? result.headers.dates : [];
     const rows = Array.isArray(result?.keywords) ? result.keywords : [];
 
-    const lastDate = dateKeys.at(-1) ?? null;
-    const prevDate = dateKeys.length > 1 ? dateKeys.at(-2) ?? null : null;
+    // Determine actual last checked date from the data
+    let globalLastChecked: string | null = null;
 
     const kws: KeywordPosition[] = rows.map((row: any) => {
       const positionsObj = row.positionsData && typeof row.positionsData === "object" ? row.positionsData : {};
+      const allKeys = Object.keys(positionsObj).sort();
 
-      const findPositionForDate = (date: string | null) => {
-        if (!date) return null;
-        const key = Object.keys(positionsObj).find((k) => k.startsWith(`${date}:`));
-        if (!key) return null;
+      // Extract all positions with their dates
+      const parsed: { date: string; position: number | null }[] = allKeys.map((key) => {
+        const datePart = key.split(":")[0];
         const value = positionsObj[key]?.position;
-        if (value === null || value === undefined || value === "--" || value === "") return null;
+        if (value === null || value === undefined || value === "--" || value === "") {
+          return { date: datePart, position: null };
+        }
         const num = Number(value);
-        return Number.isFinite(num) && num > 0 ? num : null;
-      };
+        return { date: datePart, position: Number.isFinite(num) && num > 0 ? num : null };
+      });
 
-      let currentPos = findPositionForDate(lastDate);
-      let previousPos = findPositionForDate(prevDate);
+      // Use the last available entry as "current", the one before as "previous"
+      const withValues = parsed.filter((p) => p.position !== null);
+      const current = withValues.at(-1) ?? null;
+      const previous = withValues.length > 1 ? withValues.at(-2) ?? null : null;
 
-      if (currentPos === null && previousPos === null) {
-        const allKeys = Object.keys(positionsObj);
-        if (allKeys.length > 0) {
-          const val = positionsObj[allKeys[0]]?.position;
-          if (val && val !== "--" && val !== "") {
-            const num = Number(val);
-            currentPos = Number.isFinite(num) && num > 0 ? num : null;
-          }
-        }
-      }
-
-      // Extract last checked date from positions data keys
-      let checkedDate: string | null = null;
-      const allPosKeys = Object.keys(positionsObj);
-      if (allPosKeys.length > 0) {
-        const lastKey = allPosKeys.at(-1) ?? "";
-        const datePart = lastKey.split(":")[0];
-        if (datePart && datePart.match(/^\d{4}-\d{2}-\d{2}$/)) {
-          checkedDate = datePart;
-        }
+      // Track global last checked date
+      const checkedDate = parsed.at(-1)?.date ?? null;
+      if (checkedDate && (!globalLastChecked || checkedDate > globalLastChecked)) {
+        globalLastChecked = checkedDate;
       }
 
       return {
         keyword: row.name || "",
-        position: currentPos,
-        prevPosition: previousPos,
+        position: current?.position ?? null,
+        prevPosition: previous?.position ?? null,
         url: row.landing_page || "",
         volume: row.target || 0,
         lastChecked: checkedDate,
       };
     });
 
-    return { keywords: kws, lastCheckedDate: lastDate };
+    return { keywords: kws, lastCheckedDate: globalLastChecked };
   }, [positionsData]);
 
   // Filtered keywords
