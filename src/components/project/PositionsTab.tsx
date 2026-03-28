@@ -299,6 +299,7 @@ export function PositionsTab({
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTvProject, setSelectedTvProject] = useState<string | null>(topvisorExternalProjectId || null);
+  const [showReconnect, setShowReconnect] = useState(false);
 
   const tvProjectId = selectedTvProject || topvisorExternalProjectId;
   const apiKey = topvisorApiKey;
@@ -307,12 +308,15 @@ export function PositionsTab({
   const dateFrom = format(appliedRange.from, "yyyy-MM-dd");
   const dateTo = format(appliedRange.to, "yyyy-MM-dd");
 
-  // If no integration, show setup form
-  if (!hasTopvisor || !apiKey || !userId) {
+  // If no integration or user wants to reconnect, show setup form
+  if (!hasTopvisor || !apiKey || !userId || showReconnect) {
     return (
       <TopvisorSetupForm
         projectId={projectId}
-        onConnected={() => queryClient.invalidateQueries({ queryKey: ["integrations", projectId] })}
+        onConnected={() => {
+          setShowReconnect(false);
+          queryClient.invalidateQueries({ queryKey: ["integrations", projectId] });
+        }}
       />
     );
   }
