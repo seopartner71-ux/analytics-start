@@ -6,6 +6,8 @@ export interface DateRange {
   to: Date;
 }
 
+export type TrafficChannel = "all" | "organic" | "direct" | "referral" | "social" | "ad";
+
 interface DateRangeContextType {
   range: DateRange;
   appliedRange: DateRange;
@@ -13,9 +15,11 @@ interface DateRangeContextType {
   compRange: DateRange;
   appliedCompRange: DateRange;
   applyVersion: number;
+  channel: TrafficChannel;
   setRange: (r: DateRange) => void;
   setCompRange: (r: DateRange) => void;
   setShowComparison: (v: boolean) => void;
+  setChannel: (c: TrafficChannel) => void;
   apply: () => void;
   applyCompPreset: (type: "previous" | "lastYear") => void;
   resetToDefault: () => void;
@@ -34,6 +38,7 @@ export function DateRangeProvider({ children }: { children: ReactNode }) {
   const [compRange, setCompRange] = useState<DateRange>(defaultCompRange);
   const [appliedCompRange, setAppliedCompRange] = useState<DateRange>(defaultCompRange);
   const [applyVersion, setApplyVersion] = useState(0);
+  const [channel, setChannel] = useState<TrafficChannel>("all");
 
   const apply = useCallback(() => {
     setAppliedRange({ ...range });
@@ -62,11 +67,13 @@ export function DateRangeProvider({ children }: { children: ReactNode }) {
     const defComp: DateRange = { from: subDays(now, 61), to: subDays(now, 31) };
     setCompRange(defComp);
     setAppliedCompRange(defComp);
+    setChannel("all");
   }, []);
 
   return (
     <DateRangeContext.Provider value={{
       range, appliedRange, showComparison, compRange, appliedCompRange, applyVersion,
+      channel, setChannel,
       setRange, setCompRange, setShowComparison,
       apply, applyCompPreset, resetToDefault,
     }}>
