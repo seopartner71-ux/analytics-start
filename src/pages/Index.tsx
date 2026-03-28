@@ -45,8 +45,8 @@ const Index = () => {
           <main className="flex-1 p-6 lg:p-8">
             <div className="flex items-center justify-between mb-8">
               <div>
-                <h1 className="text-xl font-semibold tracking-tight text-foreground">{t("dashboard.title")}</h1>
-                <p className="text-sm text-muted-foreground mt-0.5">
+                <h1 className="text-2xl font-bold tracking-tight text-foreground">{t("dashboard.title")}</h1>
+                <p className="text-sm text-muted-foreground mt-1">
                   {t("dashboard.projectsCount", { count: projects.length })}
                 </p>
               </div>
