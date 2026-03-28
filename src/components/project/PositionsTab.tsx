@@ -363,6 +363,7 @@ export function PositionsTab({
       selectedTvProject={selectedTvProject}
       setSelectedTvProject={setSelectedTvProject}
       isRefreshing={isRefreshing}
+      onReconnect={() => setShowReconnect(true)}
     />
   );
 }
