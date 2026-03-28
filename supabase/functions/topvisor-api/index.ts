@@ -151,6 +151,8 @@ serve(async (req) => {
           regionsIndexes = filtered.length > 0 ? filtered : [availableRegionIndexes[0]];
         }
 
+        normalizedRegionsIndexes = regionsIndexes;
+
         const dates = Array.isArray(payload.dates)
           ? payload.dates.filter((d): d is string => typeof d === "string" && d.length > 0).slice(0, 2)
           : [payload.date1, payload.date2].filter((d): d is string => typeof d === "string" && d.length > 0);
