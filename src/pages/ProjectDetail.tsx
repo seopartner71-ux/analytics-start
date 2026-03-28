@@ -296,6 +296,8 @@ function ProjectDetailInner() {
         return (
           <PositionsTab
             projectId={project.id}
+            projectName={project.name}
+            projectUrl={project.url}
             hasTopvisor={hasTopvisor}
             topvisorApiKey={(project as any).topvisor_api_key || tvIntegration?.api_key}
             topvisorUserId={(project as any).topvisor_user_id || tvIntegration?.counter_id}

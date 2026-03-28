@@ -32,6 +32,8 @@ import { cn } from "@/lib/utils";
    ═══════════════════════════════════════════════════════ */
 interface PositionsTabProps {
   projectId: string;
+  projectName?: string;
+  projectUrl?: string | null;
   hasTopvisor?: boolean;
   topvisorApiKey?: string | null;
   topvisorUserId?: string | null;
@@ -294,6 +296,8 @@ function positionColor(pos: number | null) {
    ═══════════════════════════════════════════════════════ */
 export function PositionsTab({
   projectId,
+  projectName,
+  projectUrl,
   hasTopvisor = false,
   topvisorApiKey,
   topvisorUserId,
@@ -365,6 +369,8 @@ export function PositionsTab({
       userId={userId}
       tvProjectId={tvProjectId}
       projectId={projectId}
+      projectName={projectName}
+      projectUrl={projectUrl}
       integrationId={integrationId!}
       dateFrom={dateFrom}
       dateTo={dateTo}
@@ -421,7 +427,7 @@ function RegionSelector({
    Dashboard (after project selected)
    ═══════════════════════════════════════════════════════ */
 function PositionsDashboard({
-  apiKey, userId, tvProjectId, projectId, integrationId,
+  apiKey, userId, tvProjectId, projectId, projectName, projectUrl, integrationId,
   dateFrom, dateTo, searchQuery, setSearchQuery,
   selectedTvProject, setSelectedTvProject, isRefreshing,
   onReconnect,
@@ -430,6 +436,8 @@ function PositionsDashboard({
   userId: string;
   tvProjectId: string;
   projectId: string;
+  projectName?: string;
+  projectUrl?: string | null;
   integrationId: string;
   dateFrom: string;
   dateTo: string;
@@ -460,6 +468,24 @@ function PositionsDashboard({
       setSelectedRegion(r[0].index);
     }
   }, [selectedRegion]);
+
+  // Load regions from Topvisor projects list
+  useQuery({
+    queryKey: ["topvisor-regions", tvProjectId, apiKey, userId],
+    queryFn: async () => {
+      const data = await callTopvisor("get-projects", apiKey, userId);
+      const projects = (data?.result || []) as TvProject[];
+      const found = projects.find((p) => String(p.id) === tvProjectId);
+      if (found?.searchers) {
+        const r = found.searchers.flatMap((s) =>
+          (s.regions || []).map((reg) => ({ ...reg, searcher_key: s.key }))
+        );
+        handleRegionsLoaded(r);
+      }
+      return null;
+    },
+    enabled: regions.length === 0,
+  });
 
   const regionIndex = selectedRegion || (regions[0]?.index ?? "");
 
@@ -566,17 +592,16 @@ function PositionsDashboard({
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-3 flex-wrap">
-          <TopvisorProjectSelector
-            apiKey={apiKey} userId={userId} projectId={projectId}
-            currentExternalId={tvProjectId} integrationId={integrationId}
-            onSelect={(id) => { setSelectedTvProject(id); setSelectedRegion(""); }}
-            onRegionsLoaded={handleRegionsLoaded}
-          />
-          <RegionSelector
-            regions={regions}
-            selectedIndex={selectedRegion}
-            onSelect={setSelectedRegion}
-          />
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border border-border/60">
+            <span className="text-xs font-medium text-muted-foreground">{projectName || "—"}</span>
+            {projectUrl && (
+              <>
+                <span className="text-xs text-muted-foreground">—</span>
+                <span className="text-xs text-primary">{projectUrl.replace(/^https?:\/\//, "")}</span>
+              </>
+            )}
+          </div>
+          <RegionSelector regions={regions} selectedIndex={selectedRegion} onSelect={setSelectedRegion} />
           <div className="flex items-center gap-2">
             <Popover>
               <PopoverTrigger asChild>
@@ -641,17 +666,16 @@ function PositionsDashboard({
 
       {/* Project selector + region + dates + sync */}
       <div className="flex items-center gap-3 flex-wrap">
-        <TopvisorProjectSelector
-          apiKey={apiKey} userId={userId} projectId={projectId}
-          currentExternalId={tvProjectId} integrationId={integrationId}
-          onSelect={(id) => { setSelectedTvProject(id); setSelectedRegion(""); }}
-          onRegionsLoaded={handleRegionsLoaded}
-        />
-        <RegionSelector
-          regions={regions}
-          selectedIndex={selectedRegion}
-          onSelect={setSelectedRegion}
-        />
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border border-border/60">
+          <span className="text-xs font-medium text-muted-foreground">{projectName || "—"}</span>
+          {projectUrl && (
+            <>
+              <span className="text-xs text-muted-foreground">—</span>
+              <span className="text-xs text-primary">{projectUrl.replace(/^https?:\/\//, "")}</span>
+            </>
+          )}
+        </div>
+        <RegionSelector regions={regions} selectedIndex={selectedRegion} onSelect={setSelectedRegion} />
 
         {/* Date pickers */}
         <div className="flex items-center gap-2">
