@@ -19,6 +19,7 @@ import { SeoTab } from "@/components/project/SeoTab";
 import { TrafficTab } from "@/components/project/TrafficTab";
 import { SearchSystemsTab } from "@/components/project/SearchSystemsTab";
 import { PagesTab } from "@/components/project/PagesTab";
+import { SiteHealthTab } from "@/components/project/SiteHealthTab";
 import { AiInsightsBlock } from "@/components/project/AiInsightsBlock";
 import { ReportBuilderTab } from "@/components/project/ReportBuilderTab";
 import { DashboardTab } from "@/components/project/DashboardTab";
@@ -259,7 +260,7 @@ function ProjectDetailInner() {
       case "seo":
         return <SeoTab projectId={project.id} />;
       case "pages":
-        return <PagesTab projectId={project.id} projectName={project.name} projectUrl={project.url || undefined} />;
+        return <SiteHealthTab projectId={project.id} />;
       case "worklog":
         return <WorkLogTab projectId={project.id} tasks={workLogs} isAdmin={true} />;
       case "ai":
