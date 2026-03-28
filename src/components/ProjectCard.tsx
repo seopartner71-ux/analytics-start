@@ -2,10 +2,8 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
-import { ExternalLink, BarChart3, Eye, Settings, ArrowUpRight, TrendingUp } from "lucide-react";
+import { ExternalLink, BarChart3, ArrowUpRight, Settings } from "lucide-react";
 
 interface ProjectCardProps {
   name: string;
@@ -28,35 +26,32 @@ const SPARKLINE_DATA = [
   [4, 3, 5, 6, 8, 7, 9, 10, 12, 11, 13, 15],
 ];
 
-function Sparkline({ data, className }: { data: number[]; className?: string }) {
+function Sparkline({ data }: { data: number[] }) {
   const max = Math.max(...data);
   const min = Math.min(...data);
   const range = max - min || 1;
-  const h = 32;
-  const w = 120;
+  const h = 24;
+  const w = 140;
   const points = data
     .map((v, i) => `${(i / (data.length - 1)) * w},${h - ((v - min) / range) * (h - 4) - 2}`)
     .join(" ");
 
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} className={className} fill="none" preserveAspectRatio="none">
+    <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-6" fill="none" preserveAspectRatio="none">
       <defs>
         <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="hsl(var(--success))" stopOpacity="0.3" />
+          <stop offset="0%" stopColor="hsl(var(--success))" stopOpacity="0.2" />
           <stop offset="100%" stopColor="hsl(var(--success))" stopOpacity="0" />
         </linearGradient>
       </defs>
       <polyline
         points={points}
         stroke="hsl(var(--success))"
-        strokeWidth="2"
+        strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <polygon
-        points={`0,${h} ${points} ${w},${h}`}
-        fill="url(#sparkGrad)"
-      />
+      <polygon points={`0,${h} ${points} ${w},${h}`} fill="url(#sparkGrad)" />
     </svg>
   );
 }
@@ -74,177 +69,150 @@ export function ProjectCard({
   description,
   seoSpecialist,
   accountManager,
-  reportStatus,
-  reportReady,
   onClick,
 }: ProjectCardProps) {
-  const [imgError, setImgError] = useState(false);
+  const [faviconError, setFaviconError] = useState(false);
   const domain = getDomain(url);
-  const screenshotUrl = domain
-    ? `https://image.thum.io/get/width/600/crop/340/https://${domain}`
-    : "";
+  const faviconUrl = domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=64` : "";
   const sparkData = SPARKLINE_DATA[name.length % SPARKLINE_DATA.length];
 
-  // Mock stats
   const top10 = 12 + (name.length % 20);
   const avgPos = (8 + (name.length % 15)).toFixed(1);
   const visibility = (35 + (name.length % 40)).toFixed(0);
 
   return (
     <Card
-      className="group relative cursor-pointer overflow-hidden border-border/50 bg-card/80 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_-4px_hsl(var(--primary)/0.15)] hover:border-primary/30"
+      className="group relative cursor-pointer overflow-hidden border-[hsl(0_0%_100%/0.05)] bg-card/60 backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[inset_0_1px_0_0_hsl(var(--primary)/0.15),0_4px_20px_-4px_hsl(var(--primary)/0.1)] hover:border-[hsl(var(--primary)/0.2)]"
       onClick={onClick}
     >
-      {/* Logo Preview */}
-      <div className="relative overflow-hidden">
-        <AspectRatio ratio={16 / 9}>
-          <div
-            className="h-full w-full flex items-center justify-center transition-all duration-500"
-            style={{
-              background: `linear-gradient(135deg, ${color}20, ${color}08, hsl(var(--card)))`,
-            }}
-          >
-            {logoUrl ? (
-              <img src={logoUrl} alt={name} className="h-14 w-14 rounded-xl object-cover shadow-lg" />
+      <CardContent className="p-3 space-y-2.5">
+        {/* Header: Favicon + Title + Actions */}
+        <div className="flex items-start gap-2.5">
+          {/* Favicon */}
+          <div className="shrink-0 mt-0.5">
+            {faviconUrl && !faviconError ? (
+              <img
+                src={faviconUrl}
+                alt=""
+                className="h-8 w-8 rounded-lg object-cover bg-muted/50"
+                onError={() => setFaviconError(true)}
+              />
             ) : (
               <div
-                className="flex h-16 w-16 items-center justify-center rounded-2xl text-xl font-bold text-primary-foreground shadow-lg transition-transform duration-300 group-hover:scale-110"
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-[11px] font-bold text-primary-foreground"
                 style={{ backgroundColor: color }}
               >
                 {initials}
               </div>
             )}
           </div>
-        </AspectRatio>
 
-        {/* Hover Actions Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-end p-3 gap-1.5">
-          <TooltipProvider delayDuration={200}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="icon"
-                  variant="secondary"
-                  className="h-8 w-8 bg-card/90 backdrop-blur-sm border border-border/50 hover:bg-primary hover:text-primary-foreground transition-colors"
-                  onClick={(e) => { e.stopPropagation(); onClick(); }}
-                >
-                  <BarChart3 className="h-3.5 w-3.5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Аналитика</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="icon"
-                  variant="secondary"
-                  className="h-8 w-8 bg-card/90 backdrop-blur-sm border border-border/50 hover:bg-primary hover:text-primary-foreground transition-colors"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (domain) window.open(`https://${domain}`, "_blank");
-                  }}
-                >
-                  <Eye className="h-3.5 w-3.5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Открыть сайт</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="icon"
-                  variant="secondary"
-                  className="h-8 w-8 bg-card/90 backdrop-blur-sm border border-border/50 hover:bg-primary hover:text-primary-foreground transition-colors"
-                  onClick={(e) => { e.stopPropagation(); }}
-                >
-                  <Settings className="h-3.5 w-3.5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Настройки</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
-      </div>
+          {/* Title & Domain */}
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-[13px] leading-tight text-foreground truncate group-hover:text-primary transition-colors">
+              {name}
+            </h3>
+            {domain && (
+              <a
+                href={`https://${domain}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 mt-0.5 text-[11px] text-muted-foreground/70 hover:text-primary transition-colors"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <span className="truncate">{domain}</span>
+                <ExternalLink className="h-2.5 w-2.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </a>
+            )}
+          </div>
 
-      <CardContent className="p-4 space-y-3">
-        {/* Title & Domain */}
-        <div>
-          <h3 className="font-semibold text-[15px] text-foreground truncate group-hover:text-primary transition-colors">
-            {name}
-          </h3>
-          {domain && (
-            <a
-              href={`https://${domain}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 mt-0.5 text-xs text-muted-foreground hover:text-primary transition-colors"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <ExternalLink className="h-3 w-3 shrink-0" />
-              <span className="truncate">{domain}</span>
-            </a>
-          )}
+          {/* Quick Actions */}
+          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+            <TooltipProvider delayDuration={200}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-6 w-6 text-muted-foreground hover:text-primary"
+                    onClick={(e) => { e.stopPropagation(); onClick(); }}
+                  >
+                    <BarChart3 className="h-3 w-3" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-[11px]">Аналитика</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-6 w-6 text-muted-foreground hover:text-primary"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Settings className="h-3 w-3" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-[11px]">Настройки</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
         </div>
 
         {/* Description */}
         {description && (
-          <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">{description}</p>
+          <p className="text-[11px] text-muted-foreground/60 line-clamp-1 leading-relaxed">{description}</p>
         )}
 
-        {/* Key Stats */}
-        <div className="grid grid-cols-3 gap-2 py-2 px-1 rounded-lg bg-muted/30">
-          <div className="text-center">
-            <p className="text-[11px] text-muted-foreground font-medium">ТОП-10</p>
-            <p className="text-sm font-bold text-foreground">{top10}</p>
-            <p className="text-[10px] text-success font-medium">+3</p>
-          </div>
-          <div className="text-center border-x border-border/50">
-            <p className="text-[11px] text-muted-foreground font-medium">Ср. поз.</p>
-            <p className="text-sm font-bold text-foreground">{avgPos}</p>
-            <p className="text-[10px] text-success font-medium">−1.2</p>
-          </div>
-          <div className="text-center">
-            <p className="text-[11px] text-muted-foreground font-medium">Видимость</p>
-            <p className="text-sm font-bold text-foreground">{visibility}%</p>
-            <p className="text-[10px] text-success font-medium">+4.5%</p>
-          </div>
+        {/* Stats Row */}
+        <div className="flex items-center gap-3 py-1.5 px-2 rounded-md bg-muted/20">
+          <StatItem label="ТОП-10" value={String(top10)} delta="+3" positive />
+          <div className="w-px h-6 bg-border/30" />
+          <StatItem label="Ср. поз." value={avgPos} delta="−1.2" positive />
+          <div className="w-px h-6 bg-border/30" />
+          <StatItem label="Видим." value={`${visibility}%`} delta="+4.5%" positive />
         </div>
 
         {/* Sparkline */}
-        <Sparkline data={sparkData} className="w-full h-8" />
+        <Sparkline data={sparkData} />
 
         {/* Footer */}
-        <div className="flex items-center justify-between pt-1 border-t border-border/30">
-          <div className="flex items-center gap-3">
-            {seoSpecialist && (
-              <div className="flex items-center gap-1.5">
-                <Avatar className="h-5 w-5">
-                  <AvatarFallback className="text-[9px] bg-primary/10 text-primary font-semibold">
-                    {seoSpecialist.slice(0, 1).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 font-normal">
-                  SEO: {seoSpecialist}
-                </Badge>
-              </div>
-            )}
-            {accountManager && !seoSpecialist && (
-              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 font-normal">
-                AM: {accountManager}
-              </Badge>
-            )}
-          </div>
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] text-muted-foreground/50 font-medium tracking-wide">
+            {seoSpecialist ? `SEO: ${seoSpecialist}` : accountManager ? `AM: ${accountManager}` : ""}
+          </span>
           <Button
             size="sm"
             variant="ghost"
-            className="h-7 px-2 text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity hover:text-primary"
+            className="h-5 px-1.5 text-[10px] text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity hover:text-primary"
             onClick={(e) => { e.stopPropagation(); onClick(); }}
           >
             Отчёт
-            <ArrowUpRight className="h-3 w-3 ml-1" />
+            <ArrowUpRight className="h-2.5 w-2.5 ml-0.5" />
           </Button>
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function StatItem({ label, value, delta, positive }: { label: string; value: string; delta: string; positive: boolean }) {
+  return (
+    <div className="flex-1 text-center">
+      <p className="text-[9px] uppercase tracking-wider text-muted-foreground/50 font-medium">{label}</p>
+      <p className="text-sm font-bold text-foreground tabular-nums" style={{ fontFamily: "'Inter', system-ui, sans-serif", fontFeatureSettings: '"tnum"' }}>
+        {value}
+      </p>
+      <Badge
+        variant="secondary"
+        className={`text-[9px] px-1 py-0 h-3.5 font-medium border-0 ${
+          positive
+            ? "bg-emerald-500/10 text-emerald-400"
+            : "bg-rose-500/10 text-rose-400"
+        }`}
+      >
+        {delta}
+      </Badge>
+    </div>
   );
 }
