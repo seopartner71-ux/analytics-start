@@ -447,7 +447,8 @@
       "indexing": { "name": "Indexing & Errors", "desc": "Data from Yandex/Google Webmasters" },
       "pages": { "name": "Landing Pages", "desc": "Top 5 popular site pages" },
       "worklog": { "name": "Work Log", "desc": "Agency completed tasks list" },
-      "ai": { "name": "AI Summary", "desc": "AI-based insights and recommendations" }
+      "ai": { "name": "AI Summary", "desc": "AI-based insights and recommendations" },
+      "positions": { "name": "Positions & Visibility", "desc": "Topvisor data: positions, visibility, dynamics" }
     }
   },
   "searchSystems": {
