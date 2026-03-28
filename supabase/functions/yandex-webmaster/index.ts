@@ -6,7 +6,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const WM_BASE = "https://api.webmaster.yandex.net/v3";
+const WM_BASE = "https://api.webmaster.yandex.net/v4";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
