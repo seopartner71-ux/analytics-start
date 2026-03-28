@@ -229,7 +229,12 @@ function TopvisorProjectSelector({
 
   const linkMutation = useMutation({
     mutationFn: async (tvId: string) => {
-      await supabase.from("integrations").update({ external_project_id: tvId }).eq("id", integrationId);
+      // Save to projects table
+      await supabase.from("projects").update({ topvisor_project_id: tvId } as any).eq("id", projectId);
+      // Also update integrations for backwards compat
+      if (integrationId) {
+        await supabase.from("integrations").update({ external_project_id: tvId }).eq("id", integrationId);
+      }
     },
     onSuccess: (_, tvId) => {
       queryClient.invalidateQueries({ queryKey: ["integrations", projectId] });
