@@ -438,6 +438,7 @@
     "comparisonHint": "Show delta (growth/decline) by default",
     "accessLink": "Client Link",
     "linkCopied": "Link copied!",
+    "saved": "Template saved",
     "mod": {
       "kpi": { "name": "KPIs & Key Metrics", "desc": "Summary: visits, bounces, depth" },
       "traffic": { "name": "Traffic Chart", "desc": "Line chart of traffic dynamics" },
