@@ -19,7 +19,6 @@ import { exportToPdf, exportToExcel, exportToWord, type ExcelSheet, type WordSec
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useDateRange } from "@/contexts/DateRangeContext";
-import { generateDailyVisits } from "@/lib/data-generators";
 import {
   StandardKpiCard, GlassCard, useTabRefresh, TabLoadingOverlay,
   StandardChartTooltip, SkeletonChart,
@@ -69,7 +68,7 @@ export function DashboardTab({ projectId, projectName, onSwitchTab }: DashboardT
 
   const latestStat = allStats[0];
 
-  // Build daily data from real stats or generate mock
+  // Build daily data from real stats only
   const dailyData = useMemo(() => {
     if (latestStat) {
       const visitsByDay = (latestStat.visits_by_day as any[]) || [];
@@ -82,22 +81,14 @@ export function DashboardTab({ projectId, projectName, onSwitchTab }: DashboardT
           date,
           dateStr: format(date, "dd MMM", { locale }),
           visits,
-          bounceRate: 25 + Math.sin(index * 0.4) * 8,
-          depth: 2.5 + Math.cos(index * 0.3) * 0.8,
-          duration: 120 + Math.sin(index * 0.5) * 40,
+          bounceRate: latestStat.bounce_rate || 0,
+          depth: latestStat.page_depth || 0,
+          duration: latestStat.avg_duration_seconds || 0,
         };
       });
     }
-    // Fallback: generate mock
-    const gen = generateDailyVisits(appliedRange);
-    return gen.map((d, i) => ({
-      ...d,
-      dateStr: format(d.date, "dd MMM", { locale }),
-      bounceRate: 25 + Math.sin(i * 0.4) * 8,
-      depth: 2.5 + Math.cos(i * 0.3) * 0.8,
-      duration: 120 + Math.sin(i * 0.5) * 40,
-    }));
-  }, [latestStat, appliedRange, locale]);
+    return [];
+  }, [latestStat, locale]);
 
   // Filter to selected range
   const from = new Date(dateFrom);

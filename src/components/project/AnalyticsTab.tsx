@@ -139,7 +139,7 @@ export function AnalyticsTab({ projectId, onSwitchToGoals, onSwitchToSeo, onSwit
 
   const latestStat = allStats[0];
 
-  // Build daily data array with real dates + search engine breakdown
+  // Build daily data array with real dates
   const dailyData = useMemo(() => {
     if (!latestStat) return [];
     const visitsByDay = (latestStat.visits_by_day as any[]) || [];
@@ -148,15 +148,9 @@ export function AnalyticsTab({ projectId, onSwitchToGoals, onSwitchToSeo, onSwit
       const date = new Date(dateFrom);
       date.setDate(date.getDate() + index);
       const visits = entry.visits || 0;
-      // Simulate search engine breakdown from total visits
-      const yandexRatio = 0.42 + (Math.sin(index * 0.3) * 0.05);
-      const googleRatio = 0.35 + (Math.cos(index * 0.25) * 0.04);
-      const yandex = Math.round(visits * yandexRatio);
-      const google = Math.round(visits * googleRatio);
-      const other = Math.max(0, visits - yandex - google);
       return {
         date, dateStr: format(date, "dd.MM", { locale }),
-        visits, yandex, google, other,
+        visits,
       };
     });
   }, [latestStat, locale]);
@@ -225,9 +219,6 @@ export function AnalyticsTab({ projectId, onSwitchToGoals, onSwitchToSeo, onSwit
           : `${i + 1}`,
         current: filteredData[i]?.visits || 0,
         previous: filteredCompData[i]?.visits || 0,
-        yandex: filteredData[i]?.yandex || 0,
-        google: filteredData[i]?.google || 0,
-        other: filteredData[i]?.other || 0,
       });
     }
     return result;
@@ -579,115 +570,7 @@ export function AnalyticsTab({ projectId, onSwitchToGoals, onSwitchToSeo, onSwit
                 )}
               </div>
 
-              {/* Search engine breakdown table */}
-              {(() => {
-                const totalYandex = filteredData.reduce((s, d) => s + d.yandex, 0);
-                const totalGoogle = filteredData.reduce((s, d) => s + d.google, 0);
-                const totalOtherEng = filteredData.reduce((s, d) => s + d.other, 0);
-                const totalAll = totalYandex + totalGoogle + totalOtherEng;
-
-                const compYandex = filteredCompData.reduce((s, d) => s + d.yandex, 0);
-                const compGoogle = filteredCompData.reduce((s, d) => s + d.google, 0);
-                const compOtherEng = filteredCompData.reduce((s, d) => s + d.other, 0);
-
-                const calcChange = (curr: number, prev: number) => prev > 0 ? ((curr - prev) / prev) * 100 : 0;
-                const calcShare = (val: number) => totalAll > 0 ? ((val / totalAll) * 100) : 0;
-
-                // Simulated bounce rates per engine
-                const bounceMeta = { yandex: 38.2, google: 42.5, other: 55.1 };
-
-                const engines = [
-                  { key: "yandex", visits: totalYandex, compVisits: compYandex, bounce: bounceMeta.yandex },
-                  { key: "google", visits: totalGoogle, compVisits: compGoogle, bounce: bounceMeta.google },
-                  { key: "other", visits: totalOtherEng, compVisits: compOtherEng, bounce: bounceMeta.other },
-                ];
-
-                const handleEngineClick = (engineKey: string) => {
-                  if (showComparison) return;
-                  // Toggle: if only this engine is shown, show all; otherwise show only this one
-                  const allOn = showYandex && showGoogle && showOther;
-                  const onlyThis =
-                    (engineKey === "yandex" && showYandex && !showGoogle && !showOther) ||
-                    (engineKey === "google" && !showYandex && showGoogle && !showOther) ||
-                    (engineKey === "other" && !showYandex && !showGoogle && showOther);
-
-                  if (onlyThis) {
-                    setShowYandex(true); setShowGoogle(true); setShowOther(true);
-                  } else {
-                    setShowYandex(engineKey === "yandex");
-                    setShowGoogle(engineKey === "google");
-                    setShowOther(engineKey === "other");
-                  }
-                };
-
-                const YandexLogo = () => (
-                  <span className="inline-flex items-center justify-center w-5 h-5 rounded text-[11px] font-bold text-white" style={{ background: ENGINE_COLORS.yandex }}>Я</span>
-                );
-                const GoogleLogo = () => (
-                  <span className="inline-flex items-center justify-center w-5 h-5 rounded text-[11px] font-bold" style={{ background: ENGINE_COLORS.google, color: "#fff" }}>G</span>
-                );
-
-                return (
-                  <div className="mt-4 border-t border-border pt-4">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="border-border hover:bg-transparent">
-                          <TableHead className="text-xs">{t("engineTable.engine", "Поисковая система")}</TableHead>
-                          <TableHead className="text-xs text-right">{t("engineTable.visits", "Визиты")}</TableHead>
-                          {showComparison && <TableHead className="text-xs text-right">{t("engineTable.change", "Изменение (%)")}</TableHead>}
-                          <TableHead className="text-xs text-right">{t("engineTable.share", "Доля (%)")}</TableHead>
-                          <TableHead className="text-xs text-right">{t("engineTable.bounce", "Отказы (%)")}</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {engines.map((eng) => {
-                          const change = calcChange(eng.visits, eng.compVisits);
-                          const share = calcShare(eng.visits);
-                          return (
-                            <TableRow
-                              key={eng.key}
-                              className="border-border cursor-pointer hover:bg-muted/30 transition-colors"
-                              onClick={() => handleEngineClick(eng.key)}
-                            >
-                              <TableCell className="py-2.5">
-                                <div className="flex items-center gap-2">
-                                  {eng.key === "yandex" && <YandexLogo />}
-                                  {eng.key === "google" && <GoogleLogo />}
-                                  {eng.key === "other" && <Globe className="h-5 w-5 text-muted-foreground" />}
-                                  <span className="text-sm font-medium text-foreground">
-                                    {t(`engines.${eng.key}`)}
-                                  </span>
-                                </div>
-                              </TableCell>
-                              <TableCell className="text-right py-2.5">
-                                <span className="text-sm font-semibold tabular-nums text-foreground">
-                                  {eng.visits.toLocaleString()}
-                                </span>
-                                {showComparison && eng.compVisits > 0 && (
-                                  <span className="block text-[11px] text-muted-foreground">
-                                    {t("engineTable.was", "было")}: {eng.compVisits.toLocaleString()}
-                                  </span>
-                                )}
-                              </TableCell>
-                              {showComparison && (
-                                <TableCell className="text-right py-2.5">
-                                  <ChangeIndicator value={Math.round(change * 10) / 10} />
-                                </TableCell>
-                              )}
-                              <TableCell className="text-right py-2.5">
-                                <span className="text-sm tabular-nums text-foreground">{share.toFixed(1)}%</span>
-                              </TableCell>
-                              <TableCell className="text-right py-2.5">
-                                <span className="text-sm tabular-nums text-foreground">{eng.bounce}%</span>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </div>
-                );
-              })()}
+              {/* Search engine breakdown removed — use "Поисковые системы" tab for real data */}
             </>
           ) : (
             <div className="flex items-center justify-center h-[300px] text-sm text-muted-foreground">
