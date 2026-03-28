@@ -59,7 +59,7 @@ function generateVisibilityChart(days: number) {
 export function PositionsTab({ projectId, hasTopvisor = false, onNavigateSettings }: PositionsTabProps) {
   const { t, i18n } = useTranslation();
   const isRu = i18n.language === "ru";
-  const { loading } = useTabRefresh();
+  const isRefreshing = useTabRefresh();
 
   const [engine, setEngine] = useState("yandex");
   const [region, setRegion] = useState("moscow");
