@@ -242,7 +242,7 @@ function SiteHealthDashboard({ projectId, accessToken, hostId }: {
   const currentSqi = sqiHistory.length > 0
     ? sqiHistory[sqiHistory.length - 1].sqi
     : (sqiData?.sqi ?? 0);
-  const prevSqi = sqiHistory.length > 1 ? sqiHistory[0].sqi : currentSqi;
+  const prevSqi = sqiHistory.length > 1 ? sqiHistory[sqiHistory.length - 2].sqi : currentSqi;
   const sqiDelta = currentSqi - prevSqi;
 
   /* ── Parse summary ── */
