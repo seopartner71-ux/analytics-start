@@ -414,6 +414,7 @@ function PositionsDashboard({
   apiKey, userId, tvProjectId, projectId, integrationId,
   dateFrom, dateTo, searchQuery, setSearchQuery,
   selectedTvProject, setSelectedTvProject, isRefreshing,
+  onReconnect,
 }: {
   apiKey: string;
   userId: string;
@@ -427,6 +428,7 @@ function PositionsDashboard({
   selectedTvProject: string | null;
   setSelectedTvProject: (v: string) => void;
   isRefreshing: boolean;
+  onReconnect?: () => void;
 }) {
   const { t, i18n } = useTranslation();
   const isRu = i18n.language === "ru";
