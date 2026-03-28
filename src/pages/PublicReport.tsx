@@ -12,7 +12,7 @@ import {
   Area, AreaChart, PieChart, Pie, Cell, Legend,
 } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
-import { generateTrafficByDay, generateGoals, generateSeoQueries } from "@/lib/data-generators";
+import { generateDailyVisits, computeKpis, type DateRange } from "@/lib/data-generators";
 
 const COLORS = ["hsl(var(--primary))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))"];
 
