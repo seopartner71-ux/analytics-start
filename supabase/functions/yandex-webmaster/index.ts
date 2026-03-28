@@ -102,9 +102,18 @@ Deno.serve(async (req) => {
         if (!host_id) throw new Error("host_id is required");
         const userId = await getWmUserId();
         const encodedHost = encodeURIComponent(host_id);
-        const resp = await fetch(`${WM_BASE}/user/${userId}/hosts/${encodedHost}/sqi-history`, { headers: wmHeaders });
+        const now = new Date();
+        const yearAgo = new Date(now);
+        yearAgo.setFullYear(yearAgo.getFullYear() - 1);
+        const sqiDateFrom = yearAgo.toISOString().split("T")[0];
+        const sqiDateTo = now.toISOString().split("T")[0];
+        const resp = await fetch(
+          `${WM_BASE}/user/${userId}/hosts/${encodedHost}/sqi-history?date_from=${sqiDateFrom}&date_to=${sqiDateTo}`,
+          { headers: wmHeaders }
+        );
         if (!resp.ok) {
-          return new Response(JSON.stringify({ sqi_history: [], sqi: 0 }), {
+          console.error("SQI API error:", resp.status, await resp.text());
+          return new Response(JSON.stringify({ points: [], sqi: 0 }), {
             status: 200,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
