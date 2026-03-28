@@ -296,6 +296,8 @@ function positionColor(pos: number | null) {
    ═══════════════════════════════════════════════════════ */
 export function PositionsTab({
   projectId,
+  projectName,
+  projectUrl,
   hasTopvisor = false,
   topvisorApiKey,
   topvisorUserId,
