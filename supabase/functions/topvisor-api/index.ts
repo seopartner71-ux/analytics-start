@@ -41,7 +41,7 @@ function extractNestedIndexes(source: unknown): number[] {
   return uniqPositiveNumbers(acc);
 }
 
-async function resolveRegionIndex(projectId: number, headers: Record<string, string>) {
+async function resolveRegionIndexes(projectId: number, headers: Record<string, string>) {
   const resp = await fetch(`${TV_BASE}/get/projects_2/projects`, {
     method: "POST",
     headers,
@@ -54,15 +54,14 @@ async function resolveRegionIndex(projectId: number, headers: Record<string, str
 
   const data = await resp.json();
   if (!resp.ok || data?.errors?.length) {
-    return null;
+    return [] as number[];
   }
 
   const projects = Array.isArray(data?.result) ? data.result : [];
   const currentProject = projects.find((p) => Number(p?.id) === projectId);
-  if (!currentProject) return null;
+  if (!currentProject) return [] as number[];
 
-  const indexes = extractNestedIndexes((currentProject as JsonRecord).searchers_and_regions ?? currentProject);
-  return indexes[0] ?? null;
+  return extractNestedIndexes((currentProject as JsonRecord).searchers_and_regions ?? currentProject);
 }
 
 serve(async (req) => {
