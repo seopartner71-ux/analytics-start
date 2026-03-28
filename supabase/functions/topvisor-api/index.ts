@@ -102,6 +102,7 @@ serve(async (req) => {
         fetchBody = JSON.stringify({
           limit: 1000,
           offset: 0,
+          fields: ["name", "site"],
           show_searchers_and_regions: "1",
         });
         break;
