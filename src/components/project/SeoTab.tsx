@@ -11,6 +11,10 @@ import {
 } from "recharts";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import {
+  StandardKpiCard, useTabRefresh, TabLoadingOverlay,
+  StandardChartTooltip, SkeletonChart, MetricTooltip,
+} from "./shared-ui";
 
 interface SeoTabProps {
   projectId: string;
@@ -79,25 +83,7 @@ function ChangeIndicator({ value }: { value: number }) {
   );
 }
 
-const ChartTooltip = ({ active, payload, label }: any) => {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="bg-card border border-border rounded-lg shadow-lg px-3 py-2 min-w-[140px]">
-      <p className="text-xs text-muted-foreground mb-1 font-medium">{label}</p>
-      {payload.map((p: any, i: number) => (
-        <div key={i} className="flex items-center justify-between gap-3">
-          <span className="flex items-center gap-1.5 text-xs">
-            <span className="w-2.5 h-2.5 rounded-full" style={{ background: p.color }} />
-            {p.name}
-          </span>
-          <span className="text-sm font-semibold tabular-nums" style={{ color: p.color }}>
-            {typeof p.value === "number" ? p.value.toLocaleString() : p.value}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-};
+const ChartTooltip = StandardChartTooltip;
 
 function generateKeywords(dateFrom: Date, dateTo: Date, seed: number): KeywordRow[] {
   const days = differenceInDays(dateTo, dateFrom) + 1;
@@ -151,8 +137,7 @@ export function SeoTab({ projectId }: SeoTabProps) {
   const { t, i18n } = useTranslation();
   const lang = i18n.language === "ru" ? "ru" : "en";
   const { appliedRange, showComparison, appliedCompRange } = useDateRange();
-
-  const [queryTypeFilter, setQueryTypeFilter] = useState<QueryType | "all">("all");
+  const isRefreshing = useTabRefresh();
 
   const seed = useMemo(() => appliedRange.from.getDate() + appliedRange.to.getDate() + appliedRange.from.getMonth(), [appliedRange]);
 
