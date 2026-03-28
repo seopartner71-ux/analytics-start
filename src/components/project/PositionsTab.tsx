@@ -32,6 +32,8 @@ import { cn } from "@/lib/utils";
    ═══════════════════════════════════════════════════════ */
 interface PositionsTabProps {
   projectId: string;
+  projectName?: string;
+  projectUrl?: string | null;
   hasTopvisor?: boolean;
   topvisorApiKey?: string | null;
   topvisorUserId?: string | null;
