@@ -238,6 +238,7 @@ export type Database = {
           topvisor_user_id: string | null
           updated_at: string
           url: string | null
+          yandex_webmaster_host_id: string | null
         }
         Insert: {
           account_manager?: string | null
@@ -258,6 +259,7 @@ export type Database = {
           topvisor_user_id?: string | null
           updated_at?: string
           url?: string | null
+          yandex_webmaster_host_id?: string | null
         }
         Update: {
           account_manager?: string | null
@@ -278,6 +280,7 @@ export type Database = {
           topvisor_user_id?: string | null
           updated_at?: string
           url?: string | null
+          yandex_webmaster_host_id?: string | null
         }
         Relationships: [
           {
@@ -464,6 +467,7 @@ export type Database = {
           topvisor_user_id: string | null
           updated_at: string
           url: string | null
+          yandex_webmaster_host_id: string | null
         }[]
         SetofOptions: {
           from: "*"
