@@ -174,11 +174,27 @@ Deno.serve(async (req) => {
       );
       const sourcesData = await sourcesResp.json();
 
+      // Fetch top pages
+      const pagesResp = await fetch(
+        `https://api-metrika.yandex.net/stat/v1/data?id=${counterId}&metrics=ym:s:visits,ym:s:pageviews&dimensions=ym:s:startURL&date1=${startDate}&date2=${endDate}&limit=10&sort=-ym:s:visits&${accuracyParams}`,
+        { headers: { Authorization: `OAuth ${accessToken}` } }
+      );
+      const pagesData = await pagesResp.json();
+
+      // Fetch device category distribution
+      const devicesResp = await fetch(
+        `https://api-metrika.yandex.net/stat/v1/data?id=${counterId}&metrics=ym:s:visits&dimensions=ym:s:deviceCategory&date1=${startDate}&date2=${endDate}&${accuracyParams}`,
+        { headers: { Authorization: `OAuth ${accessToken}` } }
+      );
+      const devicesData = await devicesResp.json();
+
       return new Response(
         JSON.stringify({
           timeSeries: visitsData,
           totals: totalsData,
           trafficSources: sourcesData,
+          topPages: pagesData,
+          devices: devicesData,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
