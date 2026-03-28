@@ -23,6 +23,7 @@ import { SiteHealthTab } from "@/components/project/SiteHealthTab";
 import { AiInsightsBlock } from "@/components/project/AiInsightsBlock";
 import { AiAnalyticsTab } from "@/components/project/AiAnalyticsTab";
 import { ReportBuilderTab } from "@/components/project/ReportBuilderTab";
+import { ComparisonTab } from "@/components/project/ComparisonTab";
 import { DashboardTab } from "@/components/project/DashboardTab";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { supabase } from "@/integrations/supabase/client";
@@ -276,7 +277,12 @@ function ProjectDetailInner() {
           />
         );
       case "builder":
-        return <ReportBuilderTab projectId={project.id} shareToken={project.share_token} />;
+        return (
+          <div className="space-y-6">
+            <ComparisonTab projectId={project.id} projectName={project.name} />
+            <ReportBuilderTab projectId={project.id} shareToken={project.share_token} />
+          </div>
+        );
       case "integrations":
         return <IntegrationsTab projectId={project.id} integrations={integrations} />;
       case "settings":
