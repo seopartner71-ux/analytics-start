@@ -261,7 +261,7 @@ function ProjectDetailInner() {
       case "goals":
         return <GoalsTab projectId={project.id} projectName={project.name} />;
       case "seo":
-        return <SeoTab projectId={project.id} />;
+        return <SeoTab projectId={project.id} projectName={project.name} />;
       case "pages": {
         const metrikaIntegration = integrations.find((i) => i.service_name === "yandexMetrika");
         return (
