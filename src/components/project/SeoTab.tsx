@@ -138,6 +138,7 @@ export function SeoTab({ projectId }: SeoTabProps) {
   const lang = i18n.language === "ru" ? "ru" : "en";
   const { appliedRange, showComparison, appliedCompRange } = useDateRange();
   const isRefreshing = useTabRefresh();
+  const [queryTypeFilter, setQueryTypeFilter] = useState<QueryType | "all">("all");
 
   const seed = useMemo(() => appliedRange.from.getDate() + appliedRange.to.getDate() + appliedRange.from.getMonth(), [appliedRange]);
 
