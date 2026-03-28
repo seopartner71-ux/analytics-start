@@ -139,7 +139,7 @@ export function AnalyticsTab({ projectId, onSwitchToGoals, onSwitchToSeo, onSwit
 
   const latestStat = allStats[0];
 
-  // Build daily data array with real dates + search engine breakdown
+  // Build daily data array with real dates
   const dailyData = useMemo(() => {
     if (!latestStat) return [];
     const visitsByDay = (latestStat.visits_by_day as any[]) || [];
@@ -148,15 +148,9 @@ export function AnalyticsTab({ projectId, onSwitchToGoals, onSwitchToSeo, onSwit
       const date = new Date(dateFrom);
       date.setDate(date.getDate() + index);
       const visits = entry.visits || 0;
-      // Simulate search engine breakdown from total visits
-      const yandexRatio = 0.42 + (Math.sin(index * 0.3) * 0.05);
-      const googleRatio = 0.35 + (Math.cos(index * 0.25) * 0.04);
-      const yandex = Math.round(visits * yandexRatio);
-      const google = Math.round(visits * googleRatio);
-      const other = Math.max(0, visits - yandex - google);
       return {
         date, dateStr: format(date, "dd.MM", { locale }),
-        visits, yandex, google, other,
+        visits,
       };
     });
   }, [latestStat, locale]);
