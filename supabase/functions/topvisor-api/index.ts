@@ -123,6 +123,7 @@ serve(async (req) => {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
+        requestedProjectId = projectId;
 
         const directRegions = Array.isArray(payload.regions_indexes)
           ? payload.regions_indexes.map((v) => Number(v))
