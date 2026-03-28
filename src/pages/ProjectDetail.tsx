@@ -261,17 +261,12 @@ function ProjectDetailInner() {
       case "goals":
         return <GoalsTab projectId={project.id} projectName={project.name} />;
       case "seo": {
-        const tvFromProjectSeo = !!(project as any).topvisor_api_key && !!(project as any).topvisor_user_id;
-        const tvIntegrationSeo = integrations.find((i) => i.service_name === "topvisor");
-        const hasTopvisorSeo = tvFromProjectSeo || (tvIntegrationSeo?.connected ?? false);
+        const metrikaIntegrationSeo = integrations.find((i) => i.service_name === "yandexMetrika");
         return (
           <SeoTab
             projectId={project.id}
-            hasTopvisor={hasTopvisorSeo}
-            topvisorApiKey={(project as any).topvisor_api_key || tvIntegrationSeo?.api_key}
-            topvisorUserId={(project as any).topvisor_user_id || tvIntegrationSeo?.counter_id}
-            topvisorExternalProjectId={(project as any).topvisor_project_id || tvIntegrationSeo?.external_project_id}
-            integrationId={tvIntegrationSeo?.id}
+            accessToken={metrikaIntegrationSeo?.access_token || null}
+            hostId={(project as any).yandex_webmaster_host_id || null}
           />
         );
       }
