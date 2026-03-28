@@ -65,8 +65,57 @@ export function TrafficTab({ projectId, projectName, projectUrl }: TrafficTabPro
 
   const isRefreshing = useTabRefresh();
 
-  // Fetch real metrika stats
-  const { data: allStats = [], isLoading } = useQuery({
+  const dateFrom = format(appliedRange.from, "yyyy-MM-dd");
+  const dateTo = format(appliedRange.to, "yyyy-MM-dd");
+
+  // Fetch integration for this project
+  const { data: integration } = useQuery({
+    queryKey: ["integration-metrika", projectId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("integrations").select("*")
+        .eq("project_id", projectId).eq("service_name", "yandex_metrika").eq("connected", true).maybeSingle();
+      return data;
+    },
+    enabled: !!projectId,
+  });
+
+  // Fetch real metrika stats from API (includes top pages + devices)
+  const { data: liveStats, isLoading } = useQuery({
+    queryKey: ["metrika-live-traffic", projectId, dateFrom, dateTo],
+    queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const resp = await supabase.functions.invoke("yandex-metrika-auth", {
+        body: { access_token: integration!.access_token, counter_id: integration!.counter_id, date1: dateFrom, date2: dateTo },
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+      });
+
+      // Also append ?action=fetch-stats
+      const r = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/yandex-metrika-auth?action=fetch-stats`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session?.access_token}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({
+            access_token: integration!.access_token,
+            counter_id: integration!.counter_id,
+            date1: dateFrom,
+            date2: dateTo,
+          }),
+        }
+      );
+      if (!r.ok) throw new Error("Failed to fetch stats");
+      return await r.json();
+    },
+    enabled: !!integration?.access_token && !!integration?.counter_id,
+  });
+
+  // Also fetch cached stats as fallback
+  const { data: allStats = [] } = useQuery({
     queryKey: ["metrika-stats-all", projectId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -82,6 +131,16 @@ export function TrafficTab({ projectId, projectName, projectUrl }: TrafficTabPro
 
   // Build daily visits data from real stats only
   const dailyData = useMemo(() => {
+    // Prefer live time series
+    if (liveStats?.timeSeries?.data?.[0]?.metrics) {
+      const metrics = liveStats.timeSeries.data[0].metrics;
+      const visits = metrics[0] || [];
+      return visits.map((v: number, i: number) => {
+        const date = new Date(appliedRange.from);
+        date.setDate(date.getDate() + i);
+        return { date, visits: Math.round(v) };
+      });
+    }
     if (latestStat) {
       const visitsByDay = (latestStat.visits_by_day as any[]) || [];
       const dateFromParsed = parseISO(latestStat.date_from);
@@ -92,7 +151,7 @@ export function TrafficTab({ projectId, projectName, projectUrl }: TrafficTabPro
       });
     }
     return [];
-  }, [latestStat]);
+  }, [liveStats, latestStat, appliedRange]);
 
   // Filter to applied range
   const filteredData = useMemo(() => {
@@ -105,22 +164,22 @@ export function TrafficTab({ projectId, projectName, projectUrl }: TrafficTabPro
 
   // === 1. SOURCE DISTRIBUTION (Donut) ===
   const sourceData = useMemo(() => {
-    // Try real traffic_sources from metrika
-    if (latestStat?.traffic_sources && Array.isArray(latestStat.traffic_sources)) {
-      const src = latestStat.traffic_sources as any[];
-      const mapped = src.map((s: any) => {
-        const name = (s.name || s.source || "").toLowerCase();
+    // Prefer live traffic sources
+    const srcArray = liveStats?.trafficSources?.data || (latestStat?.traffic_sources && Array.isArray(latestStat.traffic_sources) ? latestStat.traffic_sources : null);
+    if (srcArray && Array.isArray(srcArray)) {
+      const agg = new Map<string, number>();
+      for (const row of srcArray) {
+        // Live API format: row.dimensions[0].name + row.metrics[0]
+        const rawName = row.dimensions?.[0]?.name || row.name || row.source || "";
+        const visits = row.metrics?.[0] || row.visits || row.value || 0;
+        const name = rawName.toLowerCase();
         let key = "referral";
         if (name.includes("organic") || name.includes("search") || name.includes("поиск")) key = "organic";
         else if (name.includes("direct") || name.includes("прям")) key = "direct";
         else if (name.includes("ad") || name.includes("реклам")) key = "ad";
         else if (name.includes("social") || name.includes("соц")) key = "social";
-        return { key, visits: s.visits || s.value || 0 };
-      });
-      // Aggregate by key
-      const agg = new Map<string, number>();
-      for (const m of mapped) {
-        agg.set(m.key, (agg.get(m.key) || 0) + m.visits);
+        else if (name.includes("internal") || name.includes("внутр")) key = "direct";
+        agg.set(key, (agg.get(key) || 0) + visits);
       }
       return ["organic", "direct", "ad", "social", "referral"].map(key => ({
         key,
@@ -129,10 +188,8 @@ export function TrafficTab({ projectId, projectName, projectUrl }: TrafficTabPro
         pct: 0,
       }));
     }
-
-    // Fallback: show empty if no real data
     return [];
-  }, [latestStat, totalVisits, t]);
+  }, [liveStats, latestStat, t]);
 
   // Calc percentages
   const sourceTotal = sourceData.reduce((s, d) => s + d.value, 0);
@@ -141,11 +198,50 @@ export function TrafficTab({ projectId, projectName, projectUrl }: TrafficTabPro
     pct: sourceTotal > 0 ? Math.round((s.value / sourceTotal) * 1000) / 10 : 0,
   })).filter(s => s.value > 0);
 
-  // === 2. TOP PAGES (empty — no demo data) ===
-  const topPages: { path: string; title: string; visits: number; pct: number; fullUrl?: string }[] = [];
+  // === 2. TOP PAGES (from live API) ===
+  const topPages = useMemo(() => {
+    if (!liveStats?.topPages?.data) return [];
+    const totalVis = liveStats.topPages.data.reduce((s: number, r: any) => s + (r.metrics?.[0] || 0), 0);
+    return liveStats.topPages.data.map((row: any) => {
+      const url = row.dimensions?.[0]?.name || "";
+      const visits = Math.round(row.metrics?.[0] || 0);
+      // Extract path from URL
+      let path = url;
+      try { path = new URL(url).pathname; } catch {}
+      return {
+        path,
+        title: path === "/" ? "Главная" : path,
+        visits,
+        pct: totalVis > 0 ? Math.round((visits / totalVis) * 1000) / 10 : 0,
+        fullUrl: url,
+      };
+    });
+  }, [liveStats]);
 
-  // === 3. DEVICE DISTRIBUTION (empty — no demo data) ===
-  const deviceData: { name: string; key: string; value: number; pct: number; icon: React.ReactNode }[] = [];
+  // === 3. DEVICE DISTRIBUTION (from live API) ===
+  const deviceData = useMemo(() => {
+    if (!liveStats?.devices?.data) return [];
+    const total = liveStats.devices.data.reduce((s: number, r: any) => s + (r.metrics?.[0] || 0), 0);
+    const iconMap: Record<string, React.ReactNode> = {
+      desktop: <Monitor className="h-5 w-5" />,
+      mobile: <Smartphone className="h-5 w-5" />,
+      tablet: <Tablet className="h-5 w-5" />,
+    };
+    const nameMap: Record<string, string> = { desktop: "Desktop", mobile: "Mobile", tablet: "Tablet" };
+    return liveStats.devices.data.map((row: any) => {
+      const rawKey = (row.dimensions?.[0]?.id || row.dimensions?.[0]?.name || "desktop").toLowerCase();
+      const key = rawKey.includes("mobile") || rawKey.includes("смартфон") ? "mobile"
+        : rawKey.includes("tablet") || rawKey.includes("планшет") ? "tablet" : "desktop";
+      const visits = Math.round(row.metrics?.[0] || 0);
+      return {
+        key,
+        name: nameMap[key] || key,
+        value: visits,
+        pct: total > 0 ? Math.round((visits / total) * 1000) / 10 : 0,
+        icon: iconMap[key] || <Monitor className="h-5 w-5" />,
+      };
+    });
+  }, [liveStats]);
 
   // Export
   const exportMeta = { projectName, tabName: t("portalNav.traffic"), periodA: `${format(appliedRange.from, "yyyy-MM-dd")} — ${format(appliedRange.to, "yyyy-MM-dd")}`, language: i18n.language };
