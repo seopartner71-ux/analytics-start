@@ -233,6 +233,9 @@ export type Database = {
           seo_specialist_id: string | null
           share_link_expires_at: string | null
           share_token: string | null
+          topvisor_api_key: string | null
+          topvisor_project_id: string | null
+          topvisor_user_id: string | null
           updated_at: string
           url: string | null
         }
@@ -250,6 +253,9 @@ export type Database = {
           seo_specialist_id?: string | null
           share_link_expires_at?: string | null
           share_token?: string | null
+          topvisor_api_key?: string | null
+          topvisor_project_id?: string | null
+          topvisor_user_id?: string | null
           updated_at?: string
           url?: string | null
         }
@@ -267,6 +273,9 @@ export type Database = {
           seo_specialist_id?: string | null
           share_link_expires_at?: string | null
           share_token?: string | null
+          topvisor_api_key?: string | null
+          topvisor_project_id?: string | null
+          topvisor_user_id?: string | null
           updated_at?: string
           url?: string | null
         }
@@ -450,6 +459,9 @@ export type Database = {
           seo_specialist_id: string | null
           share_link_expires_at: string | null
           share_token: string | null
+          topvisor_api_key: string | null
+          topvisor_project_id: string | null
+          topvisor_user_id: string | null
           updated_at: string
           url: string | null
         }[]

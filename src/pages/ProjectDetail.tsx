@@ -282,15 +282,16 @@ function ProjectDetailInner() {
       case "builder":
         return <ReportBuilderTab projectId={project.id} shareToken={project.share_token} projectLogo={project.logo_url} />;
       case "positions": {
+        const tvFromProject = !!(project as any).topvisor_api_key && !!(project as any).topvisor_user_id;
         const tvIntegration = integrations.find((i) => i.service_name === "topvisor");
-        const hasTopvisor = tvIntegration?.connected ?? false;
+        const hasTopvisor = tvFromProject || (tvIntegration?.connected ?? false);
         return (
           <PositionsTab
             projectId={project.id}
             hasTopvisor={hasTopvisor}
-            topvisorApiKey={tvIntegration?.api_key}
-            topvisorUserId={tvIntegration?.counter_id}
-            topvisorExternalProjectId={tvIntegration?.external_project_id}
+            topvisorApiKey={(project as any).topvisor_api_key || tvIntegration?.api_key}
+            topvisorUserId={(project as any).topvisor_user_id || tvIntegration?.counter_id}
+            topvisorExternalProjectId={(project as any).topvisor_project_id || tvIntegration?.external_project_id}
             integrationId={tvIntegration?.id}
             onNavigateSettings={() => setActiveTab("settings")}
           />
