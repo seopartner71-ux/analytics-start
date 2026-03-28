@@ -74,7 +74,7 @@ export function TrafficTab({ projectId, projectName, projectUrl }: TrafficTabPro
     queryFn: async () => {
       const { data } = await supabase
         .from("integrations").select("*")
-        .eq("project_id", projectId).eq("service_name", "yandex_metrika").eq("connected", true).maybeSingle();
+        .eq("project_id", projectId).eq("service_name", "yandexMetrika").eq("connected", true).maybeSingle();
       return data;
     },
     enabled: !!projectId,
@@ -250,6 +250,19 @@ export function TrafficTab({ projectId, projectName, projectUrl }: TrafficTabPro
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!integration?.access_token || !integration?.counter_id) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-3">
+        <Globe className="h-10 w-10 text-muted-foreground/30" />
+        <p className="text-sm text-muted-foreground">
+          {i18n.language === "ru"
+            ? "Подключите Яндекс.Метрику в Интеграциях для отображения данных о трафике"
+            : "Connect Yandex.Metrika in Integrations to view traffic data"}
+        </p>
       </div>
     );
   }
