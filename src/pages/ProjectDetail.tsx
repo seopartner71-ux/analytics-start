@@ -253,7 +253,7 @@ function ProjectDetailInner() {
           </div>
         );
       case "searchSystems":
-        return <SearchSystemsTab projectId={project.id} projectName={project.name} />;
+        return <TrafficTab projectId={project.id} projectName={project.name} projectUrl={project.url || undefined} />;
       case "goals":
         return <GoalsTab projectId={project.id} projectName={project.name} />;
       case "seo":
