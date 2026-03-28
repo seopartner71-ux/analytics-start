@@ -129,8 +129,17 @@ Deno.serve(async (req) => {
         if (!host_id) throw new Error("host_id is required");
         const userId = await getWmUserId();
         const encodedHost = encodeURIComponent(host_id);
-        const resp = await fetch(`${WM_BASE}/user/${userId}/hosts/${encodedHost}/indexing/history`, { headers: wmHeaders });
+        const now = new Date();
+        const threeMonthsAgo = new Date(now);
+        threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+        const idxDateFrom = threeMonthsAgo.toISOString().split("T")[0];
+        const idxDateTo = now.toISOString().split("T")[0];
+        const resp = await fetch(
+          `${WM_BASE}/user/${userId}/hosts/${encodedHost}/indexing/history?date_from=${idxDateFrom}&date_to=${idxDateTo}`,
+          { headers: wmHeaders }
+        );
         if (!resp.ok) {
+          console.error("Indexing API error:", resp.status, await resp.text());
           return new Response(JSON.stringify({ indicators: {} }), {
             status: 200,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
