@@ -219,9 +219,6 @@ export function AnalyticsTab({ projectId, onSwitchToGoals, onSwitchToSeo, onSwit
           : `${i + 1}`,
         current: filteredData[i]?.visits || 0,
         previous: filteredCompData[i]?.visits || 0,
-        yandex: filteredData[i]?.yandex || 0,
-        google: filteredData[i]?.google || 0,
-        other: filteredData[i]?.other || 0,
       });
     }
     return result;
