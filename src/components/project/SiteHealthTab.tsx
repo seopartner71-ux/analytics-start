@@ -248,6 +248,11 @@ function SiteHealthDashboard({ projectId, accessToken, hostId }: {
   /* ── Parse summary ── */
   const pagesInSearch = summaryData?.searchable_pages_count ?? summaryData?.sites_count ?? 0;
   const excludedPages = summaryData?.excluded_pages_count ?? 0;
+  const downloadedPages = summaryData?.downloaded_pages_count ?? 0;
+  const ticValue = summaryData?.tic ?? 0;
+  const siteProblems = summaryData?.site_problems || {};
+  const possibleProblems = siteProblems?.POSSIBLE_PROBLEM ?? 0;
+  const recommendations = siteProblems?.RECOMMENDATION ?? 0;
 
   /* ── Parse backlinks ── */
   const backlinksHistory = useMemo(() => {
