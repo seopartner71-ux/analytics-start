@@ -108,7 +108,12 @@ function TopvisorSetupForm({ projectId, onConnected }: { projectId: string; onCo
     setTesting(true);
     try {
       await callTopvisor("test-connection", apiKey.trim(), userId.trim());
-      // Save to integrations table
+      // Save to projects table
+      await supabase.from("projects").update({
+        topvisor_api_key: apiKey.trim(),
+        topvisor_user_id: userId.trim(),
+      } as any).eq("id", projectId);
+      // Also save to integrations table for backwards compatibility
       const existing = await supabase.from("integrations").select("id").eq("project_id", projectId).eq("service_name", "topvisor").maybeSingle();
       if (existing.data) {
         await supabase.from("integrations").update({
