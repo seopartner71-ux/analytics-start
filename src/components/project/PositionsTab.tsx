@@ -460,8 +460,8 @@ function PositionsDashboard({
     const dateKeys: string[] = Array.isArray(result?.headers?.dates) ? result.headers.dates : [];
     const rows = Array.isArray(result?.keywords) ? result.keywords : [];
 
-    const lastDate = dateKeys.at(-1);
-    const prevDate = dateKeys.at(-2) ?? null;
+    const lastDate = dateKeys.at(-1) ?? null;
+    const prevDate = dateKeys.length > 1 ? dateKeys.at(-2) ?? null : null;
 
     return rows.map((row: any) => {
       const positionsObj = row.positionsData && typeof row.positionsData === "object" ? row.positionsData : {};
@@ -469,14 +469,33 @@ function PositionsDashboard({
       const findPositionForDate = (date: string | null) => {
         if (!date) return null;
         const key = Object.keys(positionsObj).find((k) => k.startsWith(`${date}:`));
-        const value = key ? positionsObj[key]?.position : null;
-        return value !== null && value !== undefined ? Number(value) : null;
+        if (!key) return null;
+        const value = positionsObj[key]?.position;
+        if (value === null || value === undefined || value === "--" || value === "") return null;
+        const num = Number(value);
+        return Number.isFinite(num) && num > 0 ? num : null;
       };
+
+      // Try lastDate first, if no data fall back to first available key
+      let currentPos = findPositionForDate(lastDate);
+      let previousPos = findPositionForDate(prevDate);
+
+      // If neither date matched, grab from any available key
+      if (currentPos === null && previousPos === null) {
+        const allKeys = Object.keys(positionsObj);
+        if (allKeys.length > 0) {
+          const val = positionsObj[allKeys[0]]?.position;
+          if (val && val !== "--" && val !== "") {
+            const num = Number(val);
+            currentPos = Number.isFinite(num) && num > 0 ? num : null;
+          }
+        }
+      }
 
       return {
         keyword: row.name || "",
-        position: findPositionForDate(lastDate),
-        prevPosition: findPositionForDate(prevDate),
+        position: currentPos,
+        prevPosition: previousPos,
         url: row.landing_page || "",
         volume: row.target || 0,
       } as KeywordPosition;
