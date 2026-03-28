@@ -36,10 +36,25 @@ interface PositionsTabProps {
   onNavigateSettings?: () => void;
 }
 
+interface TvRegion {
+  index: string;
+  name: string;
+  areaName?: string;
+  device_name?: string;
+  searcher_key: number;
+}
+
+interface TvSearcher {
+  key: number;
+  name: string;
+  regions: TvRegion[];
+}
+
 interface TvProject {
   id: number;
   name: string;
   site: string;
+  searchers?: TvSearcher[];
 }
 
 interface KeywordPosition {
@@ -165,6 +180,7 @@ function TopvisorSetupForm({ projectId, onConnected }: { projectId: string; onCo
    ═══════════════════════════════════════════════════════ */
 function TopvisorProjectSelector({
   apiKey, userId, projectId, currentExternalId, integrationId, onSelect,
+  onRegionsLoaded,
 }: {
   apiKey: string;
   userId: string;
@@ -172,8 +188,9 @@ function TopvisorProjectSelector({
   currentExternalId: string | null;
   integrationId: string;
   onSelect: (tvProjectId: string) => void;
+  onRegionsLoaded?: (regions: TvRegion[]) => void;
 }) {
-  const { t, i18n } = useTranslation();
+  const { i18n } = useTranslation();
   const isRu = i18n.language === "ru";
   const queryClient = useQueryClient();
 
@@ -185,6 +202,22 @@ function TopvisorProjectSelector({
     },
   });
 
+  // When projects load or selection changes, extract regions for the selected project
+  const selectedProject = tvProjects?.find((p) => String(p.id) === currentExternalId);
+  const regions: TvRegion[] = useMemo(() => {
+    if (!selectedProject?.searchers) return [];
+    return selectedProject.searchers.flatMap((s) =>
+      (s.regions || []).map((r) => ({ ...r, searcher_key: s.key }))
+    );
+  }, [selectedProject]);
+
+  // Notify parent about regions
+  useMemo(() => {
+    if (regions.length > 0 && onRegionsLoaded) {
+      onRegionsLoaded(regions);
+    }
+  }, [regions, onRegionsLoaded]);
+
   const linkMutation = useMutation({
     mutationFn: async (tvId: string) => {
       await supabase.from("integrations").update({ external_project_id: tvId }).eq("id", integrationId);
@@ -192,6 +225,14 @@ function TopvisorProjectSelector({
     onSuccess: (_, tvId) => {
       queryClient.invalidateQueries({ queryKey: ["integrations", projectId] });
       onSelect(tvId);
+      // Also update regions for newly selected project
+      const newProject = tvProjects?.find((p) => String(p.id) === tvId);
+      if (newProject?.searchers && onRegionsLoaded) {
+        const newRegions = newProject.searchers.flatMap((s) =>
+          (s.regions || []).map((r) => ({ ...r, searcher_key: s.key }))
+        );
+        onRegionsLoaded(newRegions);
+      }
       toast.success(isRu ? "Проект привязан" : "Project linked");
     },
   });
@@ -200,29 +241,26 @@ function TopvisorProjectSelector({
     return (
       <div className="flex items-center gap-3">
         <Skeleton className="h-9 w-[280px]" />
-        <Skeleton className="h-9 w-9" />
       </div>
     );
   }
 
   return (
-    <div className="flex items-center gap-3 flex-wrap">
-      <Select
-        value={currentExternalId || ""}
-        onValueChange={(v) => linkMutation.mutate(v)}
-      >
-        <SelectTrigger className="w-[320px] h-9 text-sm">
-          <SelectValue placeholder={isRu ? "Выберите проект Topvisor…" : "Select Topvisor project…"} />
-        </SelectTrigger>
-        <SelectContent>
-          {tvProjects?.map((p) => (
-            <SelectItem key={p.id} value={String(p.id)}>
-              {p.name || p.site} — {p.site}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
+    <Select
+      value={currentExternalId || ""}
+      onValueChange={(v) => linkMutation.mutate(v)}
+    >
+      <SelectTrigger className="w-[320px] h-9 text-sm">
+        <SelectValue placeholder={isRu ? "Выберите проект Topvisor…" : "Select Topvisor project…"} />
+      </SelectTrigger>
+      <SelectContent>
+        {tvProjects?.map((p) => (
+          <SelectItem key={p.id} value={String(p.id)}>
+            {p.name || p.site} — {p.site}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 
