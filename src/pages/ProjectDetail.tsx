@@ -263,7 +263,7 @@ function ProjectDetailInner() {
       case "seo":
         return <SeoTab projectId={project.id} />;
       case "pages": {
-        const metrikaIntegration = integrations.find((i) => i.service_name === "yandex_metrika");
+        const metrikaIntegration = integrations.find((i) => i.service_name === "yandexMetrika");
         return (
           <SiteHealthTab
             projectId={project.id}
