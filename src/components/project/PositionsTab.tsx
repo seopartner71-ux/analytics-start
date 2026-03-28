@@ -7,10 +7,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   ExternalLink, Search, TrendingUp, TrendingDown,
   Minus, Settings, Trophy, RefreshCw, Loader2,
   KeyRound, CheckCircle2, AlertCircle, Link as LinkIcon,
+  CalendarIcon,
 } from "lucide-react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
@@ -20,7 +23,8 @@ import { GlassCard, StandardKpiCard, MetricTooltip, useTabRefresh, TabLoadingOve
 import { useDateRange } from "@/contexts/DateRangeContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, subMonths } from "date-fns";
+import { ru } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
 /* ═══════════════════════════════════════════════════════
@@ -426,6 +430,13 @@ function PositionsDashboard({
   const [regions, setRegions] = useState<TvRegion[]>([]);
   const [selectedRegion, setSelectedRegion] = useState<string>("");
 
+  // Local date overrides for positions comparison
+  const [localDateFrom, setLocalDateFrom] = useState<Date>(new Date(dateFrom));
+  const [localDateTo, setLocalDateTo] = useState<Date>(new Date(dateTo));
+
+  const effectiveDateFrom = format(localDateFrom, "yyyy-MM-dd");
+  const effectiveDateTo = format(localDateTo, "yyyy-MM-dd");
+
   const handleRegionsLoaded = useCallback((r: TvRegion[]) => {
     setRegions(r);
     if (r.length > 0 && !selectedRegion) {
@@ -437,12 +448,12 @@ function PositionsDashboard({
 
   // Fetch positions
   const { data: positionsData, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ["topvisor-positions", tvProjectId, dateFrom, dateTo, regionIndex],
+    queryKey: ["topvisor-positions", tvProjectId, effectiveDateFrom, effectiveDateTo, regionIndex],
     queryFn: async () => {
       const data = await callTopvisor("get-positions", apiKey, userId, {
         project_id: tvProjectId,
         regions_indexes: regionIndex ? [regionIndex] : undefined,
-        dates: [dateFrom, dateTo],
+        dates: [effectiveDateFrom, effectiveDateTo],
         show_headers: 1,
         positions_fields: ["position"],
       });
@@ -549,6 +560,45 @@ function PositionsDashboard({
             selectedIndex={selectedRegion}
             onSelect={setSelectedRegion}
           />
+          <div className="flex items-center gap-2">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1.5 text-xs h-9">
+                  <CalendarIcon className="h-3.5 w-3.5" />
+                  {format(localDateFrom, "dd.MM.yyyy")}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={localDateFrom}
+                  onSelect={(d) => d && setLocalDateFrom(d)}
+                  disabled={(d) => d > localDateTo || d > new Date()}
+                  locale={isRu ? ru : undefined}
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+            <span className="text-xs text-muted-foreground">→</span>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1.5 text-xs h-9">
+                  <CalendarIcon className="h-3.5 w-3.5" />
+                  {format(localDateTo, "dd.MM.yyyy")}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={localDateTo}
+                  onSelect={(d) => d && setLocalDateTo(d)}
+                  disabled={(d) => d < localDateFrom || d > new Date()}
+                  locale={isRu ? ru : undefined}
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
           <Button variant="outline" size="sm" className="gap-1.5" onClick={handleSync}>
             <RefreshCw className="h-3.5 w-3.5" /> {t("integrations.sync")}
           </Button>
@@ -572,7 +622,7 @@ function PositionsDashboard({
     <div className="space-y-6 relative">
       {isRefreshing && <TabLoadingOverlay show={isRefreshing} />}
 
-      {/* Project selector + region + sync */}
+      {/* Project selector + region + dates + sync */}
       <div className="flex items-center gap-3 flex-wrap">
         <TopvisorProjectSelector
           apiKey={apiKey} userId={userId} projectId={projectId}
@@ -585,6 +635,48 @@ function PositionsDashboard({
           selectedIndex={selectedRegion}
           onSelect={setSelectedRegion}
         />
+
+        {/* Date pickers */}
+        <div className="flex items-center gap-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs h-9">
+                <CalendarIcon className="h-3.5 w-3.5" />
+                {format(localDateFrom, "dd.MM.yyyy")}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={localDateFrom}
+                onSelect={(d) => d && setLocalDateFrom(d)}
+                disabled={(d) => d > localDateTo || d > new Date()}
+                locale={isRu ? ru : undefined}
+                className="p-3 pointer-events-auto"
+              />
+            </PopoverContent>
+          </Popover>
+          <span className="text-xs text-muted-foreground">→</span>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs h-9">
+                <CalendarIcon className="h-3.5 w-3.5" />
+                {format(localDateTo, "dd.MM.yyyy")}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={localDateTo}
+                onSelect={(d) => d && setLocalDateTo(d)}
+                disabled={(d) => d < localDateFrom || d > new Date()}
+                locale={isRu ? ru : undefined}
+                className="p-3 pointer-events-auto"
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+
         <Button variant="outline" size="sm" className="gap-1.5" onClick={handleSync}>
           <RefreshCw className={cn("h-3.5 w-3.5", isLoading && "animate-spin")} />
           {isRu ? "Синхронизировать" : "Sync Now"}
