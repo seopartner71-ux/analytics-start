@@ -25,6 +25,7 @@ import { AiAnalyticsTab } from "@/components/project/AiAnalyticsTab";
 import { ReportBuilderTab } from "@/components/project/ReportBuilderTab";
 import { ComparisonTab } from "@/components/project/ComparisonTab";
 import { DashboardTab } from "@/components/project/DashboardTab";
+import { PositionsTab } from "@/components/project/PositionsTab";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { supabase } from "@/integrations/supabase/client";
 import { DateRangeProvider, useDateRange } from "@/contexts/DateRangeContext";
@@ -280,6 +281,10 @@ function ProjectDetailInner() {
         return <ComparisonTab projectId={project.id} projectName={project.name} />;
       case "builder":
         return <ReportBuilderTab projectId={project.id} shareToken={project.share_token} projectLogo={project.logo_url} />;
+      case "positions": {
+        const hasTopvisor = integrations.some((i) => i.service_name === "topvisor" && i.connected);
+        return <PositionsTab projectId={project.id} hasTopvisor={hasTopvisor} onNavigateSettings={() => setActiveTab("settings")} />;
+      }
       case "integrations":
         return <IntegrationsTab projectId={project.id} integrations={integrations} />;
       case "settings":

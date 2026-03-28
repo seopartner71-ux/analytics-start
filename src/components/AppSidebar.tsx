@@ -2,6 +2,7 @@ import {
   FolderKanban, Users, Shield, BarChart3, LayoutDashboard,
   TrendingUp, Target, KeyRound, FileSearch, ClipboardList,
   Sparkles, GitCompare, Settings, Plug, FileText, ChevronLeft,
+  ListOrdered,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useQuery } from "@tanstack/react-query";
@@ -42,6 +43,7 @@ const projectSections: ProjectSection[] = [
   { titleKey: "portalNav.indexing", tab: "pages", icon: FileSearch },
   { titleKey: "portalNav.workLog", tab: "worklog", icon: ClipboardList },
   { titleKey: "portalNav.aiAnalytics", tab: "ai", icon: Sparkles },
+  { titleKey: "portalNav.positions", tab: "positions", icon: ListOrdered },
   { titleKey: "portalNav.comparison", tab: "comparison", icon: GitCompare },
   { titleKey: "portalNav.reports", tab: "builder", icon: FileText },
 ];

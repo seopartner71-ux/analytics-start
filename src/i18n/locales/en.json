@@ -447,7 +447,8 @@
       "indexing": { "name": "Indexing & Errors", "desc": "Data from Yandex/Google Webmasters" },
       "pages": { "name": "Landing Pages", "desc": "Top 5 popular site pages" },
       "worklog": { "name": "Work Log", "desc": "Agency completed tasks list" },
-      "ai": { "name": "AI Summary", "desc": "AI-based insights and recommendations" }
+      "ai": { "name": "AI Summary", "desc": "AI-based insights and recommendations" },
+      "positions": { "name": "Positions & Visibility", "desc": "Topvisor data: positions, visibility, dynamics" }
     }
   },
   "searchSystems": {
@@ -509,6 +510,7 @@
     "aiAnalytics": "AI Analytics",
     "comparison": "Comparison",
     "reports": "Reports",
+    "positions": "Positions",
     "integrations": "Integrations",
     "settings": "Settings",
     "analytics": "Analytics",
@@ -571,5 +573,28 @@
       "depth": "Page Depth",
       "avgTime": "Avg. Time on Site"
     }
+  },
+  "positions": {
+    "emptyTitle": "Connect Topvisor",
+    "emptyDesc": "Connect Topvisor in integration settings to automatically track keyword positions",
+    "configure": "Configure",
+    "avgPosition": "Avg. Position",
+    "visibility": "Visibility",
+    "distribution": "Top Distribution",
+    "outside": "Outside",
+    "movement": "Ups / Downs",
+    "movementHint": "Position changes for the period",
+    "allGroups": "All Groups",
+    "searchPlaceholder": "Search queries…",
+    "visibilityChart": "Visibility Dynamics",
+    "currentPeriod": "Current Period",
+    "prevPeriod": "Previous Period",
+    "tableTitle": "Queries & Positions",
+    "tableSubtitle": "{{count}} queries tracked",
+    "colQuery": "Query",
+    "colPosition": "Position",
+    "colDelta": "Change",
+    "colUrl": "Relevant Page",
+    "colFreq": "Search Volume"
   }
 }

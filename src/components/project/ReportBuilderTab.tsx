@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Eye, Save, Link2, Copy, Check, Loader2, Upload, X,
   BarChart3, TrendingUp, PieChart, KeyRound, AlertTriangle,
-  FileSearch, ClipboardList, Sparkles, GripVertical,
+  FileSearch, ClipboardList, Sparkles, GripVertical, ListOrdered,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -30,9 +30,10 @@ interface ReportModule {
 const MODULE_ICONS: Record<string, React.ElementType> = {
   kpi: BarChart3, traffic: TrendingUp, sources: PieChart, seo: KeyRound,
   indexing: AlertTriangle, pages: FileSearch, worklog: ClipboardList, ai: Sparkles,
+  positions: ListOrdered,
 };
 
-const DEFAULT_MODULE_KEYS = ["kpi", "traffic", "sources", "seo", "indexing", "pages", "worklog", "ai"];
+const DEFAULT_MODULE_KEYS = ["kpi", "traffic", "sources", "seo", "indexing", "pages", "worklog", "ai", "positions"];
 
 function modulesFromKeys(keys: string[], enabledKeys?: string[]): ReportModule[] {
   return keys.map((key) => ({
