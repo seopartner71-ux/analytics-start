@@ -7,10 +7,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   ExternalLink, Search, TrendingUp, TrendingDown,
   Minus, Settings, Trophy, RefreshCw, Loader2,
   KeyRound, CheckCircle2, AlertCircle, Link as LinkIcon,
+  CalendarIcon,
 } from "lucide-react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
@@ -20,7 +23,8 @@ import { GlassCard, StandardKpiCard, MetricTooltip, useTabRefresh, TabLoadingOve
 import { useDateRange } from "@/contexts/DateRangeContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, subMonths } from "date-fns";
+import { ru } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
 /* ═══════════════════════════════════════════════════════
