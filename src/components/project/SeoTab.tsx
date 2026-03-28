@@ -11,6 +11,10 @@ import {
 } from "recharts";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import {
+  StandardKpiCard, useTabRefresh, TabLoadingOverlay,
+  StandardChartTooltip, SkeletonChart, MetricTooltip,
+} from "./shared-ui";
 
 interface SeoTabProps {
   projectId: string;
@@ -79,25 +83,7 @@ function ChangeIndicator({ value }: { value: number }) {
   );
 }
 
-const ChartTooltip = ({ active, payload, label }: any) => {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="bg-card border border-border rounded-lg shadow-lg px-3 py-2 min-w-[140px]">
-      <p className="text-xs text-muted-foreground mb-1 font-medium">{label}</p>
-      {payload.map((p: any, i: number) => (
-        <div key={i} className="flex items-center justify-between gap-3">
-          <span className="flex items-center gap-1.5 text-xs">
-            <span className="w-2.5 h-2.5 rounded-full" style={{ background: p.color }} />
-            {p.name}
-          </span>
-          <span className="text-sm font-semibold tabular-nums" style={{ color: p.color }}>
-            {typeof p.value === "number" ? p.value.toLocaleString() : p.value}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-};
+const ChartTooltip = StandardChartTooltip;
 
 function generateKeywords(dateFrom: Date, dateTo: Date, seed: number): KeywordRow[] {
   const days = differenceInDays(dateTo, dateFrom) + 1;
@@ -151,7 +137,7 @@ export function SeoTab({ projectId }: SeoTabProps) {
   const { t, i18n } = useTranslation();
   const lang = i18n.language === "ru" ? "ru" : "en";
   const { appliedRange, showComparison, appliedCompRange } = useDateRange();
-
+  const isRefreshing = useTabRefresh();
   const [queryTypeFilter, setQueryTypeFilter] = useState<QueryType | "all">("all");
 
   const seed = useMemo(() => appliedRange.from.getDate() + appliedRange.to.getDate() + appliedRange.from.getMonth(), [appliedRange]);
@@ -210,7 +196,9 @@ export function SeoTab({ projectId }: SeoTabProps) {
   }), [keywords]);
 
   return (
-    <div className="space-y-6">
+    <div className={cn("space-y-6 transition-opacity duration-300", isRefreshing && "opacity-60")}>
+      <TabLoadingOverlay show={isRefreshing} />
+
       {/* Query Type Filter */}
       <Card className="border-border bg-card">
         <CardContent className="p-4">
@@ -231,17 +219,10 @@ export function SeoTab({ projectId }: SeoTabProps) {
 
       {/* KPI Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: t("seoTab.totalClicks", "Клики"), value: totalClicks.toLocaleString() },
-          { label: t("seoTab.totalImpressions", "Показы"), value: totalImpressions.toLocaleString() },
-          { label: "CTR", value: `${avgCtr}%` },
-          { label: t("seoTab.avgPosition", "Ср. позиция"), value: String(avgPosition) },
-        ].map((kpi, i) => (
-          <Card key={i} className="border-border bg-card p-4">
-            <p className="text-xs text-muted-foreground">{kpi.label}</p>
-            <p className="text-2xl font-bold text-foreground mt-1">{kpi.value}</p>
-          </Card>
-        ))}
+        <StandardKpiCard label={t("seoTab.totalClicks", "Клики")} value={totalClicks.toLocaleString()} tooltipKey="visits" loading={isRefreshing} />
+        <StandardKpiCard label={t("seoTab.totalImpressions", "Показы")} value={totalImpressions.toLocaleString()} loading={isRefreshing} />
+        <StandardKpiCard label="CTR" value={`${avgCtr}%`} tooltipKey="ctr" loading={isRefreshing} />
+        <StandardKpiCard label={t("seoTab.avgPosition", "Ср. позиция")} value={String(avgPosition)} tooltipKey="avgPosition" loading={isRefreshing} />
       </div>
 
       {/* Visibility Chart */}

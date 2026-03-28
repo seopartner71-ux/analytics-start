@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line,
+  ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend,
 } from "recharts";
 import { ExportMenu } from "@/components/ExportMenu";
 import { exportToPdf, exportToExcel, exportToWord, type ExcelSheet, type WordSection } from "@/lib/export-utils";
@@ -20,85 +20,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import { generateDailyVisits } from "@/lib/data-generators";
+import {
+  StandardKpiCard, GlassCard, useTabRefresh, TabLoadingOverlay,
+  StandardChartTooltip, SkeletonChart,
+} from "./shared-ui";
 
 interface DashboardTabProps {
   projectId: string;
   projectName: string;
   onSwitchTab: (tab: string) => void;
-}
-
-const SimpleTooltip = ({ active, payload, label }: any) => {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="bg-card border border-border rounded-lg shadow-md px-3 py-2">
-      <p className="text-[11px] text-muted-foreground mb-1">{label}</p>
-      {payload.map((p: any, i: number) => (
-        <p key={i} className="text-sm font-semibold" style={{ color: p.color }}>
-          {p.name}: {typeof p.value === "number" ? p.value.toLocaleString() : p.value}
-        </p>
-      ))}
-    </div>
-  );
-};
-
-/** Sparkline-enabled KPI card for the overview */
-function OverviewKpiCard({
-  label, value, unit, change, sparkData, color,
-}: {
-  label: string;
-  value: string;
-  unit?: string;
-  change: number;
-  sparkData: { v: number }[];
-  color: string;
-}) {
-  const isPositive = change > 0;
-  const isNegative = change < 0;
-  // For bounce rate, negative change is good
-  const isBounce = label.toLowerCase().includes("отказ") || label.toLowerCase().includes("bounce");
-  const goodDirection = isBounce ? isNegative : isPositive;
-
-  return (
-    <Card className="border-border bg-card overflow-hidden group hover:shadow-md transition-shadow">
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between mb-3">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{label}</p>
-          {change !== 0 && (
-            <span className={cn(
-              "inline-flex items-center gap-0.5 text-xs font-semibold rounded-full px-1.5 py-0.5",
-              goodDirection ? "text-emerald-600 bg-emerald-500/10" : "text-red-500 bg-red-500/10"
-            )}>
-              {isPositive ? <ArrowUpRight className="h-3 w-3" /> : isNegative ? <ArrowDownRight className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
-              {Math.abs(change).toFixed(1)}%
-            </span>
-          )}
-        </div>
-        <div className="flex items-end justify-between gap-3">
-          <div>
-            <p className="text-2xl font-bold tracking-tight text-foreground">
-              {value}
-              {unit && <span className="text-sm font-normal text-muted-foreground ml-1">{unit}</span>}
-            </p>
-          </div>
-          {sparkData.length > 0 && (
-            <div className="w-24 h-10 opacity-70 group-hover:opacity-100 transition-opacity">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={sparkData} margin={{ top: 2, right: 0, left: 0, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id={`spark-ov-${label}`} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={color} stopOpacity={0.3} />
-                      <stop offset="95%" stopColor={color} stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <Area type="monotone" dataKey="v" stroke={color} strokeWidth={1.5} fill={`url(#spark-ov-${label})`} dot={false} />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  );
 }
 
 export function DashboardTab({ projectId, projectName, onSwitchTab }: DashboardTabProps) {
@@ -109,17 +39,7 @@ export function DashboardTab({ projectId, projectName, onSwitchTab }: DashboardT
   const dateFrom = format(appliedRange.from, "yyyy-MM-dd");
   const dateTo = format(appliedRange.to, "yyyy-MM-dd");
 
-  // Loading animation
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const prevVersion = useRef(applyVersion);
-  useEffect(() => {
-    if (applyVersion !== prevVersion.current) {
-      prevVersion.current = applyVersion;
-      setIsRefreshing(true);
-      const timer = setTimeout(() => setIsRefreshing(false), 600);
-      return () => clearTimeout(timer);
-    }
-  }, [applyVersion]);
+  const isRefreshing = useTabRefresh();
 
   // Fetch real metrika stats
   const { data: allStats = [], isLoading } = useQuery({
@@ -291,6 +211,7 @@ export function DashboardTab({ projectId, projectName, onSwitchTab }: DashboardT
       change: showComparison ? pctChange(totalVisits, compVisits) : 0,
       sparkData: visitsSparkData,
       color: "hsl(var(--chart-1))",
+      tooltipKey: "visits",
     },
     {
       label: t("publicReport.kpi.bounceRate", "Отказы"),
@@ -299,6 +220,8 @@ export function DashboardTab({ projectId, projectName, onSwitchTab }: DashboardT
       change: showComparison ? pctChange(avgBounce, compBounce) : 0,
       sparkData: bounceSparkData,
       color: "hsl(var(--chart-3))",
+      tooltipKey: "bounceRate",
+      invertChange: true,
     },
     {
       label: t("project.analytics.pageDepth", "Глубина просмотра"),
@@ -306,6 +229,7 @@ export function DashboardTab({ projectId, projectName, onSwitchTab }: DashboardT
       change: showComparison ? pctChange(avgDepth, compDepth) : 0,
       sparkData: depthSparkData,
       color: "hsl(var(--chart-2))",
+      tooltipKey: "pageDepth",
     },
     {
       label: t("project.analytics.avgDuration", "Время на сайте"),
@@ -313,6 +237,7 @@ export function DashboardTab({ projectId, projectName, onSwitchTab }: DashboardT
       change: showComparison ? pctChange(avgDuration, compDuration) : 0,
       sparkData: durationSparkData,
       color: "hsl(var(--chart-5))",
+      tooltipKey: "avgDuration",
     },
   ];
 
@@ -369,7 +294,7 @@ export function DashboardTab({ projectId, projectName, onSwitchTab }: DashboardT
         {/* === 1. KPI GRID === */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {kpiCards.map((kpi, i) => (
-            <OverviewKpiCard key={i} {...kpi} />
+            <StandardKpiCard key={i} {...kpi} loading={isRefreshing} />
           ))}
         </div>
 
@@ -406,7 +331,7 @@ export function DashboardTab({ projectId, projectName, onSwitchTab }: DashboardT
                     axisLine={false}
                     tickFormatter={(v) => v.toLocaleString()}
                   />
-                  <Tooltip content={<SimpleTooltip />} />
+                  <Tooltip content={<StandardChartTooltip />} />
                   <Area
                     type="monotone"
                     dataKey="visits"
