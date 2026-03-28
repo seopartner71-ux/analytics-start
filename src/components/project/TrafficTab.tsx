@@ -370,7 +370,13 @@ export function TrafficTab({ projectId, projectName, projectUrl }: TrafficTabPro
                   </tr>
                 </thead>
                 <tbody>
-                  {topPages.map((page, i) => (
+                  {topPages.length === 0 ? (
+                    <tr>
+                      <td colSpan={3} className="py-8 text-center text-sm text-muted-foreground">
+                        {i18n.language === "ru" ? "Данные отсутствуют" : "No data available"}
+                      </td>
+                    </tr>
+                  ) : topPages.map((page, i) => (
                     <tr key={i} className="border-b border-border/50 last:border-0 hover:bg-muted/30 transition-colors">
                       <td className="py-3 px-3">
                         <div className="flex items-center gap-2">
