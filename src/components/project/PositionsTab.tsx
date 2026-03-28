@@ -8,11 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Search, TrendingUp, TrendingDown,
   Minus, Trophy, RefreshCw, Loader2,
   KeyRound, CheckCircle2, AlertCircle, Link as LinkIcon,
-  ArrowUp, ArrowDown, Filter,
+  ArrowUp, ArrowDown, Filter, ExternalLink,
 } from "lucide-react";
 import { GlassCard, StandardKpiCard, useTabRefresh, TabLoadingOverlay } from "./shared-ui";
 import { useDateRange } from "@/contexts/DateRangeContext";
@@ -42,6 +43,8 @@ interface TvRegion {
   areaName?: string;
   device_name?: string;
   searcher_key: number;
+  key: number;          // region key (e.g. 213 for Moscow)
+  countryCode?: string; // "RU"
 }
 
 interface TvSearcher {
@@ -61,8 +64,16 @@ interface KeywordRow {
   keyword: string;
   group?: string;
   isBrand: boolean;
-  /** position per date, keyed by "date:regionIndex" */
   positions: Record<string, number | null>;
+}
+
+interface SearcherTab {
+  key: string;
+  name: string;
+  regionIndexes: string[];
+  regionKey: number;      // lr for Yandex
+  countryCode: string;    // country for Google
+  regionName: string;     // display name
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -190,12 +201,22 @@ function positionBg(pos: number | null) {
    ═══════════════════════════════════════════════════════ */
 function isBrandKeyword(keyword: string, projectUrl?: string | null): boolean {
   const lower = keyword.toLowerCase();
-  // Extract domain name without TLD for brand detection
   if (projectUrl) {
     const domain = projectUrl.replace(/^https?:\/\//, "").replace(/\/$/, "").split(".")[0];
     if (domain && domain.length > 2 && lower.includes(domain.toLowerCase())) return true;
   }
   return false;
+}
+
+/* ═══════════════════════════════════════════════════════
+   Search URL builder
+   ═══════════════════════════════════════════════════════ */
+function buildSearchUrl(query: string, searcherName: string, regionKey: number, countryCode: string): string {
+  const encoded = encodeURIComponent(query);
+  if (searcherName === "Yandex") {
+    return `https://yandex.ru/search/?text=${encoded}&lr=${regionKey}`;
+  }
+  return `https://www.google.com/search?q=${encoded}&gl=${countryCode.toLowerCase()}&hl=ru`;
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -210,7 +231,6 @@ export function PositionsTab({
   const isRu = i18n.language === "ru";
   const isRefreshing = useTabRefresh();
   const queryClient = useQueryClient();
-  const { appliedRange } = useDateRange();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [showReconnect, setShowReconnect] = useState(false);
@@ -283,86 +303,82 @@ function PositionsDashboard({
   const { i18n } = useTranslation();
   const isRu = i18n.language === "ru";
 
-  const [regions, setRegions] = useState<TvRegion[]>([]);
-
   const dateFrom = format(subDays(new Date(), 30), "yyyy-MM-dd");
   const dateTo = format(new Date(), "yyyy-MM-dd");
 
-  // Load regions from projects
-  const { data: regionsData } = useQuery({
-    queryKey: ["topvisor-regions", tvProjectId, apiKey, userId],
+  // ── Load project info with searchers/regions ──
+  const { data: projectInfo } = useQuery({
+    queryKey: ["topvisor-project-info", tvProjectId, apiKey, userId],
     queryFn: async () => {
       const data = await callTopvisor("get-projects", apiKey, userId);
       const projects = (data?.result || []) as TvProject[];
       const found = projects.find((p) => String(p.id) === tvProjectId);
-      if (!found?.searchers) return { searchers: [] as TvSearcher[], allRegions: [] as TvRegion[] };
-
-      const allRegions = found.searchers.flatMap((s) =>
-        (s.regions || []).map((r) => ({ ...r, searcher_key: s.key }))
-      );
-      setRegions(allRegions);
-      return { searchers: found.searchers, allRegions };
+      if (!found?.searchers) return null;
+      return found;
     },
   });
 
-  // Group regions by searcher
-  const searcherTabs = useMemo(() => {
-    const tabs: { key: string; name: string; regionIndexes: string[] }[] = [];
-    const searchers = regionsData?.searchers || [];
-    for (const s of searchers) {
-      const name = s.key === 0 ? "Yandex" : s.key === 1 ? "Google" : `SE ${s.key}`;
-      const indexes = (s.regions || []).map((r) => String(r.index));
-      if (indexes.length > 0) {
-        tabs.push({ key: String(s.key), name, regionIndexes: indexes });
-      }
-    }
-    return tabs;
-  }, [regionsData]);
+  // ── Build searcher tabs with region info ──
+  const searcherTabs = useMemo((): SearcherTab[] => {
+    if (!projectInfo?.searchers) return [];
+    return projectInfo.searchers
+      .map((s) => {
+        const firstRegion = s.regions?.[0];
+        if (!firstRegion) return null;
+        return {
+          key: String(s.key),
+          name: s.name || (s.key === 0 ? "Yandex" : s.key === 1 ? "Google" : `SE ${s.key}`),
+          regionIndexes: (s.regions || []).map((r) => String(r.index)),
+          regionKey: firstRegion.key || 0,
+          countryCode: firstRegion.countryCode || "RU",
+          regionName: firstRegion.name || "",
+        } as SearcherTab;
+      })
+      .filter(Boolean) as SearcherTab[];
+  }, [projectInfo]);
 
-  // Collect ALL region indexes for the API call
+  // ── Collect ALL region indexes for the API call ──
   const allRegionIndexes = useMemo(() => {
-    return regions.map((r) => Number(r.index)).filter((n) => n > 0);
-  }, [regions]);
+    if (!projectInfo?.searchers) return [];
+    return projectInfo.searchers
+      .flatMap((s) => (s.regions || []).map((r) => Number(r.index)))
+      .filter((n) => Number.isFinite(n) && n > 0);
+  }, [projectInfo]);
 
-  // Fetch rankings history with all regions
+  // ── Fetch rankings history ──
   const { data: rankingsData, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["topvisor-rankings-history", tvProjectId, dateFrom, dateTo, allRegionIndexes.join(",")],
     queryFn: async () => {
-      const data = await callTopvisor("get-rankings-history", apiKey, userId, {
+      return await callTopvisor("get-rankings-history", apiKey, userId, {
         project_id: tvProjectId,
         regions_indexes: allRegionIndexes,
         date_from: dateFrom,
         date_to: dateTo,
       });
-      return data;
     },
     enabled: allRegionIndexes.length > 0,
     retry: 1,
   });
 
-  // Parse response into structured data
-  const { dates, keywordRows } = useMemo(() => {
-    if (!rankingsData?.result) return { dates: [] as string[], keywordRows: [] as KeywordRow[] };
+  // ── Parse response ──
+  const { allDates, keywordRows } = useMemo(() => {
+    if (!rankingsData?.result) return { allDates: [] as string[], keywordRows: [] as KeywordRow[] };
 
     const result = rankingsData.result;
     const headerDates: string[] = Array.isArray(result?.headers?.dates) ? result.headers.dates : [];
     const existsDates: string[] = Array.isArray(result?.exists_dates) ? result.exists_dates : headerDates;
     const rows = Array.isArray(result?.keywords) ? result.keywords : [];
 
-    // Use exists_dates if available, otherwise header dates
-    const allDates = existsDates.length > 0 ? existsDates : headerDates;
-    // Take last 7 dates, sorted newest first
-    const displayDates = [...allDates].sort().slice(-7).reverse();
+    const allDates = (existsDates.length > 0 ? existsDates : headerDates).sort();
 
     const kwRows: KeywordRow[] = rows.map((row: any) => {
       const positionsObj = row.positionsData && typeof row.positionsData === "object" ? row.positionsData : {};
       const positions: Record<string, number | null> = {};
 
-      // positionsData keys are "date:projectId:regionIndex"
       for (const [key, val] of Object.entries(positionsObj)) {
         const parts = key.split(":");
         const date = parts[0];
-        const regionIdx = parts[2] || parts[1]; // "date:projectId:regionIdx"
+        const regionIdx = parts[2] || parts[1];
 
         const posVal = (val as any)?.position;
         let numPos: number | null = null;
@@ -382,10 +398,10 @@ function PositionsDashboard({
       };
     });
 
-    return { dates: displayDates, keywordRows: kwRows };
+    return { allDates, keywordRows: kwRows };
   }, [rankingsData, projectUrl]);
 
-  // Filter keywords
+  // ── Filter keywords ──
   const filtered = useMemo(() => {
     let result = keywordRows;
     if (searchQuery.trim()) {
@@ -402,14 +418,29 @@ function PositionsDashboard({
     toast.success(isRu ? "Данные обновлены" : "Data refreshed");
   };
 
-  /* ── Render table for a specific searcher ── */
-  const renderTable = (regionIndexes: string[], searcherName: string) => {
-    // For each keyword, extract positions only for these regions
-    const hasAnyData = filtered.some((kw) =>
-      dates.some((d) => regionIndexes.some((ri) => kw.positions[`${d}:${ri}`] !== undefined))
-    );
+  /* ── Compute dates with data for a specific searcher ── */
+  const getDatesForSearcher = useCallback((regionIndexes: string[]) => {
+    const datesWithData = new Set<string>();
+    for (const kw of keywordRows) {
+      for (const date of allDates) {
+        for (const ri of regionIndexes) {
+          const pos = kw.positions[`${date}:${ri}`];
+          if (pos !== null && pos !== undefined) {
+            datesWithData.add(date);
+          }
+        }
+      }
+    }
+    // Sort newest first, take last 7
+    return [...datesWithData].sort().slice(-7).reverse();
+  }, [keywordRows, allDates]);
 
-    if (!hasAnyData && !isLoading) {
+  /* ── Render table for a specific searcher ── */
+  const renderTable = (tab: SearcherTab) => {
+    const { regionIndexes, name: searcherName, regionKey, countryCode, regionName } = tab;
+    const dates = getDatesForSearcher(regionIndexes);
+
+    if (dates.length === 0 && !isLoading) {
       return (
         <div className="flex flex-col items-center justify-center py-12">
           <AlertCircle className="h-10 w-10 text-muted-foreground mb-3" />
@@ -420,7 +451,7 @@ function PositionsDashboard({
       );
     }
 
-    // KPI for this searcher
+    // KPI
     const allPositions: number[] = [];
     const prevPositions: number[] = [];
     filtered.forEach((kw) => {
@@ -489,13 +520,13 @@ function PositionsDashboard({
               </span>
               <p className="text-2xl font-bold text-foreground">{filtered.length}</p>
               <p className="text-[10px] text-muted-foreground">
-                {isRu ? `${searcherName} • ${regionIndexes.length} рег.` : `${searcherName} • ${regionIndexes.length} reg.`}
+                {searcherName} • {regionName}
               </p>
             </CardContent>
           </GlassCard>
         </div>
 
-        {/* Rankings table with date columns */}
+        {/* Rankings table */}
         <GlassCard>
           <CardContent className="p-0">
             <div className="px-5 pt-4 pb-2 flex items-center justify-between">
@@ -504,95 +535,113 @@ function PositionsDashboard({
                   {isRu ? "Запросы и позиции" : "Keywords & Positions"}
                 </h3>
                 <p className="text-xs text-muted-foreground">
-                  {filtered.length} {isRu ? "запросов" : "keywords"} • {searcherName}
+                  {filtered.length} {isRu ? "запросов" : "keywords"} • {searcherName} • {regionName}
                 </p>
               </div>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border bg-muted/30">
-                    <th className="text-left p-3 font-medium text-muted-foreground sticky left-0 bg-muted/30 z-10 min-w-[200px]">
-                      {isRu ? "Запрос" : "Keyword"}
-                    </th>
-                    <th className="text-center p-2 font-medium text-muted-foreground text-xs min-w-[60px]">
-                      {isRu ? "Группа" : "Group"}
-                    </th>
-                    {dates.map((date) => (
-                      <th key={date} className="text-center p-2 font-medium text-muted-foreground text-xs min-w-[70px]">
-                        {date.slice(5).replace("-", ".")}
+              <TooltipProvider delayDuration={200}>
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/30">
+                      <th className="text-left p-3 font-medium text-muted-foreground sticky left-0 bg-muted/30 z-10 min-w-[240px]">
+                        {isRu ? "Запрос" : "Keyword"}
                       </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((kw, i) => (
-                    <tr key={i} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
-                      <td className="p-3 sticky left-0 bg-background z-10">
-                        <div className="flex items-center gap-2">
-                          <span className="text-foreground font-medium text-sm truncate max-w-[250px]">
-                            {kw.keyword}
-                          </span>
-                          {kw.isBrand && (
-                            <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-amber-400/50 text-amber-400 shrink-0">
-                              Brand
-                            </Badge>
-                          )}
-                        </div>
-                      </td>
-                      <td className="p-2 text-center text-xs text-muted-foreground truncate max-w-[80px]">
-                        {kw.group || "—"}
-                      </td>
-                      {dates.map((date, dateIdx) => {
-                        // Find position for this date across all region indexes for this searcher
-                        let pos: number | null = null;
-                        for (const ri of regionIndexes) {
-                          const p = kw.positions[`${date}:${ri}`];
-                          if (p !== null && p !== undefined) { pos = p; break; }
-                        }
-
-                        // Previous date for delta
-                        let prevPos: number | null = null;
-                        const prevDate = dates[dateIdx + 1];
-                        if (prevDate) {
+                      <th className="text-center p-2 font-medium text-muted-foreground text-xs min-w-[60px]">
+                        {isRu ? "Группа" : "Group"}
+                      </th>
+                      {dates.map((date) => (
+                        <th key={date} className="text-center p-2 font-medium text-muted-foreground text-xs min-w-[70px]">
+                          {date.slice(5).replace("-", ".")}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.map((kw, i) => (
+                      <tr key={i} className="border-b border-border/50 hover:bg-muted/20 transition-colors group">
+                        <td className="p-3 sticky left-0 bg-background z-10">
+                          <div className="flex items-center gap-2">
+                            <span className="text-foreground font-medium text-sm truncate max-w-[200px]">
+                              {kw.keyword}
+                            </span>
+                            {kw.isBrand && (
+                              <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-amber-400/50 text-amber-400 shrink-0">
+                                Brand
+                              </Badge>
+                            )}
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <a
+                                  href={buildSearchUrl(kw.keyword, searcherName, regionKey, countryCode)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground/40 hover:text-primary"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <ExternalLink className="h-3.5 w-3.5" />
+                                </a>
+                              </TooltipTrigger>
+                              <TooltipContent side="right" className="text-xs">
+                                {isRu
+                                  ? `Проверить в ${searcherName} (${regionName})`
+                                  : `Check in ${searcherName} (${regionName})`}
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                        </td>
+                        <td className="p-2 text-center text-xs text-muted-foreground truncate max-w-[80px]">
+                          {kw.group || "—"}
+                        </td>
+                        {dates.map((date, dateIdx) => {
+                          let pos: number | null = null;
                           for (const ri of regionIndexes) {
-                            const p = kw.positions[`${prevDate}:${ri}`];
-                            if (p !== null && p !== undefined) { prevPos = p; break; }
+                            const p = kw.positions[`${date}:${ri}`];
+                            if (p !== null && p !== undefined) { pos = p; break; }
                           }
-                        }
 
-                        const delta = prevPos !== null && pos !== null ? prevPos - pos : null;
+                          let prevPos: number | null = null;
+                          const prevDate = dates[dateIdx + 1];
+                          if (prevDate) {
+                            for (const ri of regionIndexes) {
+                              const p = kw.positions[`${prevDate}:${ri}`];
+                              if (p !== null && p !== undefined) { prevPos = p; break; }
+                            }
+                          }
 
-                        return (
-                          <td key={date} className={cn("p-2 text-center", positionBg(pos))}>
-                            <div className="flex flex-col items-center">
-                              <span className={cn("text-sm", positionColor(pos))}>
-                                {pos ?? "—"}
-                              </span>
-                              {delta !== null && delta !== 0 && (
-                                <span className={cn(
-                                  "text-[9px] flex items-center gap-0.5",
-                                  delta > 0 ? "text-emerald-500" : "text-destructive"
-                                )}>
-                                  {delta > 0 ? <ArrowUp className="h-2.5 w-2.5" /> : <ArrowDown className="h-2.5 w-2.5" />}
-                                  {Math.abs(delta)}
+                          const delta = prevPos !== null && pos !== null ? prevPos - pos : null;
+
+                          return (
+                            <td key={date} className={cn("p-2 text-center", positionBg(pos))}>
+                              <div className="flex flex-col items-center">
+                                <span className={cn("text-sm", positionColor(pos))}>
+                                  {pos ?? "—"}
                                 </span>
-                              )}
-                            </div>
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                  {filtered.length === 0 && (
-                    <tr>
-                      <td colSpan={dates.length + 2} className="p-8 text-center text-muted-foreground">
-                        {isRu ? "Ничего не найдено" : "Nothing found"}
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                                {delta !== null && delta !== 0 && (
+                                  <span className={cn(
+                                    "text-[9px] flex items-center gap-0.5",
+                                    delta > 0 ? "text-emerald-500" : "text-destructive"
+                                  )}>
+                                    {delta > 0 ? <ArrowUp className="h-2.5 w-2.5" /> : <ArrowDown className="h-2.5 w-2.5" />}
+                                    {Math.abs(delta)}
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                    {filtered.length === 0 && (
+                      <tr>
+                        <td colSpan={dates.length + 2} className="p-8 text-center text-muted-foreground">
+                          {isRu ? "Ничего не найдено" : "Nothing found"}
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </TooltipProvider>
             </div>
           </CardContent>
         </GlassCard>
@@ -706,13 +755,13 @@ function PositionsDashboard({
             <TabsList className="bg-muted/50">
               {searcherTabs.map((tab) => (
                 <TabsTrigger key={tab.key} value={tab.key} className="text-xs gap-1.5">
-                  {tab.name}
+                  {tab.name} — {tab.regionName}
                 </TabsTrigger>
               ))}
             </TabsList>
             {searcherTabs.map((tab) => (
               <TabsContent key={tab.key} value={tab.key}>
-                {isLoading ? renderSkeleton() : renderTable(tab.regionIndexes, tab.name)}
+                {isLoading ? renderSkeleton() : renderTable(tab)}
               </TabsContent>
             ))}
           </Tabs>
