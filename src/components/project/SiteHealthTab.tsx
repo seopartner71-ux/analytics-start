@@ -342,15 +342,15 @@ function SiteHealthDashboard({ projectId, accessToken, hostId }: {
       {isRefreshing && <TabLoadingOverlay show={isRefreshing} />}
 
       {/* ── KPI Row ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiSkeleton loading={sqiLoading}>
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+        <KpiSkeleton loading={sqiLoading || summaryLoading}>
           <GlassCard>
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-xs text-muted-foreground font-medium">{isRu ? "ИКС (SQI)" : "SQI"}</span>
                 <DeltaBadge delta={sqiDelta} />
               </div>
-              <p className="text-3xl font-bold text-foreground">{currentSqi}</p>
+              <p className="text-3xl font-bold text-foreground">{currentSqi || ticValue}</p>
               {sqiHistory.length > 2 && (
                 <div className="h-8 mt-2">
                   <ResponsiveContainer width="100%" height="100%">
@@ -381,13 +381,28 @@ function SiteHealthDashboard({ projectId, accessToken, hostId }: {
           </GlassCard>
         </KpiSkeleton>
 
+        <KpiSkeleton loading={summaryLoading}>
+          <GlassCard>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-1.5 mb-1">
+                <FileText className="h-3.5 w-3.5 text-primary" />
+                <span className="text-xs text-muted-foreground font-medium">{isRu ? "Загружено" : "Downloaded"}</span>
+              </div>
+              <p className="text-3xl font-bold text-foreground">{downloadedPages.toLocaleString()}</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {isRu ? "страниц роботом" : "pages by bot"}
+              </p>
+            </CardContent>
+          </GlassCard>
+        </KpiSkeleton>
+
         <KpiSkeleton loading={backlinksLoading}>
           <GlassCard>
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-1.5">
                   <LinkIcon className="h-3.5 w-3.5 text-primary" />
-                  <span className="text-xs text-muted-foreground font-medium">{isRu ? "Обратные ссылки" : "Backlinks"}</span>
+                  <span className="text-xs text-muted-foreground font-medium">{isRu ? "Ссылки" : "Backlinks"}</span>
                 </div>
                 <DeltaBadge delta={backlinksDelta} />
               </div>
@@ -405,19 +420,56 @@ function SiteHealthDashboard({ projectId, accessToken, hostId }: {
           </GlassCard>
         </KpiSkeleton>
 
-        <KpiSkeleton loading={diagLoading}>
+        <KpiSkeleton loading={summaryLoading || diagLoading}>
           <GlassCard>
             <CardContent className="p-4">
               <div className="flex items-center gap-1.5 mb-1">
-                <AlertTriangle className={cn("h-3.5 w-3.5", criticalCount > 0 ? "text-destructive" : "text-emerald-500")} />
+                <AlertTriangle className={cn("h-3.5 w-3.5", (possibleProblems + criticalCount) > 0 ? "text-amber-500" : "text-emerald-500")} />
                 <span className="text-xs text-muted-foreground font-medium">
-                  {isRu ? "Проблемы" : "Issues"}
+                  {isRu ? "Замечания" : "Issues"}
                 </span>
               </div>
-              <p className={cn("text-3xl font-bold", criticalCount > 0 ? "text-destructive" : "text-emerald-500")}>
-                {problems.length}
+              <p className={cn("text-3xl font-bold", (possibleProblems + criticalCount) > 0 ? "text-amber-500" : "text-emerald-500")}>
+                {possibleProblems + recommendations + problems.length}
               </p>
-              <div className="flex gap-3 mt-1">
+              <div className="flex flex-col gap-0.5 mt-1">
+                {possibleProblems > 0 && (
+                  <span className="text-xs text-amber-500 font-medium">{possibleProblems} {isRu ? "возм. проблем" : "possible"}</span>
+                )}
+                {recommendations > 0 && (
+                  <span className="text-xs text-muted-foreground font-medium">{recommendations} {isRu ? "рекоменд." : "recomm."}</span>
+                )}
+              </div>
+            </CardContent>
+          </GlassCard>
+        </KpiSkeleton>
+      </div>
+
+      {/* ── Summary Bar ── */}
+      <GlassCard>
+        <CardContent className="p-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-foreground">{downloadedPages.toLocaleString()}</p>
+              <p className="text-xs text-muted-foreground">{isRu ? "Загружено роботом" : "Downloaded by bot"}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-primary">{pagesInSearch.toLocaleString()}</p>
+              <p className="text-xs text-muted-foreground">{isRu ? "В поиске Яндекса" : "In Yandex search"}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-amber-500">{excludedPages.toLocaleString()}</p>
+              <p className="text-xs text-muted-foreground">{isRu ? "Исключено из поиска" : "Excluded from search"}</p>
+            </div>
+            <div className="text-center">
+              <p className={cn("text-2xl font-bold", (possibleProblems + recommendations) > 0 ? "text-amber-500" : "text-emerald-500")}>
+                {possibleProblems + recommendations}
+              </p>
+              <p className="text-xs text-muted-foreground">{isRu ? "Замечаний Вебмастера" : "Webmaster notices"}</p>
+            </div>
+          </div>
+        </CardContent>
+      </GlassCard>
                 {criticalCount > 0 && (
                   <span className="text-xs text-destructive font-medium">{criticalCount} {isRu ? "крит." : "crit."}</span>
                 )}
