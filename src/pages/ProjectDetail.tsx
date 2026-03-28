@@ -21,6 +21,7 @@ import { SearchSystemsTab } from "@/components/project/SearchSystemsTab";
 import { PagesTab } from "@/components/project/PagesTab";
 import { SiteHealthTab } from "@/components/project/SiteHealthTab";
 import { AiInsightsBlock } from "@/components/project/AiInsightsBlock";
+import { AiAnalyticsTab } from "@/components/project/AiAnalyticsTab";
 import { ReportBuilderTab } from "@/components/project/ReportBuilderTab";
 import { DashboardTab } from "@/components/project/DashboardTab";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
@@ -265,11 +266,12 @@ function ProjectDetailInner() {
         return <WorkLogTab projectId={project.id} tasks={workLogs} isAdmin={true} />;
       case "ai":
         return (
-          <AiInsightsBlock
-            projectId={id}
+          <AiAnalyticsTab
+            projectId={project.id}
+            projectName={project.name}
             summary={aiSummary}
             isAdmin={true}
-            onSave={(summary) => saveAiSummary.mutate(summary)}
+            onSaveSummary={(summary) => saveAiSummary.mutate(summary)}
             trafficSources={(latestMetrikaStats?.traffic_sources as any[]) || []}
           />
         );
