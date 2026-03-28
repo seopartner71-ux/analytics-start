@@ -70,6 +70,7 @@ interface KeywordPosition {
   prevPosition: number | null;
   url: string;
   volume: number;
+  lastChecked: string | null;
 }
 
 /* ═══════════════════════════════════════════════════════
