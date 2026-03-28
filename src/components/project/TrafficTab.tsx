@@ -280,7 +280,7 @@ export function TrafficTab({ projectId, projectName, projectUrl }: TrafficTabPro
                         <Cell key={s.key} fill={(SOURCE_COLORS as any)[s.key] || "hsl(var(--muted))"} />
                       ))}
                     </Pie>
-                    <Tooltip content={<ChartTooltip />} />
+                    <Tooltip content={<StandardChartTooltip />} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -414,7 +414,7 @@ export function TrafficTab({ projectId, projectName, projectUrl }: TrafficTabPro
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.5} horizontal={false} />
                   <XAxis type="number" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => v.toLocaleString()} />
                   <YAxis type="category" dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} width={70} />
-                  <Tooltip content={<ChartTooltip />} />
+                  <Tooltip content={<StandardChartTooltip />} />
                   <Bar dataKey="value" name={i18n.language === "ru" ? "Визиты" : "Visits"} radius={[0, 6, 6, 0]}>
                     {deviceData.map((d) => (
                       <Cell key={d.key} fill={(DEVICE_COLORS as any)[d.key]} />
