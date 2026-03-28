@@ -94,6 +94,8 @@ serve(async (req) => {
     let url: string;
     let method = "POST";
     let fetchBody: string | undefined;
+    let requestedProjectId: number | null = null;
+    let normalizedRegionsIndexes: number[] = [];
 
     switch (action) {
       case "get-projects":
