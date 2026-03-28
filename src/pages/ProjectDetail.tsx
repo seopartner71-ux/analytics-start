@@ -19,6 +19,7 @@ import { SeoTab } from "@/components/project/SeoTab";
 import { TrafficTab } from "@/components/project/TrafficTab";
 import { SearchSystemsTab } from "@/components/project/SearchSystemsTab";
 import { PagesTab } from "@/components/project/PagesTab";
+import { SiteHealthTab } from "@/components/project/SiteHealthTab";
 import { AiInsightsBlock } from "@/components/project/AiInsightsBlock";
 import { ReportBuilderTab } from "@/components/project/ReportBuilderTab";
 import { DashboardTab } from "@/components/project/DashboardTab";
