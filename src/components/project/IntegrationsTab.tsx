@@ -337,8 +337,8 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
               <Input value={tvApiKey} onChange={(e) => setTvApiKey(e.target.value)} placeholder="tv_xxxxxxxxxxxxxxxx" />
             </div>
             <div className="space-y-2">
-              <Label>Project ID *</Label>
-              <Input value={tvProjectId} onChange={(e) => setTvProjectId(e.target.value)} placeholder="123456" />
+              <Label>User ID *</Label>
+              <Input value={tvProjectId} onChange={(e) => setTvProjectId(e.target.value)} placeholder="12345" />
             </div>
           </div>
           <DialogFooter>
