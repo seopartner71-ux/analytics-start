@@ -462,6 +462,27 @@
     "allTime": "All time",
     "apply": "Apply"
   },
+  "portalNav": {
+    "overview": "Overview",
+    "traffic": "Traffic",
+    "conversions": "Conversions",
+    "keywords": "Keywords",
+    "indexing": "Indexing",
+    "workLog": "Work Log",
+    "aiAnalytics": "AI Analytics",
+    "comparison": "Reports",
+    "integrations": "Integrations",
+    "settings": "Settings",
+    "analytics": "Analytics",
+    "manage": "Manage",
+    "updated": "Updated"
+  },
+  "datePresets": {
+    "7d": "7 days",
+    "30d": "30 days",
+    "thisMonth": "This month",
+    "lastMonth": "Last month"
+  },
   "channels": {
     "all": "All channels",
     "organic": "Organic Search",
