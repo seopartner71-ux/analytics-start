@@ -1,35 +1,38 @@
 import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { useQuery } from "@tanstack/react-query";
-import { format, subDays, subYears, differenceInDays } from "date-fns";
-import { ru, enUS } from "date-fns/locale";
+import { differenceInDays, format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import {
-  CalendarIcon, ArrowRightLeft, TrendingUp, TrendingDown, Search, ExternalLink,
-} from "lucide-react";
+import { Search, TrendingUp, TrendingDown, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
-import { AiInsightsBlock } from "@/components/project/AiInsightsBlock";
-import { supabase } from "@/integrations/supabase/client";
+import { useDateRange } from "@/contexts/DateRangeContext";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 interface SeoTabProps {
   projectId: string;
 }
 
-type DateRange = { from: Date; to: Date };
+type QueryEngine = "yandex" | "google";
+type QueryType = "brand" | "informational" | "commercial";
+
+interface KeywordRow {
+  query: string;
+  clicks: number;
+  impressions: number;
+  ctr: number;
+  position: number;
+  positionTrend: number[];
+  engine: QueryEngine;
+  queryType: QueryType;
+}
 
 const ENGINE_COLORS = {
   yandex: "hsl(10, 85%, 57%)",
   google: "hsl(217, 89%, 61%)",
-  other: "hsl(var(--muted-foreground))",
 };
 
 function YandexIcon({ className }: { className?: string }) {
@@ -65,21 +68,21 @@ function Sparkline({ data, color }: { data: number[]; color: string }) {
   );
 }
 
-function ChangeIndicator({ value, className }: { value: number; className?: string }) {
+function ChangeIndicator({ value }: { value: number }) {
   if (value === 0) return <span className="text-xs text-muted-foreground">—</span>;
   const positive = value > 0;
   return (
-    <span className={cn("inline-flex items-center gap-0.5 text-xs font-semibold", positive ? "text-emerald-500" : "text-red-500", className)}>
+    <span className={cn("inline-flex items-center gap-0.5 text-xs font-semibold", positive ? "text-emerald-500" : "text-red-500")}>
       {positive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
       {positive ? "+" : ""}{Math.round(value * 10) / 10}%
     </span>
   );
 }
 
-const DualTooltip = ({ active, payload, label }: any) => {
+const ChartTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-card border border-border rounded-lg shadow-lg px-3 py-2 min-w-[160px]">
+    <div className="bg-card border border-border rounded-lg shadow-lg px-3 py-2 min-w-[140px]">
       <p className="text-xs text-muted-foreground mb-1 font-medium">{label}</p>
       {payload.map((p: any, i: number) => (
         <div key={i} className="flex items-center justify-between gap-3">
@@ -96,288 +99,181 @@ const DualTooltip = ({ active, payload, label }: any) => {
   );
 };
 
-type QueryEngine = "yandex" | "google";
-
-interface SeoQuery {
-  query: string;
-  clicks: number;
-  impressions: number;
-  position: number;
-  positionTrend: number[];
-  engine: QueryEngine;
-}
-
-function generateSeoData(dateFrom: Date, dateTo: Date) {
+function generateKeywords(dateFrom: Date, dateTo: Date, seed: number): KeywordRow[] {
   const days = differenceInDays(dateTo, dateFrom) + 1;
-  const queries: SeoQuery[] = [
-    { query: "купить цветы", clicks: 342, impressions: 8200, position: 4.2, positionTrend: [5.1, 4.8, 4.5, 4.3, 4.2, 4.0, 4.2], engine: "yandex" },
-    { query: "buy flowers online", clicks: 280, impressions: 6800, position: 5.1, positionTrend: [6.5, 6.0, 5.6, 5.3, 5.1, 5.0, 5.1], engine: "google" },
-    { query: "доставка цветов", clicks: 218, impressions: 5600, position: 6.8, positionTrend: [8.2, 7.5, 7.1, 6.9, 6.8, 6.5, 6.8], engine: "yandex" },
-    { query: "flower delivery moscow", clicks: 195, impressions: 4900, position: 7.2, positionTrend: [9.0, 8.5, 7.8, 7.5, 7.2, 7.0, 7.2], engine: "google" },
-    { query: "букет роз", clicks: 187, impressions: 4100, position: 3.1, positionTrend: [4.0, 3.8, 3.5, 3.2, 3.1, 3.0, 3.1], engine: "yandex" },
-    { query: "цветы москва", clicks: 156, impressions: 2900, position: 2.4, positionTrend: [3.5, 3.0, 2.8, 2.6, 2.4, 2.3, 2.4], engine: "yandex" },
-    { query: "roses bouquet", clicks: 142, impressions: 3200, position: 8.3, positionTrend: [10.0, 9.5, 9.0, 8.6, 8.3, 8.1, 8.3], engine: "google" },
-    { query: "свадебный букет", clicks: 134, impressions: 3800, position: 7.5, positionTrend: [9.0, 8.5, 8.0, 7.8, 7.5, 7.3, 7.5], engine: "yandex" },
-    { query: "цветы оптом", clicks: 98, impressions: 2200, position: 11.3, positionTrend: [15.0, 13.5, 12.8, 12.0, 11.5, 11.3, 11.3], engine: "yandex" },
-    { query: "wedding flowers", clicks: 88, impressions: 2100, position: 12.1, positionTrend: [15.0, 14.0, 13.0, 12.5, 12.1, 12.0, 12.1], engine: "google" },
+  const m = 1 + (seed % 5) * 0.15;
+  const base: Omit<KeywordRow, "clicks" | "impressions" | "ctr">[] = [
+    { query: "купить цветы", position: 4.2, positionTrend: [5.1,4.8,4.5,4.3,4.2,4.0,4.2], engine: "yandex", queryType: "commercial" },
+    { query: "buy flowers online", position: 5.1, positionTrend: [6.5,6.0,5.6,5.3,5.1,5.0,5.1], engine: "google", queryType: "commercial" },
+    { query: "доставка цветов", position: 6.8, positionTrend: [8.2,7.5,7.1,6.9,6.8,6.5,6.8], engine: "yandex", queryType: "commercial" },
+    { query: "flower delivery moscow", position: 7.2, positionTrend: [9.0,8.5,7.8,7.5,7.2,7.0,7.2], engine: "google", queryType: "commercial" },
+    { query: "букет роз", position: 3.1, positionTrend: [4.0,3.8,3.5,3.2,3.1,3.0,3.1], engine: "yandex", queryType: "commercial" },
+    { query: "souzcvettorg", position: 1.0, positionTrend: [1.0,1.0,1.0,1.0,1.0,1.0,1.0], engine: "yandex", queryType: "brand" },
+    { query: "союзцветторг", position: 1.2, positionTrend: [1.5,1.3,1.2,1.2,1.1,1.2,1.2], engine: "yandex", queryType: "brand" },
+    { query: "souzcvettorg отзывы", position: 2.3, positionTrend: [3.0,2.8,2.5,2.3,2.3,2.2,2.3], engine: "google", queryType: "brand" },
+    { query: "как ухаживать за розами", position: 8.5, positionTrend: [12.0,10.5,9.5,8.8,8.5,8.3,8.5], engine: "yandex", queryType: "informational" },
+    { query: "how to care for flowers", position: 9.1, positionTrend: [13.0,11.5,10.2,9.5,9.1,9.0,9.1], engine: "google", queryType: "informational" },
+    { query: "какие цветы дарить", position: 11.3, positionTrend: [15.0,13.5,12.8,12.0,11.5,11.3,11.3], engine: "yandex", queryType: "informational" },
+    { query: "wedding flowers guide", position: 12.1, positionTrend: [15.0,14.0,13.0,12.5,12.1,12.0,12.1], engine: "google", queryType: "informational" },
+    { query: "цветы оптом москва", position: 5.5, positionTrend: [7.0,6.5,6.0,5.8,5.5,5.3,5.5], engine: "yandex", queryType: "commercial" },
+    { query: "roses bouquet price", position: 8.3, positionTrend: [10.0,9.5,9.0,8.6,8.3,8.1,8.3], engine: "google", queryType: "commercial" },
   ];
 
-  // Visibility by engine
-  const engineData = [];
-  for (let i = 0; i < Math.min(days, 30); i++) {
+  return base.map((b, i) => {
+    const baseClicks = Math.round((400 - i * 25) * m * (days / 30));
+    const baseImpressions = Math.round(baseClicks * (3 + Math.random() * 8));
+    const ctr = baseImpressions > 0 ? Math.round((baseClicks / baseImpressions) * 1000) / 10 : 0;
+    return { ...b, clicks: baseClicks, impressions: baseImpressions, ctr };
+  });
+}
+
+function generatePositionChart(dateFrom: Date, dateTo: Date) {
+  const days = Math.min(differenceInDays(dateTo, dateFrom) + 1, 60);
+  const data = [];
+  for (let i = 0; i < days; i++) {
     const d = new Date(dateFrom);
     d.setDate(d.getDate() + i);
-    engineData.push({
+    data.push({
       day: format(d, "dd.MM"),
-      yandex: Math.round(25 + Math.random() * 20 + i * 0.8),
-      google: Math.round(18 + Math.random() * 15 + i * 1.2),
-      other: Math.round(3 + Math.random() * 5),
+      yandex: Math.round((25 + Math.random() * 20 + i * 0.8) * 10) / 10,
+      google: Math.round((18 + Math.random() * 15 + i * 1.2) * 10) / 10,
     });
   }
-
-  // Landing pages by engine
-  const yandexLandings = [
-    { url: "/catalog", title: "Каталог цветов", visits: 1250 },
-    { url: "/bouquets/roses", title: "Букеты из роз", visits: 890 },
-    { url: "/", title: "Главная", visits: 780 },
-    { url: "/delivery", title: "Доставка", visits: 540 },
-    { url: "/corporate", title: "Корпоративным клиентам", visits: 320 },
-  ];
-  const googleLandings = [
-    { url: "/", title: "Главная", visits: 980 },
-    { url: "/catalog", title: "Каталог цветов", visits: 720 },
-    { url: "/blog/spring-flowers", title: "Весенние цветы: гид", visits: 560 },
-    { url: "/bouquets/roses", title: "Букеты из роз", visits: 410 },
-    { url: "/blog/wedding-bouquets", title: "Свадебные букеты", visits: 340 },
-  ];
-
-  return { queries, engineData, yandexLandings, googleLandings };
+  return data;
 }
+
+const QUERY_TYPE_LABELS: Record<string, Record<QueryType | "all", string>> = {
+  ru: { all: "Все", brand: "Брендовые", informational: "Информационные", commercial: "Коммерческие" },
+  en: { all: "All", brand: "Brand", informational: "Informational", commercial: "Commercial" },
+};
 
 export function SeoTab({ projectId }: SeoTabProps) {
   const { t, i18n } = useTranslation();
-  const locale = i18n.language === "ru" ? ru : enUS;
+  const lang = i18n.language === "ru" ? "ru" : "en";
+  const { appliedRange, showComparison, appliedCompRange } = useDateRange();
 
-  const today = new Date();
-  const [range, setRange] = useState<DateRange>({ from: subDays(today, 30), to: today });
-  const [appliedRange, setAppliedRange] = useState<DateRange>(range);
+  const [queryTypeFilter, setQueryTypeFilter] = useState<QueryType | "all">("all");
 
-  const [showComparison, setShowComparison] = useState(false);
-  const [compRange, setCompRange] = useState<DateRange>({
-    from: subYears(subDays(today, 30), 1), to: subYears(today, 1),
-  });
-  const [appliedCompRange, setAppliedCompRange] = useState<DateRange>(compRange);
+  const seed = useMemo(() => appliedRange.from.getDate() + appliedRange.to.getDate() + appliedRange.from.getMonth(), [appliedRange]);
 
-  const { data: cachedReport } = useQuery({
-    queryKey: ["cached_report", projectId],
-    queryFn: async () => {
-      const now = new Date();
-      const { data } = await supabase.from("cached_reports").select("*")
-        .eq("project_id", projectId).eq("report_year", now.getFullYear()).eq("report_month", now.getMonth()).maybeSingle();
-      return data;
-    },
-    enabled: !!projectId,
-  });
-
-  const aiSummary = cachedReport?.report_data && typeof cachedReport.report_data === 'object' && 'ai_summary' in (cachedReport.report_data as any)
-    ? (cachedReport.report_data as any).ai_summary : undefined;
-
-  const { queries, engineData, yandexLandings, googleLandings } = useMemo(
-    () => generateSeoData(appliedRange.from, appliedRange.to), [appliedRange]
-  );
-
-  const compData = useMemo(() => {
+  const keywords = useMemo(() => generateKeywords(appliedRange.from, appliedRange.to, seed), [appliedRange, seed]);
+  const compKeywords = useMemo(() => {
     if (!showComparison) return null;
-    return generateSeoData(appliedCompRange.from, appliedCompRange.to);
+    return generateKeywords(appliedCompRange.from, appliedCompRange.to, seed + 7);
+  }, [showComparison, appliedCompRange, seed]);
+
+  const chartData = useMemo(() => generatePositionChart(appliedRange.from, appliedRange.to), [appliedRange]);
+  const compChartData = useMemo(() => {
+    if (!showComparison) return null;
+    return generatePositionChart(appliedCompRange.from, appliedCompRange.to);
   }, [showComparison, appliedCompRange]);
 
-  // Merge engine data for comparison
-  const mergedEngineData = useMemo(() => {
-    if (!showComparison || !compData) return engineData;
-    const maxLen = Math.max(engineData.length, compData.engineData.length);
-    const result = [];
-    for (let i = 0; i < maxLen; i++) {
-      result.push({
-        day: engineData[i]?.day || `${i + 1}`,
-        yandex: engineData[i]?.yandex || 0,
-        google: engineData[i]?.google || 0,
-        prevYandex: compData.engineData[i]?.yandex || 0,
-        prevGoogle: compData.engineData[i]?.google || 0,
-      });
-    }
-    return result;
-  }, [engineData, compData, showComparison]);
+  const mergedChartData = useMemo(() => {
+    if (!showComparison || !compChartData) return chartData;
+    const maxLen = Math.max(chartData.length, compChartData.length);
+    return Array.from({ length: maxLen }, (_, i) => ({
+      day: chartData[i]?.day || `${i + 1}`,
+      yandex: chartData[i]?.yandex || 0,
+      google: chartData[i]?.google || 0,
+      prevYandex: compChartData[i]?.yandex || 0,
+      prevGoogle: compChartData[i]?.google || 0,
+    }));
+  }, [chartData, compChartData, showComparison]);
 
-  const queriesWithDelta = useMemo(() => {
-    if (!showComparison || !compData) return queries.map(q => ({ ...q, clicksDelta: 0, positionDelta: 0 }));
-    return queries.map(q => {
-      const prev = compData.queries.find(cq => cq.query === q.query);
+  const filtered = useMemo(() => {
+    const base = queryTypeFilter === "all" ? keywords : keywords.filter(k => k.queryType === queryTypeFilter);
+    return base.sort((a, b) => b.clicks - a.clicks);
+  }, [keywords, queryTypeFilter]);
+
+  const withDelta = useMemo(() => {
+    if (!showComparison || !compKeywords) return filtered.map(k => ({ ...k, clicksDelta: 0, positionDelta: 0 }));
+    return filtered.map(k => {
+      const prev = compKeywords.find(c => c.query === k.query);
       return {
-        ...q,
-        clicksDelta: prev ? ((q.clicks - prev.clicks) / prev.clicks) * 100 : 0,
-        positionDelta: prev ? q.position - prev.position : 0,
+        ...k,
+        clicksDelta: prev ? ((k.clicks - prev.clicks) / (prev.clicks || 1)) * 100 : 0,
+        positionDelta: prev ? k.position - prev.position : 0,
       };
     });
-  }, [queries, compData, showComparison]);
+  }, [filtered, compKeywords, showComparison]);
 
-  const handleApply = () => {
-    setAppliedRange({ ...range });
-    if (showComparison) setAppliedCompRange({ ...compRange });
-  };
+  const totalClicks = filtered.reduce((s, q) => s + q.clicks, 0);
+  const totalImpressions = filtered.reduce((s, q) => s + q.impressions, 0);
+  const avgCtr = totalImpressions > 0 ? Math.round((totalClicks / totalImpressions) * 1000) / 10 : 0;
+  const avgPosition = filtered.length > 0 ? Math.round((filtered.reduce((s, q) => s + q.position, 0) / filtered.length) * 10) / 10 : 0;
 
-  const handleCompPreset = (type: "previous" | "lastYear") => {
-    const days = differenceInDays(range.to, range.from);
-    const nr = type === "previous"
-      ? { from: subDays(range.from, days + 1), to: subDays(range.from, 1) }
-      : { from: subYears(range.from, 1), to: subYears(range.to, 1) };
-    setCompRange(nr);
-  };
-
-  const totalClicks = queries.reduce((s, q) => s + q.clicks, 0);
-  const totalImpressions = queries.reduce((s, q) => s + q.impressions, 0);
-  const avgPosition = queries.length > 0
-    ? Math.round((queries.reduce((s, q) => s + q.position, 0) / queries.length) * 10) / 10 : 0;
-
-  const yandexClicks = queries.filter(q => q.engine === "yandex").reduce((s, q) => s + q.clicks, 0);
-  const googleClicks = queries.filter(q => q.engine === "google").reduce((s, q) => s + q.clicks, 0);
-  const yandexShare = totalClicks > 0 ? Math.round((yandexClicks / totalClicks) * 1000) / 10 : 0;
-  const googleShare = totalClicks > 0 ? Math.round((googleClicks / totalClicks) * 1000) / 10 : 0;
+  const typeCounts = useMemo(() => ({
+    all: keywords.length,
+    brand: keywords.filter(k => k.queryType === "brand").length,
+    informational: keywords.filter(k => k.queryType === "informational").length,
+    commercial: keywords.filter(k => k.queryType === "commercial").length,
+  }), [keywords]);
 
   return (
     <div className="space-y-6">
-      {/* Filter Bar */}
+      {/* Query Type Filter */}
       <Card className="border-border bg-card">
         <CardContent className="p-4">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-primary bg-primary/10 px-1.5 py-0.5 rounded">
-              {t("comparison.a", "А")}
-            </span>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5 min-w-[170px]">
-                  <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" />
-                  {format(range.from, "dd.MM.yy", { locale })} — {format(range.to, "dd.MM.yy", { locale })}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar mode="range" selected={{ from: range.from, to: range.to }}
-                  onSelect={(r: any) => { if (r?.from) setRange({ from: r.from, to: r.to || r.from }); }}
-                  numberOfMonths={1} locale={locale} className="p-3 pointer-events-auto" />
-              </PopoverContent>
-            </Popover>
-
-            <span className="text-xs font-bold text-muted-foreground px-1">VS</span>
-
-            <div className={cn("flex items-center gap-1.5 transition-opacity", !showComparison && "opacity-40 pointer-events-none")}>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                {t("comparison.b", "Б")}
-              </span>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5 min-w-[170px]" disabled={!showComparison}>
-                    <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" />
-                    {format(compRange.from, "dd.MM.yy", { locale })} — {format(compRange.to, "dd.MM.yy", { locale })}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar mode="range" selected={{ from: compRange.from, to: compRange.to }}
-                    onSelect={(r: any) => { if (r?.from) setCompRange({ from: r.from, to: r.to || r.from }); }}
-                    numberOfMonths={1} locale={locale} className="p-3 pointer-events-auto" />
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            <div className="flex items-center gap-2 ml-1">
-              <Switch id="seo-comp" checked={showComparison} onCheckedChange={setShowComparison} className="scale-90" />
-              <Label htmlFor="seo-comp" className="text-xs text-muted-foreground cursor-pointer flex items-center gap-1">
-                <ArrowRightLeft className="h-3 w-3" />
-                {t("comparison.enable")}
-              </Label>
-            </div>
-
-            <Button size="sm" className="h-8 text-xs ml-auto" onClick={handleApply}>
-              {t("project.analytics.apply")}
-            </Button>
+          <div className="flex items-center gap-3 flex-wrap">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium text-foreground">{t("seoTab.queryType", "Тип запроса")}:</span>
+            <ToggleGroup type="single" value={queryTypeFilter} onValueChange={(v) => v && setQueryTypeFilter(v as any)}>
+              {(["all", "brand", "informational", "commercial"] as const).map(type => (
+                <ToggleGroupItem key={type} value={type} variant="outline" size="sm" className="text-xs gap-1.5 h-8">
+                  {QUERY_TYPE_LABELS[lang][type]}
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 ml-0.5">{typeCounts[type]}</Badge>
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
           </div>
-
-          {showComparison && (
-            <div className="flex items-center gap-2 mt-2 pt-2 border-t border-border">
-              <span className="text-xs text-muted-foreground">{t("comparison.presets")}:</span>
-              <Button variant="outline" size="sm" className="h-6 text-[11px] px-2" onClick={() => handleCompPreset("previous")}>
-                {t("project.analytics.prevPeriod")}
-              </Button>
-              <Button variant="outline" size="sm" className="h-6 text-[11px] px-2" onClick={() => handleCompPreset("lastYear")}>
-                {t("project.analytics.lastYear")}
-              </Button>
-            </div>
-          )}
         </CardContent>
       </Card>
 
-      {/* KPI row — with engine share */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        <Card className="border-border bg-card p-4">
-          <p className="text-xs text-muted-foreground">{t("seoTab.totalClicks")}</p>
-          <p className="text-2xl font-bold text-foreground mt-1">{totalClicks.toLocaleString()}</p>
-        </Card>
-        <Card className="border-border bg-card p-4">
-          <p className="text-xs text-muted-foreground">{t("seoTab.totalImpressions")}</p>
-          <p className="text-2xl font-bold text-foreground mt-1">{totalImpressions.toLocaleString()}</p>
-        </Card>
-        <Card className="border-border bg-card p-4">
-          <p className="text-xs text-muted-foreground">{t("seoTab.avgPosition")}</p>
-          <p className="text-2xl font-bold text-foreground mt-1">{avgPosition}</p>
-        </Card>
-        <Card className="border-border bg-card p-4">
-          <div className="flex items-center gap-1.5 mb-1">
-            <YandexIcon />
-            <p className="text-xs text-muted-foreground">{t("seoTab.yandexShare", "Доля Яндекса")}</p>
-          </div>
-          <p className="text-2xl font-bold text-foreground">{yandexShare}%</p>
-        </Card>
-        <Card className="border-border bg-card p-4">
-          <div className="flex items-center gap-1.5 mb-1">
-            <GoogleIcon />
-            <p className="text-xs text-muted-foreground">{t("seoTab.googleShare", "Доля Google")}</p>
-          </div>
-          <p className="text-2xl font-bold text-foreground">{googleShare}%</p>
-        </Card>
+      {/* KPI Row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: t("seoTab.totalClicks", "Клики"), value: totalClicks.toLocaleString() },
+          { label: t("seoTab.totalImpressions", "Показы"), value: totalImpressions.toLocaleString() },
+          { label: "CTR", value: `${avgCtr}%` },
+          { label: t("seoTab.avgPosition", "Ср. позиция"), value: String(avgPosition) },
+        ].map((kpi, i) => (
+          <Card key={i} className="border-border bg-card p-4">
+            <p className="text-xs text-muted-foreground">{kpi.label}</p>
+            <p className="text-2xl font-bold text-foreground mt-1">{kpi.value}</p>
+          </Card>
+        ))}
       </div>
 
-      {/* Search Engine Dynamics Chart */}
+      {/* Visibility Chart */}
       <Card className="border-border bg-card">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
             <Search className="h-4 w-4" />
-            {t("seoTab.engineDynamics", "Динамика по поисковым системам")}
+            {t("seoTab.engineDynamics", "Динамика видимости")}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
             {showComparison ? (
-              <LineChart data={mergedEngineData}>
+              <LineChart data={mergedChartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.5} />
                 <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} />
                 <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} />
-                <Tooltip content={<DualTooltip />} />
+                <Tooltip content={<ChartTooltip />} />
                 <Legend />
-                <Line type="monotone" dataKey="yandex" name={t("engines.yandex")}
-                  stroke={ENGINE_COLORS.yandex} strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} />
-                <Line type="monotone" dataKey="google" name={t("engines.google")}
-                  stroke={ENGINE_COLORS.google} strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} />
-                <Line type="monotone" dataKey="prevYandex" name={`${t("engines.yandex")} (${t("comparison.periodB")})`}
-                  stroke={ENGINE_COLORS.yandex} strokeWidth={1.5} strokeDasharray="6 3" dot={false} opacity={0.5} />
-                <Line type="monotone" dataKey="prevGoogle" name={`${t("engines.google")} (${t("comparison.periodB")})`}
-                  stroke={ENGINE_COLORS.google} strokeWidth={1.5} strokeDasharray="6 3" dot={false} opacity={0.5} />
+                <Line type="monotone" dataKey="yandex" name={t("engines.yandex", "Яндекс")} stroke={ENGINE_COLORS.yandex} strokeWidth={2.5} dot={false} />
+                <Line type="monotone" dataKey="google" name={t("engines.google", "Google")} stroke={ENGINE_COLORS.google} strokeWidth={2.5} dot={false} />
+                <Line type="monotone" dataKey="prevYandex" name={`${t("engines.yandex", "Яндекс")} (Б)`} stroke={ENGINE_COLORS.yandex} strokeWidth={1.5} strokeDasharray="6 3" dot={false} opacity={0.5} />
+                <Line type="monotone" dataKey="prevGoogle" name={`${t("engines.google", "Google")} (Б)`} stroke={ENGINE_COLORS.google} strokeWidth={1.5} strokeDasharray="6 3" dot={false} opacity={0.5} />
               </LineChart>
             ) : (
-              <AreaChart data={mergedEngineData}>
+              <AreaChart data={mergedChartData}>
                 <defs>
-                  <linearGradient id="seoYandexGrad" x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient id="kwYandexGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor={ENGINE_COLORS.yandex} stopOpacity={0.2} />
                     <stop offset="95%" stopColor={ENGINE_COLORS.yandex} stopOpacity={0} />
                   </linearGradient>
-                  <linearGradient id="seoGoogleGrad" x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient id="kwGoogleGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor={ENGINE_COLORS.google} stopOpacity={0.2} />
                     <stop offset="95%" stopColor={ENGINE_COLORS.google} stopOpacity={0} />
                   </linearGradient>
@@ -385,59 +281,75 @@ export function SeoTab({ projectId }: SeoTabProps) {
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.5} />
                 <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} />
                 <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} />
-                <Tooltip content={<DualTooltip />} />
+                <Tooltip content={<ChartTooltip />} />
                 <Legend />
-                <Area type="monotone" dataKey="yandex" name={t("engines.yandex")}
-                  stroke={ENGINE_COLORS.yandex} strokeWidth={2} fill="url(#seoYandexGrad)" dot={false} activeDot={{ r: 3 }} />
-                <Area type="monotone" dataKey="google" name={t("engines.google")}
-                  stroke={ENGINE_COLORS.google} strokeWidth={2} fill="url(#seoGoogleGrad)" dot={false} activeDot={{ r: 3 }} />
+                <Area type="monotone" dataKey="yandex" name={t("engines.yandex", "Яндекс")} stroke={ENGINE_COLORS.yandex} strokeWidth={2} fill="url(#kwYandexGrad)" dot={false} />
+                <Area type="monotone" dataKey="google" name={t("engines.google", "Google")} stroke={ENGINE_COLORS.google} strokeWidth={2} fill="url(#kwGoogleGrad)" dot={false} />
               </AreaChart>
             )}
           </ResponsiveContainer>
         </CardContent>
       </Card>
 
-      {/* Queries Table with engine icons */}
+      {/* Keywords Table */}
       <Card className="border-border bg-card">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">
-            {t("seoTab.queriesTable")}
+            {t("seoTab.queriesTable", "Топ поисковых запросов")}
+            <span className="ml-2 text-xs text-muted-foreground/70">({filtered.length})</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="rounded-lg border border-border/60 overflow-hidden">
+          <div className="rounded-lg border border-border/60 overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/30">
                   <TableHead className="text-xs w-8"></TableHead>
-                  <TableHead className="text-xs">{t("seoTab.query")}</TableHead>
-                  <TableHead className="text-xs text-right">{t("seoTab.clicks")}</TableHead>
-                  <TableHead className="text-xs text-right">{t("seoTab.impressions")}</TableHead>
-                  <TableHead className="text-xs text-right">{t("seoTab.position")}</TableHead>
-                  <TableHead className="text-xs text-center">{t("seoTab.trend")}</TableHead>
-                  {showComparison && <TableHead className="text-xs text-right">{t("seoTab.change")}</TableHead>}
-                  {showComparison && <TableHead className="text-xs text-right">{t("seoTab.posChange")}</TableHead>}
+                  <TableHead className="text-xs">{t("seoTab.query", "Фраза")}</TableHead>
+                  <TableHead className="text-xs">{t("seoTab.queryType", "Тип")}</TableHead>
+                  <TableHead className="text-xs text-right">{t("seoTab.clicks", "Клики")}</TableHead>
+                  <TableHead className="text-xs text-right">{t("seoTab.impressions", "Показы")}</TableHead>
+                  <TableHead className="text-xs text-right">CTR</TableHead>
+                  <TableHead className="text-xs text-right">{t("seoTab.position", "Позиция")}</TableHead>
+                  <TableHead className="text-xs text-center">{t("seoTab.trend", "Тренд")}</TableHead>
+                  {showComparison && <TableHead className="text-xs text-right">{t("seoTab.change", "Δ кликов")}</TableHead>}
+                  {showComparison && <TableHead className="text-xs text-right">{t("seoTab.posChange", "Δ позиции")}</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {queriesWithDelta.map((q, i) => (
+                {withDelta.map((q, i) => (
                   <TableRow key={i}>
                     <TableCell className="pr-0">
                       {q.engine === "yandex" ? <YandexIcon /> : <GoogleIcon />}
                     </TableCell>
                     <TableCell className="text-sm font-medium">{q.query}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={cn("text-[10px] px-1.5",
+                        q.queryType === "brand" && "border-primary/40 text-primary",
+                        q.queryType === "commercial" && "border-emerald-500/40 text-emerald-600",
+                        q.queryType === "informational" && "border-amber-500/40 text-amber-600",
+                      )}>
+                        {QUERY_TYPE_LABELS[lang][q.queryType]}
+                      </Badge>
+                    </TableCell>
                     <TableCell className="text-sm text-right tabular-nums">{q.clicks.toLocaleString()}</TableCell>
                     <TableCell className="text-sm text-right tabular-nums">{q.impressions.toLocaleString()}</TableCell>
+                    <TableCell className="text-sm text-right tabular-nums">{q.ctr}%</TableCell>
                     <TableCell className="text-sm text-right tabular-nums">{q.position.toFixed(1)}</TableCell>
                     <TableCell className="text-center">
-                      <Sparkline data={q.positionTrend} color={q.positionTrend[0] > q.positionTrend[q.positionTrend.length - 1] ? "hsl(142, 71%, 45%)" : "hsl(0, 84%, 60%)"} />
+                      <Sparkline
+                        data={q.positionTrend}
+                        color={q.positionTrend[0] > q.positionTrend[q.positionTrend.length - 1] ? "hsl(142,71%,45%)" : "hsl(0,84%,60%)"}
+                      />
                     </TableCell>
                     {showComparison && (
                       <TableCell className="text-right"><ChangeIndicator value={q.clicksDelta} /></TableCell>
                     )}
                     {showComparison && (
                       <TableCell className="text-right">
-                        <span className={cn("text-xs font-semibold", q.positionDelta < 0 ? "text-emerald-500" : q.positionDelta > 0 ? "text-red-500" : "text-muted-foreground")}>
+                        <span className={cn("text-xs font-semibold",
+                          q.positionDelta < 0 ? "text-emerald-500" : q.positionDelta > 0 ? "text-red-500" : "text-muted-foreground"
+                        )}>
                           {q.positionDelta < 0 ? "↑" : q.positionDelta > 0 ? "↓" : "—"}
                           {q.positionDelta !== 0 ? Math.abs(q.positionDelta).toFixed(1) : ""}
                         </span>
@@ -450,95 +362,6 @@ export function SeoTab({ projectId }: SeoTabProps) {
           </div>
         </CardContent>
       </Card>
-
-      {/* Landing Pages by Engine */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Yandex Top Landing Pages */}
-        <Card className="border-border bg-card">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <YandexIcon />
-              {t("seoTab.yandexLandings", "Топ-5 страниц из Яндекса")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/30">
-                  <TableHead className="text-xs">{t("pagesTab.page", "Страница")}</TableHead>
-                  <TableHead className="text-xs text-right">{t("pagesTab.visits", "Визиты")}</TableHead>
-                  <TableHead className="text-xs w-8"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {yandexLandings.map((p, i) => (
-                  <TableRow key={i}>
-                    <TableCell>
-                      <p className="text-sm font-medium truncate max-w-[180px]">{p.title}</p>
-                      <p className="text-[11px] text-muted-foreground">{p.url}</p>
-                    </TableCell>
-                    <TableCell className="text-sm text-right tabular-nums">{p.visits.toLocaleString()}</TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="icon" className="h-6 w-6" asChild>
-                        <a href={p.url} target="_blank" rel="noopener noreferrer">
-                          <ExternalLink className="h-3 w-3 text-muted-foreground" />
-                        </a>
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-
-        {/* Google Top Landing Pages */}
-        <Card className="border-border bg-card">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <GoogleIcon />
-              {t("seoTab.googleLandings", "Топ-5 страниц из Google")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/30">
-                  <TableHead className="text-xs">{t("pagesTab.page", "Страница")}</TableHead>
-                  <TableHead className="text-xs text-right">{t("pagesTab.visits", "Визиты")}</TableHead>
-                  <TableHead className="text-xs w-8"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {googleLandings.map((p, i) => (
-                  <TableRow key={i}>
-                    <TableCell>
-                      <p className="text-sm font-medium truncate max-w-[180px]">{p.title}</p>
-                      <p className="text-[11px] text-muted-foreground">{p.url}</p>
-                    </TableCell>
-                    <TableCell className="text-sm text-right tabular-nums">{p.visits.toLocaleString()}</TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="icon" className="h-6 w-6" asChild>
-                        <a href={p.url} target="_blank" rel="noopener noreferrer">
-                          <ExternalLink className="h-3 w-3 text-muted-foreground" />
-                        </a>
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* AI Insights - SEO context */}
-      <AiInsightsBlock
-        projectId={projectId}
-        summary={aiSummary}
-        isAdmin={true}
-        trafficSources={[]}
-      />
     </div>
   );
 }
