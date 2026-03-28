@@ -174,9 +174,20 @@ Deno.serve(async (req) => {
         if (!host_id) throw new Error("host_id is required");
         const userId = await getWmUserId();
         const encodedHost = encodeURIComponent(host_id);
-        const resp = await fetch(`${WM_BASE}/user/${userId}/hosts/${encodedHost}/links/external/history`, { headers: wmHeaders });
+        const now = new Date();
+        const sixMonthsAgo = new Date(now);
+        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+        const blDateFrom = sixMonthsAgo.toISOString().split("T")[0];
+        const blDateTo = now.toISOString().split("T")[0];
+        const resp = await fetch(
+          `${WM_BASE}/user/${userId}/hosts/${encodedHost}/links/external/history?date_from=${blDateFrom}&date_to=${blDateTo}`,
+          { headers: wmHeaders }
+        );
         const data = await resp.json();
-        if (!resp.ok) throw new Error(data?.error_message || "Failed to get backlinks");
+        if (!resp.ok) {
+          console.error("Backlinks API error:", resp.status, JSON.stringify(data));
+          throw new Error(data?.error_message || "Failed to get backlinks");
+        }
         return new Response(JSON.stringify(data), {
           status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
