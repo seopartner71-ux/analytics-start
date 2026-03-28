@@ -8,6 +8,7 @@ import { AddProjectWizard } from "@/components/AddProjectWizard";
 import { PageHeader } from "@/components/PageHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useProjectsStats } from "@/hooks/useProjectsStats";
 
 const COLORS = [
   "hsl(239, 84%, 67%)",
@@ -36,6 +37,8 @@ const Index = () => {
     },
   });
 
+  const { data: statsMap = {} } = useProjectsStats(projects);
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
@@ -60,22 +63,26 @@ const Index = () => {
               <div className="text-center py-20 text-muted-foreground">{t("dashboard.noProjects")}</div>
             ) : (
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {projects.map((project, i) => (
-                  <ProjectCard
-                    key={project.id}
-                    name={project.name}
-                    url={project.url || ""}
-                    initials={getInitials(project.name)}
-                    color={COLORS[i % COLORS.length]}
-                    logoUrl={project.logo_url}
-                    description={project.description}
-                    seoSpecialist={project.seo_specialist}
-                    accountManager={project.account_manager}
-                    reportStatus=""
-                    reportReady={false}
-                    onClick={() => navigate(`/project/${project.id}`)}
-                  />
-                ))}
+                {projects.map((project, i) => {
+                  const stats = statsMap[project.id];
+                  return (
+                    <ProjectCard
+                      key={project.id}
+                      name={project.name}
+                      url={project.url || ""}
+                      initials={getInitials(project.name)}
+                      color={COLORS[i % COLORS.length]}
+                      logoUrl={project.logo_url}
+                      description={project.description}
+                      seoSpecialist={project.seo_specialist}
+                      accountManager={project.account_manager}
+                      reportStatus=""
+                      reportReady={false}
+                      stats={stats}
+                      onClick={() => navigate(`/project/${project.id}`)}
+                    />
+                  );
+                })}
               </div>
             )}
           </main>

@@ -5,6 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { ExternalLink, BarChart3, ArrowUpRight, Settings } from "lucide-react";
 
+interface ProjectStats {
+  top10: number;
+  avgPos: number;
+  visibility: number;
+  top10Delta: number;
+  avgPosDelta: number;
+  visibilityDelta: number;
+}
+
 interface ProjectCardProps {
   name: string;
   url: string;
@@ -16,6 +25,7 @@ interface ProjectCardProps {
   accountManager?: string | null;
   reportStatus: string;
   reportReady: boolean;
+  stats?: ProjectStats;
   onClick: () => void;
 }
 
@@ -60,6 +70,26 @@ function getDomain(url: string) {
   return url.replace(/^https?:\/\//, "").replace(/\/$/, "");
 }
 
+function DeltaBadge({ value, invert }: { value: number; invert?: boolean }) {
+  if (value === 0) return null;
+  // For avg position, lower is better so invert the color
+  const isPositive = invert ? value < 0 : value > 0;
+  const display = invert
+    ? (value < 0 ? `${value}` : `+${value}`)
+    : (value > 0 ? `+${value}` : `${value}`);
+  
+  return (
+    <Badge
+      variant="secondary"
+      className={`text-[9px] px-1 py-0 h-3.5 font-medium border-0 ${
+        isPositive ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"
+      }`}
+    >
+      {display}
+    </Badge>
+  );
+}
+
 export function ProjectCard({
   name,
   url,
@@ -69,6 +99,7 @@ export function ProjectCard({
   description,
   seoSpecialist,
   accountManager,
+  stats,
   onClick,
 }: ProjectCardProps) {
   const [faviconError, setFaviconError] = useState(false);
@@ -76,9 +107,10 @@ export function ProjectCard({
   const faviconUrl = domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=64` : "";
   const sparkData = SPARKLINE_DATA[name.length % SPARKLINE_DATA.length];
 
-  const top10 = 12 + (name.length % 20);
-  const avgPos = (8 + (name.length % 15)).toFixed(1);
-  const visibility = (35 + (name.length % 40)).toFixed(0);
+  const top10 = stats?.top10 ?? 0;
+  const avgPos = stats?.avgPos ?? 0;
+  const visibility = stats?.visibility ?? 0;
+  const hasStats = stats !== undefined;
 
   return (
     <Card
@@ -88,7 +120,6 @@ export function ProjectCard({
       <CardContent className="p-3 space-y-2.5">
         {/* Header: Favicon + Title + Actions */}
         <div className="flex items-start gap-2.5">
-          {/* Favicon */}
           <div className="shrink-0 mt-0.5">
             {faviconUrl && !faviconError ? (
               <img
@@ -107,7 +138,6 @@ export function ProjectCard({
             )}
           </div>
 
-          {/* Title & Domain */}
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-[13px] leading-tight text-foreground truncate group-hover:text-primary transition-colors">
               {name}
@@ -126,17 +156,11 @@ export function ProjectCard({
             )}
           </div>
 
-          {/* Quick Actions */}
           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
             <TooltipProvider delayDuration={200}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-6 w-6 text-muted-foreground hover:text-primary"
-                    onClick={(e) => { e.stopPropagation(); onClick(); }}
-                  >
+                  <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-primary" onClick={(e) => { e.stopPropagation(); onClick(); }}>
                     <BarChart3 className="h-3 w-3" />
                   </Button>
                 </TooltipTrigger>
@@ -144,12 +168,7 @@ export function ProjectCard({
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-6 w-6 text-muted-foreground hover:text-primary"
-                    onClick={(e) => e.stopPropagation()}
-                  >
+                  <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-primary" onClick={(e) => e.stopPropagation()}>
                     <Settings className="h-3 w-3" />
                   </Button>
                 </TooltipTrigger>
@@ -159,21 +178,31 @@ export function ProjectCard({
           </div>
         </div>
 
-        {/* Description */}
         {description && (
           <p className="text-[11px] text-muted-foreground/60 line-clamp-1 leading-relaxed">{description}</p>
         )}
 
         {/* Stats Row */}
         <div className="flex items-center gap-3 py-1.5 px-2 rounded-md bg-muted/20">
-          <StatItem label="ТОП-10" value={String(top10)} delta="+3" positive />
+          <div className="flex-1 text-center">
+            <p className="text-[9px] uppercase tracking-wider text-muted-foreground/50 font-medium">ТОП-10</p>
+            <p className="text-sm font-bold text-foreground tabular-nums">{hasStats ? top10 : "—"}</p>
+            {hasStats && <DeltaBadge value={stats.top10Delta} />}
+          </div>
           <div className="w-px h-6 bg-border/30" />
-          <StatItem label="Ср. поз." value={avgPos} delta="−1.2" positive />
+          <div className="flex-1 text-center">
+            <p className="text-[9px] uppercase tracking-wider text-muted-foreground/50 font-medium">Ср. поз.</p>
+            <p className="text-sm font-bold text-foreground tabular-nums">{hasStats ? avgPos : "—"}</p>
+            {hasStats && <DeltaBadge value={stats.avgPosDelta} invert />}
+          </div>
           <div className="w-px h-6 bg-border/30" />
-          <StatItem label="Видим." value={`${visibility}%`} delta="+4.5%" positive />
+          <div className="flex-1 text-center">
+            <p className="text-[9px] uppercase tracking-wider text-muted-foreground/50 font-medium">Видим.</p>
+            <p className="text-sm font-bold text-foreground tabular-nums">{hasStats ? `${visibility}%` : "—"}</p>
+            {hasStats && <DeltaBadge value={stats.visibilityDelta} />}
+          </div>
         </div>
 
-        {/* Sparkline */}
         <Sparkline data={sparkData} />
 
         {/* Footer */}
@@ -193,26 +222,5 @@ export function ProjectCard({
         </div>
       </CardContent>
     </Card>
-  );
-}
-
-function StatItem({ label, value, delta, positive }: { label: string; value: string; delta: string; positive: boolean }) {
-  return (
-    <div className="flex-1 text-center">
-      <p className="text-[9px] uppercase tracking-wider text-muted-foreground/50 font-medium">{label}</p>
-      <p className="text-sm font-bold text-foreground tabular-nums" style={{ fontFamily: "'Inter', system-ui, sans-serif", fontFeatureSettings: '"tnum"' }}>
-        {value}
-      </p>
-      <Badge
-        variant="secondary"
-        className={`text-[9px] px-1 py-0 h-3.5 font-medium border-0 ${
-          positive
-            ? "bg-emerald-500/10 text-emerald-400"
-            : "bg-rose-500/10 text-rose-400"
-        }`}
-      >
-        {delta}
-      </Badge>
-    </div>
   );
 }
