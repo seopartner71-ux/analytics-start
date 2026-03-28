@@ -547,12 +547,18 @@ function PositionsDashboard({
     <div className="space-y-6 relative">
       {isRefreshing && <TabLoadingOverlay show={isRefreshing} />}
 
-      {/* Project selector + sync */}
+      {/* Project selector + region + sync */}
       <div className="flex items-center gap-3 flex-wrap">
         <TopvisorProjectSelector
           apiKey={apiKey} userId={userId} projectId={projectId}
           currentExternalId={tvProjectId} integrationId={integrationId}
-          onSelect={setSelectedTvProject}
+          onSelect={(id) => { setSelectedTvProject(id); setSelectedRegion(""); }}
+          onRegionsLoaded={handleRegionsLoaded}
+        />
+        <RegionSelector
+          regions={regions}
+          selectedIndex={selectedRegion}
+          onSelect={setSelectedRegion}
         />
         <Button variant="outline" size="sm" className="gap-1.5" onClick={handleSync}>
           <RefreshCw className={cn("h-3.5 w-3.5", isLoading && "animate-spin")} />
