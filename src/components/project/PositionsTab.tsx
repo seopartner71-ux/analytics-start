@@ -703,11 +703,24 @@ function PositionsDashboard({
         </div>
       ) : isError ? (
         <GlassCard>
-          <CardContent className="p-6">
+          <CardContent className="p-6 space-y-4">
             <div className="flex items-center gap-3 text-destructive">
               <AlertCircle className="h-5 w-5" />
               <p className="text-sm font-medium">{(error as Error)?.message || "Error loading data"}</p>
             </div>
+            {((error as Error)?.message || "").includes("доступ") && onReconnect && (
+              <div className="flex items-center gap-3">
+                <p className="text-xs text-muted-foreground">
+                  {isRu
+                    ? "У текущего API-ключа нет прав на этот проект. Переподключите с корректными ключами."
+                    : "Current API key lacks permissions for this project. Reconnect with correct credentials."}
+                </p>
+                <Button variant="outline" size="sm" className="gap-1.5 shrink-0" onClick={onReconnect}>
+                  <KeyRound className="h-3.5 w-3.5" />
+                  {isRu ? "Переподключить" : "Reconnect"}
+                </Button>
+              </div>
+            )}
           </CardContent>
         </GlassCard>
       ) : (
