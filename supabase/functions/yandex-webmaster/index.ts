@@ -37,17 +37,12 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { action, project_id, access_token, host_id, url: recrawlUrl, date_from, date_to, query_indicator, order_by, limit: queryLimit } = body as {
+    const { action, project_id, access_token, host_id, url: recrawlUrl } = body as {
       action: string;
       project_id?: string;
       access_token: string;
       host_id?: string;
       url?: string;
-      date_from?: string;
-      date_to?: string;
-      query_indicator?: string;
-      order_by?: string;
-      limit?: number;
     };
 
     if (!access_token) {
@@ -182,29 +177,6 @@ Deno.serve(async (req) => {
         });
         const data = await resp.json();
         if (!resp.ok) throw new Error(data?.error_message || "Recrawl request failed");
-        return new Response(JSON.stringify(data), {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      case "get-search-queries": {
-        if (!host_id) throw new Error("host_id is required");
-        if (!date_from || !date_to) throw new Error("date_from and date_to are required");
-        const userId = await getWmUserId();
-        const encodedHost = encodeURIComponent(host_id);
-        const indicator = query_indicator || "TOTAL_CLICKS";
-        const order = order_by || "TOTAL_CLICKS";
-        const lim = queryLimit || 500;
-        const queryUrl = `${WM_BASE}/user/${userId}/hosts/${encodedHost}/search-queries/popular?order_by=${order}&date_from=${date_from}&date_to=${date_to}&query_indicator=${indicator}&limit=${lim}`;
-        const resp = await fetch(queryUrl, { headers: wmHeaders });
-        if (!resp.ok) {
-          return new Response(JSON.stringify({ queries: [] }), {
-            status: 200,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-        const data = await resp.json();
         return new Response(JSON.stringify(data), {
           status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },

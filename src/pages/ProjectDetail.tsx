@@ -260,16 +260,8 @@ function ProjectDetailInner() {
         return <TrafficTab projectId={project.id} projectName={project.name} projectUrl={project.url || undefined} />;
       case "goals":
         return <GoalsTab projectId={project.id} projectName={project.name} />;
-      case "seo": {
-        const metrikaIntegrationSeo = integrations.find((i) => i.service_name === "yandexMetrika");
-        return (
-          <SeoTab
-            projectId={project.id}
-            accessToken={metrikaIntegrationSeo?.access_token || null}
-            hostId={(project as any).yandex_webmaster_host_id || null}
-          />
-        );
-      }
+      case "seo":
+        return <SeoTab projectId={project.id} />;
       case "pages": {
         const metrikaIntegration = integrations.find((i) => i.service_name === "yandexMetrika");
         return (
