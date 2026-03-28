@@ -85,12 +85,6 @@ export function TrafficTab({ projectId, projectName, projectUrl }: TrafficTabPro
     queryKey: ["metrika-live-traffic", projectId, dateFrom, dateTo],
     queryFn: async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      const resp = await supabase.functions.invoke("yandex-metrika-auth", {
-        body: { access_token: integration!.access_token, counter_id: integration!.counter_id, date1: dateFrom, date2: dateTo },
-        headers: { Authorization: `Bearer ${session?.access_token}` },
-      });
-
-      // Also append ?action=fetch-stats
       const r = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/yandex-metrika-auth?action=fetch-stats`,
         {
