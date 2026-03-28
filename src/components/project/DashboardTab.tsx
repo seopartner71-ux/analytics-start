@@ -19,7 +19,7 @@ import { exportToPdf, exportToExcel, exportToWord, type ExcelSheet, type WordSec
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useDateRange } from "@/contexts/DateRangeContext";
-import { generateDailyVisits, generateKpis } from "@/lib/data-generators";
+import { generateDailyVisits } from "@/lib/data-generators";
 
 interface DashboardTabProps {
   projectId: string;
