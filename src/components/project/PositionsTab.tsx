@@ -456,8 +456,9 @@ function PositionsDashboard({
 
   const [regions, setRegions] = useState<TvRegion[]>([]);
   const [selectedRegion, setSelectedRegion] = useState<string>("");
+  const [activeSearcher, setActiveSearcher] = useState<string>("all");
 
-  // Local date overrides for positions comparison
+  // Local date overrides
   const [localDateFrom, setLocalDateFrom] = useState<Date>(new Date(dateFrom));
   const [localDateTo, setLocalDateTo] = useState<Date>(new Date(dateTo));
 
@@ -489,28 +490,55 @@ function PositionsDashboard({
     enabled: regions.length === 0,
   });
 
-  const regionIndex = selectedRegion || (regions[0]?.index ?? "");
+  // Group regions by searcher for tabs
+  const searcherGroups = useMemo(() => {
+    const groups: Record<string, { name: string; regions: TvRegion[] }> = {};
+    for (const r of regions) {
+      const key = String(r.searcher_key);
+      if (!groups[key]) {
+        const name = r.searcher_key === 0 ? "Yandex" : r.searcher_key === 1 ? "Google" : `SE ${r.searcher_key}`;
+        groups[key] = { name, regions: [] };
+      }
+      groups[key].regions.push(r);
+    }
+    return groups;
+  }, [regions]);
+
+  const searcherKeys = Object.keys(searcherGroups);
+  const hasMultipleSearchers = searcherKeys.length > 1;
+
+  // Filter regions by active searcher tab
+  const filteredRegions = useMemo(() => {
+    if (activeSearcher === "all") return regions;
+    return regions.filter((r) => String(r.searcher_key) === activeSearcher);
+  }, [regions, activeSearcher]);
+
+  // Auto-select first region when searcher tab changes
+  const effectiveRegion = useMemo(() => {
+    if (filteredRegions.find((r) => r.index === selectedRegion)) return selectedRegion;
+    return filteredRegions[0]?.index ?? "";
+  }, [filteredRegions, selectedRegion]);
 
   // Fetch positions
   const { data: positionsData, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ["topvisor-positions", tvProjectId, effectiveDateFrom, effectiveDateTo, regionIndex],
+    queryKey: ["topvisor-positions", tvProjectId, effectiveDateFrom, effectiveDateTo, effectiveRegion],
     queryFn: async () => {
       const data = await callTopvisor("get-positions", apiKey, userId, {
         project_id: tvProjectId,
-        regions_indexes: regionIndex ? [regionIndex] : undefined,
+        regions_indexes: effectiveRegion ? [effectiveRegion] : undefined,
         dates: [effectiveDateFrom, effectiveDateTo],
         show_headers: 1,
         positions_fields: ["position"],
       });
       return data;
     },
-    enabled: !!regionIndex,
+    enabled: !!effectiveRegion,
     retry: 1,
   });
 
-  // Parse the response into our format
-  const keywords: KeywordPosition[] = useMemo(() => {
-    if (!positionsData?.result) return [];
+  // Parse positions
+  const { keywords, lastCheckedDate } = useMemo(() => {
+    if (!positionsData?.result) return { keywords: [] as KeywordPosition[], lastCheckedDate: null as string | null };
 
     const result = positionsData.result;
     const dateKeys: string[] = Array.isArray(result?.headers?.dates) ? result.headers.dates : [];
@@ -519,7 +547,7 @@ function PositionsDashboard({
     const lastDate = dateKeys.at(-1) ?? null;
     const prevDate = dateKeys.length > 1 ? dateKeys.at(-2) ?? null : null;
 
-    return rows.map((row: any) => {
+    const kws: KeywordPosition[] = rows.map((row: any) => {
       const positionsObj = row.positionsData && typeof row.positionsData === "object" ? row.positionsData : {};
 
       const findPositionForDate = (date: string | null) => {
@@ -532,11 +560,9 @@ function PositionsDashboard({
         return Number.isFinite(num) && num > 0 ? num : null;
       };
 
-      // Try lastDate first, if no data fall back to first available key
       let currentPos = findPositionForDate(lastDate);
       let previousPos = findPositionForDate(prevDate);
 
-      // If neither date matched, grab from any available key
       if (currentPos === null && previousPos === null) {
         const allKeys = Object.keys(positionsObj);
         if (allKeys.length > 0) {
@@ -548,14 +574,28 @@ function PositionsDashboard({
         }
       }
 
+      // Extract last checked date from positions data keys
+      let checkedDate: string | null = null;
+      const allPosKeys = Object.keys(positionsObj);
+      if (allPosKeys.length > 0) {
+        const lastKey = allPosKeys.at(-1) ?? "";
+        const datePart = lastKey.split(":")[0];
+        if (datePart && datePart.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          checkedDate = datePart;
+        }
+      }
+
       return {
         keyword: row.name || "",
         position: currentPos,
         prevPosition: previousPos,
         url: row.landing_page || "",
         volume: row.target || 0,
-      } as KeywordPosition;
+        lastChecked: checkedDate,
+      };
     });
+
+    return { keywords: kws, lastCheckedDate: lastDate };
   }, [positionsData]);
 
   // Filtered keywords
@@ -589,155 +629,111 @@ function PositionsDashboard({
     toast.success(isRu ? "Данные обновлены" : "Data refreshed");
   };
 
-  // No data state
-  if (!isLoading && !isError && keywords.length === 0) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border border-border/60">
-            <span className="text-xs font-medium text-muted-foreground">{projectName || "—"}</span>
-            {projectUrl && (
-              <>
-                <span className="text-xs text-muted-foreground">—</span>
-                <span className="text-xs text-primary">{projectUrl.replace(/^https?:\/\//, "")}</span>
-              </>
-            )}
-          </div>
-          <RegionSelector regions={regions} selectedIndex={selectedRegion} onSelect={setSelectedRegion} />
-          <div className="flex items-center gap-2">
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-1.5 text-xs h-9">
-                  <CalendarIcon className="h-3.5 w-3.5" />
-                  {format(localDateFrom, "dd.MM.yyyy")}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={localDateFrom}
-                  onSelect={(d) => d && setLocalDateFrom(d)}
-                  disabled={(d) => d > localDateTo || d > new Date()}
-                  locale={isRu ? ru : undefined}
-                  className="p-3 pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
-            <span className="text-xs text-muted-foreground">→</span>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-1.5 text-xs h-9">
-                  <CalendarIcon className="h-3.5 w-3.5" />
-                  {format(localDateTo, "dd.MM.yyyy")}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={localDateTo}
-                  onSelect={(d) => d && setLocalDateTo(d)}
-                  disabled={(d) => d < localDateFrom || d > new Date()}
-                  locale={isRu ? ru : undefined}
-                  className="p-3 pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-          <Button variant="outline" size="sm" className="gap-1.5" onClick={handleSync}>
-            <RefreshCw className="h-3.5 w-3.5" /> {t("integrations.sync")}
-          </Button>
-        </div>
-        <div className="flex flex-col items-center justify-center py-16">
-          <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-semibold text-foreground mb-2">
-            {isRu ? "Нет данных за выбранный период" : "No data for selected period"}
-          </h3>
-          <p className="text-sm text-muted-foreground text-center max-w-md">
-            {isRu
-              ? "В Topvisor нет данных по позициям за выбранные даты. Попробуйте другой период."
-              : "Topvisor has no position data for the selected dates. Try a different period."}
-          </p>
-        </div>
-      </div>
-    );
-  }
+  // Current region info label
+  const currentRegion = regions.find((r) => r.index === effectiveRegion);
+  const regionLabel = currentRegion ? `${currentRegion.name} (${currentRegion.device_name || "PC"})` : "";
 
-  return (
-    <div className="space-y-6 relative">
-      {isRefreshing && <TabLoadingOverlay show={isRefreshing} />}
-
-      {/* Project selector + region + dates + sync */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border border-border/60">
-          <span className="text-xs font-medium text-muted-foreground">{projectName || "—"}</span>
-          {projectUrl && (
-            <>
-              <span className="text-xs text-muted-foreground">—</span>
-              <span className="text-xs text-primary">{projectUrl.replace(/^https?:\/\//, "")}</span>
-            </>
-          )}
-        </div>
-        <RegionSelector regions={regions} selectedIndex={selectedRegion} onSelect={setSelectedRegion} />
-
-        {/* Date pickers */}
-        <div className="flex items-center gap-2">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs h-9">
-                <CalendarIcon className="h-3.5 w-3.5" />
-                {format(localDateFrom, "dd.MM.yyyy")}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={localDateFrom}
-                onSelect={(d) => d && setLocalDateFrom(d)}
-                disabled={(d) => d > localDateTo || d > new Date()}
-                locale={isRu ? ru : undefined}
-                className="p-3 pointer-events-auto"
-              />
-            </PopoverContent>
-          </Popover>
-          <span className="text-xs text-muted-foreground">→</span>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs h-9">
-                <CalendarIcon className="h-3.5 w-3.5" />
-                {format(localDateTo, "dd.MM.yyyy")}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={localDateTo}
-                onSelect={(d) => d && setLocalDateTo(d)}
-                disabled={(d) => d < localDateFrom || d > new Date()}
-                locale={isRu ? ru : undefined}
-                className="p-3 pointer-events-auto"
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
-
-        <Button variant="outline" size="sm" className="gap-1.5" onClick={handleSync}>
-          <RefreshCw className={cn("h-3.5 w-3.5", isLoading && "animate-spin")} />
-          {isRu ? "Синхронизировать" : "Sync Now"}
-        </Button>
+  /* ── Header bar ── */
+  const headerBar = (
+    <div className="flex items-center gap-3 flex-wrap">
+      <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border border-border/60">
+        <span className="text-xs font-medium text-foreground">{projectName || "—"}</span>
+        {projectUrl && (
+          <>
+            <span className="text-xs text-muted-foreground">—</span>
+            <span className="text-xs text-primary font-medium">{projectUrl.replace(/^https?:\/\//, "")}</span>
+          </>
+        )}
       </div>
 
-      {/* Loading skeleton */}
-      {isLoading ? (
+      {/* Region selector for current searcher */}
+      {filteredRegions.length > 1 && (
+        <Select value={effectiveRegion} onValueChange={setSelectedRegion}>
+          <SelectTrigger className="w-[220px] h-9 text-sm">
+            <SelectValue placeholder={isRu ? "Регион…" : "Region…"} />
+          </SelectTrigger>
+          <SelectContent>
+            {filteredRegions.map((r) => (
+              <SelectItem key={r.index} value={r.index}>
+                {r.name} ({r.device_name || "PC"})
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+
+      {/* Date pickers */}
+      <div className="flex items-center gap-2">
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs h-9">
+              <CalendarIcon className="h-3.5 w-3.5" />
+              {format(localDateFrom, "dd.MM.yyyy")}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={localDateFrom}
+              onSelect={(d) => d && setLocalDateFrom(d)}
+              disabled={(d) => d > localDateTo || d > new Date()}
+              locale={isRu ? ru : undefined}
+              className="p-3 pointer-events-auto"
+            />
+          </PopoverContent>
+        </Popover>
+        <span className="text-xs text-muted-foreground">→</span>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs h-9">
+              <CalendarIcon className="h-3.5 w-3.5" />
+              {format(localDateTo, "dd.MM.yyyy")}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={localDateTo}
+              onSelect={(d) => d && setLocalDateTo(d)}
+              disabled={(d) => d < localDateFrom || d > new Date()}
+              locale={isRu ? ru : undefined}
+              className="p-3 pointer-events-auto"
+            />
+          </PopoverContent>
+        </Popover>
+      </div>
+
+      <Button variant="outline" size="sm" className="gap-1.5" onClick={handleSync}>
+        <RefreshCw className={cn("h-3.5 w-3.5", isLoading && "animate-spin")} />
+        {isRu ? "Обновить" : "Refresh"}
+      </Button>
+
+      {lastCheckedDate && (
+        <span className="text-[10px] text-muted-foreground ml-auto">
+          {isRu ? "Последняя проверка:" : "Last check:"}{" "}
+          <span className="font-medium text-foreground">{lastCheckedDate}</span>
+        </span>
+      )}
+    </div>
+  );
+
+  /* ── Content (KPIs + Table) ── */
+  const renderContent = () => {
+    if (isLoading) {
+      return (
         <div className="space-y-4">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {Array.from({ length: 4 }).map((_, i) => (
               <GlassCard key={i}><CardContent className="p-4"><Skeleton className="h-20" /></CardContent></GlassCard>
             ))}
           </div>
-          <GlassCard><CardContent className="p-5"><Skeleton className="h-[260px]" /></CardContent></GlassCard>
           <GlassCard><CardContent className="p-5"><Skeleton className="h-[300px]" /></CardContent></GlassCard>
         </div>
-      ) : isError ? (
+      );
+    }
+
+    if (isError) {
+      return (
         <GlassCard>
           <CardContent className="p-6 space-y-4">
             <div className="flex items-center gap-3 text-destructive">
@@ -749,7 +745,7 @@ function PositionsDashboard({
                 <p className="text-xs text-muted-foreground">
                   {isRu
                     ? "У текущего API-ключа нет прав на этот проект. Переподключите с корректными ключами."
-                    : "Current API key lacks permissions for this project. Reconnect with correct credentials."}
+                    : "Current API key lacks permissions. Reconnect with correct credentials."}
                 </p>
                 <Button variant="outline" size="sm" className="gap-1.5 shrink-0" onClick={onReconnect}>
                   <KeyRound className="h-3.5 w-3.5" />
@@ -759,151 +755,230 @@ function PositionsDashboard({
             )}
           </CardContent>
         </GlassCard>
-      ) : (
-        <>
-          {/* KPI row */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <StandardKpiCard
-              label={t("positions.avgPosition")}
-              value={avgPos > 0 ? avgPos.toFixed(1) : "—"}
-              change={posChange}
-              invertChange
-              tooltipKey="avgPosition"
-              loading={isRefreshing}
-            />
-            <StandardKpiCard
-              label={t("positions.visibility")}
-              value={`${visibility}%`}
-              change={0}
-              loading={isRefreshing}
-            />
+      );
+    }
 
-            {/* Distribution bar */}
-            <GlassCard>
-              <CardContent className="p-4 space-y-2">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs text-muted-foreground font-medium">{t("positions.distribution")}</span>
-                  <MetricTooltip metricKey="avgPosition" />
-                </div>
-                <div className="flex h-3 rounded-full overflow-hidden bg-muted">
-                  {top3 > 0 && <div className="bg-amber-400" style={{ width: `${(top3 / total) * 100}%` }} />}
-                  {(top10 - top3) > 0 && <div className="bg-emerald-500" style={{ width: `${((top10 - top3) / total) * 100}%` }} />}
-                  {(top30 - top10) > 0 && <div className="bg-primary" style={{ width: `${((top30 - top10) / total) * 100}%` }} />}
-                  {outside > 0 && <div className="bg-muted-foreground/30" style={{ width: `${(outside / total) * 100}%` }} />}
-                </div>
-                <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-muted-foreground">
-                  <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-400" />Top 3: {top3}</span>
-                  <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-500" />Top 10: {top10 - top3}</span>
-                  <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-primary" />Top 30: {top30 - top10}</span>
-                  <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-muted-foreground/30" />{t("positions.outside")}: {outside}</span>
-                </div>
-              </CardContent>
-            </GlassCard>
+    if (keywords.length === 0) {
+      return (
+        <div className="flex flex-col items-center justify-center py-16">
+          <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
+          <h3 className="text-lg font-semibold text-foreground mb-2">
+            {isRu ? "Нет данных за выбранный период" : "No data for selected period"}
+          </h3>
+          <p className="text-sm text-muted-foreground text-center max-w-md">
+            {isRu
+              ? "В Topvisor нет данных по позициям за выбранные даты. Попробуйте другой период."
+              : "Topvisor has no position data for the selected dates. Try a different period."}
+          </p>
+        </div>
+      );
+    }
 
-            {/* Ups/Downs */}
-            <GlassCard>
-              <CardContent className="p-4 space-y-2">
-                <span className="text-xs text-muted-foreground font-medium">{t("positions.movement")}</span>
-                <div className="flex items-baseline gap-4">
-                  <div className="flex items-center gap-1 text-emerald-500">
-                    <TrendingUp className="h-4 w-4" /><span className="text-lg font-bold">{ups}</span>
-                  </div>
-                  <div className="flex items-center gap-1 text-destructive">
-                    <TrendingDown className="h-4 w-4" /><span className="text-lg font-bold">{downs}</span>
-                  </div>
-                  <div className="flex items-center gap-1 text-muted-foreground">
-                    <Minus className="h-4 w-4" /><span className="text-lg font-bold">{stable}</span>
-                  </div>
-                </div>
-                <p className="text-[10px] text-muted-foreground">{t("positions.movementHint")}</p>
-              </CardContent>
-            </GlassCard>
-          </div>
+    return (
+      <>
+        {/* KPI row */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <StandardKpiCard
+            label={isRu ? "Средняя позиция" : "Avg Position"}
+            value={avgPos > 0 ? avgPos.toFixed(1) : "—"}
+            change={posChange}
+            invertChange
+            tooltipKey="avgPosition"
+            loading={isRefreshing}
+          />
+          <StandardKpiCard
+            label={isRu ? "Видимость" : "Visibility"}
+            value={`${visibility}%`}
+            change={0}
+            loading={isRefreshing}
+          />
 
-          {/* Search filter */}
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={t("positions.searchPlaceholder")}
-              className="pl-9 h-9 text-sm"
-            />
-          </div>
-
-          {/* Queries table */}
+          {/* Distribution */}
           <GlassCard>
-            <CardContent className="p-0">
-              <div className="px-5 pt-4 pb-2">
-                <h3 className="text-sm font-semibold text-foreground">{t("positions.tableTitle")}</h3>
-                <p className="text-xs text-muted-foreground">{t("positions.tableSubtitle", { count: filtered.length })}</p>
+            <CardContent className="p-4 space-y-2">
+              <span className="text-xs text-muted-foreground font-medium">
+                {isRu ? "Распределение" : "Distribution"}
+              </span>
+              <div className="flex h-3 rounded-full overflow-hidden bg-muted">
+                {top3 > 0 && <div className="bg-amber-400" style={{ width: `${(top3 / total) * 100}%` }} />}
+                {(top10 - top3) > 0 && <div className="bg-emerald-500" style={{ width: `${((top10 - top3) / total) * 100}%` }} />}
+                {(top30 - top10) > 0 && <div className="bg-primary" style={{ width: `${((top30 - top10) / total) * 100}%` }} />}
+                {outside > 0 && <div className="bg-muted-foreground/30" style={{ width: `${(outside / total) * 100}%` }} />}
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border bg-muted/30">
-                      <th className="text-left p-3 font-medium text-muted-foreground">{t("positions.colQuery")}</th>
-                      <th className="text-center p-3 font-medium text-muted-foreground">{t("positions.colPosition")}</th>
-                      <th className="text-center p-3 font-medium text-muted-foreground">{t("positions.colDelta")}</th>
-                      <th className="text-left p-3 font-medium text-muted-foreground">{t("positions.colUrl")}</th>
-                      <th className="text-right p-3 font-medium text-muted-foreground">{t("positions.colFreq")}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filtered.map((k, i) => {
-                      const delta = k.prevPosition && k.position ? k.prevPosition - k.position : null;
-                      return (
-                        <tr key={i} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
-                          <td className="p-3 text-foreground font-medium">{k.keyword}</td>
-                          <td className="p-3 text-center">
-                            <span className={cn("text-base", positionColor(k.position))}>
-                              {k.position ?? "—"}
-                            </span>
-                          </td>
-                          <td className="p-3 text-center">
-                            {delta !== null && delta > 0 ? (
-                              <span className="inline-flex items-center gap-0.5 text-emerald-500 font-medium">
-                                <TrendingUp className="h-3.5 w-3.5" />+{delta}
-                              </span>
-                            ) : delta !== null && delta < 0 ? (
-                              <span className="inline-flex items-center gap-0.5 text-destructive font-medium">
-                                <TrendingDown className="h-3.5 w-3.5" />{delta}
-                              </span>
-                            ) : (
-                              <span className="text-muted-foreground"><Minus className="h-3.5 w-3.5 inline" /></span>
-                            )}
-                          </td>
-                          <td className="p-3">
-                            {k.url ? (
-                              <a
-                                href={k.url.startsWith("http") ? k.url : `https://${k.url}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 text-xs text-primary hover:underline max-w-[200px] truncate"
-                              >
-                                {k.url} <ExternalLink className="h-3 w-3 shrink-0" />
-                              </a>
-                            ) : (
-                              <span className="text-xs text-muted-foreground">—</span>
-                            )}
-                          </td>
-                          <td className="p-3 text-right text-muted-foreground">{k.volume > 0 ? k.volume.toLocaleString() : "—"}</td>
-                        </tr>
-                      );
-                    })}
-                    {filtered.length === 0 && (
-                      <tr>
-                        <td colSpan={5} className="p-8 text-center text-muted-foreground">
-                          {isRu ? "Ничего не найдено" : "Nothing found"}
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+              <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-muted-foreground">
+                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-400" />Top 3: {top3}</span>
+                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-500" />Top 10: {top10 - top3}</span>
+                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-primary" />Top 30: {top30 - top10}</span>
+                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-muted-foreground/30" />{isRu ? "Вне топ" : "Outside"}: {outside}</span>
               </div>
             </CardContent>
           </GlassCard>
-        </>
+
+          {/* Movement */}
+          <GlassCard>
+            <CardContent className="p-4 space-y-2">
+              <span className="text-xs text-muted-foreground font-medium">
+                {isRu ? "Динамика" : "Movement"}
+              </span>
+              <div className="flex items-baseline gap-4">
+                <div className="flex items-center gap-1 text-emerald-500">
+                  <TrendingUp className="h-4 w-4" /><span className="text-lg font-bold">{ups}</span>
+                </div>
+                <div className="flex items-center gap-1 text-destructive">
+                  <TrendingDown className="h-4 w-4" /><span className="text-lg font-bold">{downs}</span>
+                </div>
+                <div className="flex items-center gap-1 text-muted-foreground">
+                  <Minus className="h-4 w-4" /><span className="text-lg font-bold">{stable}</span>
+                </div>
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                {isRu ? "Изменения за период" : "Changes for period"}
+              </p>
+            </CardContent>
+          </GlassCard>
+        </div>
+
+        {/* Search */}
+        <div className="relative max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={isRu ? "Поиск по запросу…" : "Search keywords…"}
+            className="pl-9 h-9 text-sm"
+          />
+        </div>
+
+        {/* Table */}
+        <GlassCard>
+          <CardContent className="p-0">
+            <div className="px-5 pt-4 pb-2 flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">
+                  {isRu ? "Запросы и позиции" : "Keywords & Positions"}
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  {filtered.length} {isRu ? "запросов отслеживается" : "keywords tracked"}
+                </p>
+              </div>
+              {regionLabel && (
+                <span className="text-[10px] text-muted-foreground bg-muted/50 px-2 py-1 rounded">
+                  {regionLabel}
+                </span>
+              )}
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-muted/30">
+                    <th className="text-left p-3 font-medium text-muted-foreground">
+                      {isRu ? "Запрос" : "Keyword"}
+                    </th>
+                    <th className="text-center p-3 font-medium text-muted-foreground">
+                      {isRu ? "Позиция" : "Position"}
+                    </th>
+                    <th className="text-center p-3 font-medium text-muted-foreground">
+                      {isRu ? "Изменение" : "Change"}
+                    </th>
+                    <th className="text-center p-3 font-medium text-muted-foreground">
+                      {isRu ? "Дата проверки" : "Last Checked"}
+                    </th>
+                    <th className="text-left p-3 font-medium text-muted-foreground">URL</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((k, i) => {
+                    const delta = k.prevPosition && k.position ? k.prevPosition - k.position : null;
+                    return (
+                      <tr key={i} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
+                        <td className="p-3 text-foreground font-medium">{k.keyword}</td>
+                        <td className="p-3 text-center">
+                          <span className={cn("text-base", positionColor(k.position))}>
+                            {k.position ?? "—"}
+                          </span>
+                        </td>
+                        <td className="p-3 text-center">
+                          {delta !== null && delta > 0 ? (
+                            <span className="inline-flex items-center gap-0.5 text-emerald-500 font-medium">
+                              <TrendingUp className="h-3.5 w-3.5" />+{delta}
+                            </span>
+                          ) : delta !== null && delta < 0 ? (
+                            <span className="inline-flex items-center gap-0.5 text-destructive font-medium">
+                              <TrendingDown className="h-3.5 w-3.5" />{delta}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground"><Minus className="h-3.5 w-3.5 inline" /></span>
+                          )}
+                        </td>
+                        <td className="p-3 text-center text-xs text-muted-foreground">
+                          {k.lastChecked || "—"}
+                        </td>
+                        <td className="p-3">
+                          {k.url ? (
+                            <a
+                              href={k.url.startsWith("http") ? k.url : `https://${k.url}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs text-primary hover:underline max-w-[200px] truncate"
+                            >
+                              {k.url} <ExternalLink className="h-3 w-3 shrink-0" />
+                            </a>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {filtered.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="p-8 text-center text-muted-foreground">
+                        {isRu ? "Ничего не найдено" : "Nothing found"}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </GlassCard>
+      </>
+    );
+  };
+
+  return (
+    <div className="space-y-6 relative">
+      {isRefreshing && <TabLoadingOverlay show={isRefreshing} />}
+
+      {headerBar}
+
+      {/* Search engine tabs */}
+      {hasMultipleSearchers ? (
+        <Tabs
+          value={activeSearcher}
+          onValueChange={(v) => {
+            setActiveSearcher(v);
+            setSearchQuery("");
+          }}
+          className="space-y-4"
+        >
+          <TabsList className="bg-muted/50">
+            <TabsTrigger value="all" className="text-xs gap-1.5">
+              {isRu ? "Все" : "All"}
+            </TabsTrigger>
+            {searcherKeys.map((key) => (
+              <TabsTrigger key={key} value={key} className="text-xs gap-1.5">
+                {searcherGroups[key].name}
+                <span className="text-[10px] text-muted-foreground">
+                  ({searcherGroups[key].regions.length})
+                </span>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          <div>{renderContent()}</div>
+        </Tabs>
+      ) : (
+        renderContent()
       )}
     </div>
   );
