@@ -430,6 +430,13 @@ function PositionsDashboard({
   const [regions, setRegions] = useState<TvRegion[]>([]);
   const [selectedRegion, setSelectedRegion] = useState<string>("");
 
+  // Local date overrides for positions comparison
+  const [localDateFrom, setLocalDateFrom] = useState<Date>(new Date(dateFrom));
+  const [localDateTo, setLocalDateTo] = useState<Date>(new Date(dateTo));
+
+  const effectiveDateFrom = format(localDateFrom, "yyyy-MM-dd");
+  const effectiveDateTo = format(localDateTo, "yyyy-MM-dd");
+
   const handleRegionsLoaded = useCallback((r: TvRegion[]) => {
     setRegions(r);
     if (r.length > 0 && !selectedRegion) {
@@ -441,12 +448,12 @@ function PositionsDashboard({
 
   // Fetch positions
   const { data: positionsData, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ["topvisor-positions", tvProjectId, dateFrom, dateTo, regionIndex],
+    queryKey: ["topvisor-positions", tvProjectId, effectiveDateFrom, effectiveDateTo, regionIndex],
     queryFn: async () => {
       const data = await callTopvisor("get-positions", apiKey, userId, {
         project_id: tvProjectId,
         regions_indexes: regionIndex ? [regionIndex] : undefined,
-        dates: [dateFrom, dateTo],
+        dates: [effectiveDateFrom, effectiveDateTo],
         show_headers: 1,
         positions_fields: ["position"],
       });
