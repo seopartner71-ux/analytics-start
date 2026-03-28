@@ -45,7 +45,11 @@ async function callWebmaster(action: string, accessToken: string, extra?: Record
     body: JSON.stringify({ action, access_token: accessToken, ...extra }),
   });
   const data = await resp.json();
-  if (!resp.ok || data.error) throw new Error(data.error || "Webmaster API error");
+  if (!resp.ok || data.error) {
+    // Return null for "Resource not found" instead of crashing
+    if (data.error === "Resource not found") return null;
+    throw new Error(data.error || "Webmaster API error");
+  }
   return data;
 }
 
