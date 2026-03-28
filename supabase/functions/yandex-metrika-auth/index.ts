@@ -52,7 +52,8 @@ Deno.serve(async (req) => {
     // Action: get OAuth URL
     if (action === "auth-url") {
       const redirectUri = url.searchParams.get("redirect_uri") || "";
-      const authUrl = `https://oauth.yandex.ru/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}`;
+      const scopes = "metrika:read webmaster:verify";
+      const authUrl = `https://oauth.yandex.ru/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}`;
       return new Response(JSON.stringify({ url: authUrl }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
