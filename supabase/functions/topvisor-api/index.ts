@@ -197,6 +197,42 @@ serve(async (req) => {
     const data = await resp.json();
 
     if (!resp.ok || data?.errors?.length) {
+      const topvisorCode = Number(data?.errors?.[0]?.code);
+
+      // Fallback for access errors: try other available regions for the same project
+      if (action === "get-positions" && topvisorCode === 54 && requestedProjectId) {
+        const fallbackRegions = await resolveRegionIndexes(requestedProjectId, headers);
+        const tried = new Set(normalizedRegionsIndexes);
+        const retryBody = isRecord(fetchBody ? JSON.parse(fetchBody) : null)
+          ? (JSON.parse(fetchBody as string) as JsonRecord)
+          : null;
+
+        if (retryBody) {
+          for (const idx of fallbackRegions) {
+            if (tried.has(idx)) continue;
+
+            const nextBody: JsonRecord = {
+              ...retryBody,
+              regions_indexes: [String(idx)],
+            };
+
+            const retryResp = await fetch(url, {
+              method,
+              headers,
+              body: JSON.stringify(nextBody),
+            });
+            const retryData = await retryResp.json();
+
+            if (retryResp.ok && !retryData?.errors?.length) {
+              return new Response(JSON.stringify(retryData), {
+                status: 200,
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+              });
+            }
+          }
+        }
+      }
+
       const errMsg = data?.errors?.[0]?.string || data?.message || `Topvisor API error (${resp.status})`;
       return new Response(JSON.stringify({ error: errMsg, raw: data }), {
         status: resp.status >= 400 ? resp.status : 502,
