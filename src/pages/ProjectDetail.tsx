@@ -260,8 +260,21 @@ function ProjectDetailInner() {
         return <TrafficTab projectId={project.id} projectName={project.name} projectUrl={project.url || undefined} />;
       case "goals":
         return <GoalsTab projectId={project.id} projectName={project.name} />;
-      case "seo":
-        return <SeoTab projectId={project.id} />;
+      case "seo": {
+        const tvFromProjectSeo = !!(project as any).topvisor_api_key && !!(project as any).topvisor_user_id;
+        const tvIntegrationSeo = integrations.find((i) => i.service_name === "topvisor");
+        const hasTopvisorSeo = tvFromProjectSeo || (tvIntegrationSeo?.connected ?? false);
+        return (
+          <SeoTab
+            projectId={project.id}
+            hasTopvisor={hasTopvisorSeo}
+            topvisorApiKey={(project as any).topvisor_api_key || tvIntegrationSeo?.api_key}
+            topvisorUserId={(project as any).topvisor_user_id || tvIntegrationSeo?.counter_id}
+            topvisorExternalProjectId={(project as any).topvisor_project_id || tvIntegrationSeo?.external_project_id}
+            integrationId={tvIntegrationSeo?.id}
+          />
+        );
+      }
       case "pages": {
         const metrikaIntegration = integrations.find((i) => i.service_name === "yandexMetrika");
         return (

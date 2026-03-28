@@ -1,348 +1,639 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { differenceInDays, format } from "date-fns";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { format } from "date-fns";
+import { ru } from "date-fns/locale";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, TrendingUp, TrendingDown, Filter } from "lucide-react";
+import {
+  Search, TrendingUp, TrendingDown, KeyRound, RefreshCw,
+  Loader2, AlertCircle, CalendarIcon, Trophy, CheckCircle2,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
-  LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
-} from "recharts";
-import { useDateRange } from "@/contexts/DateRangeContext";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import {
-  StandardKpiCard, useTabRefresh, TabLoadingOverlay,
-  StandardChartTooltip, SkeletonChart, MetricTooltip,
+  StandardKpiCard, useTabRefresh, TabLoadingOverlay, GlassCard,
 } from "./shared-ui";
+import { useDateRange } from "@/contexts/DateRangeContext";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { CardContent as CC } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Link as LinkIcon } from "lucide-react";
 
+/* ═══════════════════════════════════════════════════════
+   Types
+   ═══════════════════════════════════════════════════════ */
 interface SeoTabProps {
   projectId: string;
+  hasTopvisor?: boolean;
+  topvisorApiKey?: string | null;
+  topvisorUserId?: string | null;
+  topvisorExternalProjectId?: string | null;
+  integrationId?: string | null;
 }
 
-type QueryEngine = "yandex" | "google";
-type QueryType = "brand" | "informational" | "commercial";
+interface TvRegion {
+  index: string;
+  name: string;
+  device_name?: string;
+  searcher_key: number;
+}
+
+interface TvProject {
+  id: number;
+  name: string;
+  site: string;
+  searchers?: { key: number; name: string; regions: TvRegion[] }[];
+}
 
 interface KeywordRow {
-  query: string;
-  clicks: number;
-  impressions: number;
-  ctr: number;
-  position: number;
-  positionTrend: number[];
-  engine: QueryEngine;
-  queryType: QueryType;
+  keyword: string;
+  position: number | null;
+  prevPosition: number | null;
 }
 
-const ENGINE_COLORS = {
-  yandex: "hsl(10, 85%, 57%)",
-  google: "hsl(217, 89%, 61%)",
-};
-
-function YandexIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={cn("h-3.5 w-3.5", className)} fill="none">
-      <rect width="24" height="24" rx="4" fill="#FC3F1D" />
-      <path d="M13.63 18.71h-2.05V5.29h2.84c2.34 0 3.57 1.18 3.57 3.15 0 1.56-.86 2.65-2.27 3.18l2.72 7.09h-2.2l-2.42-6.57h-.19v6.57zm0-8.46h.55c1.25 0 1.95-.66 1.95-1.82 0-1.13-.67-1.72-1.92-1.72h-.58v3.54z" fill="white" />
-    </svg>
-  );
-}
-
-function GoogleIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={cn("h-3.5 w-3.5", className)} fill="none">
-      <rect width="24" height="24" rx="4" fill="#4285F4" />
-      <path d="M17.64 12.2c0-.63-.06-1.25-.16-1.84H12v3.49h3.16a2.7 2.7 0 01-1.17 1.77v1.47h1.9c1.1-1.02 1.75-2.52 1.75-4.89z" fill="white" />
-      <path d="M12 18c1.58 0 2.91-.52 3.88-1.41l-1.9-1.47c-.52.35-1.19.56-1.98.56-1.53 0-2.82-1.03-3.28-2.42H6.75v1.52A5.99 5.99 0 0012 18z" fill="white" />
-      <path d="M8.72 13.26a3.6 3.6 0 010-2.29V9.45H6.75a6 6 0 000 5.33l1.97-1.52z" fill="white" />
-      <path d="M12 8.58c.86 0 1.63.3 2.24.88l1.68-1.68A5.35 5.35 0 0012 6a5.99 5.99 0 00-5.25 3.45l1.97 1.52c.46-1.39 1.75-2.39 3.28-2.39z" fill="white" />
-    </svg>
-  );
-}
-
-function Sparkline({ data, color }: { data: number[]; color: string }) {
-  if (!data || data.length < 2) return null;
-  const chartData = data.map((v, i) => ({ v, i }));
-  return (
-    <ResponsiveContainer width={64} height={24}>
-      <LineChart data={chartData}>
-        <Line type="monotone" dataKey="v" stroke={color} strokeWidth={1.5} dot={false} />
-      </LineChart>
-    </ResponsiveContainer>
-  );
-}
-
-function ChangeIndicator({ value }: { value: number }) {
-  if (value === 0) return <span className="text-xs text-muted-foreground">—</span>;
-  const positive = value > 0;
-  return (
-    <span className={cn("inline-flex items-center gap-0.5 text-xs font-semibold", positive ? "text-emerald-500" : "text-red-500")}>
-      {positive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-      {positive ? "+" : ""}{Math.round(value * 10) / 10}%
-    </span>
-  );
-}
-
-const ChartTooltip = StandardChartTooltip;
-
-function generateKeywords(dateFrom: Date, dateTo: Date, seed: number): KeywordRow[] {
-  const days = differenceInDays(dateTo, dateFrom) + 1;
-  const m = 1 + (seed % 5) * 0.15;
-  const base: Omit<KeywordRow, "clicks" | "impressions" | "ctr">[] = [
-    { query: "купить цветы", position: 4.2, positionTrend: [5.1,4.8,4.5,4.3,4.2,4.0,4.2], engine: "yandex", queryType: "commercial" },
-    { query: "buy flowers online", position: 5.1, positionTrend: [6.5,6.0,5.6,5.3,5.1,5.0,5.1], engine: "google", queryType: "commercial" },
-    { query: "доставка цветов", position: 6.8, positionTrend: [8.2,7.5,7.1,6.9,6.8,6.5,6.8], engine: "yandex", queryType: "commercial" },
-    { query: "flower delivery moscow", position: 7.2, positionTrend: [9.0,8.5,7.8,7.5,7.2,7.0,7.2], engine: "google", queryType: "commercial" },
-    { query: "букет роз", position: 3.1, positionTrend: [4.0,3.8,3.5,3.2,3.1,3.0,3.1], engine: "yandex", queryType: "commercial" },
-    { query: "souzcvettorg", position: 1.0, positionTrend: [1.0,1.0,1.0,1.0,1.0,1.0,1.0], engine: "yandex", queryType: "brand" },
-    { query: "союзцветторг", position: 1.2, positionTrend: [1.5,1.3,1.2,1.2,1.1,1.2,1.2], engine: "yandex", queryType: "brand" },
-    { query: "souzcvettorg отзывы", position: 2.3, positionTrend: [3.0,2.8,2.5,2.3,2.3,2.2,2.3], engine: "google", queryType: "brand" },
-    { query: "как ухаживать за розами", position: 8.5, positionTrend: [12.0,10.5,9.5,8.8,8.5,8.3,8.5], engine: "yandex", queryType: "informational" },
-    { query: "how to care for flowers", position: 9.1, positionTrend: [13.0,11.5,10.2,9.5,9.1,9.0,9.1], engine: "google", queryType: "informational" },
-    { query: "какие цветы дарить", position: 11.3, positionTrend: [15.0,13.5,12.8,12.0,11.5,11.3,11.3], engine: "yandex", queryType: "informational" },
-    { query: "wedding flowers guide", position: 12.1, positionTrend: [15.0,14.0,13.0,12.5,12.1,12.0,12.1], engine: "google", queryType: "informational" },
-    { query: "цветы оптом москва", position: 5.5, positionTrend: [7.0,6.5,6.0,5.8,5.5,5.3,5.5], engine: "yandex", queryType: "commercial" },
-    { query: "roses bouquet price", position: 8.3, positionTrend: [10.0,9.5,9.0,8.6,8.3,8.1,8.3], engine: "google", queryType: "commercial" },
-  ];
-
-  return base.map((b, i) => {
-    const baseClicks = Math.round((400 - i * 25) * m * (days / 30));
-    const baseImpressions = Math.round(baseClicks * (3 + Math.random() * 8));
-    const ctr = baseImpressions > 0 ? Math.round((baseClicks / baseImpressions) * 1000) / 10 : 0;
-    return { ...b, clicks: baseClicks, impressions: baseImpressions, ctr };
+/* ═══════════════════════════════════════════════════════
+   API helper (shared with PositionsTab pattern)
+   ═══════════════════════════════════════════════════════ */
+async function callTopvisor(action: string, apiKey: string, userId: string, payload?: Record<string, unknown>) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error("Not authenticated");
+  const projectRef = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+  const resp = await fetch(`https://${projectRef}.supabase.co/functions/v1/topvisor-api`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${session.access_token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ action, api_key: apiKey, user_id: userId, payload }),
   });
-}
-
-function generatePositionChart(dateFrom: Date, dateTo: Date) {
-  const days = Math.min(differenceInDays(dateTo, dateFrom) + 1, 60);
-  const data = [];
-  for (let i = 0; i < days; i++) {
-    const d = new Date(dateFrom);
-    d.setDate(d.getDate() + i);
-    data.push({
-      day: format(d, "dd.MM"),
-      yandex: Math.round((25 + Math.random() * 20 + i * 0.8) * 10) / 10,
-      google: Math.round((18 + Math.random() * 15 + i * 1.2) * 10) / 10,
-    });
-  }
+  const data = await resp.json();
+  if (!resp.ok || data.error) throw new Error(data.error || "API error");
   return data;
 }
 
-const QUERY_TYPE_LABELS: Record<string, Record<QueryType | "all", string>> = {
-  ru: { all: "Все", brand: "Брендовые", informational: "Информационные", commercial: "Коммерческие" },
-  en: { all: "All", brand: "Brand", informational: "Informational", commercial: "Commercial" },
-};
+/* ═══════════════════════════════════════════════════════
+   Setup Form
+   ═══════════════════════════════════════════════════════ */
+function TopvisorSetupForm({ projectId, onConnected }: { projectId: string; onConnected: () => void }) {
+  const { i18n } = useTranslation();
+  const isRu = i18n.language === "ru";
+  const [apiKey, setApiKey] = useState("");
+  const [userId, setUserId] = useState("");
+  const [testing, setTesting] = useState(false);
 
-export function SeoTab({ projectId }: SeoTabProps) {
-  const { t, i18n } = useTranslation();
-  const lang = i18n.language === "ru" ? "ru" : "en";
-  const { appliedRange, showComparison, appliedCompRange } = useDateRange();
-  const isRefreshing = useTabRefresh();
-  const [queryTypeFilter, setQueryTypeFilter] = useState<QueryType | "all">("all");
-
-  const seed = useMemo(() => appliedRange.from.getDate() + appliedRange.to.getDate() + appliedRange.from.getMonth(), [appliedRange]);
-
-  const keywords = useMemo(() => generateKeywords(appliedRange.from, appliedRange.to, seed), [appliedRange, seed]);
-  const compKeywords = useMemo(() => {
-    if (!showComparison) return null;
-    return generateKeywords(appliedCompRange.from, appliedCompRange.to, seed + 7);
-  }, [showComparison, appliedCompRange, seed]);
-
-  const chartData = useMemo(() => generatePositionChart(appliedRange.from, appliedRange.to), [appliedRange]);
-  const compChartData = useMemo(() => {
-    if (!showComparison) return null;
-    return generatePositionChart(appliedCompRange.from, appliedCompRange.to);
-  }, [showComparison, appliedCompRange]);
-
-  const mergedChartData = useMemo(() => {
-    if (!showComparison || !compChartData) return chartData;
-    const maxLen = Math.max(chartData.length, compChartData.length);
-    return Array.from({ length: maxLen }, (_, i) => ({
-      day: chartData[i]?.day || `${i + 1}`,
-      yandex: chartData[i]?.yandex || 0,
-      google: chartData[i]?.google || 0,
-      prevYandex: compChartData[i]?.yandex || 0,
-      prevGoogle: compChartData[i]?.google || 0,
-    }));
-  }, [chartData, compChartData, showComparison]);
-
-  const filtered = useMemo(() => {
-    const base = queryTypeFilter === "all" ? keywords : keywords.filter(k => k.queryType === queryTypeFilter);
-    return base.sort((a, b) => b.clicks - a.clicks);
-  }, [keywords, queryTypeFilter]);
-
-  const withDelta = useMemo(() => {
-    if (!showComparison || !compKeywords) return filtered.map(k => ({ ...k, clicksDelta: 0, positionDelta: 0 }));
-    return filtered.map(k => {
-      const prev = compKeywords.find(c => c.query === k.query);
-      return {
-        ...k,
-        clicksDelta: prev ? ((k.clicks - prev.clicks) / (prev.clicks || 1)) * 100 : 0,
-        positionDelta: prev ? k.position - prev.position : 0,
-      };
-    });
-  }, [filtered, compKeywords, showComparison]);
-
-  const totalClicks = filtered.reduce((s, q) => s + q.clicks, 0);
-  const totalImpressions = filtered.reduce((s, q) => s + q.impressions, 0);
-  const avgCtr = totalImpressions > 0 ? Math.round((totalClicks / totalImpressions) * 1000) / 10 : 0;
-  const avgPosition = filtered.length > 0 ? Math.round((filtered.reduce((s, q) => s + q.position, 0) / filtered.length) * 10) / 10 : 0;
-
-  const typeCounts = useMemo(() => ({
-    all: keywords.length,
-    brand: keywords.filter(k => k.queryType === "brand").length,
-    informational: keywords.filter(k => k.queryType === "informational").length,
-    commercial: keywords.filter(k => k.queryType === "commercial").length,
-  }), [keywords]);
+  const handleTest = async () => {
+    if (!apiKey.trim() || !userId.trim()) {
+      toast.error(isRu ? "Заполните оба поля" : "Fill in both fields");
+      return;
+    }
+    setTesting(true);
+    try {
+      await callTopvisor("test-connection", apiKey.trim(), userId.trim());
+      await supabase.from("projects").update({
+        topvisor_api_key: apiKey.trim(),
+        topvisor_user_id: userId.trim(),
+      } as any).eq("id", projectId);
+      const existing = await supabase.from("integrations").select("id").eq("project_id", projectId).eq("service_name", "topvisor").maybeSingle();
+      if (existing.data) {
+        await supabase.from("integrations").update({ api_key: apiKey.trim(), counter_id: userId.trim(), connected: true }).eq("id", existing.data.id);
+      } else {
+        await supabase.from("integrations").insert({ project_id: projectId, service_name: "topvisor", api_key: apiKey.trim(), counter_id: userId.trim(), connected: true });
+      }
+      toast.success(isRu ? "Topvisor подключен!" : "Topvisor connected!");
+      onConnected();
+    } catch (err: any) {
+      toast.error(err.message || "Connection failed");
+    } finally {
+      setTesting(false);
+    }
+  };
 
   return (
-    <div className={cn("space-y-6 transition-opacity duration-300", isRefreshing && "opacity-60")}>
-      <TabLoadingOverlay show={isRefreshing} />
-
-      {/* Query Type Filter */}
-      <Card className="border-border bg-card">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-3 flex-wrap">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium text-foreground">{t("seoTab.queryType", "Тип запроса")}:</span>
-            <ToggleGroup type="single" value={queryTypeFilter} onValueChange={(v) => v && setQueryTypeFilter(v as any)}>
-              {(["all", "brand", "informational", "commercial"] as const).map(type => (
-                <ToggleGroupItem key={type} value={type} variant="outline" size="sm" className="text-xs gap-1.5 h-8">
-                  {QUERY_TYPE_LABELS[lang][type]}
-                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 ml-0.5">{typeCounts[type]}</Badge>
-                </ToggleGroupItem>
-              ))}
-            </ToggleGroup>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* KPI Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StandardKpiCard label={t("seoTab.totalClicks", "Клики")} value={totalClicks.toLocaleString()} tooltipKey="visits" loading={isRefreshing} />
-        <StandardKpiCard label={t("seoTab.totalImpressions", "Показы")} value={totalImpressions.toLocaleString()} loading={isRefreshing} />
-        <StandardKpiCard label="CTR" value={`${avgCtr}%`} tooltipKey="ctr" loading={isRefreshing} />
-        <StandardKpiCard label={t("seoTab.avgPosition", "Ср. позиция")} value={String(avgPosition)} tooltipKey="avgPosition" loading={isRefreshing} />
+    <div className="flex flex-col items-center justify-center py-16 px-4">
+      <div className="h-20 w-20 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
+        <Trophy className="h-10 w-10 text-primary" />
       </div>
-
-      {/* Visibility Chart */}
-      <Card className="border-border bg-card">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-            <Search className="h-4 w-4" />
-            {t("seoTab.engineDynamics", "Динамика видимости")}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
-            {showComparison ? (
-              <LineChart data={mergedChartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.5} />
-                <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} />
-                <Tooltip content={<ChartTooltip />} />
-                <Legend />
-                <Line type="monotone" dataKey="yandex" name={t("engines.yandex", "Яндекс")} stroke={ENGINE_COLORS.yandex} strokeWidth={2.5} dot={false} />
-                <Line type="monotone" dataKey="google" name={t("engines.google", "Google")} stroke={ENGINE_COLORS.google} strokeWidth={2.5} dot={false} />
-                <Line type="monotone" dataKey="prevYandex" name={`${t("engines.yandex", "Яндекс")} (Б)`} stroke={ENGINE_COLORS.yandex} strokeWidth={1.5} strokeDasharray="6 3" dot={false} opacity={0.5} />
-                <Line type="monotone" dataKey="prevGoogle" name={`${t("engines.google", "Google")} (Б)`} stroke={ENGINE_COLORS.google} strokeWidth={1.5} strokeDasharray="6 3" dot={false} opacity={0.5} />
-              </LineChart>
-            ) : (
-              <AreaChart data={mergedChartData}>
-                <defs>
-                  <linearGradient id="kwYandexGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={ENGINE_COLORS.yandex} stopOpacity={0.2} />
-                    <stop offset="95%" stopColor={ENGINE_COLORS.yandex} stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="kwGoogleGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={ENGINE_COLORS.google} stopOpacity={0.2} />
-                    <stop offset="95%" stopColor={ENGINE_COLORS.google} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.5} />
-                <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} />
-                <Tooltip content={<ChartTooltip />} />
-                <Legend />
-                <Area type="monotone" dataKey="yandex" name={t("engines.yandex", "Яндекс")} stroke={ENGINE_COLORS.yandex} strokeWidth={2} fill="url(#kwYandexGrad)" dot={false} />
-                <Area type="monotone" dataKey="google" name={t("engines.google", "Google")} stroke={ENGINE_COLORS.google} strokeWidth={2} fill="url(#kwGoogleGrad)" dot={false} />
-              </AreaChart>
-            )}
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
-
-      {/* Keywords Table */}
-      <Card className="border-border bg-card">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            {t("seoTab.queriesTable", "Топ поисковых запросов")}
-            <span className="ml-2 text-xs text-muted-foreground/70">({filtered.length})</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-lg border border-border/60 overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/30">
-                  <TableHead className="text-xs w-8"></TableHead>
-                  <TableHead className="text-xs">{t("seoTab.query", "Фраза")}</TableHead>
-                  <TableHead className="text-xs">{t("seoTab.queryType", "Тип")}</TableHead>
-                  <TableHead className="text-xs text-right">{t("seoTab.clicks", "Клики")}</TableHead>
-                  <TableHead className="text-xs text-right">{t("seoTab.impressions", "Показы")}</TableHead>
-                  <TableHead className="text-xs text-right">CTR</TableHead>
-                  <TableHead className="text-xs text-right">{t("seoTab.position", "Позиция")}</TableHead>
-                  <TableHead className="text-xs text-center">{t("seoTab.trend", "Тренд")}</TableHead>
-                  {showComparison && <TableHead className="text-xs text-right">{t("seoTab.change", "Δ кликов")}</TableHead>}
-                  {showComparison && <TableHead className="text-xs text-right">{t("seoTab.posChange", "Δ позиции")}</TableHead>}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {withDelta.map((q, i) => (
-                  <TableRow key={i}>
-                    <TableCell className="pr-0">
-                      {q.engine === "yandex" ? <YandexIcon /> : <GoogleIcon />}
-                    </TableCell>
-                    <TableCell className="text-sm font-medium">{q.query}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={cn("text-[10px] px-1.5",
-                        q.queryType === "brand" && "border-primary/40 text-primary",
-                        q.queryType === "commercial" && "border-emerald-500/40 text-emerald-600",
-                        q.queryType === "informational" && "border-amber-500/40 text-amber-600",
-                      )}>
-                        {QUERY_TYPE_LABELS[lang][q.queryType]}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm text-right tabular-nums">{q.clicks.toLocaleString()}</TableCell>
-                    <TableCell className="text-sm text-right tabular-nums">{q.impressions.toLocaleString()}</TableCell>
-                    <TableCell className="text-sm text-right tabular-nums">{q.ctr}%</TableCell>
-                    <TableCell className="text-sm text-right tabular-nums">{q.position.toFixed(1)}</TableCell>
-                    <TableCell className="text-center">
-                      <Sparkline
-                        data={q.positionTrend}
-                        color={q.positionTrend[0] > q.positionTrend[q.positionTrend.length - 1] ? "hsl(142,71%,45%)" : "hsl(0,84%,60%)"}
-                      />
-                    </TableCell>
-                    {showComparison && (
-                      <TableCell className="text-right"><ChangeIndicator value={q.clicksDelta} /></TableCell>
-                    )}
-                    {showComparison && (
-                      <TableCell className="text-right">
-                        <span className={cn("text-xs font-semibold",
-                          q.positionDelta < 0 ? "text-emerald-500" : q.positionDelta > 0 ? "text-red-500" : "text-muted-foreground"
-                        )}>
-                          {q.positionDelta < 0 ? "↑" : q.positionDelta > 0 ? "↓" : "—"}
-                          {q.positionDelta !== 0 ? Math.abs(q.positionDelta).toFixed(1) : ""}
-                        </span>
-                      </TableCell>
-                    )}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+      <h2 className="text-xl font-bold text-foreground mb-2">
+        {isRu ? "Подключите Topvisor" : "Connect Topvisor"}
+      </h2>
+      <p className="text-sm text-muted-foreground text-center max-w-md mb-8">
+        {isRu
+          ? "Введите User ID и API Key из кабинета Topvisor для получения данных по ключевым словам."
+          : "Enter your User ID and API Key from Topvisor to get keyword data."}
+      </p>
+      <GlassCard className="w-full max-w-md">
+        <CardContent className="p-6 space-y-4">
+          <div className="space-y-2">
+            <Label>User ID *</Label>
+            <Input value={userId} onChange={(e) => setUserId(e.target.value)} placeholder="12345" />
           </div>
+          <div className="space-y-2">
+            <Label>API Key *</Label>
+            <Input value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="tv_xxx" type="password" />
+          </div>
+          <a href="https://topvisor.com/ru/support/api/getting-started/" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
+            <LinkIcon className="h-3 w-3" />
+            {isRu ? "Где взять ключи?" : "Where to get keys?"}
+          </a>
+          <Button onClick={handleTest} disabled={testing} className="w-full gap-2">
+            {testing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+            {isRu ? "Проверить подключение" : "Test Connection"}
+          </Button>
         </CardContent>
-      </Card>
+      </GlassCard>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   Position color
+   ═══════════════════════════════════════════════════════ */
+function positionColor(pos: number | null) {
+  if (pos === null || pos <= 0) return "text-muted-foreground";
+  if (pos <= 3) return "text-amber-400 font-bold";
+  if (pos <= 10) return "text-emerald-500 font-bold";
+  if (pos <= 30) return "text-primary font-bold";
+  return "text-muted-foreground font-bold";
+}
+
+/* ═══════════════════════════════════════════════════════
+   Main SeoTab
+   ═══════════════════════════════════════════════════════ */
+export function SeoTab({
+  projectId,
+  hasTopvisor = false,
+  topvisorApiKey,
+  topvisorUserId,
+  topvisorExternalProjectId,
+  integrationId,
+}: SeoTabProps) {
+  const { t, i18n } = useTranslation();
+  const isRu = i18n.language === "ru";
+  const isRefreshing = useTabRefresh();
+  const queryClient = useQueryClient();
+  const { appliedRange } = useDateRange();
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedTvProject, setSelectedTvProject] = useState<string | null>(topvisorExternalProjectId || null);
+  const [showReconnect, setShowReconnect] = useState(false);
+
+  const tvProjectId = selectedTvProject || topvisorExternalProjectId;
+  const apiKey = topvisorApiKey;
+  const userId = topvisorUserId;
+
+  const dateFrom = format(appliedRange.from, "yyyy-MM-dd");
+  const dateTo = format(appliedRange.to, "yyyy-MM-dd");
+
+  // Not connected
+  if (!hasTopvisor || !apiKey || !userId || showReconnect) {
+    return (
+      <TopvisorSetupForm
+        projectId={projectId}
+        onConnected={() => {
+          setShowReconnect(false);
+          queryClient.invalidateQueries({ queryKey: ["integrations", projectId] });
+        }}
+      />
+    );
+  }
+
+  // No project selected — show project selector
+  if (!tvProjectId) {
+    return <ProjectSelectorView apiKey={apiKey} userId={userId} projectId={projectId} integrationId={integrationId!} onSelect={setSelectedTvProject} />;
+  }
+
+  return (
+    <KeywordsDashboard
+      apiKey={apiKey}
+      userId={userId}
+      tvProjectId={tvProjectId}
+      projectId={projectId}
+      integrationId={integrationId!}
+      dateFrom={dateFrom}
+      dateTo={dateTo}
+      searchQuery={searchQuery}
+      setSearchQuery={setSearchQuery}
+      selectedTvProject={selectedTvProject}
+      setSelectedTvProject={setSelectedTvProject}
+      isRefreshing={isRefreshing}
+      onReconnect={() => setShowReconnect(true)}
+    />
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   Project selector view
+   ═══════════════════════════════════════════════════════ */
+function ProjectSelectorView({ apiKey, userId, projectId, integrationId, onSelect }: {
+  apiKey: string; userId: string; projectId: string; integrationId: string; onSelect: (id: string) => void;
+}) {
+  const { i18n } = useTranslation();
+  const isRu = i18n.language === "ru";
+  const queryClient = useQueryClient();
+
+  const { data: tvProjects, isLoading } = useQuery({
+    queryKey: ["topvisor-projects", apiKey, userId],
+    queryFn: async () => {
+      const data = await callTopvisor("get-projects", apiKey, userId);
+      return (data?.result || []) as TvProject[];
+    },
+  });
+
+  const handleSelect = async (tvId: string) => {
+    await supabase.from("projects").update({ topvisor_project_id: tvId } as any).eq("id", projectId);
+    if (integrationId) {
+      await supabase.from("integrations").update({ external_project_id: tvId }).eq("id", integrationId);
+    }
+    queryClient.invalidateQueries({ queryKey: ["integrations", projectId] });
+    onSelect(tvId);
+    toast.success(isRu ? "Проект привязан" : "Project linked");
+  };
+
+  return (
+    <div className="space-y-6">
+      <GlassCard>
+        <CardContent className="p-6">
+          <h3 className="text-sm font-semibold text-foreground mb-4">
+            {isRu ? "Выберите проект Topvisor" : "Select Topvisor project"}
+          </h3>
+          {isLoading ? (
+            <Skeleton className="h-9 w-[300px]" />
+          ) : (
+            <Select onValueChange={handleSelect}>
+              <SelectTrigger className="w-[320px] h-9 text-sm">
+                <SelectValue placeholder={isRu ? "Выберите проект…" : "Select project…"} />
+              </SelectTrigger>
+              <SelectContent>
+                {tvProjects?.map((p) => (
+                  <SelectItem key={p.id} value={String(p.id)}>
+                    {p.name || p.site} — {p.site}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </CardContent>
+      </GlassCard>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   Keywords Dashboard
+   ═══════════════════════════════════════════════════════ */
+function KeywordsDashboard({
+  apiKey, userId, tvProjectId, projectId, integrationId,
+  dateFrom, dateTo, searchQuery, setSearchQuery,
+  selectedTvProject, setSelectedTvProject, isRefreshing, onReconnect,
+}: {
+  apiKey: string; userId: string; tvProjectId: string; projectId: string; integrationId: string;
+  dateFrom: string; dateTo: string; searchQuery: string; setSearchQuery: (v: string) => void;
+  selectedTvProject: string | null; setSelectedTvProject: (v: string) => void;
+  isRefreshing: boolean; onReconnect?: () => void;
+}) {
+  const { t, i18n } = useTranslation();
+  const isRu = i18n.language === "ru";
+
+  const [localDateFrom, setLocalDateFrom] = useState<Date>(new Date(dateFrom));
+  const [localDateTo, setLocalDateTo] = useState<Date>(new Date(dateTo));
+
+  const effectiveDateFrom = format(localDateFrom, "yyyy-MM-dd");
+  const effectiveDateTo = format(localDateTo, "yyyy-MM-dd");
+
+  // Fetch positions/keywords from Topvisor
+  const { data: positionsData, isLoading, isError, error, refetch } = useQuery({
+    queryKey: ["topvisor-keywords", tvProjectId, effectiveDateFrom, effectiveDateTo],
+    queryFn: async () => {
+      const data = await callTopvisor("get-positions", apiKey, userId, {
+        project_id: tvProjectId,
+        dates: [effectiveDateFrom, effectiveDateTo],
+        show_headers: 1,
+        positions_fields: ["position"],
+      });
+      return data;
+    },
+    retry: 1,
+  });
+
+  // Parse keywords
+  const keywords: KeywordRow[] = useMemo(() => {
+    if (!positionsData?.result) return [];
+    const result = positionsData.result;
+    const dateKeys: string[] = Array.isArray(result?.headers?.dates) ? result.headers.dates : [];
+    const rows = Array.isArray(result?.keywords) ? result.keywords : [];
+
+    const lastDate = dateKeys.at(-1) ?? null;
+    const prevDate = dateKeys.length > 1 ? dateKeys.at(-2) ?? null : null;
+
+    return rows.map((row: any) => {
+      const positionsObj = row.positionsData && typeof row.positionsData === "object" ? row.positionsData : {};
+
+      const findPos = (date: string | null) => {
+        if (!date) return null;
+        const key = Object.keys(positionsObj).find((k) => k.startsWith(`${date}:`));
+        if (!key) return null;
+        const value = positionsObj[key]?.position;
+        if (value === null || value === undefined || value === "--" || value === "") return null;
+        const num = Number(value);
+        return Number.isFinite(num) && num > 0 ? num : null;
+      };
+
+      let currentPos = findPos(lastDate);
+      let previousPos = findPos(prevDate);
+
+      if (currentPos === null && previousPos === null) {
+        const allKeys = Object.keys(positionsObj);
+        if (allKeys.length > 0) {
+          const val = positionsObj[allKeys[0]]?.position;
+          if (val && val !== "--" && val !== "") {
+            const num = Number(val);
+            currentPos = Number.isFinite(num) && num > 0 ? num : null;
+          }
+        }
+      }
+
+      return { keyword: row.name || "", position: currentPos, prevPosition: previousPos };
+    });
+  }, [positionsData]);
+
+  // Filtered
+  const filtered = useMemo(() => {
+    if (!searchQuery.trim()) return keywords;
+    const q = searchQuery.toLowerCase();
+    return keywords.filter((k) => k.keyword.toLowerCase().includes(q));
+  }, [keywords, searchQuery]);
+
+  // KPI
+  const withPos = filtered.filter((k) => k.position !== null && k.position > 0);
+  const avgPos = withPos.length > 0 ? withPos.reduce((s, k) => s + k.position!, 0) / withPos.length : 0;
+  const top3 = withPos.filter((k) => k.position! <= 3).length;
+  const top10 = withPos.filter((k) => k.position! <= 10).length;
+  const top30 = withPos.filter((k) => k.position! <= 30).length;
+  const outside = withPos.length - top30;
+  const total = withPos.length || 1;
+  const visibility = Math.round((top10 / total) * 100);
+
+  const ups = withPos.filter((k) => k.prevPosition && k.position! < k.prevPosition).length;
+  const downs = withPos.filter((k) => k.prevPosition && k.position! > k.prevPosition).length;
+  const stable = withPos.filter((k) => k.prevPosition && k.position === k.prevPosition).length;
+
+  const handleSync = () => {
+    refetch();
+    toast.success(isRu ? "Данные обновлены" : "Data refreshed");
+  };
+
+  // No data
+  if (!isLoading && !isError && keywords.length === 0) {
+    return (
+      <div className="space-y-6">
+        <ToolbarRow
+          localDateFrom={localDateFrom} localDateTo={localDateTo}
+          setLocalDateFrom={setLocalDateFrom} setLocalDateTo={setLocalDateTo}
+          isLoading={isLoading} onSync={handleSync}
+        />
+        <div className="flex flex-col items-center justify-center py-16">
+          <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
+          <h3 className="text-lg font-semibold text-foreground mb-2">
+            {isRu ? "Нет данных за выбранный период" : "No data for selected period"}
+          </h3>
+          <p className="text-sm text-muted-foreground text-center max-w-md">
+            {isRu
+              ? "В Topvisor нет данных по ключевым словам за эти даты. Попробуйте другой период."
+              : "Topvisor has no keyword data for these dates. Try a different period."}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6 relative">
+      {isRefreshing && <TabLoadingOverlay show={isRefreshing} />}
+
+      {/* Toolbar */}
+      <ToolbarRow
+        localDateFrom={localDateFrom} localDateTo={localDateTo}
+        setLocalDateFrom={setLocalDateFrom} setLocalDateTo={setLocalDateTo}
+        isLoading={isLoading} onSync={handleSync}
+      />
+
+      {/* Loading */}
+      {isLoading ? (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <GlassCard key={i}><CardContent className="p-4"><Skeleton className="h-20" /></CardContent></GlassCard>
+            ))}
+          </div>
+          <GlassCard><CardContent className="p-5"><Skeleton className="h-[300px]" /></CardContent></GlassCard>
+        </div>
+      ) : isError ? (
+        <GlassCard>
+          <CardContent className="p-6 space-y-4">
+            <div className="flex items-center gap-3 text-destructive">
+              <AlertCircle className="h-5 w-5" />
+              <p className="text-sm font-medium">{(error as Error)?.message || "Error"}</p>
+            </div>
+            {onReconnect && (
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={onReconnect}>
+                <KeyRound className="h-3.5 w-3.5" />
+                {isRu ? "Переподключить" : "Reconnect"}
+              </Button>
+            )}
+          </CardContent>
+        </GlassCard>
+      ) : (
+        <>
+          {/* KPI */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <StandardKpiCard
+              label={isRu ? "Всего ключевых слов" : "Total Keywords"}
+              value={String(keywords.length)}
+              loading={isRefreshing}
+            />
+            <StandardKpiCard
+              label={isRu ? "Средняя позиция" : "Avg Position"}
+              value={avgPos > 0 ? avgPos.toFixed(1) : "—"}
+              loading={isRefreshing}
+            />
+            <StandardKpiCard
+              label={isRu ? "Видимость (Top 10)" : "Visibility (Top 10)"}
+              value={`${visibility}%`}
+              loading={isRefreshing}
+            />
+            <GlassCard>
+              <CardContent className="p-4 space-y-2">
+                <span className="text-xs text-muted-foreground font-medium">{isRu ? "Движение" : "Movement"}</span>
+                <div className="flex items-baseline gap-4">
+                  <div className="flex items-center gap-1 text-emerald-500">
+                    <TrendingUp className="h-4 w-4" /><span className="text-lg font-bold">{ups}</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-destructive">
+                    <TrendingDown className="h-4 w-4" /><span className="text-lg font-bold">{downs}</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-muted-foreground">
+                    <span className="text-lg font-bold">= {stable}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </GlassCard>
+          </div>
+
+          {/* Distribution */}
+          <GlassCard>
+            <CardContent className="p-4 space-y-2">
+              <span className="text-xs text-muted-foreground font-medium">{isRu ? "Распределение позиций" : "Position Distribution"}</span>
+              <div className="flex h-4 rounded-full overflow-hidden bg-muted">
+                {top3 > 0 && <div className="bg-amber-400" style={{ width: `${(top3 / total) * 100}%` }} />}
+                {(top10 - top3) > 0 && <div className="bg-emerald-500" style={{ width: `${((top10 - top3) / total) * 100}%` }} />}
+                {(top30 - top10) > 0 && <div className="bg-primary" style={{ width: `${((top30 - top10) / total) * 100}%` }} />}
+                {outside > 0 && <div className="bg-muted-foreground/30" style={{ width: `${(outside / total) * 100}%` }} />}
+              </div>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-amber-400" />Top 3: {top3}</span>
+                <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />Top 4-10: {top10 - top3}</span>
+                <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-primary" />Top 11-30: {top30 - top10}</span>
+                <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-muted-foreground/30" />{isRu ? "За 30" : ">30"}: {outside}</span>
+              </div>
+            </CardContent>
+          </GlassCard>
+
+          {/* Search */}
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={isRu ? "Поиск по ключевым словам…" : "Search keywords…"}
+              className="pl-9 h-9 text-sm"
+            />
+          </div>
+
+          {/* Table */}
+          <GlassCard>
+            <CardContent className="p-0">
+              <div className="px-5 pt-4 pb-2">
+                <h3 className="text-sm font-semibold text-foreground">
+                  {isRu ? "Ключевые слова" : "Keywords"}
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  {isRu ? `${filtered.length} запросов` : `${filtered.length} keywords`}
+                </p>
+              </div>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/30">
+                      <TableHead className="text-xs">{isRu ? "Запрос" : "Keyword"}</TableHead>
+                      <TableHead className="text-xs text-center">{isRu ? "Позиция" : "Position"}</TableHead>
+                      <TableHead className="text-xs text-center">{isRu ? "Изменение" : "Change"}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filtered.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
+                          {isRu ? "Ничего не найдено" : "Nothing found"}
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filtered.map((k, i) => {
+                        const delta = k.prevPosition && k.position ? k.prevPosition - k.position : null;
+                        return (
+                          <TableRow key={i} className="hover:bg-muted/20 transition-colors">
+                            <TableCell className="text-sm font-medium text-foreground">{k.keyword}</TableCell>
+                            <TableCell className="text-center">
+                              <span className={cn("text-base", positionColor(k.position))}>
+                                {k.position ?? "—"}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {delta !== null && delta !== 0 ? (
+                                <span className={cn("inline-flex items-center gap-0.5 text-xs font-semibold",
+                                  delta > 0 ? "text-emerald-500" : "text-destructive"
+                                )}>
+                                  {delta > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                                  {delta > 0 ? "+" : ""}{delta}
+                                </span>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">—</span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </GlassCard>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   Toolbar with date pickers & sync
+   ═══════════════════════════════════════════════════════ */
+function ToolbarRow({ localDateFrom, localDateTo, setLocalDateFrom, setLocalDateTo, isLoading, onSync }: {
+  localDateFrom: Date; localDateTo: Date;
+  setLocalDateFrom: (d: Date) => void; setLocalDateTo: (d: Date) => void;
+  isLoading: boolean; onSync: () => void;
+}) {
+  const { i18n } = useTranslation();
+  const isRu = i18n.language === "ru";
+
+  return (
+    <div className="flex items-center gap-2 flex-wrap">
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="outline" size="sm" className="gap-1.5 text-xs h-9">
+            <CalendarIcon className="h-3.5 w-3.5" />
+            {format(localDateFrom, "dd.MM.yyyy")}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar
+            mode="single" selected={localDateFrom}
+            onSelect={(d) => d && setLocalDateFrom(d)}
+            disabled={(d) => d > localDateTo || d > new Date()}
+            locale={isRu ? ru : undefined}
+            className="p-3 pointer-events-auto"
+          />
+        </PopoverContent>
+      </Popover>
+      <span className="text-xs text-muted-foreground">→</span>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="outline" size="sm" className="gap-1.5 text-xs h-9">
+            <CalendarIcon className="h-3.5 w-3.5" />
+            {format(localDateTo, "dd.MM.yyyy")}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar
+            mode="single" selected={localDateTo}
+            onSelect={(d) => d && setLocalDateTo(d)}
+            disabled={(d) => d < localDateFrom || d > new Date()}
+            locale={isRu ? ru : undefined}
+            className="p-3 pointer-events-auto"
+          />
+        </PopoverContent>
+      </Popover>
+      <Button variant="outline" size="sm" className="gap-1.5" onClick={onSync}>
+        <RefreshCw className={cn("h-3.5 w-3.5", isLoading && "animate-spin")} />
+        {isRu ? "Обновить" : "Refresh"}
+      </Button>
     </div>
   );
 }
