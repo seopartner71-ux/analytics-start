@@ -352,9 +352,7 @@ function PositionsDashboard({
     queryFn: async () => {
       const data = await callTopvisor("get-positions", apiKey, userId, {
         project_id: tvProjectId,
-        regions_indexes: [0],
-        date1: dateFrom,
-        date2: dateTo,
+        dates: [dateFrom, dateTo],
         show_headers: 1,
         positions_fields: ["position"],
       });
