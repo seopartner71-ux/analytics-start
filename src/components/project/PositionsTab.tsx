@@ -369,6 +369,8 @@ export function PositionsTab({
       userId={userId}
       tvProjectId={tvProjectId}
       projectId={projectId}
+      projectName={projectName}
+      projectUrl={projectUrl}
       integrationId={integrationId!}
       dateFrom={dateFrom}
       dateTo={dateTo}
