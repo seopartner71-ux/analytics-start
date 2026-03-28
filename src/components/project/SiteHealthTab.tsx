@@ -45,7 +45,11 @@ async function callWebmaster(action: string, accessToken: string, extra?: Record
     body: JSON.stringify({ action, access_token: accessToken, ...extra }),
   });
   const data = await resp.json();
-  if (!resp.ok || data.error) throw new Error(data.error || "Webmaster API error");
+  if (!resp.ok || data.error) {
+    // Return null for "Resource not found" instead of crashing
+    if (data.error === "Resource not found") return null;
+    throw new Error(data.error || "Webmaster API error");
+  }
   return data;
 }
 
@@ -53,7 +57,7 @@ async function callWebmaster(action: string, accessToken: string, extra?: Record
    Host Selector (Empty State)
    ═══════════════════════════════════════════════════════ */
 function HostSelector({ projectId, accessToken, onSelected }: {
-  projectId: string; accessToken: string; onSelected: () => void;
+  projectId: string; accessToken: string; onSelected: (hostId: string) => void;
 }) {
   const { i18n } = useTranslation();
   const isRu = i18n.language === "ru";
@@ -68,13 +72,14 @@ function HostSelector({ projectId, accessToken, onSelected }: {
   });
 
   const saveMutation = useMutation({
-    mutationFn: async (hostId: string) => {
-      await callWebmaster("save-host", accessToken, { host_id: hostId, project_id: projectId });
+    mutationFn: async (selectedHostId: string) => {
+      await callWebmaster("save-host", accessToken, { host_id: selectedHostId, project_id: projectId });
+      return selectedHostId;
     },
-    onSuccess: () => {
+    onSuccess: (savedHostId) => {
       queryClient.invalidateQueries({ queryKey: ["project", projectId] });
       toast.success(isRu ? "Сайт привязан!" : "Host linked!");
-      onSelected();
+      onSelected(savedHostId);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -148,18 +153,26 @@ export function SiteHealthTab({ projectId, accessToken, hostId }: SiteHealthTabP
   const isRu = i18n.language === "ru";
   const queryClient = useQueryClient();
 
-  const [hostLinked, setHostLinked] = useState(!!hostId);
+  const [selectedHostId, setSelectedHostId] = useState<string | null>(hostId || null);
+
+  const effectiveHostId = hostId || selectedHostId;
 
   if (!accessToken) return <NoTokenState />;
-  if (!hostId && !hostLinked) {
-    return <HostSelector projectId={projectId} accessToken={accessToken} onSelected={() => setHostLinked(true)} />;
+  if (!effectiveHostId) {
+    return (
+      <HostSelector
+        projectId={projectId}
+        accessToken={accessToken}
+        onSelected={(newHostId) => setSelectedHostId(newHostId)}
+      />
+    );
   }
 
   return (
     <SiteHealthDashboard
       projectId={projectId}
       accessToken={accessToken}
-      hostId={hostId!}
+      hostId={effectiveHostId}
     />
   );
 }
