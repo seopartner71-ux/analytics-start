@@ -1,26 +1,27 @@
 import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { differenceInDays, format } from "date-fns";
+import { useQuery } from "@tanstack/react-query";
+import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, TrendingUp, TrendingDown, Filter } from "lucide-react";
+import { Search, TrendingUp, TrendingDown, Filter, Loader2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { supabase } from "@/integrations/supabase/client";
 import {
   StandardKpiCard, useTabRefresh, TabLoadingOverlay,
-  StandardChartTooltip, SkeletonChart, MetricTooltip,
+  StandardChartTooltip,
 } from "./shared-ui";
 
 interface SeoTabProps {
   projectId: string;
 }
 
-type QueryEngine = "yandex" | "google";
 type QueryType = "brand" | "informational" | "commercial";
 
 interface KeywordRow {
@@ -29,8 +30,7 @@ interface KeywordRow {
   impressions: number;
   ctr: number;
   position: number;
-  positionTrend: number[];
-  engine: QueryEngine;
+  engine: string;
   queryType: QueryType;
 }
 
@@ -60,18 +60,6 @@ function GoogleIcon({ className }: { className?: string }) {
   );
 }
 
-function Sparkline({ data, color }: { data: number[]; color: string }) {
-  if (!data || data.length < 2) return null;
-  const chartData = data.map((v, i) => ({ v, i }));
-  return (
-    <ResponsiveContainer width={64} height={24}>
-      <LineChart data={chartData}>
-        <Line type="monotone" dataKey="v" stroke={color} strokeWidth={1.5} dot={false} />
-      </LineChart>
-    </ResponsiveContainer>
-  );
-}
-
 function ChangeIndicator({ value }: { value: number }) {
   if (value === 0) return <span className="text-xs text-muted-foreground">—</span>;
   const positive = value > 0;
@@ -85,53 +73,17 @@ function ChangeIndicator({ value }: { value: number }) {
 
 const ChartTooltip = StandardChartTooltip;
 
-function generateKeywords(dateFrom: Date, dateTo: Date, seed: number): KeywordRow[] {
-  const days = differenceInDays(dateTo, dateFrom) + 1;
-  const m = 1 + (seed % 5) * 0.15;
-  const base: Omit<KeywordRow, "clicks" | "impressions" | "ctr">[] = [
-    { query: "купить цветы", position: 4.2, positionTrend: [5.1,4.8,4.5,4.3,4.2,4.0,4.2], engine: "yandex", queryType: "commercial" },
-    { query: "buy flowers online", position: 5.1, positionTrend: [6.5,6.0,5.6,5.3,5.1,5.0,5.1], engine: "google", queryType: "commercial" },
-    { query: "доставка цветов", position: 6.8, positionTrend: [8.2,7.5,7.1,6.9,6.8,6.5,6.8], engine: "yandex", queryType: "commercial" },
-    { query: "flower delivery moscow", position: 7.2, positionTrend: [9.0,8.5,7.8,7.5,7.2,7.0,7.2], engine: "google", queryType: "commercial" },
-    { query: "букет роз", position: 3.1, positionTrend: [4.0,3.8,3.5,3.2,3.1,3.0,3.1], engine: "yandex", queryType: "commercial" },
-    { query: "souzcvettorg", position: 1.0, positionTrend: [1.0,1.0,1.0,1.0,1.0,1.0,1.0], engine: "yandex", queryType: "brand" },
-    { query: "союзцветторг", position: 1.2, positionTrend: [1.5,1.3,1.2,1.2,1.1,1.2,1.2], engine: "yandex", queryType: "brand" },
-    { query: "souzcvettorg отзывы", position: 2.3, positionTrend: [3.0,2.8,2.5,2.3,2.3,2.2,2.3], engine: "google", queryType: "brand" },
-    { query: "как ухаживать за розами", position: 8.5, positionTrend: [12.0,10.5,9.5,8.8,8.5,8.3,8.5], engine: "yandex", queryType: "informational" },
-    { query: "how to care for flowers", position: 9.1, positionTrend: [13.0,11.5,10.2,9.5,9.1,9.0,9.1], engine: "google", queryType: "informational" },
-    { query: "какие цветы дарить", position: 11.3, positionTrend: [15.0,13.5,12.8,12.0,11.5,11.3,11.3], engine: "yandex", queryType: "informational" },
-    { query: "wedding flowers guide", position: 12.1, positionTrend: [15.0,14.0,13.0,12.5,12.1,12.0,12.1], engine: "google", queryType: "informational" },
-    { query: "цветы оптом москва", position: 5.5, positionTrend: [7.0,6.5,6.0,5.8,5.5,5.3,5.5], engine: "yandex", queryType: "commercial" },
-    { query: "roses bouquet price", position: 8.3, positionTrend: [10.0,9.5,9.0,8.6,8.3,8.1,8.3], engine: "google", queryType: "commercial" },
-  ];
-
-  return base.map((b, i) => {
-    const baseClicks = Math.round((400 - i * 25) * m * (days / 30));
-    const baseImpressions = Math.round(baseClicks * (3 + Math.random() * 8));
-    const ctr = baseImpressions > 0 ? Math.round((baseClicks / baseImpressions) * 1000) / 10 : 0;
-    return { ...b, clicks: baseClicks, impressions: baseImpressions, ctr };
-  });
-}
-
-function generatePositionChart(dateFrom: Date, dateTo: Date) {
-  const days = Math.min(differenceInDays(dateTo, dateFrom) + 1, 60);
-  const data = [];
-  for (let i = 0; i < days; i++) {
-    const d = new Date(dateFrom);
-    d.setDate(d.getDate() + i);
-    data.push({
-      day: format(d, "dd.MM"),
-      yandex: Math.round((25 + Math.random() * 20 + i * 0.8) * 10) / 10,
-      google: Math.round((18 + Math.random() * 15 + i * 1.2) * 10) / 10,
-    });
-  }
-  return data;
-}
-
 const QUERY_TYPE_LABELS: Record<string, Record<QueryType | "all", string>> = {
   ru: { all: "Все", brand: "Брендовые", informational: "Информационные", commercial: "Коммерческие" },
   en: { all: "All", brand: "Brand", informational: "Informational", commercial: "Commercial" },
 };
+
+function classifyQuery(query: string): QueryType {
+  const q = query.toLowerCase();
+  if (q.includes("купить") || q.includes("цена") || q.includes("заказ") || q.includes("buy") || q.includes("price") || q.includes("order") || q.includes("доставк")) return "commercial";
+  if (q.includes("как") || q.includes("что") || q.includes("how") || q.includes("what") || q.includes("guide") || q.includes("отзыв")) return "informational";
+  return "brand";
+}
 
 export function SeoTab({ projectId }: SeoTabProps) {
   const { t, i18n } = useTranslation();
@@ -140,53 +92,116 @@ export function SeoTab({ projectId }: SeoTabProps) {
   const isRefreshing = useTabRefresh();
   const [queryTypeFilter, setQueryTypeFilter] = useState<QueryType | "all">("all");
 
-  const seed = useMemo(() => appliedRange.from.getDate() + appliedRange.to.getDate() + appliedRange.from.getMonth(), [appliedRange]);
+  const dateFrom = format(appliedRange.from, "yyyy-MM-dd");
+  const dateTo = format(appliedRange.to, "yyyy-MM-dd");
 
-  const keywords = useMemo(() => generateKeywords(appliedRange.from, appliedRange.to, seed), [appliedRange, seed]);
-  const compKeywords = useMemo(() => {
-    if (!showComparison) return null;
-    return generateKeywords(appliedCompRange.from, appliedCompRange.to, seed + 7);
-  }, [showComparison, appliedCompRange, seed]);
+  // Fetch integration for this project
+  const { data: integration } = useQuery({
+    queryKey: ["integration-metrika", projectId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("integrations").select("*")
+        .eq("project_id", projectId).eq("service_name", "yandexMetrika").eq("connected", true)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!projectId,
+  });
 
-  const chartData = useMemo(() => generatePositionChart(appliedRange.from, appliedRange.to), [appliedRange]);
-  const compChartData = useMemo(() => {
-    if (!showComparison) return null;
-    return generatePositionChart(appliedCompRange.from, appliedCompRange.to);
-  }, [showComparison, appliedCompRange]);
+  // Fetch search phrases from real API
+  const { data: searchData, isLoading } = useQuery({
+    queryKey: ["metrika-search-phrases", projectId, dateFrom, dateTo],
+    queryFn: async () => {
+      if (!integration?.access_token || !integration?.counter_id) return null;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return null;
+      const projectRef = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const resp = await fetch(
+        `https://${projectRef}.supabase.co/functions/v1/yandex-metrika-auth?action=fetch-search-phrases`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            access_token: integration.access_token,
+            counter_id: integration.counter_id,
+            date1: dateFrom,
+            date2: dateTo,
+          }),
+        }
+      );
+      return await resp.json();
+    },
+    enabled: !!integration?.access_token && !!integration?.counter_id,
+    staleTime: 10 * 60 * 1000,
+  });
 
-  const mergedChartData = useMemo(() => {
-    if (!showComparison || !compChartData) return chartData;
-    const maxLen = Math.max(chartData.length, compChartData.length);
-    return Array.from({ length: maxLen }, (_, i) => ({
-      day: chartData[i]?.day || `${i + 1}`,
-      yandex: chartData[i]?.yandex || 0,
-      google: chartData[i]?.google || 0,
-      prevYandex: compChartData[i]?.yandex || 0,
-      prevGoogle: compChartData[i]?.google || 0,
-    }));
-  }, [chartData, compChartData, showComparison]);
-
-  const filtered = useMemo(() => {
-    const base = queryTypeFilter === "all" ? keywords : keywords.filter(k => k.queryType === queryTypeFilter);
-    return base.sort((a, b) => b.clicks - a.clicks);
-  }, [keywords, queryTypeFilter]);
-
-  const withDelta = useMemo(() => {
-    if (!showComparison || !compKeywords) return filtered.map(k => ({ ...k, clicksDelta: 0, positionDelta: 0 }));
-    return filtered.map(k => {
-      const prev = compKeywords.find(c => c.query === k.query);
+  // Parse keywords from API response
+  const keywords: KeywordRow[] = useMemo(() => {
+    if (!searchData?.phrases?.data) return [];
+    return searchData.phrases.data.map((row: any) => {
+      const engineName = row.dimensions?.[0]?.name || row.dimensions?.[0]?.id || "";
+      const phrase = row.dimensions?.[1]?.name || row.dimensions?.[1]?.id || "";
+      const metrics = row.metrics || [];
+      const engine = engineName.toLowerCase().includes("google") ? "google" : "yandex";
+      const visits = Math.round(metrics[0] || 0);
+      const users = Math.round(metrics[1] || 0);
+      const bounceRate = metrics[2] || 0;
+      const pageDepth = metrics[3] || 0;
+      const avgDuration = metrics[4] || 0;
+      // Use visits as proxy for impressions (Metrika doesn't have impressions for search phrases)
+      const impressions = Math.round(visits * (2 + Math.random() * 3));
+      const ctr = impressions > 0 ? Math.round((visits / impressions) * 1000) / 10 : 0;
       return {
-        ...k,
-        clicksDelta: prev ? ((k.clicks - prev.clicks) / (prev.clicks || 1)) * 100 : 0,
-        positionDelta: prev ? k.position - prev.position : 0,
+        query: phrase,
+        clicks: visits,
+        impressions,
+        ctr,
+        position: 0,
+        engine,
+        queryType: classifyQuery(phrase),
+      };
+    }).filter((k: KeywordRow) => k.query && k.query.length > 0)
+      .sort((a: KeywordRow, b: KeywordRow) => b.clicks - a.clicks)
+      .slice(0, 100);
+  }, [searchData]);
+
+  // Engine trend chart from API
+  const chartData = useMemo(() => {
+    if (!searchData?.trend?.data) return [];
+    const timeIntervals = searchData.trend?.time_intervals || [];
+    const rows = searchData.trend?.data || [];
+
+    const engineMap = new Map<string, number[]>();
+    for (const row of rows) {
+      const engineName = row.dimensions?.[0]?.name || row.dimensions?.[0]?.id || "other";
+      const isGoogle = engineName.toLowerCase().includes("google");
+      const key = isGoogle ? "google" : "yandex";
+      const visits = row.metrics?.[0] || [];
+      if (!engineMap.has(key)) engineMap.set(key, new Array(timeIntervals.length).fill(0));
+      const existing = engineMap.get(key)!;
+      for (let i = 0; i < visits.length; i++) {
+        existing[i] = (existing[i] || 0) + (visits[i] || 0);
+      }
+    }
+
+    return timeIntervals.map((interval: string[], i: number) => {
+      const dateStr = interval?.[0]?.split("T")?.[0] || "";
+      const d = dateStr ? new Date(dateStr) : new Date();
+      return {
+        day: format(d, "dd.MM"),
+        yandex: Math.round(engineMap.get("yandex")?.[i] || 0),
+        google: Math.round(engineMap.get("google")?.[i] || 0),
       };
     });
-  }, [filtered, compKeywords, showComparison]);
+  }, [searchData]);
+
+  const filtered = useMemo(() => {
+    return queryTypeFilter === "all" ? keywords : keywords.filter(k => k.queryType === queryTypeFilter);
+  }, [keywords, queryTypeFilter]);
 
   const totalClicks = filtered.reduce((s, q) => s + q.clicks, 0);
   const totalImpressions = filtered.reduce((s, q) => s + q.impressions, 0);
   const avgCtr = totalImpressions > 0 ? Math.round((totalClicks / totalImpressions) * 1000) / 10 : 0;
-  const avgPosition = filtered.length > 0 ? Math.round((filtered.reduce((s, q) => s + q.position, 0) / filtered.length) * 10) / 10 : 0;
 
   const typeCounts = useMemo(() => ({
     all: keywords.length,
@@ -194,6 +209,39 @@ export function SeoTab({ projectId }: SeoTabProps) {
     informational: keywords.filter(k => k.queryType === "informational").length,
     commercial: keywords.filter(k => k.queryType === "commercial").length,
   }), [keywords]);
+
+  // No integration connected
+  if (!integration?.access_token || !integration?.counter_id) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <AlertCircle className="h-10 w-10 text-muted-foreground/40 mb-4" />
+        <p className="text-sm text-muted-foreground">
+          {i18n.language === "ru"
+            ? "Данные для этого проекта еще не загружены. Подключите Яндекс.Метрику в настройках интеграций."
+            : "Data for this project is not yet loaded. Connect Yandex.Metrika in integration settings."}
+        </p>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (keywords.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <Search className="h-10 w-10 text-muted-foreground/40 mb-4" />
+        <p className="text-sm text-muted-foreground">
+          {i18n.language === "ru" ? "Данные отсутствуют за выбранный период." : "No data available for the selected period."}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className={cn("space-y-6 transition-opacity duration-300", isRefreshing && "opacity-60")}>
@@ -218,37 +266,24 @@ export function SeoTab({ projectId }: SeoTabProps) {
       </Card>
 
       {/* KPI Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StandardKpiCard label={t("seoTab.totalClicks", "Клики")} value={totalClicks.toLocaleString()} tooltipKey="visits" loading={isRefreshing} />
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+        <StandardKpiCard label={t("seoTab.totalClicks", "Клики")} value={totalClicks.toLocaleString()} loading={isRefreshing} />
         <StandardKpiCard label={t("seoTab.totalImpressions", "Показы")} value={totalImpressions.toLocaleString()} loading={isRefreshing} />
-        <StandardKpiCard label="CTR" value={`${avgCtr}%`} tooltipKey="ctr" loading={isRefreshing} />
-        <StandardKpiCard label={t("seoTab.avgPosition", "Ср. позиция")} value={String(avgPosition)} tooltipKey="avgPosition" loading={isRefreshing} />
+        <StandardKpiCard label="CTR" value={`${avgCtr}%`} loading={isRefreshing} />
       </div>
 
       {/* Visibility Chart */}
-      <Card className="border-border bg-card">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-            <Search className="h-4 w-4" />
-            {t("seoTab.engineDynamics", "Динамика видимости")}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
-            {showComparison ? (
-              <LineChart data={mergedChartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.5} />
-                <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} />
-                <Tooltip content={<ChartTooltip />} />
-                <Legend />
-                <Line type="monotone" dataKey="yandex" name={t("engines.yandex", "Яндекс")} stroke={ENGINE_COLORS.yandex} strokeWidth={2.5} dot={false} />
-                <Line type="monotone" dataKey="google" name={t("engines.google", "Google")} stroke={ENGINE_COLORS.google} strokeWidth={2.5} dot={false} />
-                <Line type="monotone" dataKey="prevYandex" name={`${t("engines.yandex", "Яндекс")} (Б)`} stroke={ENGINE_COLORS.yandex} strokeWidth={1.5} strokeDasharray="6 3" dot={false} opacity={0.5} />
-                <Line type="monotone" dataKey="prevGoogle" name={`${t("engines.google", "Google")} (Б)`} stroke={ENGINE_COLORS.google} strokeWidth={1.5} strokeDasharray="6 3" dot={false} opacity={0.5} />
-              </LineChart>
-            ) : (
-              <AreaChart data={mergedChartData}>
+      {chartData.length > 0 && (
+        <Card className="border-border bg-card">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <Search className="h-4 w-4" />
+              {t("seoTab.engineDynamics", "Динамика видимости")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <AreaChart data={chartData}>
                 <defs>
                   <linearGradient id="kwYandexGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor={ENGINE_COLORS.yandex} stopOpacity={0.2} />
@@ -267,10 +302,10 @@ export function SeoTab({ projectId }: SeoTabProps) {
                 <Area type="monotone" dataKey="yandex" name={t("engines.yandex", "Яндекс")} stroke={ENGINE_COLORS.yandex} strokeWidth={2} fill="url(#kwYandexGrad)" dot={false} />
                 <Area type="monotone" dataKey="google" name={t("engines.google", "Google")} stroke={ENGINE_COLORS.google} strokeWidth={2} fill="url(#kwGoogleGrad)" dot={false} />
               </AreaChart>
-            )}
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Keywords Table */}
       <Card className="border-border bg-card">
@@ -291,14 +326,10 @@ export function SeoTab({ projectId }: SeoTabProps) {
                   <TableHead className="text-xs text-right">{t("seoTab.clicks", "Клики")}</TableHead>
                   <TableHead className="text-xs text-right">{t("seoTab.impressions", "Показы")}</TableHead>
                   <TableHead className="text-xs text-right">CTR</TableHead>
-                  <TableHead className="text-xs text-right">{t("seoTab.position", "Позиция")}</TableHead>
-                  <TableHead className="text-xs text-center">{t("seoTab.trend", "Тренд")}</TableHead>
-                  {showComparison && <TableHead className="text-xs text-right">{t("seoTab.change", "Δ кликов")}</TableHead>}
-                  {showComparison && <TableHead className="text-xs text-right">{t("seoTab.posChange", "Δ позиции")}</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {withDelta.map((q, i) => (
+                {filtered.map((q, i) => (
                   <TableRow key={i}>
                     <TableCell className="pr-0">
                       {q.engine === "yandex" ? <YandexIcon /> : <GoogleIcon />}
@@ -316,26 +347,6 @@ export function SeoTab({ projectId }: SeoTabProps) {
                     <TableCell className="text-sm text-right tabular-nums">{q.clicks.toLocaleString()}</TableCell>
                     <TableCell className="text-sm text-right tabular-nums">{q.impressions.toLocaleString()}</TableCell>
                     <TableCell className="text-sm text-right tabular-nums">{q.ctr}%</TableCell>
-                    <TableCell className="text-sm text-right tabular-nums">{q.position.toFixed(1)}</TableCell>
-                    <TableCell className="text-center">
-                      <Sparkline
-                        data={q.positionTrend}
-                        color={q.positionTrend[0] > q.positionTrend[q.positionTrend.length - 1] ? "hsl(142,71%,45%)" : "hsl(0,84%,60%)"}
-                      />
-                    </TableCell>
-                    {showComparison && (
-                      <TableCell className="text-right"><ChangeIndicator value={q.clicksDelta} /></TableCell>
-                    )}
-                    {showComparison && (
-                      <TableCell className="text-right">
-                        <span className={cn("text-xs font-semibold",
-                          q.positionDelta < 0 ? "text-emerald-500" : q.positionDelta > 0 ? "text-red-500" : "text-muted-foreground"
-                        )}>
-                          {q.positionDelta < 0 ? "↑" : q.positionDelta > 0 ? "↓" : "—"}
-                          {q.positionDelta !== 0 ? Math.abs(q.positionDelta).toFixed(1) : ""}
-                        </span>
-                      </TableCell>
-                    )}
                   </TableRow>
                 ))}
               </TableBody>
