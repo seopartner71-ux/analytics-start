@@ -19,6 +19,10 @@ import { generateDailyVisits } from "@/lib/data-generators";
 import { supabase } from "@/integrations/supabase/client";
 import { ExportMenu } from "@/components/ExportMenu";
 import { exportToPdf, exportToExcel, exportToWord, type ExcelSheet, type WordSection } from "@/lib/export-utils";
+import {
+  StandardKpiCard, GlassCard, useTabRefresh, TabLoadingOverlay,
+  StandardChartTooltip, SkeletonChart,
+} from "./shared-ui";
 
 interface TrafficTabProps {
   projectId: string;
@@ -49,21 +53,7 @@ const DEVICE_COLORS = {
   tablet: "hsl(var(--chart-5))",
 };
 
-/* ── Tooltip ── */
-const ChartTooltip = ({ active, payload, label }: any) => {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="bg-card border border-border rounded-lg shadow-md px-3 py-2">
-      {label && <p className="text-[11px] text-muted-foreground mb-1">{label}</p>}
-      {payload.map((p: any, i: number) => (
-        <p key={i} className="text-sm font-semibold" style={{ color: p.color || p.fill }}>
-          {p.name}: {typeof p.value === "number" ? p.value.toLocaleString() : p.value}
-          {p.payload?.pct !== undefined ? ` (${p.payload.pct}%)` : ""}
-        </p>
-      ))}
-    </div>
-  );
-};
+/* ── Tooltip uses shared component ── */
 
 /* ── Deterministic page set per project ── */
 function getPagesForProject(projectUrl?: string) {
@@ -111,17 +101,7 @@ export function TrafficTab({ projectId, projectName, projectUrl }: TrafficTabPro
   const contentRef = useRef<HTMLDivElement>(null);
   const { appliedRange, appliedCompRange, showComparison, applyVersion, channel } = useDateRange();
 
-  // Loading animation
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const prevVersion = useRef(applyVersion);
-  useEffect(() => {
-    if (applyVersion !== prevVersion.current) {
-      prevVersion.current = applyVersion;
-      setIsRefreshing(true);
-      const timer = setTimeout(() => setIsRefreshing(false), 600);
-      return () => clearTimeout(timer);
-    }
-  }, [applyVersion]);
+  const isRefreshing = useTabRefresh();
 
   // Fetch real metrika stats
   const { data: allStats = [], isLoading } = useQuery({
