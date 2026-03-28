@@ -175,6 +175,70 @@ serve(async (req) => {
         break;
       }
 
+      case "get-rankings-history": {
+        if (!isRecord(payload)) {
+          return new Response(JSON.stringify({ error: "payload is required for get-rankings-history" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        const rhProjectId = Number(payload.project_id);
+        if (!Number.isFinite(rhProjectId)) {
+          return new Response(JSON.stringify({ error: "project_id must be a number" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        requestedProjectId = rhProjectId;
+
+        const rhRegions = Array.isArray(payload.regions_indexes)
+          ? payload.regions_indexes.map((v) => Number(v))
+          : [];
+
+        const rhAvailable = await resolveRegionIndexes(rhProjectId, headers);
+        let rhRegionsIndexes = uniqPositiveNumbers(rhRegions);
+
+        if (rhAvailable.length > 0) {
+          if (rhRegionsIndexes.length === 0) {
+            rhRegionsIndexes = rhAvailable;
+          } else {
+            const allowed = new Set(rhAvailable);
+            const filtered = rhRegionsIndexes.filter((idx) => allowed.has(idx));
+            rhRegionsIndexes = filtered.length > 0 ? filtered : [rhAvailable[0]];
+          }
+        }
+
+        normalizedRegionsIndexes = rhRegionsIndexes;
+
+        const rhDateFrom = typeof payload.date_from === "string" ? payload.date_from : "";
+        const rhDateTo = typeof payload.date_to === "string" ? payload.date_to : "";
+
+        if (!rhDateFrom || !rhDateTo) {
+          return new Response(JSON.stringify({ error: "date_from and date_to are required" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        const rhBody: JsonRecord = {
+          project_id: String(rhProjectId),
+          date1: rhDateFrom,
+          date2: rhDateTo,
+          show_headers: 1,
+          show_exists_dates: 1,
+          positions_fields: ["position"],
+        };
+
+        if (rhRegionsIndexes.length > 0) {
+          rhBody.regions_indexes = rhRegionsIndexes.map((idx) => String(idx));
+        }
+
+        url = `${TV_BASE}/get/positions_2/history`;
+        fetchBody = JSON.stringify(rhBody);
+        break;
+      }
+
       case "get-keywords": {
         url = `${TV_BASE}/get/keywords_2/keywords`;
         fetchBody = JSON.stringify(payload || {});
