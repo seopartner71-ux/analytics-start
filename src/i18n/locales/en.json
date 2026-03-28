@@ -525,5 +525,31 @@
       "medium": "Medium",
       "low": "Low"
     }
+  },
+  "comparison": {
+    "title": "Period Comparison",
+    "chartTitle": "Visit Dynamics: Two Periods",
+    "tableTitle": "Delta Table",
+    "tableSubtitle": "All key metrics in one view",
+    "periodA": "Period A",
+    "periodB": "Period B",
+    "day": "Day",
+    "dayAxis": "Day of period",
+    "col": {
+      "metric": "Metric",
+      "was": "Was",
+      "now": "Now",
+      "abs": "Difference",
+      "pct": "Δ %",
+      "trend": "Trend"
+    },
+    "metric": {
+      "visits": "Visits",
+      "visitors": "Visitors",
+      "bounceRate": "Bounce Rate",
+      "conversions": "Conversions",
+      "depth": "Page Depth",
+      "avgTime": "Avg. Time on Site"
+    }
   }
 }
