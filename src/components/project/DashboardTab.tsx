@@ -39,17 +39,7 @@ export function DashboardTab({ projectId, projectName, onSwitchTab }: DashboardT
   const dateFrom = format(appliedRange.from, "yyyy-MM-dd");
   const dateTo = format(appliedRange.to, "yyyy-MM-dd");
 
-  // Loading animation
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const prevVersion = useRef(applyVersion);
-  useEffect(() => {
-    if (applyVersion !== prevVersion.current) {
-      prevVersion.current = applyVersion;
-      setIsRefreshing(true);
-      const timer = setTimeout(() => setIsRefreshing(false), 600);
-      return () => clearTimeout(timer);
-    }
-  }, [applyVersion]);
+  const isRefreshing = useTabRefresh();
 
   // Fetch real metrika stats
   const { data: allStats = [], isLoading } = useQuery({
