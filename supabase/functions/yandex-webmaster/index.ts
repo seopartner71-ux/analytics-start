@@ -6,7 +6,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const WM_BASE = "https://api.webmaster.yandex.net/v3";
+const WM_BASE = "https://api.webmaster.yandex.net/v4";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -102,9 +102,18 @@ Deno.serve(async (req) => {
         if (!host_id) throw new Error("host_id is required");
         const userId = await getWmUserId();
         const encodedHost = encodeURIComponent(host_id);
-        const resp = await fetch(`${WM_BASE}/user/${userId}/hosts/${encodedHost}/sqi-history`, { headers: wmHeaders });
+        const now = new Date();
+        const yearAgo = new Date(now);
+        yearAgo.setFullYear(yearAgo.getFullYear() - 1);
+        const sqiDateFrom = yearAgo.toISOString().split("T")[0];
+        const sqiDateTo = now.toISOString().split("T")[0];
+        const resp = await fetch(
+          `${WM_BASE}/user/${userId}/hosts/${encodedHost}/sqi-history?date_from=${sqiDateFrom}&date_to=${sqiDateTo}`,
+          { headers: wmHeaders }
+        );
         if (!resp.ok) {
-          return new Response(JSON.stringify({ sqi_history: [], sqi: 0 }), {
+          console.error("SQI API error:", resp.status, await resp.text());
+          return new Response(JSON.stringify({ points: [], sqi: 0 }), {
             status: 200,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
@@ -120,8 +129,17 @@ Deno.serve(async (req) => {
         if (!host_id) throw new Error("host_id is required");
         const userId = await getWmUserId();
         const encodedHost = encodeURIComponent(host_id);
-        const resp = await fetch(`${WM_BASE}/user/${userId}/hosts/${encodedHost}/indexing/history`, { headers: wmHeaders });
+        const now = new Date();
+        const threeMonthsAgo = new Date(now);
+        threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+        const idxDateFrom = threeMonthsAgo.toISOString().split("T")[0];
+        const idxDateTo = now.toISOString().split("T")[0];
+        const resp = await fetch(
+          `${WM_BASE}/user/${userId}/hosts/${encodedHost}/indexing/history?date_from=${idxDateFrom}&date_to=${idxDateTo}`,
+          { headers: wmHeaders }
+        );
         if (!resp.ok) {
+          console.error("Indexing API error:", resp.status, await resp.text());
           return new Response(JSON.stringify({ indicators: {} }), {
             status: 200,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -156,9 +174,20 @@ Deno.serve(async (req) => {
         if (!host_id) throw new Error("host_id is required");
         const userId = await getWmUserId();
         const encodedHost = encodeURIComponent(host_id);
-        const resp = await fetch(`${WM_BASE}/user/${userId}/hosts/${encodedHost}/links/external/history`, { headers: wmHeaders });
+        const now = new Date();
+        const sixMonthsAgo = new Date(now);
+        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+        const blDateFrom = sixMonthsAgo.toISOString().split("T")[0];
+        const blDateTo = now.toISOString().split("T")[0];
+        const resp = await fetch(
+          `${WM_BASE}/user/${userId}/hosts/${encodedHost}/links/external/history?date_from=${blDateFrom}&date_to=${blDateTo}`,
+          { headers: wmHeaders }
+        );
         const data = await resp.json();
-        if (!resp.ok) throw new Error(data?.error_message || "Failed to get backlinks");
+        if (!resp.ok) {
+          console.error("Backlinks API error:", resp.status, JSON.stringify(data));
+          throw new Error(data?.error_message || "Failed to get backlinks");
+        }
         return new Response(JSON.stringify(data), {
           status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
