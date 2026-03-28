@@ -16,6 +16,7 @@ import { IntegrationsTab } from "@/components/project/IntegrationsTab";
 import { WorkLogTab } from "@/components/project/WorkLogTab";
 import { GoalsTab } from "@/components/project/GoalsTab";
 import { SeoTab } from "@/components/project/SeoTab";
+import { TrafficTab } from "@/components/project/TrafficTab";
 import { SearchSystemsTab } from "@/components/project/SearchSystemsTab";
 import { PagesTab } from "@/components/project/PagesTab";
 import { AiInsightsBlock } from "@/components/project/AiInsightsBlock";
