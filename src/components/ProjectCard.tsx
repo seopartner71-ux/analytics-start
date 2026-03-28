@@ -95,36 +95,26 @@ export function ProjectCard({
       className="group relative cursor-pointer overflow-hidden border-border/50 bg-card/80 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_-4px_hsl(var(--primary)/0.15)] hover:border-primary/30"
       onClick={onClick}
     >
-      {/* Screenshot Preview */}
+      {/* Logo Preview */}
       <div className="relative overflow-hidden">
         <AspectRatio ratio={16 / 9}>
-          {domain && !imgError ? (
-            <img
-              src={screenshotUrl}
-              alt={`${name} preview`}
-              className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
-              onError={() => setImgError(true)}
-              loading="lazy"
-            />
-          ) : (
-            <div
-              className="h-full w-full flex items-center justify-center"
-              style={{
-                background: `linear-gradient(135deg, ${color}44, ${color}22, hsl(var(--card)))`,
-              }}
-            >
-              {logoUrl ? (
-                <img src={logoUrl} alt={name} className="h-12 w-12 rounded-lg object-cover" />
-              ) : (
-                <span
-                  className="text-2xl font-bold text-primary-foreground/80 rounded-xl px-4 py-2"
-                  style={{ backgroundColor: color }}
-                >
-                  {initials}
-                </span>
-              )}
-            </div>
-          )}
+          <div
+            className="h-full w-full flex items-center justify-center transition-all duration-500"
+            style={{
+              background: `linear-gradient(135deg, ${color}20, ${color}08, hsl(var(--card)))`,
+            }}
+          >
+            {logoUrl ? (
+              <img src={logoUrl} alt={name} className="h-14 w-14 rounded-xl object-cover shadow-lg" />
+            ) : (
+              <div
+                className="flex h-16 w-16 items-center justify-center rounded-2xl text-xl font-bold text-primary-foreground shadow-lg transition-transform duration-300 group-hover:scale-110"
+                style={{ backgroundColor: color }}
+              >
+                {initials}
+              </div>
+            )}
+          </div>
         </AspectRatio>
 
         {/* Hover Actions Overlay */}
