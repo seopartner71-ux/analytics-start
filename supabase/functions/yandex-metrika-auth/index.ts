@@ -378,6 +378,42 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Action: fetch traffic sources by day (for dynamics chart)
+    if (action === "fetch-traffic-by-source-daily") {
+      const body = await req.json();
+      const { access_token: accessToken, counter_id: counterId, date1, date2 } = body;
+      if (!accessToken || !counterId) {
+        return new Response(
+          JSON.stringify({ error: "access_token and counter_id are required" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const startDate = date1 || new Date(Date.now() - 30 * 86400000).toISOString().split("T")[0];
+      const endDate = date2 || new Date().toISOString().split("T")[0];
+      const accuracyParams = "robot_less=1&accuracy=full&attribution=cross_device_last_significant";
+
+      // Fetch visits by day broken down by traffic source
+      const resp = await fetch(
+        `https://api-metrika.yandex.net/stat/v1/data/bytime?id=${counterId}&metrics=ym:s:visits&dimensions=ym:s:lastSignTrafficSource&group=day&date1=${startDate}&date2=${endDate}&limit=50&${accuracyParams}`,
+        { headers: { Authorization: `OAuth ${accessToken}` } }
+      );
+
+      if (!resp.ok) {
+        const errData = await resp.json().catch(() => ({}));
+        return new Response(
+          JSON.stringify({ error: errData.message || "Failed to fetch traffic by source" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const rawData = await resp.json();
+      return new Response(
+        JSON.stringify(rawData),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     return new Response(JSON.stringify({ error: "Unknown action" }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
