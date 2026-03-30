@@ -160,6 +160,12 @@ function TrafficDynamicsChart({ appliedRange, appliedCompRange, showComparison, 
   const data = useMemo(() => parseByTimeSourceData(mainRaw, appliedRange.from), [mainRaw, appliedRange.from]);
   const compData = useMemo(() => showComparison ? parseByTimeSourceData(compRaw, appliedCompRange.from) : [], [compRaw, appliedCompRange.from, showComparison]);
 
+  // Determine visible channels based on filter
+  const visibleChannels = useMemo(() => {
+    if (channel === "all") return [...ALL_CHANNELS];
+    return ALL_CHANNELS.filter(ch => ch === channel);
+  }, [channel]);
+
   // Merge comparison data aligned by index
   const merged = useMemo(() => {
     return data.map((d, i) => ({
@@ -168,12 +174,13 @@ function TrafficDynamicsChart({ appliedRange, appliedCompRange, showComparison, 
       comp_direct: compData[i]?.direct ?? null,
       comp_social: compData[i]?.social ?? null,
       comp_referral: compData[i]?.referral ?? null,
+      comp_ad: compData[i]?.ad ?? null,
     }));
   }, [data, compData]);
 
   const channelNames: Record<string, string> = lang === "ru"
-    ? { organic: "Поисковые", direct: "Прямые", social: "Соцсети", referral: "Реферальные" }
-    : { organic: "Organic", direct: "Direct", social: "Social", referral: "Referral" };
+    ? { organic: "Поисковые", direct: "Прямые", social: "Соцсети", referral: "Реферальные", ad: "Реклама" }
+    : { organic: "Organic", direct: "Direct", social: "Social", referral: "Referral", ad: "Ads" };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload?.length) return null;
