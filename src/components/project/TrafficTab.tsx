@@ -219,6 +219,15 @@ function TrafficDynamicsChart({ appliedRange, appliedCompRange, showComparison, 
         </div>
       </CardHeader>
       <CardContent>
+        {isLoading ? (
+          <div className="flex items-center justify-center h-[320px]">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : data.length === 0 ? (
+          <div className="flex items-center justify-center h-[320px] text-sm text-muted-foreground">
+            {lang === "ru" ? "Нет данных за выбранный период" : "No data for selected period"}
+          </div>
+        ) : (
         <ResponsiveContainer width="100%" height={320}>
           <AreaChart data={merged} margin={{ top: 5, right: 5, left: -10, bottom: 0 }}>
             <defs>
