@@ -412,9 +412,15 @@ export function TrafficTab({ projectId, projectName, projectUrl }: TrafficTabPro
     return [];
   }, [liveStats, latestStat, t]);
 
+  // Filter sources by channel
+  const filteredSourceData = useMemo(() => {
+    if (channel === "all") return sourceData;
+    return sourceData.filter(s => s.key === channel);
+  }, [sourceData, channel]);
+
   // Calc percentages
-  const sourceTotal = sourceData.reduce((s, d) => s + d.value, 0);
-  const sourceWithPct = sourceData.map(s => ({
+  const sourceTotal = filteredSourceData.reduce((s, d) => s + d.value, 0);
+  const sourceWithPct = filteredSourceData.map(s => ({
     ...s,
     pct: sourceTotal > 0 ? Math.round((s.value / sourceTotal) * 1000) / 10 : 0,
   })).filter(s => s.value > 0);
