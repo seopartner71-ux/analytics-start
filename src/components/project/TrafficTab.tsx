@@ -67,12 +67,13 @@ const CHANNEL_COLORS: Record<string, string> = {
 
 const ALL_CHANNELS = ["organic", "direct", "social", "referral", "ad"] as const;
 
-const SOURCE_MAP: Record<string, keyof typeof CHANNEL_COLORS> = {};
-function classifySource(name: string): keyof typeof CHANNEL_COLORS {
+const SOURCE_MAP_CACHE: Record<string, keyof typeof CHANNEL_COLORS> = {};
+function classifySource(name: string): string {
   const n = name.toLowerCase();
   if (n.includes("organic") || n.includes("search") || n.includes("поиск")) return "organic";
   if (n.includes("direct") || n.includes("прям") || n.includes("internal") || n.includes("внутр")) return "direct";
   if (n.includes("social") || n.includes("соц")) return "social";
+  if (n.includes("ad") || n.includes("реклам") || n.includes("paid") || n.includes("cpc")) return "ad";
   return "referral";
 }
 
