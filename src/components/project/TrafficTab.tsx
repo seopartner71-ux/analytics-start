@@ -218,7 +218,7 @@ function TrafficDynamicsChart({ appliedRange, appliedCompRange, showComparison, 
             {lang === "ru" ? "Динамика трафика" : "Traffic Dynamics"}
           </CardTitle>
           <div className="flex items-center gap-3">
-            {(Object.keys(CHANNEL_COLORS) as (keyof typeof CHANNEL_COLORS)[]).map(ch => (
+            {visibleChannels.map(ch => (
               <div key={ch} className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full" style={{ background: CHANNEL_COLORS[ch] }} />
                 <span className="text-[11px] text-muted-foreground">{channelNames[ch]}</span>
@@ -251,7 +251,7 @@ function TrafficDynamicsChart({ appliedRange, appliedCompRange, showComparison, 
             <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} />
             <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => v.toLocaleString()} />
             <Tooltip content={<CustomTooltip />} />
-            {(["organic", "direct", "social", "referral"] as const).map(ch => (
+            {visibleChannels.map(ch => (
               <Area
                 key={ch}
                 type="monotone"
@@ -262,7 +262,7 @@ function TrafficDynamicsChart({ appliedRange, appliedCompRange, showComparison, 
                 fill={`url(#grad-${ch})`}
               />
             ))}
-            {showComparison && (["organic", "direct", "social", "referral"] as const).map(ch => (
+            {showComparison && visibleChannels.map(ch => (
               <Area
                 key={`comp_${ch}`}
                 type="monotone"
