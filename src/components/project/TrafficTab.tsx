@@ -64,25 +64,44 @@ const CHANNEL_COLORS = {
   referral: "#0EA5E9",
 };
 
-function generateMockDailyTraffic(from: Date, to: Date) {
-  const days: any[] = [];
-  const d = new Date(from);
-  let i = 0;
-  while (d <= to) {
-    const base = 120 + Math.sin(i * 0.15) * 40;
-    const dow = d.getDay();
-    const weekendDip = dow === 0 || dow === 6 ? 0.65 : 1;
+const SOURCE_MAP: Record<string, keyof typeof CHANNEL_COLORS> = {};
+function classifySource(name: string): keyof typeof CHANNEL_COLORS {
+  const n = name.toLowerCase();
+  if (n.includes("organic") || n.includes("search") || n.includes("поиск")) return "organic";
+  if (n.includes("direct") || n.includes("прям") || n.includes("internal") || n.includes("внутр")) return "direct";
+  if (n.includes("social") || n.includes("соц")) return "social";
+  return "referral";
+}
+
+function parseByTimeSourceData(rawData: any, rangeFrom: Date): Array<Record<string, any>> {
+  if (!rawData?.data?.length) return [];
+  const timeLabels = rawData.time_intervals?.map((t: string[]) => t[0]?.split(" ")[0]) || [];
+  const dayCount = timeLabels.length || (rawData.data[0]?.metrics?.[0]?.length ?? 0);
+
+  // Build per-day aggregation
+  const days: Record<string, any>[] = [];
+  for (let i = 0; i < dayCount; i++) {
+    const d = new Date(rangeFrom);
+    d.setDate(d.getDate() + i);
     days.push({
       date: format(d, "yyyy-MM-dd"),
       label: format(d, "dd.MM"),
-      organic: Math.round((base * 0.48 + Math.random() * 25) * weekendDip),
-      direct: Math.round((base * 0.22 + Math.random() * 15) * weekendDip),
-      social: Math.round((base * 0.15 + Math.random() * 12) * weekendDip),
-      referral: Math.round((base * 0.15 + Math.random() * 10) * weekendDip),
+      organic: 0,
+      direct: 0,
+      social: 0,
+      referral: 0,
     });
-    d.setDate(d.getDate() + 1);
-    i++;
   }
+
+  for (const row of rawData.data) {
+    const sourceName = row.dimensions?.[0]?.name || "";
+    const channel = classifySource(sourceName);
+    const visits = row.metrics?.[0] || [];
+    for (let i = 0; i < Math.min(visits.length, dayCount); i++) {
+      days[i][channel] += Math.round(visits[i] || 0);
+    }
+  }
+
   return days;
 }
 
@@ -92,11 +111,52 @@ interface DynamicsProps {
   showComparison: boolean;
   locale: any;
   lang: string;
+  integration: any;
 }
 
-function TrafficDynamicsChart({ appliedRange, appliedCompRange, showComparison, locale, lang }: DynamicsProps) {
-  const data = useMemo(() => generateMockDailyTraffic(appliedRange.from, appliedRange.to), [appliedRange]);
-  const compData = useMemo(() => showComparison ? generateMockDailyTraffic(appliedCompRange.from, appliedCompRange.to) : [], [appliedCompRange, showComparison]);
+function TrafficDynamicsChart({ appliedRange, appliedCompRange, showComparison, locale, lang, integration }: DynamicsProps) {
+  const dateFrom = format(appliedRange.from, "yyyy-MM-dd");
+  const dateTo = format(appliedRange.to, "yyyy-MM-dd");
+  const compDateFrom = format(appliedCompRange.from, "yyyy-MM-dd");
+  const compDateTo = format(appliedCompRange.to, "yyyy-MM-dd");
+
+  const fetchSourceDaily = useCallback(async (d1: string, d2: string) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const r = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/yandex-metrika-auth?action=fetch-traffic-by-source-daily`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({
+          access_token: integration.access_token,
+          counter_id: integration.counter_id,
+          date1: d1,
+          date2: d2,
+        }),
+      }
+    );
+    if (!r.ok) throw new Error("Failed to fetch traffic by source");
+    return r.json();
+  }, [integration]);
+
+  const { data: mainRaw, isLoading } = useQuery({
+    queryKey: ["traffic-by-source-daily", integration?.counter_id, dateFrom, dateTo],
+    queryFn: () => fetchSourceDaily(dateFrom, dateTo),
+    enabled: !!integration?.access_token && !!integration?.counter_id,
+  });
+
+  const { data: compRaw } = useQuery({
+    queryKey: ["traffic-by-source-daily-comp", integration?.counter_id, compDateFrom, compDateTo],
+    queryFn: () => fetchSourceDaily(compDateFrom, compDateTo),
+    enabled: !!integration?.access_token && !!integration?.counter_id && showComparison,
+  });
+
+  const data = useMemo(() => parseByTimeSourceData(mainRaw, appliedRange.from), [mainRaw, appliedRange.from]);
+  const compData = useMemo(() => showComparison ? parseByTimeSourceData(compRaw, appliedCompRange.from) : [], [compRaw, appliedCompRange.from, showComparison]);
 
   // Merge comparison data aligned by index
   const merged = useMemo(() => {
