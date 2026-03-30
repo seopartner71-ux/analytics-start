@@ -292,6 +292,15 @@ export function TrafficTab({ projectId, projectName, projectUrl }: TrafficTabPro
       </div>
 
       <div ref={contentRef} className="space-y-6">
+        {/* === 0. TRAFFIC DYNAMICS CHART === */}
+        <TrafficDynamicsChart
+          appliedRange={appliedRange}
+          appliedCompRange={appliedCompRange}
+          showComparison={showComparison}
+          locale={locale}
+          lang={i18n.language}
+        />
+
         {/* === 1. SOURCES DONUT === */}
         <Card className="border-border bg-card">
           <CardHeader className="pb-2">
