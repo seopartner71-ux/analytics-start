@@ -187,7 +187,7 @@ function TrafficDynamicsChart({ appliedRange, appliedCompRange, showComparison, 
     return (
       <div className="rounded-lg border border-border bg-card/95 backdrop-blur-sm p-3 shadow-xl text-xs">
         <p className="font-semibold text-foreground mb-2">{label}</p>
-        {(["organic", "direct", "social", "referral"] as const).map(ch => {
+        {visibleChannels.map(ch => {
           const item = payload.find((p: any) => p.dataKey === ch);
           const compItem = payload.find((p: any) => p.dataKey === `comp_${ch}`);
           if (!item) return null;
