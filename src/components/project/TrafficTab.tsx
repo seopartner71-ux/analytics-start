@@ -112,9 +112,10 @@ interface DynamicsProps {
   locale: any;
   lang: string;
   integration: any;
+  channel: string;
 }
 
-function TrafficDynamicsChart({ appliedRange, appliedCompRange, showComparison, locale, lang, integration }: DynamicsProps) {
+function TrafficDynamicsChart({ appliedRange, appliedCompRange, showComparison, locale, lang, integration, channel }: DynamicsProps) {
   const dateFrom = format(appliedRange.from, "yyyy-MM-dd");
   const dateTo = format(appliedRange.to, "yyyy-MM-dd");
   const compDateFrom = format(appliedCompRange.from, "yyyy-MM-dd");
