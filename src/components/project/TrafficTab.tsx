@@ -90,10 +90,7 @@ function parseByTimeSourceData(rawData: any, rangeFrom: Date): Array<Record<stri
     days.push({
       date: format(d, "yyyy-MM-dd"),
       label: format(d, "dd.MM"),
-      organic: 0,
-      direct: 0,
-      social: 0,
-      referral: 0,
+      organic: 0, direct: 0, social: 0, referral: 0, ad: 0,
     });
   }
 
