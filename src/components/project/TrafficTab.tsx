@@ -519,6 +519,7 @@ export function TrafficTab({ projectId, projectName, projectUrl }: TrafficTabPro
           locale={locale}
           lang={i18n.language}
           integration={integration}
+          channel={channel}
         />
 
         {/* === 1. SOURCES DONUT === */}
