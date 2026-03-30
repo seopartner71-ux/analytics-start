@@ -268,6 +268,7 @@ function TrafficDynamicsChart({ appliedRange, appliedCompRange, showComparison, 
             ))}
           </AreaChart>
         </ResponsiveContainer>
+        )}
       </CardContent>
     </Card>
   );
