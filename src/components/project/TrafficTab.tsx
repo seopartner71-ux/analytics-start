@@ -57,19 +57,23 @@ const DEVICE_COLORS = {
 /* ── No demo data — top pages come from real API or show empty ── */
 
 /* ── Channel colors for dynamics chart ── */
-const CHANNEL_COLORS = {
+const CHANNEL_COLORS: Record<string, string> = {
   organic: "#8B5CF6",
   direct: "#10B981",
   social: "#D946EF",
   referral: "#0EA5E9",
+  ad: "#F59E0B",
 };
 
-const SOURCE_MAP: Record<string, keyof typeof CHANNEL_COLORS> = {};
-function classifySource(name: string): keyof typeof CHANNEL_COLORS {
+const ALL_CHANNELS = ["organic", "direct", "social", "referral", "ad"] as const;
+
+const SOURCE_MAP_CACHE: Record<string, keyof typeof CHANNEL_COLORS> = {};
+function classifySource(name: string): string {
   const n = name.toLowerCase();
   if (n.includes("organic") || n.includes("search") || n.includes("поиск")) return "organic";
   if (n.includes("direct") || n.includes("прям") || n.includes("internal") || n.includes("внутр")) return "direct";
   if (n.includes("social") || n.includes("соц")) return "social";
+  if (n.includes("ad") || n.includes("реклам") || n.includes("paid") || n.includes("cpc")) return "ad";
   return "referral";
 }
 
@@ -86,10 +90,7 @@ function parseByTimeSourceData(rawData: any, rangeFrom: Date): Array<Record<stri
     days.push({
       date: format(d, "yyyy-MM-dd"),
       label: format(d, "dd.MM"),
-      organic: 0,
-      direct: 0,
-      social: 0,
-      referral: 0,
+      organic: 0, direct: 0, social: 0, referral: 0, ad: 0,
     });
   }
 
@@ -112,9 +113,10 @@ interface DynamicsProps {
   locale: any;
   lang: string;
   integration: any;
+  channel: string;
 }
 
-function TrafficDynamicsChart({ appliedRange, appliedCompRange, showComparison, locale, lang, integration }: DynamicsProps) {
+function TrafficDynamicsChart({ appliedRange, appliedCompRange, showComparison, locale, lang, integration, channel }: DynamicsProps) {
   const dateFrom = format(appliedRange.from, "yyyy-MM-dd");
   const dateTo = format(appliedRange.to, "yyyy-MM-dd");
   const compDateFrom = format(appliedCompRange.from, "yyyy-MM-dd");
@@ -158,6 +160,12 @@ function TrafficDynamicsChart({ appliedRange, appliedCompRange, showComparison, 
   const data = useMemo(() => parseByTimeSourceData(mainRaw, appliedRange.from), [mainRaw, appliedRange.from]);
   const compData = useMemo(() => showComparison ? parseByTimeSourceData(compRaw, appliedCompRange.from) : [], [compRaw, appliedCompRange.from, showComparison]);
 
+  // Determine visible channels based on filter
+  const visibleChannels = useMemo(() => {
+    if (channel === "all") return [...ALL_CHANNELS];
+    return ALL_CHANNELS.filter(ch => ch === channel);
+  }, [channel]);
+
   // Merge comparison data aligned by index
   const merged = useMemo(() => {
     return data.map((d, i) => ({
@@ -166,19 +174,20 @@ function TrafficDynamicsChart({ appliedRange, appliedCompRange, showComparison, 
       comp_direct: compData[i]?.direct ?? null,
       comp_social: compData[i]?.social ?? null,
       comp_referral: compData[i]?.referral ?? null,
+      comp_ad: compData[i]?.ad ?? null,
     }));
   }, [data, compData]);
 
   const channelNames: Record<string, string> = lang === "ru"
-    ? { organic: "Поисковые", direct: "Прямые", social: "Соцсети", referral: "Реферальные" }
-    : { organic: "Organic", direct: "Direct", social: "Social", referral: "Referral" };
+    ? { organic: "Поисковые", direct: "Прямые", social: "Соцсети", referral: "Реферальные", ad: "Реклама" }
+    : { organic: "Organic", direct: "Direct", social: "Social", referral: "Referral", ad: "Ads" };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload?.length) return null;
     return (
       <div className="rounded-lg border border-border bg-card/95 backdrop-blur-sm p-3 shadow-xl text-xs">
         <p className="font-semibold text-foreground mb-2">{label}</p>
-        {(["organic", "direct", "social", "referral"] as const).map(ch => {
+        {visibleChannels.map(ch => {
           const item = payload.find((p: any) => p.dataKey === ch);
           const compItem = payload.find((p: any) => p.dataKey === `comp_${ch}`);
           if (!item) return null;
@@ -209,7 +218,7 @@ function TrafficDynamicsChart({ appliedRange, appliedCompRange, showComparison, 
             {lang === "ru" ? "Динамика трафика" : "Traffic Dynamics"}
           </CardTitle>
           <div className="flex items-center gap-3">
-            {(Object.keys(CHANNEL_COLORS) as (keyof typeof CHANNEL_COLORS)[]).map(ch => (
+            {visibleChannels.map(ch => (
               <div key={ch} className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full" style={{ background: CHANNEL_COLORS[ch] }} />
                 <span className="text-[11px] text-muted-foreground">{channelNames[ch]}</span>
@@ -242,7 +251,7 @@ function TrafficDynamicsChart({ appliedRange, appliedCompRange, showComparison, 
             <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} />
             <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => v.toLocaleString()} />
             <Tooltip content={<CustomTooltip />} />
-            {(["organic", "direct", "social", "referral"] as const).map(ch => (
+            {visibleChannels.map(ch => (
               <Area
                 key={ch}
                 type="monotone"
@@ -253,7 +262,7 @@ function TrafficDynamicsChart({ appliedRange, appliedCompRange, showComparison, 
                 fill={`url(#grad-${ch})`}
               />
             ))}
-            {showComparison && (["organic", "direct", "social", "referral"] as const).map(ch => (
+            {showComparison && visibleChannels.map(ch => (
               <Area
                 key={`comp_${ch}`}
                 type="monotone"
@@ -403,9 +412,15 @@ export function TrafficTab({ projectId, projectName, projectUrl }: TrafficTabPro
     return [];
   }, [liveStats, latestStat, t]);
 
+  // Filter sources by channel
+  const filteredSourceData = useMemo(() => {
+    if (channel === "all") return sourceData;
+    return sourceData.filter(s => s.key === channel);
+  }, [sourceData, channel]);
+
   // Calc percentages
-  const sourceTotal = sourceData.reduce((s, d) => s + d.value, 0);
-  const sourceWithPct = sourceData.map(s => ({
+  const sourceTotal = filteredSourceData.reduce((s, d) => s + d.value, 0);
+  const sourceWithPct = filteredSourceData.map(s => ({
     ...s,
     pct: sourceTotal > 0 ? Math.round((s.value / sourceTotal) * 1000) / 10 : 0,
   })).filter(s => s.value > 0);
@@ -518,6 +533,7 @@ export function TrafficTab({ projectId, projectName, projectUrl }: TrafficTabPro
           locale={locale}
           lang={i18n.language}
           integration={integration}
+          channel={channel}
         />
 
         {/* === 1. SOURCES DONUT === */}
