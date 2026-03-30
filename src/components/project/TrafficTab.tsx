@@ -56,6 +56,154 @@ const DEVICE_COLORS = {
 
 /* ── No demo data — top pages come from real API or show empty ── */
 
+/* ── Channel colors for dynamics chart ── */
+const CHANNEL_COLORS = {
+  organic: "#8B5CF6",
+  direct: "#10B981",
+  social: "#D946EF",
+  referral: "#0EA5E9",
+};
+
+function generateMockDailyTraffic(from: Date, to: Date) {
+  const days: any[] = [];
+  const d = new Date(from);
+  let i = 0;
+  while (d <= to) {
+    const base = 120 + Math.sin(i * 0.15) * 40;
+    const dow = d.getDay();
+    const weekendDip = dow === 0 || dow === 6 ? 0.65 : 1;
+    days.push({
+      date: format(d, "yyyy-MM-dd"),
+      label: format(d, "dd.MM"),
+      organic: Math.round((base * 0.48 + Math.random() * 25) * weekendDip),
+      direct: Math.round((base * 0.22 + Math.random() * 15) * weekendDip),
+      social: Math.round((base * 0.15 + Math.random() * 12) * weekendDip),
+      referral: Math.round((base * 0.15 + Math.random() * 10) * weekendDip),
+    });
+    d.setDate(d.getDate() + 1);
+    i++;
+  }
+  return days;
+}
+
+interface DynamicsProps {
+  appliedRange: { from: Date; to: Date };
+  appliedCompRange: { from: Date; to: Date };
+  showComparison: boolean;
+  locale: any;
+  lang: string;
+}
+
+function TrafficDynamicsChart({ appliedRange, appliedCompRange, showComparison, locale, lang }: DynamicsProps) {
+  const data = useMemo(() => generateMockDailyTraffic(appliedRange.from, appliedRange.to), [appliedRange]);
+  const compData = useMemo(() => showComparison ? generateMockDailyTraffic(appliedCompRange.from, appliedCompRange.to) : [], [appliedCompRange, showComparison]);
+
+  // Merge comparison data aligned by index
+  const merged = useMemo(() => {
+    return data.map((d, i) => ({
+      ...d,
+      comp_organic: compData[i]?.organic ?? null,
+      comp_direct: compData[i]?.direct ?? null,
+      comp_social: compData[i]?.social ?? null,
+      comp_referral: compData[i]?.referral ?? null,
+    }));
+  }, [data, compData]);
+
+  const channelNames: Record<string, string> = lang === "ru"
+    ? { organic: "Поисковые", direct: "Прямые", social: "Соцсети", referral: "Реферальные" }
+    : { organic: "Organic", direct: "Direct", social: "Social", referral: "Referral" };
+
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (!active || !payload?.length) return null;
+    return (
+      <div className="rounded-lg border border-border bg-card/95 backdrop-blur-sm p-3 shadow-xl text-xs">
+        <p className="font-semibold text-foreground mb-2">{label}</p>
+        {(["organic", "direct", "social", "referral"] as const).map(ch => {
+          const item = payload.find((p: any) => p.dataKey === ch);
+          const compItem = payload.find((p: any) => p.dataKey === `comp_${ch}`);
+          if (!item) return null;
+          return (
+            <div key={ch} className="flex items-center justify-between gap-4 py-0.5">
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full" style={{ background: CHANNEL_COLORS[ch] }} />
+                <span className="text-muted-foreground">{channelNames[ch]}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-foreground tabular-nums">{item.value?.toLocaleString()}</span>
+                {compItem?.value != null && (
+                  <span className="text-muted-foreground tabular-nums">({compItem.value.toLocaleString()})</span>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  return (
+    <Card className="border-border bg-card">
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm font-medium text-muted-foreground">
+            {lang === "ru" ? "Динамика трафика" : "Traffic Dynamics"}
+          </CardTitle>
+          <div className="flex items-center gap-3">
+            {(Object.keys(CHANNEL_COLORS) as (keyof typeof CHANNEL_COLORS)[]).map(ch => (
+              <div key={ch} className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full" style={{ background: CHANNEL_COLORS[ch] }} />
+                <span className="text-[11px] text-muted-foreground">{channelNames[ch]}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <ResponsiveContainer width="100%" height={320}>
+          <AreaChart data={merged} margin={{ top: 5, right: 5, left: -10, bottom: 0 }}>
+            <defs>
+              {(Object.entries(CHANNEL_COLORS)).map(([key, color]) => (
+                <linearGradient key={key} id={`grad-${key}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={color} stopOpacity={0.3} />
+                  <stop offset="95%" stopColor={color} stopOpacity={0.02} />
+                </linearGradient>
+              ))}
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.3} />
+            <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} />
+            <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => v.toLocaleString()} />
+            <Tooltip content={<CustomTooltip />} />
+            {(["organic", "direct", "social", "referral"] as const).map(ch => (
+              <Area
+                key={ch}
+                type="monotone"
+                dataKey={ch}
+                stackId="main"
+                stroke={CHANNEL_COLORS[ch]}
+                strokeWidth={2}
+                fill={`url(#grad-${ch})`}
+              />
+            ))}
+            {showComparison && (["organic", "direct", "social", "referral"] as const).map(ch => (
+              <Area
+                key={`comp_${ch}`}
+                type="monotone"
+                dataKey={`comp_${ch}`}
+                stackId="comp"
+                stroke={CHANNEL_COLORS[ch]}
+                strokeWidth={1.5}
+                strokeDasharray="5 3"
+                fill="none"
+                strokeOpacity={0.4}
+              />
+            ))}
+          </AreaChart>
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
+  );
+}
+
 /* ══════════════════════ COMPONENT ══════════════════════ */
 export function TrafficTab({ projectId, projectName, projectUrl }: TrafficTabProps) {
   const { t, i18n } = useTranslation();
@@ -292,6 +440,15 @@ export function TrafficTab({ projectId, projectName, projectUrl }: TrafficTabPro
       </div>
 
       <div ref={contentRef} className="space-y-6">
+        {/* === 0. TRAFFIC DYNAMICS CHART === */}
+        <TrafficDynamicsChart
+          appliedRange={appliedRange}
+          appliedCompRange={appliedCompRange}
+          showComparison={showComparison}
+          locale={locale}
+          lang={i18n.language}
+        />
+
         {/* === 1. SOURCES DONUT === */}
         <Card className="border-border bg-card">
           <CardHeader className="pb-2">
