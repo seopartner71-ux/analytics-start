@@ -57,12 +57,15 @@ const DEVICE_COLORS = {
 /* ── No demo data — top pages come from real API or show empty ── */
 
 /* ── Channel colors for dynamics chart ── */
-const CHANNEL_COLORS = {
+const CHANNEL_COLORS: Record<string, string> = {
   organic: "#8B5CF6",
   direct: "#10B981",
   social: "#D946EF",
   referral: "#0EA5E9",
+  ad: "#F59E0B",
 };
+
+const ALL_CHANNELS = ["organic", "direct", "social", "referral", "ad"] as const;
 
 const SOURCE_MAP: Record<string, keyof typeof CHANNEL_COLORS> = {};
 function classifySource(name: string): keyof typeof CHANNEL_COLORS {
