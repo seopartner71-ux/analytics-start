@@ -40,6 +40,23 @@ const ShareView = () => {
     enabled: !!project?.id,
   });
 
+  const { data: cachedReport } = useQuery({
+    queryKey: ["shared-cached-report", project?.id],
+    queryFn: async () => {
+      const now = new Date();
+      const { data, error } = await supabase
+        .from("cached_reports")
+        .select("*")
+        .eq("project_id", project!.id)
+        .eq("report_year", now.getFullYear())
+        .eq("report_month", now.getMonth())
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!project?.id,
+  });
+
   // Fetch real metrika stats for this project
   const { data: metrikaStats } = useQuery({
     queryKey: ["shared-metrika-stats", project?.id],
