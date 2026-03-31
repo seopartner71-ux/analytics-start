@@ -39,12 +39,27 @@ interface LegacySummary {
   recommendation: string;
 }
 
+interface LiveMetrics {
+  dateFrom?: string;
+  dateTo?: string;
+  visits?: number;
+  users?: number;
+  bounceRate?: number;
+  pageDepth?: number;
+  avgDuration?: number;
+  dailyVisits?: { date: string; visits: number }[];
+  sourceBreakdown?: { name: string; value: number; pct: number }[];
+  topPages?: { path: string; visits: number }[];
+  devices?: { name: string; value: number; pct: number }[];
+}
+
 interface AiInsightsBlockProps {
   projectId?: string;
   summary?: AiSummaryData | LegacySummary;
   isAdmin: boolean;
   onSave?: (summary: AiSummaryData) => void;
   trafficSources?: { source: string; visits: number }[];
+  liveMetrics?: LiveMetrics;
 }
 
 type ChannelKey = "general" | "search" | "direct" | "ad" | "social" | "referral";
