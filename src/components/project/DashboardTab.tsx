@@ -189,8 +189,22 @@ export function DashboardTab({ projectId, projectName, onSwitchTab }: DashboardT
     return { visits: 0, users: 0, bounceRate: 0, pageDepth: 0, avgDuration: 0 };
   }, [channel, channelStats, liveStats, latestStat]);
 
-  // Daily chart data
+  // Daily chart data — use channel-filtered time series when available
   const dailyData = useMemo(() => {
+    // Channel-filtered daily data
+    if (channel !== "all" && channelStats?.timeSeries?.data?.[0]?.metrics) {
+      const visits = channelStats.timeSeries.data[0].metrics[0] || [];
+      return visits.map((v: number, i: number) => {
+        const date = new Date(appliedRange.from);
+        date.setDate(date.getDate() + i);
+        return {
+          date,
+          dateStr: format(date, "dd MMM", { locale }),
+          visits: Math.round(v),
+        };
+      });
+    }
+    // Full data
     if (liveStats?.timeSeries?.data?.[0]?.metrics) {
       const visits = liveStats.timeSeries.data[0].metrics[0] || [];
       return visits.map((v: number, i: number) => {
@@ -217,7 +231,7 @@ export function DashboardTab({ projectId, projectName, onSwitchTab }: DashboardT
       });
     }
     return [];
-  }, [liveStats, latestStat, appliedRange, locale]);
+  }, [channel, channelStats, liveStats, latestStat, appliedRange, locale]);
 
   // Source distribution
   const sourceData = useMemo(() => {
