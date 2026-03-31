@@ -13,7 +13,6 @@ import {
 } from "recharts";
 import { ArtifactCard } from "@/components/project/ArtifactCard";
 import { supabase } from "@/integrations/supabase/client";
-import { trafficData, kpiData } from "@/data/projects";
 
 const ShareView = () => {
   const { shareToken } = useParams<{ shareToken: string }>();
