@@ -64,6 +64,7 @@ export function AiAnalyticsTab({
             language: i18n.language,
             traffic_sources: trafficSources,
             mode: "deep_analysis",
+            live_metrics: liveMetrics || undefined,
           }),
         }
       );
