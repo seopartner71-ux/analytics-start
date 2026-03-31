@@ -171,7 +171,7 @@ export function AiInsightsBlock({ projectId, summary: rawSummary, isAdmin, onSav
       if (data.summary) {
         const normalized = normalizeSummary(data.summary);
         onSave?.(normalized);
-        setActiveChannel("general");
+        setGlobalChannel("all");
         toast.success(t("aiInsights.generated"));
       }
     } catch (err: any) {
