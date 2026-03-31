@@ -96,7 +96,7 @@ function TrendDot({ trend }: { trend?: "up" | "down" | "stable" }) {
   );
 }
 
-export function AiInsightsBlock({ projectId, summary: rawSummary, isAdmin, onSave, trafficSources }: AiInsightsBlockProps) {
+export function AiInsightsBlock({ projectId, summary: rawSummary, isAdmin, onSave, trafficSources, liveMetrics }: AiInsightsBlockProps) {
   const { t, i18n } = useTranslation();
   const [editing, setEditing] = useState(false);
   const [expanded, setExpanded] = useState(true);
