@@ -383,6 +383,7 @@ function ProjectDetailInner() {
             isAdmin={true}
             onSaveSummary={(summary) => saveAiSummary.mutate(summary)}
             trafficSources={(latestMetrikaStats?.traffic_sources as any[]) || []}
+            liveMetrics={liveMetrics}
           />
         );
       case "comparison":
