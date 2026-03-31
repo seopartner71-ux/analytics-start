@@ -200,7 +200,66 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Action: fetch goals
+    // Action: fetch stats filtered by traffic channel
+    if (action === "fetch-channel-stats") {
+      const body = await req.json();
+      const { access_token: accessToken, counter_id: counterId, date1, date2, channel } = body;
+      if (!accessToken || !counterId || !channel) {
+        return new Response(
+          JSON.stringify({ error: "access_token, counter_id and channel are required" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const startDate = date1 || new Date(Date.now() - 30 * 86400000).toISOString().split("T")[0];
+      const endDate = date2 || new Date().toISOString().split("T")[0];
+      const accuracyParams = "robot_less=1&accuracy=full&attribution=cross_device_last_significant";
+
+      // Map channel to Metrika traffic source filter
+      const channelFilterMap: Record<string, string> = {
+        organic: "organic",
+        direct: "direct",
+        ad: "ad",
+        social: "social",
+        referral: "referral",
+      };
+      const sourceFilter = channelFilterMap[channel];
+      if (!sourceFilter) {
+        return new Response(
+          JSON.stringify({ error: `Unknown channel: ${channel}` }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const filterParam = `&filters=ym:s:lastSignTrafficSource=='${sourceFilter}'`;
+
+      // Fetch totals for the channel
+      const totalsResp = await fetch(
+        `https://api-metrika.yandex.net/stat/v1/data?id=${counterId}&metrics=ym:s:visits,ym:s:users,ym:s:bounceRate,ym:s:pageDepth,ym:s:avgVisitDurationSeconds&date1=${startDate}&date2=${endDate}&${accuracyParams}${filterParam}`,
+        { headers: { Authorization: `OAuth ${accessToken}` } }
+      );
+
+      const totalsData = await totalsResp.json();
+
+      // Fetch daily visits for the channel
+      const dailyResp = await fetch(
+        `https://api-metrika.yandex.net/stat/v1/data/bytime?id=${counterId}&metrics=ym:s:visits&group=day&date1=${startDate}&date2=${endDate}&${accuracyParams}${filterParam}`,
+        { headers: { Authorization: `OAuth ${accessToken}` } }
+      );
+
+      const dailyData = await dailyResp.json();
+
+      return new Response(
+        JSON.stringify({
+          totals: totalsData,
+          timeSeries: dailyData,
+          channel,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+
     if (action === "fetch-goals") {
       const body = await req.json();
       const { access_token: accessToken, counter_id: counterId, date1, date2 } = body;
