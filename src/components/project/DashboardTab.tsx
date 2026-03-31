@@ -96,6 +96,36 @@ export function DashboardTab({ projectId, projectName, onSwitchTab }: DashboardT
     staleTime: 5 * 60 * 1000,
   });
 
+  // Channel-filtered stats from Metrika API
+  const { data: channelStats, isLoading: isLoadingChannel } = useQuery({
+    queryKey: ["metrika-channel-stats", projectId, dateFrom, dateTo, channel],
+    queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const r = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/yandex-metrika-auth?action=fetch-channel-stats`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session?.access_token}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({
+            access_token: integration!.access_token,
+            counter_id: integration!.counter_id,
+            date1: dateFrom,
+            date2: dateTo,
+            channel,
+          }),
+        }
+      );
+      if (!r.ok) return null;
+      return await r.json();
+    },
+    enabled: !!integration?.access_token && !!integration?.counter_id && channel !== "all",
+    staleTime: 5 * 60 * 1000,
+  });
+
   // Cached stats fallback
   const { data: allStats = [], isLoading: isLoadingCached } = useQuery({
     queryKey: ["metrika-stats-all", projectId],
@@ -122,11 +152,21 @@ export function DashboardTab({ projectId, projectName, onSwitchTab }: DashboardT
     enabled: !!projectId,
   });
 
-  const isLoading = isLoadingLive || isLoadingCached;
+  const isLoading = isLoadingLive || isLoadingCached || (channel !== "all" && isLoadingChannel);
   const latestStat = allStats[0];
 
-  // KPIs from live totals or cached
+  // KPIs — use channel-filtered data when channel is selected, otherwise full data
   const kpis = useMemo(() => {
+    if (channel !== "all" && channelStats?.totals?.data?.[0]?.metrics) {
+      const m = channelStats.totals.data[0].metrics;
+      return {
+        visits: Math.round(m[0] || 0),
+        users: Math.round(m[1] || 0),
+        bounceRate: Math.round((m[2] || 0) * 10) / 10,
+        pageDepth: Math.round((m[3] || 0) * 100) / 100,
+        avgDuration: Math.round(m[4] || 0),
+      };
+    }
     const totals = liveStats?.totals?.data?.[0]?.metrics;
     if (totals && totals.length >= 5) {
       return {
@@ -147,7 +187,7 @@ export function DashboardTab({ projectId, projectName, onSwitchTab }: DashboardT
       };
     }
     return { visits: 0, users: 0, bounceRate: 0, pageDepth: 0, avgDuration: 0 };
-  }, [liveStats, latestStat]);
+  }, [channel, channelStats, liveStats, latestStat]);
 
   // Daily chart data
   const dailyData = useMemo(() => {
