@@ -249,7 +249,7 @@ const ShareView = () => {
           <Card className="border-border/60">
             <CardContent className="p-4 sm:p-6">
               <ResponsiveContainer width="100%" height={280}>
-                <AreaChart data={trafficData}>
+                <AreaChart data={metrikaStats ? (metrikaStats.visits_by_day as any[] || []) : []}>
                   <defs>
                     <linearGradient id="shareGrad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
