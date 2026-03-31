@@ -1,15 +1,17 @@
 import { useState, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  Eye, Save, Link2, Copy, Check, Loader2, Upload, X,
+  Eye, Save, Link2, Copy, Check, Loader2, Upload, X, Download,
   BarChart3, TrendingUp, PieChart, KeyRound, AlertTriangle,
   FileSearch, ClipboardList, Sparkles, GripVertical, ListOrdered,
+  Sun, Moon, MessageSquare,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -25,6 +27,7 @@ interface ReportModule {
   key: string;
   icon: React.ElementType;
   enabled: boolean;
+  comment?: string;
 }
 
 const MODULE_ICONS: Record<string, React.ElementType> = {
@@ -35,11 +38,12 @@ const MODULE_ICONS: Record<string, React.ElementType> = {
 
 const DEFAULT_MODULE_KEYS = ["kpi", "traffic", "sources", "seo", "indexing", "pages", "worklog", "ai", "positions"];
 
-function modulesFromKeys(keys: string[], enabledKeys?: string[]): ReportModule[] {
+function modulesFromKeys(keys: string[], enabledKeys?: string[], comments?: Record<string, string>): ReportModule[] {
   return keys.map((key) => ({
     key,
     icon: MODULE_ICONS[key] || BarChart3,
     enabled: enabledKeys ? enabledKeys.includes(key) : true,
+    comment: comments?.[key] || "",
   }));
 }
 
@@ -50,6 +54,7 @@ export function ReportBuilderTab({ projectId, shareToken, projectLogo }: ReportB
   const [modules, setModules] = useState<ReportModule[]>(modulesFromKeys(DEFAULT_MODULE_KEYS));
   const [defaultPeriod, setDefaultPeriod] = useState("currentMonth");
   const [showComparison, setShowComparison] = useState(true);
+  const [lightModeForPdf, setLightModeForPdf] = useState(false);
   const [clientLogo, setClientLogo] = useState<string | null>(projectLogo ?? null);
   const [generatedUrl, setGeneratedUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -57,6 +62,7 @@ export function ReportBuilderTab({ projectId, shareToken, projectLogo }: ReportB
   const [saving, setSaving] = useState(false);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [expandedComment, setExpandedComment] = useState<string | null>(null);
 
   // Load existing template
   const { data: template } = useQuery({
@@ -82,9 +88,10 @@ export function ReportBuilderTab({ projectId, shareToken, projectLogo }: ReportB
       if (Array.isArray(savedModules) && savedModules.length > 0) {
         const keys = savedModules.map((m: any) => m.key);
         const enabledKeys = savedModules.filter((m: any) => m.enabled).map((m: any) => m.key);
-        // Merge: saved order first, then any new defaults not in saved
+        const comments: Record<string, string> = {};
+        savedModules.forEach((m: any) => { if (m.comment) comments[m.key] = m.comment; });
         const allKeys = [...keys, ...DEFAULT_MODULE_KEYS.filter((k) => !keys.includes(k))];
-        setModules(modulesFromKeys(allKeys, enabledKeys));
+        setModules(modulesFromKeys(allKeys, enabledKeys, comments));
       }
       setDefaultPeriod(template.default_period || "currentMonth");
       setShowComparison(template.show_comparison ?? true);
@@ -95,6 +102,10 @@ export function ReportBuilderTab({ projectId, shareToken, projectLogo }: ReportB
 
   const toggleModule = (key: string) => {
     setModules((prev) => prev.map((m) => (m.key === key ? { ...m, enabled: !m.enabled } : m)));
+  };
+
+  const updateComment = (key: string, comment: string) => {
+    setModules((prev) => prev.map((m) => (m.key === key ? { ...m, comment } : m)));
   };
 
   const enabledCount = modules.filter((m) => m.enabled).length;
@@ -119,7 +130,7 @@ export function ReportBuilderTab({ projectId, shareToken, projectLogo }: ReportB
     setSaving(true);
     const payload = {
       project_id: projectId,
-      modules: modules.map((m) => ({ key: m.key, enabled: m.enabled })),
+      modules: modules.map((m) => ({ key: m.key, enabled: m.enabled, comment: m.comment || "" })),
       default_period: defaultPeriod,
       show_comparison: showComparison,
       client_logo_url: clientLogo,
@@ -146,18 +157,17 @@ export function ReportBuilderTab({ projectId, shareToken, projectLogo }: ReportB
     }
   }, [projectId, modules, defaultPeriod, showComparison, clientLogo, template, queryClient, t]);
 
-  // Generate link (save first, then build URL)
+  // Generate link
   const handleGenerate = useCallback(async () => {
     if (enabledCount === 0) return;
     setPublishing(true);
     await handleSave();
-    const base = shareToken
-      ? `${window.location.origin}/share/${shareToken}`
-      : `${window.location.origin}/report/${projectId}`;
+    const base = `${window.location.origin}/report/${projectId}`;
     const params = new URLSearchParams();
     params.set("modules", modules.filter((m) => m.enabled).map((m) => m.key).join(","));
     params.set("period", defaultPeriod);
     if (showComparison) params.set("compare", "1");
+    if (lightModeForPdf) params.set("light", "1");
     const url = `${base}?${params.toString()}`;
     setGeneratedUrl(url);
     navigator.clipboard.writeText(url);
@@ -165,7 +175,7 @@ export function ReportBuilderTab({ projectId, shareToken, projectLogo }: ReportB
     toast.success(t("rb.linkCopied"));
     setTimeout(() => setCopied(false), 2000);
     setPublishing(false);
-  }, [enabledCount, modules, defaultPeriod, showComparison, shareToken, projectId, t, handleSave]);
+  }, [enabledCount, modules, defaultPeriod, showComparison, lightModeForPdf, projectId, t, handleSave]);
 
   const handleCopy = () => {
     if (!generatedUrl) return;
@@ -180,6 +190,7 @@ export function ReportBuilderTab({ projectId, shareToken, projectLogo }: ReportB
     params.set("modules", modules.filter((m) => m.enabled).map((m) => m.key).join(","));
     params.set("period", defaultPeriod);
     if (showComparison) params.set("compare", "1");
+    if (lightModeForPdf) params.set("light", "1");
     params.set("preview", "1");
     const url = `${window.location.origin}/report/${projectId}?${params.toString()}`;
     window.open(url, "_blank");
@@ -222,44 +233,64 @@ export function ReportBuilderTab({ projectId, shareToken, projectLogo }: ReportB
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Modules */}
         <div className="lg:col-span-2 space-y-3">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{t("rb.modulesTitle")}</h2>
           <div className="space-y-2">
             {modules.map((mod, idx) => {
               const Icon = mod.icon;
+              const isExpanded = expandedComment === mod.key;
               return (
-                <Card
-                  key={mod.key}
-                  draggable
-                  onDragStart={() => handleDragStart(idx)}
-                  onDragOver={(e) => handleDragOver(e, idx)}
-                  onDragEnd={handleDragEnd}
-                  className={cn(
-                    "border transition-all cursor-grab active:cursor-grabbing",
-                    mod.enabled ? "border-primary/50 bg-primary/5" : "border-border bg-card opacity-60",
-                    dragIdx === idx && "ring-2 ring-primary/40 scale-[1.02]"
+                <div key={mod.key}>
+                  <Card
+                    draggable
+                    onDragStart={() => handleDragStart(idx)}
+                    onDragOver={(e) => handleDragOver(e, idx)}
+                    onDragEnd={handleDragEnd}
+                    className={cn(
+                      "border transition-all cursor-grab active:cursor-grabbing",
+                      mod.enabled ? "border-primary/50 bg-primary/5" : "border-border bg-card opacity-60",
+                      dragIdx === idx && "ring-2 ring-primary/40 scale-[1.02]"
+                    )}
+                  >
+                    <CardContent className="flex items-center gap-4 py-3 px-4">
+                      <GripVertical className="h-4 w-4 text-muted-foreground/50 shrink-0" />
+                      <div className={cn(
+                        "h-9 w-9 rounded-lg flex items-center justify-center shrink-0",
+                        mod.enabled ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                      )}>
+                        <Icon className="h-4 w-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground">{t(`rb.mod.${mod.key}.name`)}</p>
+                        <p className="text-xs text-muted-foreground">{t(`rb.mod.${mod.key}.desc`)}</p>
+                      </div>
+                      <Button
+                        variant="ghost" size="icon" className="h-7 w-7 shrink-0"
+                        onClick={() => setExpandedComment(isExpanded ? null : mod.key)}
+                      >
+                        <MessageSquare className={cn("h-3.5 w-3.5", mod.comment ? "text-primary" : "text-muted-foreground/40")} />
+                      </Button>
+                      <Switch checked={mod.enabled} onCheckedChange={() => toggleModule(mod.key)} />
+                    </CardContent>
+                  </Card>
+                  {isExpanded && (
+                    <div className="mt-1 ml-14 mr-4">
+                      <Textarea
+                        placeholder="Комментарий аналитика к этому блоку..."
+                        value={mod.comment || ""}
+                        onChange={(e) => updateComment(mod.key, e.target.value)}
+                        className="text-xs min-h-[60px] resize-none"
+                      />
+                    </div>
                   )}
-                >
-                  <CardContent className="flex items-center gap-4 py-3 px-4">
-                    <GripVertical className="h-4 w-4 text-muted-foreground/50 shrink-0" />
-                    <div className={cn(
-                      "h-9 w-9 rounded-lg flex items-center justify-center shrink-0",
-                      mod.enabled ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
-                    )}>
-                      <Icon className="h-4 w-4" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground">{t(`rb.mod.${mod.key}.name`)}</p>
-                      <p className="text-xs text-muted-foreground">{t(`rb.mod.${mod.key}.desc`)}</p>
-                    </div>
-                    <Switch checked={mod.enabled} onCheckedChange={() => toggleModule(mod.key)} />
-                  </CardContent>
-                </Card>
+                </div>
               );
             })}
           </div>
         </div>
 
+        {/* Settings */}
         <div className="space-y-5">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{t("rb.settingsTitle")}</h2>
 
@@ -305,6 +336,19 @@ export function ReportBuilderTab({ projectId, shareToken, projectLogo }: ReportB
                 <p className="text-xs text-muted-foreground">{t("rb.comparisonHint")}</p>
               </div>
               <Switch checked={showComparison} onCheckedChange={setShowComparison} />
+            </CardContent>
+          </Card>
+
+          <Card className="border-border bg-card">
+            <CardContent className="py-4 px-4 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-foreground flex items-center gap-2">
+                  {lightModeForPdf ? <Sun className="h-4 w-4 text-amber-500" /> : <Moon className="h-4 w-4" />}
+                  Light Mode для PDF
+                </p>
+                <p className="text-xs text-muted-foreground">Светлая тема для печати</p>
+              </div>
+              <Switch checked={lightModeForPdf} onCheckedChange={setLightModeForPdf} />
             </CardContent>
           </Card>
 
