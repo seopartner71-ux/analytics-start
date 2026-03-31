@@ -36,7 +36,7 @@ const priorityColors: Record<string, string> = {
 };
 
 export function AiAnalyticsTab({
-  projectId, projectName, summary, isAdmin, onSaveSummary, trafficSources,
+  projectId, projectName, summary, isAdmin, onSaveSummary, trafficSources, liveMetrics,
 }: AiAnalyticsTabProps) {
   const { t, i18n } = useTranslation();
   const { appliedRange } = useDateRange();
