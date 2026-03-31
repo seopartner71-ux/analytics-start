@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { useDateRange } from "@/contexts/DateRangeContext";
 
 // Types for the new channel-based summary
 interface ChannelInsight {
