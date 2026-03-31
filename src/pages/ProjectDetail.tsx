@@ -351,6 +351,7 @@ function ProjectDetailInner() {
               isAdmin={true}
               onSave={(summary) => saveAiSummary.mutate(summary)}
               trafficSources={(latestMetrikaStats?.traffic_sources as any[]) || []}
+              liveMetrics={liveMetrics}
             />
             <DashboardTab projectId={project.id} projectName={project.name} onSwitchTab={setActiveTab} />
           </div>
