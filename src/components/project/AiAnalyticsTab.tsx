@@ -20,6 +20,7 @@ interface AiAnalyticsTabProps {
   isAdmin: boolean;
   onSaveSummary: (summary: any) => void;
   trafficSources: any[];
+  liveMetrics?: any;
 }
 
 interface Recommendation {
