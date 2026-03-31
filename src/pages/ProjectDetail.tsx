@@ -174,7 +174,7 @@ function ProjectDetailInner() {
     };
   }, [liveMetrikaData, liveDateFrom, liveDateTo, dateRange.from]);
 
-
+  const { data: workLogs = [] } = useQuery({
     queryKey: ["work_logs", id],
     queryFn: async () => {
       const { data, error } = await supabase.from("work_logs").select("*").eq("project_id", id!).order("task_date", { ascending: false }).order("sort_order");
