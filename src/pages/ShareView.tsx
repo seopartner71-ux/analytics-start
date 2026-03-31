@@ -13,7 +13,6 @@ import {
 } from "recharts";
 import { ArtifactCard } from "@/components/project/ArtifactCard";
 import { supabase } from "@/integrations/supabase/client";
-import { trafficData, kpiData } from "@/data/projects";
 
 const ShareView = () => {
   const { shareToken } = useParams<{ shareToken: string }>();
@@ -58,15 +57,32 @@ const ShareView = () => {
     enabled: !!project?.id,
   });
 
+  // Fetch real metrika stats for this project
+  const { data: metrikaStats } = useQuery({
+    queryKey: ["shared-metrika-stats", project?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("metrika_stats")
+        .select("*")
+        .eq("project_id", project!.id)
+        .order("fetched_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!project?.id,
+  });
+
   const currentMonth = new Date().getMonth();
   const monthName = t(`publicReport.months.${currentMonth}`);
   const completedTasks = workLogs.filter((wl) => wl.status === "done");
 
   const kpis = [
-    { label: t("publicReport.kpi.visits"), value: kpiData.visits.value.toLocaleString(), change: kpiData.visits.change, suffix: "" },
-    { label: t("publicReport.kpi.bounceRate"), value: kpiData.bounceRate.value.toFixed(1), change: kpiData.bounceRate.change, suffix: "%" },
-    { label: t("publicReport.kpi.depth"), value: kpiData.depth.value.toFixed(1), change: kpiData.depth.change, suffix: "" },
-    { label: t("publicReport.kpi.positions"), value: kpiData.positions.value.toFixed(1), change: kpiData.positions.change, suffix: "" },
+    { label: t("publicReport.kpi.visits"), value: metrikaStats ? metrikaStats.total_visits.toLocaleString() : "—", change: 0, suffix: "" },
+    { label: t("publicReport.kpi.bounceRate"), value: metrikaStats ? Number(metrikaStats.bounce_rate).toFixed(1) : "—", change: 0, suffix: "%" },
+    { label: t("publicReport.kpi.depth"), value: metrikaStats ? Number(metrikaStats.page_depth).toFixed(1) : "—", change: 0, suffix: "" },
+    { label: t("publicReport.kpi.positions"), value: "—", change: 0, suffix: "" },
   ];
 
   const isPositive = (change: number, idx: number) => {
@@ -233,7 +249,7 @@ const ShareView = () => {
           <Card className="border-border/60">
             <CardContent className="p-4 sm:p-6">
               <ResponsiveContainer width="100%" height={280}>
-                <AreaChart data={trafficData}>
+                <AreaChart data={metrikaStats ? (metrikaStats.visits_by_day as any[] || []) : []}>
                   <defs>
                     <linearGradient id="shareGrad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
@@ -241,10 +257,10 @@ const ShareView = () => {
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                  <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" fontSize={12} />
                   <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
                   <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px" }} />
-                  <Area type="monotone" dataKey="visitors" stroke="hsl(var(--primary))" strokeWidth={2.5} fill="url(#shareGrad)" />
+                  <Area type="monotone" dataKey="visits" stroke="hsl(var(--primary))" strokeWidth={2.5} fill="url(#shareGrad)" />
                 </AreaChart>
               </ResponsiveContainer>
             </CardContent>
