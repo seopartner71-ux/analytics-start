@@ -367,7 +367,7 @@ function ProjectDetailInner() {
         return (
           <SiteHealthTab
             projectId={project.id}
-            accessToken={metrikaIntegration?.access_token}
+            accessToken={metrikaInt?.access_token}
             hostId={(project as any).yandex_webmaster_host_id}
           />
         );
