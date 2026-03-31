@@ -139,6 +139,7 @@ export function AiInsightsBlock({ projectId, summary: rawSummary, isAdmin, onSav
             project_id: projectId,
             language: i18n.language,
             traffic_sources: trafficSources || [],
+            live_metrics: liveMetrics || undefined,
           }),
         }
       );
