@@ -40,16 +40,16 @@ const ShareView = () => {
     enabled: !!project?.id,
   });
 
-  const { data: cachedReport } = useQuery({
-    queryKey: ["shared-cached-report", project?.id],
+  // Fetch real metrika stats for this project
+  const { data: metrikaStats } = useQuery({
+    queryKey: ["shared-metrika-stats", project?.id],
     queryFn: async () => {
-      const now = new Date();
       const { data, error } = await supabase
-        .from("cached_reports")
+        .from("metrika_stats")
         .select("*")
         .eq("project_id", project!.id)
-        .eq("report_year", now.getFullYear())
-        .eq("report_month", now.getMonth())
+        .order("fetched_at", { ascending: false })
+        .limit(1)
         .maybeSingle();
       if (error) throw error;
       return data;
@@ -62,10 +62,10 @@ const ShareView = () => {
   const completedTasks = workLogs.filter((wl) => wl.status === "done");
 
   const kpis = [
-    { label: t("publicReport.kpi.visits"), value: kpiData.visits.value.toLocaleString(), change: kpiData.visits.change, suffix: "" },
-    { label: t("publicReport.kpi.bounceRate"), value: kpiData.bounceRate.value.toFixed(1), change: kpiData.bounceRate.change, suffix: "%" },
-    { label: t("publicReport.kpi.depth"), value: kpiData.depth.value.toFixed(1), change: kpiData.depth.change, suffix: "" },
-    { label: t("publicReport.kpi.positions"), value: kpiData.positions.value.toFixed(1), change: kpiData.positions.change, suffix: "" },
+    { label: t("publicReport.kpi.visits"), value: metrikaStats ? metrikaStats.total_visits.toLocaleString() : "—", change: 0, suffix: "" },
+    { label: t("publicReport.kpi.bounceRate"), value: metrikaStats ? Number(metrikaStats.bounce_rate).toFixed(1) : "—", change: 0, suffix: "%" },
+    { label: t("publicReport.kpi.depth"), value: metrikaStats ? Number(metrikaStats.page_depth).toFixed(1) : "—", change: 0, suffix: "" },
+    { label: t("publicReport.kpi.positions"), value: "—", change: 0, suffix: "" },
   ];
 
   const isPositive = (change: number, idx: number) => {
