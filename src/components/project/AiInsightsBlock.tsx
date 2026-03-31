@@ -98,10 +98,27 @@ function TrendDot({ trend }: { trend?: "up" | "down" | "stable" }) {
 
 export function AiInsightsBlock({ projectId, summary: rawSummary, isAdmin, onSave, trafficSources, liveMetrics }: AiInsightsBlockProps) {
   const { t, i18n } = useTranslation();
+  const { channel: globalChannel, setChannel: setGlobalChannel } = useDateRange();
   const [editing, setEditing] = useState(false);
   const [expanded, setExpanded] = useState(true);
   const [generating, setGenerating] = useState(false);
-  const [activeChannel, setActiveChannel] = useState<ChannelKey>("general");
+
+  // Map global channel to AI block's channel key
+  const channelToKey = (ch: string): ChannelKey => {
+    if (ch === "all") return "general";
+    if (ch === "organic") return "search";
+    return ch as ChannelKey;
+  };
+  const keyToChannel = (key: ChannelKey): string => {
+    if (key === "general") return "all";
+    if (key === "search") return "organic";
+    return key;
+  };
+
+  const activeChannel = channelToKey(globalChannel);
+  const handleChannelClick = (key: ChannelKey) => {
+    setGlobalChannel(keyToChannel(key) as any);
+  };
 
   const summary = useMemo(() => normalizeSummary(rawSummary), [rawSummary]);
   const [draft, setDraft] = useState(summary.general);
