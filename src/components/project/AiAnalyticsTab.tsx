@@ -154,6 +154,7 @@ export function AiAnalyticsTab({
         isAdmin={isAdmin}
         onSave={onSaveSummary}
         trafficSources={trafficSources}
+        liveMetrics={liveMetrics}
       />
 
       {/* Business meaning block */}
