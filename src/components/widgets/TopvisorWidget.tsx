@@ -1,8 +1,9 @@
 import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
-import { TrendingUp } from "lucide-react";
-import { topvisorPositions, topvisorGrowth } from "@/data/projects";
+import { TrendingUp, Target, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const COLORS = [
   "hsl(230, 80%, 56%)",
@@ -11,8 +12,116 @@ const COLORS = [
   "hsl(220, 15%, 70%)",
 ];
 
-export function TopvisorWidget() {
-  const { t } = useTranslation();
+interface TopvisorWidgetProps {
+  projectId?: string;
+}
+
+export function TopvisorWidget({ projectId }: TopvisorWidgetProps) {
+  const { t, i18n } = useTranslation();
+  const isRu = i18n.language === "ru";
+
+  // Check Topvisor integration
+  const { data: integration, isLoading } = useQuery({
+    queryKey: ["integration-topvisor", projectId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("integrations").select("*")
+        .eq("project_id", projectId!).eq("service_name", "topvisor").eq("connected", true).maybeSingle();
+      return data;
+    },
+    enabled: !!projectId,
+  });
+
+  // Fetch Topvisor summary from project fields
+  const { data: project } = useQuery({
+    queryKey: ["project-topvisor-data", projectId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("projects").select("topvisor_project_id, topvisor_api_key, topvisor_user_id")
+        .eq("id", projectId!).maybeSingle();
+      return data;
+    },
+    enabled: !!projectId,
+  });
+
+  // Fetch real position summary from Topvisor API
+  const { data: posData } = useQuery({
+    queryKey: ["topvisor-summary-widget", projectId, project?.topvisor_project_id],
+    queryFn: async () => {
+      if (!project?.topvisor_api_key || !project?.topvisor_project_id) return null;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return null;
+
+      const r = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/topvisor-api`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({
+            api_key: project.topvisor_api_key,
+            user_id: project.topvisor_user_id,
+            project_id: project.topvisor_project_id,
+            action: "summary",
+          }),
+        }
+      );
+      if (!r.ok) return null;
+      return r.json();
+    },
+    enabled: !!project?.topvisor_api_key && !!project?.topvisor_project_id,
+    staleTime: 10 * 60_000,
+  });
+
+  if (isLoading) {
+    return (
+      <Card className="border-border/60">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <div className="h-6 w-6 rounded bg-primary/10 flex items-center justify-center">
+              <span className="text-xs font-bold text-primary">T</span>
+            </div>
+            {t("widgets.topvisor.title")}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center h-[220px]">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const hasData = posData?.top3 !== undefined || posData?.top10 !== undefined;
+
+  if (!integration && !hasData) {
+    return (
+      <Card className="border-border/60">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <div className="h-6 w-6 rounded bg-primary/10 flex items-center justify-center">
+              <span className="text-xs font-bold text-primary">T</span>
+            </div>
+            {t("widgets.topvisor.title")}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <Target className="h-8 w-8 text-muted-foreground/50 mb-3" />
+            <p className="text-sm text-muted-foreground max-w-xs">
+              {isRu
+                ? "Подключите Topvisor на вкладке «Интеграции» для данных о позициях."
+                : "Connect Topvisor on the Integrations tab for ranking data."}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const labelMap: Record<string, string> = {
     top3: t("widgets.topvisor.top3"),
@@ -21,10 +130,19 @@ export function TopvisorWidget() {
     outside: t("widgets.topvisor.outside"),
   };
 
-  const labeledData = topvisorPositions.map((d) => ({
+  const positions = [
+    { name: "top3", value: posData?.top3 || 0 },
+    { name: "top10", value: posData?.top10 || 0 },
+    { name: "top30", value: posData?.top30 || 0 },
+    { name: "outside", value: posData?.outside || 0 },
+  ];
+
+  const labeledData = positions.map((d) => ({
     ...d,
     label: labelMap[d.name] || d.name,
   }));
+
+  const topGrowth = posData?.topGrowth || [];
 
   return (
     <Card className="border-border/60">
@@ -59,24 +177,26 @@ export function TopvisorWidget() {
           </PieChart>
         </ResponsiveContainer>
 
-        <div>
-          <h4 className="text-sm font-medium text-foreground mb-2 flex items-center gap-1.5">
-            <TrendingUp className="h-4 w-4 text-[hsl(var(--success))]" />
-            {t("widgets.topvisor.topGrowth")}
-          </h4>
-          <div className="space-y-1.5">
-            {topvisorGrowth.map((item, i) => (
-              <div key={i} className="flex items-center justify-between rounded-lg bg-muted/40 px-3 py-2">
-                <span className="text-sm text-foreground truncate flex-1 mr-3">{item.keyword}</span>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-xs text-muted-foreground">{item.from}</span>
-                  <span className="text-xs text-muted-foreground">→</span>
-                  <span className="text-sm font-semibold text-[hsl(var(--success))]">{item.to}</span>
+        {topGrowth.length > 0 && (
+          <div>
+            <h4 className="text-sm font-medium text-foreground mb-2 flex items-center gap-1.5">
+              <TrendingUp className="h-4 w-4 text-[hsl(var(--success))]" />
+              {t("widgets.topvisor.topGrowth")}
+            </h4>
+            <div className="space-y-1.5">
+              {topGrowth.slice(0, 5).map((item: any, i: number) => (
+                <div key={i} className="flex items-center justify-between rounded-lg bg-muted/40 px-3 py-2">
+                  <span className="text-sm text-foreground truncate flex-1 mr-3">{item.keyword}</span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-xs text-muted-foreground">{item.from}</span>
+                    <span className="text-xs text-muted-foreground">→</span>
+                    <span className="text-sm font-semibold text-[hsl(var(--success))]">{item.to}</span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </CardContent>
     </Card>
   );
