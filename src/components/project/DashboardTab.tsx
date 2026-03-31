@@ -409,10 +409,22 @@ export function DashboardTab({ projectId, projectName, onSwitchTab }: DashboardT
       </div>
 
       <div ref={contentRef} className="space-y-6">
+        {/* === Channel indicator === */}
+        {channel !== "all" && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground">
+              {i18n.language === "ru" ? "Фильтр:" : "Filter:"}
+            </span>
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
+              {t(`channels.${channel}`)}
+            </span>
+          </div>
+        )}
+
         {/* === 1. KPI GRID === */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {kpiCards.map((kpi, i) => (
-            <StandardKpiCard key={i} {...kpi} loading={isRefreshing} />
+            <StandardKpiCard key={i} {...kpi} loading={isRefreshing || (channel !== "all" && isLoadingChannel)} />
           ))}
         </div>
 
