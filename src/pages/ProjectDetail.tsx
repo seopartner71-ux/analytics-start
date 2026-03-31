@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -74,6 +74,105 @@ function ProjectDetailInner() {
     },
     enabled: !!id,
   });
+
+  // Find Metrika integration for live data
+  const metrikaIntegration = integrations.find(
+    (i) => i.service_name === "yandexMetrika" && i.connected
+  );
+
+  const { appliedRange: dateRange } = useDateRange();
+  const liveDateFrom = format(dateRange.from, "yyyy-MM-dd");
+  const liveDateTo = format(dateRange.to, "yyyy-MM-dd");
+
+  // Live Metrika data for AI
+  const { data: liveMetrikaData } = useQuery({
+    queryKey: ["metrika-live-for-ai", id, liveDateFrom, liveDateTo],
+    queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const r = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/yandex-metrika-auth?action=fetch-stats`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session?.access_token}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({
+            access_token: metrikaIntegration!.access_token,
+            counter_id: metrikaIntegration!.counter_id,
+            date1: liveDateFrom,
+            date2: liveDateTo,
+          }),
+        }
+      );
+      if (!r.ok) return null;
+      return await r.json();
+    },
+    enabled: !!metrikaIntegration?.access_token && !!metrikaIntegration?.counter_id,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Build liveMetrics object for AI
+  const liveMetrics = useMemo(() => {
+    if (!liveMetrikaData) return undefined;
+    const totals = liveMetrikaData.totals?.data?.[0]?.metrics;
+    if (!totals || totals.length < 5) return undefined;
+
+    const visits = Math.round(totals[0]);
+    const users = Math.round(totals[1]);
+    const bounceRate = Math.round(totals[2] * 10) / 10;
+    const pageDepth = Math.round(totals[3] * 100) / 100;
+    const avgDuration = Math.round(totals[4]);
+
+    const dailyVisits: { date: string; visits: number }[] = [];
+    const timeVisits = liveMetrikaData.timeSeries?.data?.[0]?.metrics?.[0];
+    if (timeVisits) {
+      timeVisits.forEach((v: number, i: number) => {
+        const d = new Date(dateRange.from);
+        d.setDate(d.getDate() + i);
+        dailyVisits.push({ date: format(d, "yyyy-MM-dd"), visits: Math.round(v) });
+      });
+    }
+
+    const sourceBreakdown: { name: string; value: number; pct: number }[] = [];
+    const srcArray = liveMetrikaData.trafficSources?.data;
+    if (srcArray) {
+      const total = srcArray.reduce((s: number, r: any) => s + (r.metrics?.[0] || 0), 0);
+      for (const row of srcArray) {
+        const name = row.dimensions?.[0]?.name || "unknown";
+        const value = Math.round(row.metrics?.[0] || 0);
+        sourceBreakdown.push({ name, value, pct: total > 0 ? Math.round((value / total) * 1000) / 10 : 0 });
+      }
+    }
+
+    const topPages: { path: string; visits: number }[] = [];
+    if (liveMetrikaData.topPages?.data) {
+      for (const row of liveMetrikaData.topPages.data.slice(0, 10)) {
+        const url = row.dimensions?.[0]?.name || "";
+        let path = url;
+        try { path = new URL(url).pathname; } catch {}
+        topPages.push({ path, visits: Math.round(row.metrics?.[0] || 0) });
+      }
+    }
+
+    const devices: { name: string; value: number; pct: number }[] = [];
+    if (liveMetrikaData.devices?.data) {
+      const total = liveMetrikaData.devices.data.reduce((s: number, r: any) => s + (r.metrics?.[0] || 0), 0);
+      for (const row of liveMetrikaData.devices.data) {
+        const name = row.dimensions?.[0]?.name || "desktop";
+        const value = Math.round(row.metrics?.[0] || 0);
+        devices.push({ name, value, pct: total > 0 ? Math.round((value / total) * 1000) / 10 : 0 });
+      }
+    }
+
+    return {
+      dateFrom: liveDateFrom,
+      dateTo: liveDateTo,
+      visits, users, bounceRate, pageDepth, avgDuration,
+      dailyVisits, sourceBreakdown, topPages, devices,
+    };
+  }, [liveMetrikaData, liveDateFrom, liveDateTo, dateRange.from]);
 
   const { data: workLogs = [] } = useQuery({
     queryKey: ["work_logs", id],
@@ -252,6 +351,7 @@ function ProjectDetailInner() {
               isAdmin={true}
               onSave={(summary) => saveAiSummary.mutate(summary)}
               trafficSources={(latestMetrikaStats?.traffic_sources as any[]) || []}
+              liveMetrics={liveMetrics}
             />
             <DashboardTab projectId={project.id} projectName={project.name} onSwitchTab={setActiveTab} />
           </div>
@@ -263,11 +363,11 @@ function ProjectDetailInner() {
       case "seo":
         return <SeoTab projectId={project.id} projectName={project.name} />;
       case "pages": {
-        const metrikaIntegration = integrations.find((i) => i.service_name === "yandexMetrika");
+        const metrikaInt = integrations.find((i) => i.service_name === "yandexMetrika");
         return (
           <SiteHealthTab
             projectId={project.id}
-            accessToken={metrikaIntegration?.access_token}
+            accessToken={metrikaInt?.access_token}
             hostId={(project as any).yandex_webmaster_host_id}
           />
         );
@@ -283,6 +383,7 @@ function ProjectDetailInner() {
             isAdmin={true}
             onSaveSummary={(summary) => saveAiSummary.mutate(summary)}
             trafficSources={(latestMetrikaStats?.traffic_sources as any[]) || []}
+            liveMetrics={liveMetrics}
           />
         );
       case "comparison":

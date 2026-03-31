@@ -39,12 +39,27 @@ interface LegacySummary {
   recommendation: string;
 }
 
+interface LiveMetrics {
+  dateFrom?: string;
+  dateTo?: string;
+  visits?: number;
+  users?: number;
+  bounceRate?: number;
+  pageDepth?: number;
+  avgDuration?: number;
+  dailyVisits?: { date: string; visits: number }[];
+  sourceBreakdown?: { name: string; value: number; pct: number }[];
+  topPages?: { path: string; visits: number }[];
+  devices?: { name: string; value: number; pct: number }[];
+}
+
 interface AiInsightsBlockProps {
   projectId?: string;
   summary?: AiSummaryData | LegacySummary;
   isAdmin: boolean;
   onSave?: (summary: AiSummaryData) => void;
   trafficSources?: { source: string; visits: number }[];
+  liveMetrics?: LiveMetrics;
 }
 
 type ChannelKey = "general" | "search" | "direct" | "ad" | "social" | "referral";
@@ -81,7 +96,7 @@ function TrendDot({ trend }: { trend?: "up" | "down" | "stable" }) {
   );
 }
 
-export function AiInsightsBlock({ projectId, summary: rawSummary, isAdmin, onSave, trafficSources }: AiInsightsBlockProps) {
+export function AiInsightsBlock({ projectId, summary: rawSummary, isAdmin, onSave, trafficSources, liveMetrics }: AiInsightsBlockProps) {
   const { t, i18n } = useTranslation();
   const [editing, setEditing] = useState(false);
   const [expanded, setExpanded] = useState(true);
@@ -124,6 +139,7 @@ export function AiInsightsBlock({ projectId, summary: rawSummary, isAdmin, onSav
             project_id: projectId,
             language: i18n.language,
             traffic_sources: trafficSources || [],
+            live_metrics: liveMetrics || undefined,
           }),
         }
       );

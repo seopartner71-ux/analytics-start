@@ -20,6 +20,7 @@ interface AiAnalyticsTabProps {
   isAdmin: boolean;
   onSaveSummary: (summary: any) => void;
   trafficSources: any[];
+  liveMetrics?: any;
 }
 
 interface Recommendation {
@@ -35,7 +36,7 @@ const priorityColors: Record<string, string> = {
 };
 
 export function AiAnalyticsTab({
-  projectId, projectName, summary, isAdmin, onSaveSummary, trafficSources,
+  projectId, projectName, summary, isAdmin, onSaveSummary, trafficSources, liveMetrics,
 }: AiAnalyticsTabProps) {
   const { t, i18n } = useTranslation();
   const { appliedRange } = useDateRange();
@@ -63,6 +64,7 @@ export function AiAnalyticsTab({
             language: i18n.language,
             traffic_sources: trafficSources,
             mode: "deep_analysis",
+            live_metrics: liveMetrics || undefined,
           }),
         }
       );
@@ -152,6 +154,7 @@ export function AiAnalyticsTab({
         isAdmin={isAdmin}
         onSave={onSaveSummary}
         trafficSources={trafficSources}
+        liveMetrics={liveMetrics}
       />
 
       {/* Business meaning block */}
