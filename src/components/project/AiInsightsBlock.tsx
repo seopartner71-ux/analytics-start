@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { useDateRange } from "@/contexts/DateRangeContext";
 
 // Types for the new channel-based summary
 interface ChannelInsight {
@@ -98,10 +99,27 @@ function TrendDot({ trend }: { trend?: "up" | "down" | "stable" }) {
 
 export function AiInsightsBlock({ projectId, summary: rawSummary, isAdmin, onSave, trafficSources, liveMetrics }: AiInsightsBlockProps) {
   const { t, i18n } = useTranslation();
+  const { channel: globalChannel, setChannel: setGlobalChannel } = useDateRange();
   const [editing, setEditing] = useState(false);
   const [expanded, setExpanded] = useState(true);
   const [generating, setGenerating] = useState(false);
-  const [activeChannel, setActiveChannel] = useState<ChannelKey>("general");
+
+  // Map global channel to AI block's channel key
+  const channelToKey = (ch: string): ChannelKey => {
+    if (ch === "all") return "general";
+    if (ch === "organic") return "search";
+    return ch as ChannelKey;
+  };
+  const keyToChannel = (key: ChannelKey): string => {
+    if (key === "general") return "all";
+    if (key === "search") return "organic";
+    return key;
+  };
+
+  const activeChannel = channelToKey(globalChannel);
+  const handleChannelClick = (key: ChannelKey) => {
+    setGlobalChannel(keyToChannel(key) as any);
+  };
 
   const summary = useMemo(() => normalizeSummary(rawSummary), [rawSummary]);
   const [draft, setDraft] = useState(summary.general);
@@ -153,7 +171,7 @@ export function AiInsightsBlock({ projectId, summary: rawSummary, isAdmin, onSav
       if (data.summary) {
         const normalized = normalizeSummary(data.summary);
         onSave?.(normalized);
-        setActiveChannel("general");
+        setGlobalChannel("all");
         toast.success(t("aiInsights.generated"));
       }
     } catch (err: any) {
@@ -275,7 +293,7 @@ export function AiInsightsBlock({ projectId, summary: rawSummary, isAdmin, onSav
                         return (
                           <button
                             key={key}
-                            onClick={() => setActiveChannel(key)}
+                            onClick={() => handleChannelClick(key)}
                             className={cn(
                               "relative flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap shrink-0",
                               isActive
