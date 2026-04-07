@@ -266,11 +266,67 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
         }
       );
       const data = await resp.json();
-      return (data.goals || []) as { id: number; name: string; reaches: number; conversionRate: number; change: number }[];
+      return (data.goals || []) as { id: number; name: string; reaches: number; conversionRate: number; change: number; daily?: number[] }[];
     },
     enabled: !!integration?.access_token && !!integration?.counter_id,
     staleTime: 30 * 60_000,
   });
+
+  // Search traffic goals for chart
+  const { data: searchGoalsData = [], isLoading: searchGoalsLoading } = useQuery({
+    queryKey: ["metrika-goals-search", projectId, dateFrom30, dateTo30],
+    queryFn: async () => {
+      if (!integration?.access_token || !integration?.counter_id) return [];
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return [];
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/yandex-metrika-auth?action=fetch-goals`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            access_token: integration.access_token, counter_id: integration.counter_id,
+            date1: dateFrom30, date2: dateTo30,
+            traffic_source: "organic",
+          }),
+        }
+      );
+      const data = await resp.json();
+      return (data.goals || []) as { id: number; name: string; reaches: number; conversionRate: number; change: number; daily?: number[] }[];
+    },
+    enabled: !!integration?.access_token && !!integration?.counter_id,
+    staleTime: 30 * 60_000,
+  });
+
+  // Build chart data for search goals
+  const searchGoalsChartData = useMemo(() => {
+    if (!searchGoalsData.length) return [];
+    const maxLen = Math.max(...searchGoalsData.map(g => g.daily?.length || 0));
+    const result = [];
+    const startDate = subDays(today, 30);
+    for (let i = 0; i < maxLen; i++) {
+      const dateObj = new Date(startDate);
+      dateObj.setDate(dateObj.getDate() + i);
+      const entry: any = { day: format(dateObj, "dd.MM", { locale: ru }) };
+      let total = 0;
+      searchGoalsData.forEach(g => {
+        const val = g.daily?.[i] || 0;
+        entry[g.name] = val;
+        total += val;
+      });
+      entry.total = total;
+      result.push(entry);
+    }
+    return result;
+  }, [searchGoalsData, today]);
+
+  const GOAL_COLORS = [
+    "hsl(var(--chart-1))",
+    "hsl(var(--chart-2))",
+    "hsl(var(--chart-3))",
+    "hsl(var(--chart-4))",
+    "hsl(var(--chart-5))",
+  ];
 
   // ── Keywords parsing ──
   const keywords = useMemo(() => {
