@@ -363,8 +363,41 @@ export function AddProjectWizard({ onCreated }: AddProjectWizardProps) {
             </div>
           )}
 
-          {/* Step 2: Yandex */}
+          {/* Step 2: Team (required) */}
           {currentStep === 1 && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Назначьте ответственных. Все поля обязательны.
+              </p>
+              {[
+                { label: "SEO-специалист *", value: seoSpecialistId, setter: setSeoSpecialistId },
+                { label: "Аккаунт-менеджер *", value: accountManagerId, setter: setAccountManagerId },
+                { label: "Наблюдатель *", value: observerId, setter: setObserverId },
+              ].map(role => (
+                <div key={role.label} className="space-y-1.5">
+                  <Label className="text-sm">{role.label}</Label>
+                  <Select value={role.value} onValueChange={role.setter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Выбрать сотрудника..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {members.map(m => (
+                        <SelectItem key={m.id} value={m.id}>{m.full_name} ({m.role})</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ))}
+              {members.length === 0 && (
+                <div className="flex items-center gap-2 text-sm text-destructive">
+                  <AlertCircle className="h-4 w-4" /> Сначала добавьте сотрудников в раздел «Команда»
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Step 3: Yandex */}
+          {currentStep === 2 && (
             <div className="space-y-4">
               {yandexAuthStep === "idle" && (
                 <div className="flex flex-col items-center gap-4 py-4">
