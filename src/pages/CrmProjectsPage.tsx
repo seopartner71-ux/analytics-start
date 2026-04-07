@@ -27,6 +27,7 @@ function getInitials(name: string) {
 }
 
 export default function CrmProjectsPage() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
 
   const { data: projects = [], isLoading } = useQuery({
