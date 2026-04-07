@@ -18,6 +18,7 @@ interface Props {
 
 export default function SiteHealthDetailTab({ projectId }: Props) {
   const queryClient = useQueryClient();
+  const [refreshing, setRefreshing] = useState(false);
 
   const { data: healthMetrics = [], isLoading: healthLoading } = useQuery({
     queryKey: ["site-health", projectId],
