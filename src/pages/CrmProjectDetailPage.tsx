@@ -508,8 +508,8 @@ export default function CrmProjectDetailPage() {
               <CalendarDays className="h-4 w-4 text-muted-foreground mt-0.5" />
               <div>
                 <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Дедлайн</p>
-                <p className={cn("text-[13px] font-medium", project.updated_at && isPast(parseISO(project.updated_at)) ? "text-destructive" : "text-foreground")}>
-                  {format(parseISO(project.created_at), "dd.MM.yyyy")}
+                <p className={cn("text-[13px] font-medium", (project as any).deadline && isPast(parseISO((project as any).deadline)) ? "text-destructive" : "text-foreground")}>
+                  {(project as any).deadline ? format(parseISO((project as any).deadline), "dd.MM.yyyy") : "Не установлен"}
                 </p>
               </div>
             </div>

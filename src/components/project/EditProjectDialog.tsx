@@ -75,7 +75,7 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
     if (!project || !open) return;
     setName(project.name || "");
     setUrl(project.url || "");
-    setDeadline("");
+    setDeadline(project.deadline ? format(new Date(project.deadline), "yyyy-MM-dd") : "");
     setPeriodFrom("");
     setPeriodTo("");
     setSeoSpecialistId(project.seo_specialist_id || "");
@@ -107,9 +107,10 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
       const { error } = await supabase.from("projects").update({
         name,
         url,
+        deadline: deadline || null,
         seo_specialist_id: seoSpecialistId || null,
         account_manager_id: accountManagerId || null,
-      }).eq("id", projectId);
+      } as any).eq("id", projectId);
       if (error) throw error;
 
       // Upsert integrations
