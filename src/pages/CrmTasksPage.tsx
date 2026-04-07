@@ -208,6 +208,9 @@ export default function CrmTasksPage() {
   const [selectedTask, setSelectedTask] = useState<CrmTask | null>(null);
   const [view, setView] = useState<"list" | "kanban">("list");
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [filterProject, setFilterProject] = useState("all");
+  const [filterAssignee, setFilterAssignee] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
 
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ["crm-tasks"],
@@ -221,11 +224,27 @@ export default function CrmTasksPage() {
     },
   });
 
-  const filtered = tasks.filter(t =>
-    t.title.toLowerCase().includes(search.toLowerCase()) ||
-    (t.assignee?.full_name || "").toLowerCase().includes(search.toLowerCase()) ||
-    (t.project?.name || "").toLowerCase().includes(search.toLowerCase())
-  );
+  // Unique projects & assignees for filter dropdowns
+  const uniqueProjects = Array.from(new Map(tasks.filter(t => t.project).map(t => [t.project!.id, t.project!.name])).entries());
+  const uniqueAssignees = Array.from(new Map(tasks.filter(t => t.assignee).map(t => [t.assignee!.id, t.assignee!.full_name])).entries());
+
+  const filtered = tasks.filter(t => {
+    const matchesSearch =
+      t.title.toLowerCase().includes(search.toLowerCase()) ||
+      (t.assignee?.full_name || "").toLowerCase().includes(search.toLowerCase()) ||
+      (t.project?.name || "").toLowerCase().includes(search.toLowerCase());
+    const matchesProject = filterProject === "all" || t.project?.id === filterProject;
+    const matchesAssignee = filterAssignee === "all" || t.assignee?.id === filterAssignee;
+    const isOverdue = t.deadline ? new Date(t.deadline) < new Date() && t.stage !== "Завершена" : false;
+    const matchesStatus =
+      filterStatus === "all" ||
+      (filterStatus === "overdue" && isOverdue) ||
+      (filterStatus === "in_progress" && t.stage === "В работе") ||
+      (filterStatus === "new" && t.stage === "Новые") ||
+      (filterStatus === "done" && t.stage === "Завершена") ||
+      (filterStatus === "waiting" && t.stage === "Ждёт выполнения");
+    return matchesSearch && matchesProject && matchesAssignee && matchesStatus;
+  });
 
   const overdueCount = tasks.filter(t => t.deadline && new Date(t.deadline) < new Date() && t.stage !== "Завершена").length;
 
@@ -234,6 +253,8 @@ export default function CrmTasksPage() {
     s.has(id) ? s.delete(id) : s.add(id);
     setSelected(s);
   };
+
+  const hasActiveFilters = filterProject !== "all" || filterAssignee !== "all" || filterStatus !== "all";
 
   return (
     <div className="space-y-5">
@@ -267,6 +288,67 @@ export default function CrmTasksPage() {
           </Badge>
         )}
         <Badge variant="secondary" className="text-[10px] h-5 ml-1">Все: {tasks.length}</Badge>
+      </div>
+
+      {/* Filters row */}
+      <div className="flex flex-wrap items-center gap-2">
+        <Select value={filterProject} onValueChange={setFilterProject}>
+          <SelectTrigger className="h-8 w-auto min-w-[140px] text-xs bg-muted/30 border-border/60">
+            <FolderOpen className="h-3.5 w-3.5 mr-1.5 text-muted-foreground shrink-0" />
+            <SelectValue placeholder="Проект" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Все проекты</SelectItem>
+            {uniqueProjects.map(([id, name]) => (
+              <SelectItem key={id} value={id}>{name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={filterAssignee} onValueChange={setFilterAssignee}>
+          <SelectTrigger className="h-8 w-auto min-w-[140px] text-xs bg-muted/30 border-border/60">
+            <User className="h-3.5 w-3.5 mr-1.5 text-muted-foreground shrink-0" />
+            <SelectValue placeholder="Исполнитель" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Все исполнители</SelectItem>
+            {uniqueAssignees.map(([id, name]) => (
+              <SelectItem key={id} value={id}>{name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <SelectTrigger className="h-8 w-auto min-w-[140px] text-xs bg-muted/30 border-border/60">
+            <Clock className="h-3.5 w-3.5 mr-1.5 text-muted-foreground shrink-0" />
+            <SelectValue placeholder="Статус" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Все статусы</SelectItem>
+            <SelectItem value="new">Новые</SelectItem>
+            <SelectItem value="in_progress">В работе</SelectItem>
+            <SelectItem value="waiting">Ждёт выполнения</SelectItem>
+            <SelectItem value="overdue">Просрочены</SelectItem>
+            <SelectItem value="done">Завершена</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {hasActiveFilters && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 text-xs text-muted-foreground hover:text-foreground"
+            onClick={() => { setFilterProject("all"); setFilterAssignee("all"); setFilterStatus("all"); }}
+          >
+            <X className="h-3.5 w-3.5 mr-1" /> Сбросить
+          </Button>
+        )}
+
+        {hasActiveFilters && (
+          <Badge variant="secondary" className="text-[10px] h-5">
+            Найдено: {filtered.length}
+          </Badge>
+        )}
       </div>
 
       {isLoading ? (
