@@ -1,23 +1,49 @@
-import { useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import {
   TrendingUp, TrendingDown, BarChart3, Search, Loader2,
   MousePointerClick, Layers, Clock, Users, Target,
+  CalendarDays, ArrowRightLeft, Filter,
 } from "lucide-react";
 import {
-  LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid,
+  AreaChart, Area, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend,
 } from "recharts";
-import { format, parseISO, subMonths } from "date-fns";
+import { format, parseISO, subMonths, subDays, subYears, differenceInDays, startOfMonth, endOfMonth } from "date-fns";
 import { ru } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
 interface Props {
   projectId: string;
 }
+
+type DateRange = { from: Date; to: Date };
+type TrafficChannel = "all" | "organic" | "direct" | "referral" | "social" | "ad";
+
+const CHANNEL_LABELS: Record<TrafficChannel, string> = {
+  all: "Все визиты",
+  organic: "Органический",
+  direct: "Прямые заходы",
+  referral: "Переходы по ссылкам",
+  social: "Социальные сети",
+  ad: "Реклама",
+};
+
+const PRESETS = [
+  { key: "7d", label: "7 дней", days: 7 },
+  { key: "14d", label: "14 дней", days: 14 },
+  { key: "30d", label: "30 дней", days: 30 },
+  { key: "thisMonth", label: "Этот месяц", days: 0 },
+] as const;
 
 const PIE_COLORS = [
   "hsl(var(--primary))",
@@ -32,8 +58,58 @@ function formatDuration(seconds: number): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
+// Dual tooltip for comparison mode
+const DualTooltip = ({ active, payload, label, showComparison }: any) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="bg-card border border-border rounded-lg shadow-lg px-3 py-2 min-w-[160px]">
+      <p className="text-xs text-muted-foreground mb-1 font-medium">{label}</p>
+      {payload.map((p: any, i: number) => {
+        const isPrevious = p.dataKey === "previous";
+        return (
+          <div key={i} className="flex items-center justify-between gap-3">
+            <span className="flex items-center gap-1.5 text-xs">
+              <span className="w-2.5 h-2.5 rounded-full" style={{ background: p.color }} />
+              {isPrevious ? "Период Б" : "Период А"}
+            </span>
+            <span className="text-sm font-semibold tabular-nums" style={{ color: p.color }}>
+              {typeof p.value === "number" ? p.value.toLocaleString("ru-RU") : p.value}
+            </span>
+          </div>
+        );
+      })}
+      {showComparison && payload.length === 2 && payload[0].value > 0 && payload[1].value > 0 && (
+        <div className="border-t border-border mt-1.5 pt-1">
+          <span className={cn(
+            "text-xs font-semibold",
+            payload[0].value >= payload[1].value ? "text-emerald-500" : "text-red-500"
+          )}>
+            Δ {payload[0].value >= payload[1].value ? "+" : ""}
+            {Math.round(((payload[0].value - payload[1].value) / payload[1].value) * 1000) / 10}%
+          </span>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default function ProjectAnalyticsTab({ projectId }: Props) {
-  // ── Metrika stats (latest snapshot) ──
+  const today = new Date();
+
+  // ── Filter state ──
+  const [range, setRange] = useState<DateRange>({ from: subDays(today, 30), to: today });
+  const [appliedRange, setAppliedRange] = useState<DateRange>({ from: subDays(today, 30), to: today });
+  const [activePreset, setActivePreset] = useState<string>("30d");
+  const [showComparison, setShowComparison] = useState(false);
+  const [compRange, setCompRange] = useState<DateRange>({
+    from: subDays(today, 61), to: subDays(today, 31),
+  });
+  const [appliedCompRange, setAppliedCompRange] = useState<DateRange>({
+    from: subDays(today, 61), to: subDays(today, 31),
+  });
+  const [channel, setChannel] = useState<TrafficChannel>("all");
+
+  // ── Data queries ──
   const { data: metrikaStats, isLoading: metrikaLoading } = useQuery({
     queryKey: ["metrika-stats-analytics", projectId],
     queryFn: async () => {
@@ -50,7 +126,6 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     enabled: !!projectId,
   });
 
-  // ── All metrika snapshots for chart (last 6 months) ──
   const { data: metrikaHistory = [] } = useQuery({
     queryKey: ["metrika-history-analytics", projectId],
     queryFn: async () => {
@@ -67,7 +142,6 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     enabled: !!projectId,
   });
 
-  // ── Project Topvisor config ──
   const { data: project } = useQuery({
     queryKey: ["project-tv-config", projectId],
     queryFn: async () => {
@@ -81,7 +155,6 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     enabled: !!projectId,
   });
 
-  // ── Topvisor positions (last 2 checks) ──
   const { data: topvisorData, isLoading: tvLoading } = useQuery({
     queryKey: ["tv-positions-analytics", projectId, project?.topvisor_project_id],
     queryFn: async () => {
@@ -123,11 +196,10 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     staleTime: 10 * 60_000,
   });
 
-  // ── Parse Topvisor keywords ──
+  // ── Keywords parsing ──
   const keywords = useMemo(() => {
     if (!topvisorData?.result) return [];
     const result = topvisorData.result;
-    const headers = result?.headers || [];
     const rows = Array.isArray(result) ? result : result?.keywords || [];
 
     return rows
@@ -137,19 +209,16 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
         let latestPos: number | null = null;
         let prevPos: number | null = null;
 
-        // Try to extract positions from the nested structure
         for (const regionKey of Object.keys(positionsObj)) {
           const regionData = positionsObj[regionKey];
           if (typeof regionData === "object" && regionData !== null) {
             const dates = Object.keys(regionData).sort();
             if (dates.length >= 1) {
-              const lastDate = dates[dates.length - 1];
-              const lastVal = regionData[lastDate];
+              const lastVal = regionData[dates[dates.length - 1]];
               latestPos = typeof lastVal === "object" ? Number(lastVal?.position) : Number(lastVal);
             }
             if (dates.length >= 2) {
-              const prevDate = dates[dates.length - 2];
-              const prevVal = regionData[prevDate];
+              const prevVal = regionData[dates[dates.length - 2]];
               prevPos = typeof prevVal === "object" ? Number(prevVal?.position) : Number(prevVal);
             }
           }
@@ -157,19 +226,15 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
 
         const pos = latestPos && latestPos > 0 ? latestPos : null;
         const prev = prevPos && prevPos > 0 ? prevPos : null;
-        const change = pos && prev ? prev - pos : 0; // positive = improved
+        const change = pos && prev ? prev - pos : 0;
 
-        return {
-          keyword: row.name as string,
-          position: pos || 0,
-          change,
-        };
+        return { keyword: row.name as string, position: pos || 0, change };
       })
       .filter((k: any) => k.position > 0)
       .sort((a: any, b: any) => a.position - b.position);
   }, [topvisorData]);
 
-  // ── Position distribution for pie chart ──
+  // ── Position distribution ──
   const posDistribution = useMemo(() => {
     const top3 = keywords.filter(k => k.position <= 3).length;
     const top10 = keywords.filter(k => k.position > 3 && k.position <= 10).length;
@@ -183,38 +248,118 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     ].filter(d => d.value > 0);
   }, [keywords]);
 
-  // ── Metrika chart data ──
+  // ── Daily traffic data ──
+  const dailyData = useMemo(() => {
+    if (!metrikaStats?.visits_by_day) return [];
+    const days = metrikaStats.visits_by_day as { day: string; visits: number }[];
+    const dateFrom = parseISO(metrikaStats.date_from);
+    return days.map((d, i) => {
+      const date = new Date(dateFrom);
+      date.setDate(date.getDate() + i);
+      return { date, dateStr: format(date, "dd.MM", { locale: ru }), visits: d.visits || 0 };
+    });
+  }, [metrikaStats]);
+
+  // Filter daily data by applied range
+  const filteredData = useMemo(
+    () => dailyData.filter(d => d.date >= appliedRange.from && d.date <= appliedRange.to),
+    [dailyData, appliedRange],
+  );
+
+  const filteredCompData = useMemo(
+    () => dailyData.filter(d => d.date >= appliedCompRange.from && d.date <= appliedCompRange.to),
+    [dailyData, appliedCompRange],
+  );
+
+  // Merged chart data for comparison
   const trafficChart = useMemo(() => {
-    if (metrikaStats?.visits_by_day) {
-      const days = metrikaStats.visits_by_day as { day: string; visits: number }[];
-      if (days.length > 0) {
-        return days.map(d => ({
-          date: d.day,
-          visits: d.visits,
-        }));
-      }
+    if (!showComparison) {
+      if (filteredData.length > 0) return filteredData.map(d => ({ date: d.dateStr, visits: d.visits }));
+      return metrikaHistory.map(h => ({
+        date: format(parseISO(h.date_from), "dd MMM", { locale: ru }),
+        visits: h.total_visits,
+      }));
     }
-    // Fallback: use history snapshots
-    return metrikaHistory.map(h => ({
-      date: format(parseISO(h.date_from), "dd MMM", { locale: ru }),
-      visits: h.total_visits,
-    }));
-  }, [metrikaStats, metrikaHistory]);
+    const maxLen = Math.max(filteredData.length, filteredCompData.length);
+    const result = [];
+    for (let i = 0; i < maxLen; i++) {
+      result.push({
+        date: filteredData[i]?.dateStr || `${i + 1}`,
+        visits: filteredData[i]?.visits || 0,
+        previous: filteredCompData[i]?.visits || 0,
+      });
+    }
+    return result;
+  }, [filteredData, filteredCompData, metrikaHistory, showComparison]);
 
-  const isLoading = metrikaLoading || tvLoading;
-
-  const totalVisits = metrikaStats?.total_visits || 0;
+  // ── KPI values ──
+  const totalVisits = filteredData.length > 0
+    ? filteredData.reduce((s, d) => s + d.visits, 0)
+    : (metrikaStats?.total_visits || 0);
   const totalUsers = metrikaStats?.total_users || 0;
   const bounceRate = metrikaStats ? Number(metrikaStats.bounce_rate) : 0;
   const avgDuration = metrikaStats ? metrikaStats.avg_duration_seconds : 0;
   const pageDepth = metrikaStats ? Number(metrikaStats.page_depth) : 0;
 
-  // Average position from Topvisor
+  const compTotalVisits = filteredCompData.reduce((s, d) => s + d.visits, 0);
+  const visitsChange = showComparison && compTotalVisits > 0
+    ? Math.round(((totalVisits - compTotalVisits) / compTotalVisits) * 1000) / 10
+    : 0;
+
   const avgPosition = useMemo(() => {
     if (keywords.length === 0) return 0;
-    const sum = keywords.reduce((acc, k) => acc + k.position, 0);
-    return sum / keywords.length;
+    return keywords.reduce((acc, k) => acc + k.position, 0) / keywords.length;
   }, [keywords]);
+
+  // ── Filter handlers ──
+  const handlePreset = useCallback((key: string, days: number) => {
+    const now = new Date();
+    let newRange: DateRange;
+    if (key === "thisMonth") {
+      newRange = { from: startOfMonth(now), to: now };
+    } else {
+      newRange = { from: subDays(now, days), to: now };
+    }
+    setActivePreset(key);
+    setRange(newRange);
+    setAppliedRange(newRange);
+    const compDays = differenceInDays(newRange.to, newRange.from);
+    const newComp = { from: subDays(newRange.from, compDays + 1), to: subDays(newRange.from, 1) };
+    setCompRange(newComp);
+    setAppliedCompRange(newComp);
+  }, []);
+
+  const handleApply = useCallback(() => {
+    setAppliedRange({ ...range });
+    if (showComparison) setAppliedCompRange({ ...compRange });
+    setActivePreset("");
+  }, [range, compRange, showComparison]);
+
+  const handleToggleComparison = useCallback((on: boolean) => {
+    setShowComparison(on);
+    if (on) {
+      const days = differenceInDays(range.to, range.from);
+      const nr = { from: subDays(range.from, days + 1), to: subDays(range.from, 1) };
+      setCompRange(nr);
+      setAppliedCompRange(nr);
+    }
+  }, [range]);
+
+  const handleCompPreset = useCallback((type: "previous" | "lastYear") => {
+    const days = differenceInDays(range.to, range.from);
+    let nr: DateRange;
+    if (type === "previous") {
+      nr = { from: subDays(range.from, days + 1), to: subDays(range.from, 1) };
+    } else {
+      nr = { from: subYears(range.from, 1), to: subYears(range.to, 1) };
+    }
+    setCompRange(nr);
+    setAppliedCompRange(nr);
+  }, [range]);
+
+  const isLoading = metrikaLoading || tvLoading;
+  const hasMetrika = !!metrikaStats;
+  const hasTopvisor = keywords.length > 0;
 
   if (isLoading) {
     return (
@@ -224,11 +369,128 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     );
   }
 
-  const hasMetrika = !!metrikaStats;
-  const hasTopvisor = keywords.length > 0;
-
   return (
     <div className="space-y-5">
+      {/* ═══════════ FILTER BAR ═══════════ */}
+      <Card className="border-border bg-card">
+        <div className="p-3 space-y-2.5">
+          {/* Row 1: Presets + Date pickers + Channel */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Presets */}
+            {PRESETS.map((p) => (
+              <Button
+                key={p.key}
+                variant={activePreset === p.key ? "default" : "outline"}
+                size="sm"
+                className="h-7 text-[11px] px-2.5"
+                onClick={() => handlePreset(p.key, p.days)}
+              >
+                {p.label}
+              </Button>
+            ))}
+
+            <div className="w-px h-5 bg-border mx-1" />
+
+            {/* Period A */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1.5 px-2.5">
+                  <CalendarDays className="h-3 w-3" />
+                  {format(range.from, "dd.MM.yy")} — {format(range.to, "dd.MM.yy")}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="range"
+                  selected={{ from: range.from, to: range.to }}
+                  onSelect={(r: any) => {
+                    if (r?.from && r?.to) { setRange({ from: r.from, to: r.to }); setActivePreset(""); }
+                    else if (r?.from) { setRange({ from: r.from, to: r.from }); setActivePreset(""); }
+                  }}
+                  numberOfMonths={1} locale={ru} weekStartsOn={1}
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+
+            {/* Comparison toggle */}
+            <div className="flex items-center gap-1.5">
+              <Switch
+                checked={showComparison}
+                onCheckedChange={handleToggleComparison}
+                className="scale-75"
+              />
+              <Label
+                className="text-[11px] text-muted-foreground cursor-pointer flex items-center gap-1"
+                onClick={() => handleToggleComparison(!showComparison)}
+              >
+                <ArrowRightLeft className="h-3 w-3" />
+                Сравнение
+              </Label>
+            </div>
+
+            {/* Period B (visible when comparison on) */}
+            {showComparison && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1.5 px-2.5 border-dashed">
+                    <CalendarDays className="h-3 w-3" />
+                    {format(compRange.from, "dd.MM.yy")} — {format(compRange.to, "dd.MM.yy")}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="range"
+                    selected={{ from: compRange.from, to: compRange.to }}
+                    onSelect={(r: any) => {
+                      if (r?.from && r?.to) setCompRange({ from: r.from, to: r.to });
+                      else if (r?.from) setCompRange({ from: r.from, to: r.from });
+                    }}
+                    numberOfMonths={1} locale={ru} weekStartsOn={1}
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            )}
+
+            <div className="w-px h-5 bg-border mx-1" />
+
+            {/* Traffic channel */}
+            <Select value={channel} onValueChange={(v) => setChannel(v as TrafficChannel)}>
+              <SelectTrigger className="w-[170px] h-7 text-[11px]">
+                <Filter className="h-3 w-3 mr-1 text-muted-foreground" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {(Object.keys(CHANNEL_LABELS) as TrafficChannel[]).map((ch) => (
+                  <SelectItem key={ch} value={ch}>
+                    {CHANNEL_LABELS[ch]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Apply */}
+            <Button size="sm" className="h-7 text-[11px] px-3 ml-auto" onClick={handleApply}>
+              Применить
+            </Button>
+          </div>
+
+          {/* Row 2: Comparison presets (when active) */}
+          {showComparison && (
+            <div className="flex items-center gap-2 pt-1.5 border-t border-border/50">
+              <span className="text-[11px] text-muted-foreground">Пресеты:</span>
+              <Button variant="outline" size="sm" className="h-6 text-[10px] px-2" onClick={() => handleCompPreset("previous")}>
+                Предыдущий период
+              </Button>
+              <Button variant="outline" size="sm" className="h-6 text-[10px] px-2" onClick={() => handleCompPreset("lastYear")}>
+                Год к году
+              </Button>
+            </div>
+          )}
+        </div>
+      </Card>
+
       {/* KPI cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="bg-card rounded-lg shadow-sm border border-border p-4">
@@ -239,6 +501,14 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
             <div>
               <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Визиты</p>
               <p className="text-xl font-bold text-foreground">{totalVisits.toLocaleString("ru-RU")}</p>
+              {showComparison && visitsChange !== 0 && (
+                <span className={cn(
+                  "text-[10px] font-semibold",
+                  visitsChange >= 0 ? "text-emerald-500" : "text-red-500"
+                )}>
+                  {visitsChange >= 0 ? "+" : ""}{visitsChange}%
+                </span>
+              )}
             </div>
           </div>
         </Card>
@@ -307,11 +577,19 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
         </div>
       )}
 
-      {/* Two-column: Traffic chart + Position distribution */}
+      {/* Charts row */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
         {/* Traffic chart */}
         <Card className="lg:col-span-3 bg-card rounded-lg shadow-sm border border-border p-5">
-          <h3 className="text-sm font-semibold text-foreground mb-4">Органический трафик</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-foreground">Органический трафик</h3>
+            {showComparison && (
+              <div className="flex items-center gap-3 text-[10px]">
+                <span className="flex items-center gap-1"><span className="w-2.5 h-0.5 bg-primary rounded" /> Период А</span>
+                <span className="flex items-center gap-1"><span className="w-2.5 h-0.5 bg-[hsl(var(--chart-3))] rounded" style={{ borderBottom: "1px dashed" }} /> Период Б</span>
+              </div>
+            )}
+          </div>
           {trafficChart.length === 0 ? (
             <div className="py-16 text-center">
               <BarChart3 className="h-10 w-10 mx-auto mb-2 text-muted-foreground/20" />
@@ -323,30 +601,38 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
             <ResponsiveContainer width="100%" height={260}>
               <AreaChart data={trafficChart}>
                 <defs>
-                  <linearGradient id="trafficGrad" x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient id="trafficGradA" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.25} />
                     <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="trafficGradB" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(var(--chart-3))" stopOpacity={0.15} />
+                    <stop offset="95%" stopColor="hsl(var(--chart-3))" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="date" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
                 <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: 8,
-                    fontSize: 12,
-                  }}
-                />
+                <Tooltip content={<DualTooltip showComparison={showComparison} />} />
                 <Area
                   type="monotone"
                   dataKey="visits"
                   stroke="hsl(var(--primary))"
                   strokeWidth={2}
-                  fill="url(#trafficGrad)"
+                  fill="url(#trafficGradA)"
                   name="Визиты"
                 />
+                {showComparison && (
+                  <Area
+                    type="monotone"
+                    dataKey="previous"
+                    stroke="hsl(var(--chart-3))"
+                    strokeWidth={1.5}
+                    strokeDasharray="5 3"
+                    fill="url(#trafficGradB)"
+                    name="Период Б"
+                  />
+                )}
               </AreaChart>
             </ResponsiveContainer>
           )}
@@ -423,7 +709,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
               </thead>
               <tbody className="divide-y divide-border/40">
                 {keywords.map((kw, i) => {
-                  const isPositive = kw.change > 0; // position went down = improved
+                  const isPositive = kw.change > 0;
                   const isNegative = kw.change < 0;
                   return (
                     <tr key={i} className={cn("hover:bg-muted/30 transition-colors", i % 2 === 1 && "bg-muted/10")}>
