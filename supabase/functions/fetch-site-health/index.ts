@@ -81,7 +81,12 @@ Deno.serve(async (req) => {
     const wmIntegration = integrations?.find(
       (i: any) => i.service_name === "yandexWebmaster"
     );
-    if (wmIntegration?.access_token && project.yandex_webmaster_host_id) {
+    // Fallback: if webmaster integration has no token, try using the metrika token (same Yandex OAuth)
+    const metrikaIntegration = integrations?.find(
+      (i: any) => i.service_name === "yandexMetrika"
+    );
+    const wmToken = wmIntegration?.access_token || metrikaIntegration?.access_token;
+    if (wmToken && project.yandex_webmaster_host_id) {
       try {
         const accessToken = wmIntegration.access_token;
         const hostId = project.yandex_webmaster_host_id;
