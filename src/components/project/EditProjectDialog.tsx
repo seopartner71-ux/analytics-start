@@ -54,6 +54,10 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
   // Yandex OAuth state
   const [yandexOAuthStep, setYandexOAuthStep] = useState<"idle" | "code" | "loading" | "done">("idle");
   const [yandexCodeInput, setYandexCodeInput] = useState("");
+  const [yandexCounters, setYandexCounters] = useState<{ id: string; name: string; site: string }[]>([]);
+  const [yandexHosts, setYandexHosts] = useState<{ host_id: string; unicode_host_url: string }[]>([]);
+  const [selectedCounter, setSelectedCounter] = useState("");
+  const [selectedHost, setSelectedHost] = useState("");
   const YANDEX_REDIRECT_URI = "https://oauth.yandex.ru/verification_code";
   const projectRef = import.meta.env.VITE_SUPABASE_PROJECT_ID;
 
