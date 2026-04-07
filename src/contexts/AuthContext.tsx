@@ -16,6 +16,7 @@ interface AuthContextType {
   isViewer: boolean;
   canEdit: boolean;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -29,6 +30,7 @@ const AuthContext = createContext<AuthContextType>({
   isViewer: false,
   canEdit: false,
   signOut: async () => {},
+  refreshProfile: async () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -71,6 +73,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  const refreshProfile = async () => {
+    if (!user) return;
+    const { data: prof } = await supabase.from("profiles").select("*").eq("user_id", user.id).single();
+    if (prof) setProfile(prof);
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
   };
@@ -81,7 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const canEdit = isAdmin || isManager;
 
   return (
-    <AuthContext.Provider value={{ session, user, role, profile, loading, isAdmin, isManager, isViewer, canEdit, signOut }}>
+    <AuthContext.Provider value={{ session, user, role, profile, loading, isAdmin, isManager, isViewer, canEdit, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );
