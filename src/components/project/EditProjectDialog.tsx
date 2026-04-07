@@ -153,6 +153,82 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
     onError: (e: any) => toast.error(e.message || "Ошибка сохранения"),
   });
 
+  const getSession = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session;
+  };
+
+  const handleYandexStartOAuth = async () => {
+    try {
+      const session = await getSession();
+      if (!session) return;
+      const resp = await fetch(
+        `https://${projectRef}.supabase.co/functions/v1/yandex-metrika-auth?action=auth-url&redirect_uri=${encodeURIComponent(YANDEX_REDIRECT_URI)}`,
+        { headers: { Authorization: `Bearer ${session.access_token}` } }
+      );
+      const data = await resp.json();
+      if (data.url) {
+        window.open(data.url, "_blank", "noopener,noreferrer");
+        setYandexOAuthStep("code");
+      }
+    } catch { toast.error("Ошибка OAuth"); }
+  };
+
+  const handleYandexCode = async () => {
+    const code = yandexCodeInput.trim();
+    if (!code) return;
+    setYandexOAuthStep("loading");
+    try {
+      const session = await getSession();
+      if (!session) return;
+
+      const tokenResp = await fetch(
+        `https://${projectRef}.supabase.co/functions/v1/yandex-metrika-auth?action=exchange-token`,
+        { method: "POST", headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" }, body: JSON.stringify({ code }) }
+      );
+      const tokenData = await tokenResp.json();
+      if (tokenData.error) throw new Error(tokenData.error);
+      const accessToken = tokenData.access_token;
+
+      // Fetch counters
+      const countersResp = await fetch(
+        `https://${projectRef}.supabase.co/functions/v1/yandex-metrika-auth?action=list-counters`,
+        { method: "POST", headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" }, body: JSON.stringify({ access_token: accessToken }) }
+      );
+      const countersData = await countersResp.json();
+
+      // Save token to yandexMetrika integration
+      const existingMetrika = integrations.find(i => i.service_name === "yandexMetrika");
+      if (existingMetrika) {
+        await supabase.from("integrations").update({ access_token: accessToken, connected: true }).eq("id", existingMetrika.id);
+      } else {
+        await supabase.from("integrations").insert({ project_id: projectId, service_name: "yandexMetrika", access_token: accessToken, connected: true } as any);
+      }
+
+      // Save token to yandexWebmaster integration too
+      const existingWm = integrations.find(i => i.service_name === "yandexWebmaster");
+      if (existingWm) {
+        await supabase.from("integrations").update({ access_token: accessToken, connected: true }).eq("id", existingWm.id);
+      } else {
+        await supabase.from("integrations").insert({ project_id: projectId, service_name: "yandexWebmaster", access_token: accessToken, connected: true } as any);
+      }
+
+      // Update connected status in UI
+      setIntegrationValues(prev => ({
+        ...prev,
+        yandexMetrika: { ...prev.yandexMetrika, connected: "true" },
+        yandexWebmaster: { ...prev.yandexWebmaster, connected: "true" },
+      }));
+
+      queryClient.invalidateQueries({ queryKey: ["project-integrations-edit", projectId] });
+      setYandexOAuthStep("done");
+      toast.success("Яндекс авторизован! Токен сохранён для Метрики и Вебмастера.");
+    } catch (err: any) {
+      toast.error(err.message || "Ошибка авторизации");
+      setYandexOAuthStep("idle");
+    }
+  };
+
   const setIntField = (service: string, field: string, value: string) => {
     setIntegrationValues(prev => ({
       ...prev,
