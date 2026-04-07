@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -39,7 +40,9 @@ export default function AdminPanel() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState("projects");
+  const [searchParams] = useSearchParams();
+  const defaultTab = searchParams.get("tab") || "projects";
+  const [activeTab, setActiveTab] = useState(defaultTab);
   const [keyValues, setKeyValues] = useState<Record<string, string>>({});
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
   const [savingKeys, setSavingKeys] = useState(false);
