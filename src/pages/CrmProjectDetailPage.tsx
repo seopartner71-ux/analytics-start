@@ -35,13 +35,8 @@ type TaskComment = Tables<"task_comments"> & {
 };
 
 const STAGES = [
-  { key: "Новые заявки", color: "#9E9E9E" },
-  { key: "Анализ сайта", color: "#2196F3" },
-  { key: "Составление стратегии", color: "#FF9800" },
   { key: "В работе", color: "#4CAF50" },
-  { key: "На проверке", color: "#9C27B0" },
-  { key: "Успешно завершено", color: "#4CAF50" },
-  { key: "Отказ", color: "#F44336" },
+  { key: "На паузе", color: "#FF9800" },
 ];
 
 const TASK_STAGES = ["Новые", "В работе", "Ждёт выполнения", "Завершена"];
