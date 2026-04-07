@@ -143,6 +143,18 @@ export async function exportToWord(sections: WordSection[], meta: ExportMeta) {
       })
     );
 
+    if (section.content) {
+      const lines = section.content.split("\n").filter(Boolean);
+      for (const line of lines) {
+        children.push(
+          new Paragraph({
+            children: [new TextRun({ text: line, size: 22, font: "Arial" })],
+            spacing: { after: 120 },
+          })
+        );
+      }
+    }
+
     if (section.paragraphs) {
       for (const p of section.paragraphs) {
         children.push(
