@@ -30,7 +30,7 @@ function getAvatarUrl(name: string, size = 200) {
 }
 
 export default function ProfilePage() {
-  const { user, profile, isAdmin, role } = useAuth();
+  const { user, profile, isAdmin, role, refreshProfile } = useAuth();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("profile");
   const [editing, setEditing] = useState(false);
@@ -80,8 +80,8 @@ export default function ProfilePage() {
         .eq("user_id", user!.id);
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["profile"] });
+    onSuccess: async () => {
+      await refreshProfile();
       setEditing(false);
       toast.success("Профиль сохранён");
     },
