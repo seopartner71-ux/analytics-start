@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
     const wmToken = wmIntegration?.access_token || metrikaIntegration?.access_token;
     if (wmToken && project.yandex_webmaster_host_id) {
       try {
-        const accessToken = wmIntegration.access_token;
+        const accessToken = wmToken;
         const hostId = project.yandex_webmaster_host_id;
         const wmHeaders = {
           Authorization: `OAuth ${accessToken}`,
