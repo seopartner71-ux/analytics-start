@@ -38,6 +38,18 @@ const CHANNEL_LABELS: Record<TrafficChannel, string> = {
   ad: "Реклама",
 };
 
+// Map Yandex Metrika source names to channel keys
+const SOURCE_TO_CHANNEL: Record<string, TrafficChannel> = {
+  "Search engine traffic": "organic",
+  "Direct traffic": "direct",
+  "Link traffic": "referral",
+  "Social network traffic": "social",
+  "Ad traffic": "ad",
+  "Messenger traffic": "social",
+  "Recommendation system traffic": "referral",
+  "Internal traffic": "direct",
+};
+
 const PRESETS = [
   { key: "7d", label: "7 дней", days: 7 },
   { key: "14d", label: "14 дней", days: 14 },
@@ -271,13 +283,26 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     [dailyData, appliedCompRange],
   );
 
-  // Merged chart data for comparison
+  // ── Channel-filtered ratio ──
+  const channelVisitRatio = useMemo(() => {
+    if (channel === "all" || !metrikaStats?.traffic_sources) return 1;
+    const sources = metrikaStats.traffic_sources as { source: string; visits: number }[];
+    const totalAll = sources.reduce((s, src) => s + (src.visits || 0), 0);
+    if (totalAll === 0) return 1;
+    const channelVisits = sources
+      .filter(src => SOURCE_TO_CHANNEL[src.source] === channel)
+      .reduce((s, src) => s + (src.visits || 0), 0);
+    return channelVisits / totalAll;
+  }, [metrikaStats, channel]);
+
+  // Merged chart data for comparison (with channel filter applied)
   const trafficChart = useMemo(() => {
+    const applyRatio = (v: number) => Math.round(v * channelVisitRatio);
     if (!showComparison) {
-      if (filteredData.length > 0) return filteredData.map(d => ({ date: d.dateStr, visits: d.visits }));
+      if (filteredData.length > 0) return filteredData.map(d => ({ date: d.dateStr, visits: applyRatio(d.visits) }));
       return metrikaHistory.map(h => ({
         date: format(parseISO(h.date_from), "dd MMM", { locale: ru }),
-        visits: h.total_visits,
+        visits: applyRatio(h.total_visits),
       }));
     }
     const maxLen = Math.max(filteredData.length, filteredCompData.length);
@@ -285,23 +310,24 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     for (let i = 0; i < maxLen; i++) {
       result.push({
         date: filteredData[i]?.dateStr || `${i + 1}`,
-        visits: filteredData[i]?.visits || 0,
-        previous: filteredCompData[i]?.visits || 0,
+        visits: applyRatio(filteredData[i]?.visits || 0),
+        previous: applyRatio(filteredCompData[i]?.visits || 0),
       });
     }
     return result;
-  }, [filteredData, filteredCompData, metrikaHistory, showComparison]);
+  }, [filteredData, filteredCompData, metrikaHistory, showComparison, channelVisitRatio]);
 
-  // ── KPI values ──
-  const totalVisits = filteredData.length > 0
-    ? filteredData.reduce((s, d) => s + d.visits, 0)
-    : (metrikaStats?.total_visits || 0);
-  const totalUsers = metrikaStats?.total_users || 0;
+  const totalVisits = Math.round(
+    (filteredData.length > 0
+      ? filteredData.reduce((s, d) => s + d.visits, 0)
+      : (metrikaStats?.total_visits || 0)) * channelVisitRatio
+  );
+  const totalUsers = Math.round((metrikaStats?.total_users || 0) * channelVisitRatio);
   const bounceRate = metrikaStats ? Number(metrikaStats.bounce_rate) : 0;
   const avgDuration = metrikaStats ? metrikaStats.avg_duration_seconds : 0;
   const pageDepth = metrikaStats ? Number(metrikaStats.page_depth) : 0;
 
-  const compTotalVisits = filteredCompData.reduce((s, d) => s + d.visits, 0);
+  const compTotalVisits = Math.round(filteredCompData.reduce((s, d) => s + d.visits, 0) * channelVisitRatio);
   const visitsChange = showComparison && compTotalVisits > 0
     ? Math.round(((totalVisits - compTotalVisits) / compTotalVisits) * 1000) / 10
     : 0;
@@ -582,7 +608,9 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
         {/* Traffic chart */}
         <Card className="lg:col-span-3 bg-card rounded-lg shadow-sm border border-border p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-foreground">Органический трафик</h3>
+            <h3 className="text-sm font-semibold text-foreground">
+              {channel === "all" ? "Органический трафик" : CHANNEL_LABELS[channel]}
+            </h3>
             {showComparison && (
               <div className="flex items-center gap-3 text-[10px]">
                 <span className="flex items-center gap-1"><span className="w-2.5 h-0.5 bg-primary rounded" /> Период А</span>
