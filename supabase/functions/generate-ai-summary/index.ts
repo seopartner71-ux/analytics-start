@@ -178,11 +178,12 @@ Period B metrics:
 
     const systemPrompt = isDeep
       ? `You are an expert SEO and digital marketing analyst. Analyze the provided website metrics data in depth.
+IMPORTANT: Focus your analysis primarily on SEO/search traffic when it's among the selected channels.
 
 Return ONLY valid JSON with this exact structure:
 {
   "general": {
-    "happened": "2-3 sentences about overall metrics and trends",
+    "happened": "2-3 sentences about overall metrics and trends, focusing on search/SEO traffic",
     "why": "2-3 sentences root cause analysis",
     "recommendation": "2-3 sentences actionable advice"
   },
@@ -193,11 +194,12 @@ Return ONLY valid JSON with this exact structure:
     "social": { "insight": "1-2 sentences", "trend": "up" or "down" or "stable" },
     "referral": { "insight": "1-2 sentences", "trend": "up" or "down" or "stable" }
   },
+  "goals_insight": "2-4 sentences analyzing goal completions, conversion rates, and their correlation with traffic channels. If no goals data — omit this field.",
   "business_insight": "A detailed 4-6 sentence business impact analysis covering ROI, conversion implications, and strategic outlook",
   "recommendations": [
     { "text": "Specific action item", "priority": "high", "category": "SEO" },
     { "text": "Specific action item", "priority": "medium", "category": "Content" },
-    { "text": "Specific action item", "priority": "high", "category": "Ads" },
+    { "text": "Specific action item", "priority": "high", "category": "Conversions" },
     { "text": "Specific action item", "priority": "low", "category": "Technical" },
     { "text": "Specific action item", "priority": "medium", "category": "UX" }
   ]
@@ -205,10 +207,11 @@ Return ONLY valid JSON with this exact structure:
 
 Rules:
 - Answer in ${lang}.
-- Provide exactly 5 recommendations with varied priorities (high/medium/low) and categories.
+- Provide exactly 5 recommendations with varied priorities (high/medium/low) and categories (SEO, Content, Conversions, Technical, UX, Ads).
+- If goals/conversions data is provided, analyze it and include "goals_insight". If conversion rate dropped while traffic grew — flag this explicitly.
 - Base analysis strictly on provided data. Be specific with numbers.
+- Only include channels that the user selected in FOCUS CHANNELS. Skip unselected channels.
 - Look for anomalies: sudden growth or decline.
-- If traffic grew but conversion dropped — explicitly flag this.
 ${period_b ? "- Compare Period A and Period B." : ""}
 - No markdown, no code blocks, just raw JSON.`
       : `You are an expert SEO and digital marketing analyst. Analyze the provided website metrics data.
