@@ -154,6 +154,7 @@ export default function CrmProjectDetailPage() {
 
   const [commentText, setCommentText] = useState("");
   const [addTaskOpen, setAddTaskOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [newTask, setNewTask] = useState({ title: "", priority: "medium", deadline: "", assignee_id: "" });
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
