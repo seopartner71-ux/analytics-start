@@ -31,10 +31,9 @@ Deno.serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
 
-    // Validate JWT
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
+    // Validate JWT by getting the user
+    const { data: { user }, error: userError } = await userClient.auth.getUser();
+    if (userError || !user) {
       return new Response(JSON.stringify({ error: "Not authenticated" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -81,9 +80,14 @@ Deno.serve(async (req) => {
     const wmIntegration = integrations?.find(
       (i: any) => i.service_name === "yandexWebmaster"
     );
-    if (wmIntegration?.access_token && project.yandex_webmaster_host_id) {
+    // Fallback: if webmaster integration has no token, try using the metrika token (same Yandex OAuth)
+    const metrikaIntegration = integrations?.find(
+      (i: any) => i.service_name === "yandexMetrika"
+    );
+    const wmToken = wmIntegration?.access_token || metrikaIntegration?.access_token;
+    if (wmToken && project.yandex_webmaster_host_id) {
       try {
-        const accessToken = wmIntegration.access_token;
+        const accessToken = wmToken;
         const hostId = project.yandex_webmaster_host_id;
         const wmHeaders = {
           Authorization: `OAuth ${accessToken}`,
