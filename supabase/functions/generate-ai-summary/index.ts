@@ -113,6 +113,23 @@ Yandex Metrika LIVE data for project "${project?.name || "Unknown"}" (${project?
           dataContext += `- Top keywords: ${kw.topKeywords.join("; ")}\n`;
         }
       }
+      if (m.selectedChannels?.length) {
+        dataContext += `\nFOCUS CHANNELS (user selected these for analysis): ${m.selectedChannels.join(", ")}\n`;
+        dataContext += `IMPORTANT: Prioritize analysis of these channels, especially "search" (organic/SEO traffic).\n`;
+      }
+      if (m.goalsContext) {
+        const gc = m.goalsContext;
+        dataContext += `\nGoals & Conversions:\n`;
+        dataContext += `- Total goals configured: ${gc.total}\n`;
+        dataContext += `- Total goal reaches: ${gc.totalReaches}\n`;
+        dataContext += `- Average conversion rate: ${gc.avgConversionRate}%\n`;
+        if (gc.goals?.length) {
+          dataContext += `- Goal details:\n`;
+          for (const g of gc.goals) {
+            dataContext += `  • "${g.name}": ${g.reaches} reaches, CR ${g.cr}%, change ${g.change > 0 ? "+" : ""}${g.change}%\n`;
+          }
+        }
+      }
     } else {
       // Fallback: read cached stats from DB
       const { data: stats } = await supabase
