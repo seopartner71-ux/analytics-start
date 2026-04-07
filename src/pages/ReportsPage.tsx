@@ -514,6 +514,34 @@ export default function ReportsPage() {
                     <span className="text-xs text-muted-foreground">{periodLabel}</span>
                   </div>
                 )}
+
+                <Separator className="my-3" />
+
+                {/* Comparison Mode */}
+                <div>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                    <GitCompareArrows className="h-3.5 w-3.5" /> Сравнение
+                  </Label>
+                  <div className="flex flex-wrap gap-1.5 mt-1.5">
+                    {COMPARISON_MODES.map(m => (
+                      <Button
+                        key={m.key}
+                        variant={comparisonMode === m.key ? "default" : "outline"}
+                        size="sm"
+                        className="text-xs h-7"
+                        onClick={() => setComparisonMode(m.key)}
+                      >
+                        {m.label}
+                      </Button>
+                    ))}
+                  </div>
+                  {comparisonMode !== "none" && compPeriodLabel && (
+                    <div className="flex items-center gap-1.5 mt-2">
+                      <GitCompareArrows className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">vs {compPeriodLabel}</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -646,18 +674,61 @@ export default function ReportsPage() {
                     <span>Период</span>
                     <span className="text-foreground font-medium">{periodLabel}</span>
                   </div>
-                  <div className="flex justify-between">
+                  {comparisonMode !== "none" && compPeriodLabel && (
+                    <div className="flex justify-between">
+                      <span>Сравнение</span>
+                      <span className="text-foreground font-medium">{compPeriodLabel}</span>
+                    </div>
+                  )}
+                  <Separator className="my-1" />
+                  <div className="flex justify-between items-center">
                     <span>Задач выполнено</span>
-                    <span className="text-foreground font-medium">{reportData.tasks.length}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-foreground font-medium">{reportData.tasks.length}</span>
+                      {compData && comparisonMode !== "none" && (
+                        <span className={cn("text-[10px] font-medium", deltaColor(reportData.tasks.length, compData.tasksCount))}>
+                          {deltaLabel(reportData.tasks.length, compData.tasksCount)}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between items-center">
                     <span>Записей работ</span>
-                    <span className="text-foreground font-medium">{reportData.workLogs.length}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-foreground font-medium">{reportData.workLogs.length}</span>
+                      {compData && comparisonMode !== "none" && (
+                        <span className={cn("text-[10px] font-medium", deltaColor(reportData.workLogs.length, compData.workLogsCount))}>
+                          {deltaLabel(reportData.workLogs.length, compData.workLogsCount)}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="flex justify-between">
                     <span>Ключевых слов</span>
                     <span className="text-foreground font-medium">{reportData.keywords.length}</span>
                   </div>
+                  {compData && comparisonMode !== "none" && reportData.analytics.length > 0 && (
+                    <>
+                      <Separator className="my-1" />
+                      <div className="flex justify-between items-center">
+                        <span>Трафик (орг.)</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-foreground font-medium">
+                            {reportData.analytics.reduce((s: number, a: any) => s + (a.organic_traffic || 0), 0).toLocaleString()}
+                          </span>
+                          <span className={cn("text-[10px] font-medium", deltaColor(
+                            reportData.analytics.reduce((s: number, a: any) => s + (a.organic_traffic || 0), 0),
+                            compData.totalTraffic
+                          ))}>
+                            {deltaLabel(
+                              reportData.analytics.reduce((s: number, a: any) => s + (a.organic_traffic || 0), 0),
+                              compData.totalTraffic
+                            )}
+                          </span>
+                        </div>
+                      </div>
+                    </>
+                  )}
                   <div className="flex justify-between">
                     <span>Разделов</span>
                     <span className="text-foreground font-medium">{enabledSections.length} из {SECTIONS.length}</span>
