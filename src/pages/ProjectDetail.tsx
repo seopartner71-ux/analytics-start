@@ -237,7 +237,7 @@ function ProjectDetailInner() {
 
   const updateProject = useMutation({
     mutationFn: async (updates: Record<string, any>) => {
-      const { error } = await supabase.from("projects").update(updates).eq("id", id!);
+      const { error } = await supabase.from("projects").update(updates as any).eq("id", id!);
       if (error) throw error;
     },
     onSuccess: () => {
