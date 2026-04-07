@@ -266,11 +266,67 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
         }
       );
       const data = await resp.json();
-      return (data.goals || []) as { id: number; name: string; reaches: number; conversionRate: number; change: number }[];
+      return (data.goals || []) as { id: number; name: string; reaches: number; conversionRate: number; change: number; daily?: number[] }[];
     },
     enabled: !!integration?.access_token && !!integration?.counter_id,
     staleTime: 30 * 60_000,
   });
+
+  // Search traffic goals for chart
+  const { data: searchGoalsData = [], isLoading: searchGoalsLoading } = useQuery({
+    queryKey: ["metrika-goals-search", projectId, dateFrom30, dateTo30],
+    queryFn: async () => {
+      if (!integration?.access_token || !integration?.counter_id) return [];
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return [];
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/yandex-metrika-auth?action=fetch-goals`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            access_token: integration.access_token, counter_id: integration.counter_id,
+            date1: dateFrom30, date2: dateTo30,
+            traffic_source: "organic",
+          }),
+        }
+      );
+      const data = await resp.json();
+      return (data.goals || []) as { id: number; name: string; reaches: number; conversionRate: number; change: number; daily?: number[] }[];
+    },
+    enabled: !!integration?.access_token && !!integration?.counter_id,
+    staleTime: 30 * 60_000,
+  });
+
+  // Build chart data for search goals
+  const searchGoalsChartData = useMemo(() => {
+    if (!searchGoalsData.length) return [];
+    const maxLen = Math.max(...searchGoalsData.map(g => g.daily?.length || 0));
+    const result = [];
+    const startDate = subDays(today, 30);
+    for (let i = 0; i < maxLen; i++) {
+      const dateObj = new Date(startDate);
+      dateObj.setDate(dateObj.getDate() + i);
+      const entry: any = { day: format(dateObj, "dd.MM", { locale: ru }) };
+      let total = 0;
+      searchGoalsData.forEach(g => {
+        const val = g.daily?.[i] || 0;
+        entry[g.name] = val;
+        total += val;
+      });
+      entry.total = total;
+      result.push(entry);
+    }
+    return result;
+  }, [searchGoalsData, today]);
+
+  const GOAL_COLORS = [
+    "hsl(var(--chart-1))",
+    "hsl(var(--chart-2))",
+    "hsl(var(--chart-3))",
+    "hsl(var(--chart-4))",
+    "hsl(var(--chart-5))",
+  ];
 
   // ── Keywords parsing ──
   const keywords = useMemo(() => {
@@ -781,7 +837,97 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
         </Card>
       </div>
 
-      {/* Keywords table */}
+      {/* Search Traffic Goals Chart */}
+      {integration?.access_token && (
+        <Card className="bg-card rounded-lg shadow-sm border border-border p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Target className="h-4 w-4 text-primary" />
+              <h3 className="text-sm font-semibold text-foreground">Конверсии по целям (поисковый трафик)</h3>
+            </div>
+            {searchGoalsData.length > 0 && (
+              <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                <span>Всего: <strong className="text-foreground">{searchGoalsData.reduce((s, g) => s + g.reaches, 0)}</strong></span>
+              </div>
+            )}
+          </div>
+
+          {searchGoalsLoading ? (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : searchGoalsData.length === 0 ? (
+            <div className="py-12 text-center">
+              <Target className="h-8 w-8 mx-auto mb-2 text-muted-foreground/20" />
+              <p className="text-[13px] text-muted-foreground">Нет данных о конверсиях по поисковому трафику</p>
+            </div>
+          ) : (
+            <>
+              {/* KPI row for search goals */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+                {searchGoalsData.slice(0, 4).map((g, i) => (
+                  <div key={g.id} className="rounded-lg border border-border/50 bg-muted/20 p-3">
+                    <p className="text-[10px] text-muted-foreground truncate mb-1">{g.name}</p>
+                    <p className="text-lg font-bold text-foreground tabular-nums">{g.reaches}</p>
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <span className="text-[10px] text-muted-foreground">CR</span>
+                      <span className="text-[11px] font-semibold text-foreground">{g.conversionRate}%</span>
+                      {g.change !== 0 && (
+                        <span className={cn(
+                          "text-[10px] font-semibold ml-1",
+                          g.change > 0 ? "text-emerald-500" : "text-red-500"
+                        )}>
+                          {g.change > 0 ? "+" : ""}{Math.round(g.change)}%
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Stacked area chart */}
+              {searchGoalsChartData.length > 0 && (
+                <ResponsiveContainer width="100%" height={300}>
+                  <AreaChart data={searchGoalsChartData}>
+                    <defs>
+                      {searchGoalsData.map((g, i) => (
+                        <linearGradient key={g.id} id={`goalGrad${i}`} x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor={GOAL_COLORS[i % GOAL_COLORS.length]} stopOpacity={0.2} />
+                          <stop offset="95%" stopColor={GOAL_COLORS[i % GOAL_COLORS.length]} stopOpacity={0} />
+                        </linearGradient>
+                      ))}
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="day" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+                    <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" allowDecimals={false} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: 8,
+                        fontSize: 12,
+                      }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: 11 }} />
+                    {searchGoalsData.map((g, i) => (
+                      <Area
+                        key={g.id}
+                        type="monotone"
+                        dataKey={g.name}
+                        stackId="goals"
+                        stroke={GOAL_COLORS[i % GOAL_COLORS.length]}
+                        strokeWidth={1.5}
+                        fill={`url(#goalGrad${i})`}
+                        name={g.name}
+                      />
+                    ))}
+                  </AreaChart>
+                </ResponsiveContainer>
+              )}
+            </>
+          )}
+        </Card>
+      )}
       <Card className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
         <div className="flex items-center gap-2 p-4 border-b border-border">
           <Search className="h-4 w-4 text-muted-foreground" />
