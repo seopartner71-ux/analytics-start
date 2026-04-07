@@ -295,8 +295,9 @@ export function AddProjectWizard({ onCreated }: AddProjectWizardProps) {
 
   const canProceed = (step: number) => {
     if (step === 0) return step1Valid;
-    if (step === 1) return true; // Yandex is optional
-    if (step === 2) return true; // Topvisor is optional
+    if (step === 1) return step2Valid; // Team is required
+    if (step === 2) return true; // Yandex is optional
+    if (step === 3) return true; // Topvisor is optional
     return true;
   };
 
