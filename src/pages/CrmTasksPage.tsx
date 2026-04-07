@@ -217,7 +217,7 @@ function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null; open: 
   const { data: projects = [] } = useQuery({
     queryKey: ["projects-list-detail"],
     queryFn: async () => {
-      const { data } = await supabase.from("projects").select("id, name, privacy").order("name");
+      const { data } = await supabase.from("projects").select("id, name, privacy, account_manager_id").order("name");
       return data || [];
     },
   });
