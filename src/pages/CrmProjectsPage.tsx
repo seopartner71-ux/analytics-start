@@ -1,10 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, DragEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Plus, Search, GripVertical, Globe, CalendarDays, MessageSquare, User, Loader2, FolderKanban, LayoutList, Kanban } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus, Search, GripVertical, Globe, CalendarDays, MessageSquare, Loader2, FolderKanban, LayoutList, Kanban } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,8 +17,8 @@ import type { Tables } from "@/integrations/supabase/types";
 
 type Project = Tables<"projects"> & {
   company?: Tables<"companies"> | null;
-  tasks?: { id: string; deadline: string | null; stage: string }[];
-  latestComment?: string;
+  latestComment?: { body: string } | null;
+  seo_spec_name?: string | null;
 };
 
 const KANBAN_COLUMNS = [
@@ -36,7 +37,7 @@ function getDeadlineColor(deadline: string | null) {
   if (!deadline) return "text-muted-foreground";
   const d = parseISO(deadline);
   if (isPast(d)) return "text-destructive font-medium";
-  if (differenceInDays(d, new Date()) <= 3) return "text-warning font-medium";
+  if (differenceInDays(d, new Date()) <= 3) return "text-amber-500 font-medium";
   return "text-muted-foreground";
 }
 
@@ -59,7 +60,13 @@ export default function CrmProjectsPage() {
   const [addOpen, setAddOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [newUrl, setNewUrl] = useState("");
+  const [newStage, setNewStage] = useState("Новые заявки");
+  const [newDeadline, setNewDeadline] = useState("");
+  const [newManager, setNewManager] = useState("");
+  const [dragOverCol, setDragOverCol] = useState<string | null>(null);
+  const dragItemId = useRef<string | null>(null);
 
+  // Load projects with latest comment
   const { data: projects = [], isLoading } = useQuery({
     queryKey: ["crm-projects"],
     queryFn: async () => {
@@ -68,7 +75,27 @@ export default function CrmProjectsPage() {
         .select("*, company:companies(*)")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data as Project[];
+
+      // Fetch latest comment per project
+      const projectIds = (data || []).map(p => p.id);
+      let commentsMap: Record<string, string> = {};
+      if (projectIds.length > 0) {
+        const { data: comments } = await supabase
+          .from("project_comments")
+          .select("project_id, body")
+          .in("project_id", projectIds)
+          .order("created_at", { ascending: false });
+        if (comments) {
+          for (const c of comments) {
+            if (!commentsMap[c.project_id]) commentsMap[c.project_id] = c.body;
+          }
+        }
+      }
+
+      return (data || []).map(p => ({
+        ...p,
+        latestComment: commentsMap[p.id] ? { body: commentsMap[p.id] } : null,
+      })) as Project[];
     },
   });
 
@@ -81,23 +108,42 @@ export default function CrmProjectsPage() {
     },
   });
 
+  // Create project
   const addMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("projects").insert({
+      const payload: any = {
         name: newName,
         url: newUrl || null,
         owner_id: user!.id,
-        privacy: "Новые заявки",
-      });
+        privacy: newStage,
+      };
+      if (newDeadline) payload.updated_at = new Date(newDeadline).toISOString();
+      if (newManager) payload.seo_specialist_id = newManager;
+      const { error } = await supabase.from("projects").insert(payload);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["crm-projects"] });
       setAddOpen(false);
-      setNewName("");
-      setNewUrl("");
+      setNewName(""); setNewUrl(""); setNewStage("Новые заявки"); setNewDeadline(""); setNewManager("");
       toast.success("Проект создан");
     },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  // Update stage (drag & drop)
+  const updateStageMutation = useMutation({
+    mutationFn: async ({ projectId, stage }: { projectId: string; stage: string }) => {
+      const { error } = await supabase
+        .from("projects")
+        .update({ privacy: stage })
+        .eq("id", projectId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["crm-projects"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const getManagerName = (id: string | null) => {
@@ -118,10 +164,12 @@ export default function CrmProjectsPage() {
     if (filter === "my") {
       list = list.filter(p => p.seo_specialist_id || p.account_manager_id);
     }
+    if (filter === "overdue") {
+      list = list.filter(p => p.updated_at && isPast(parseISO(p.updated_at)));
+    }
     return list;
   }, [projects, search, filter]);
 
-  // Group by stage (using privacy field as stage)
   const columnData = useMemo(() => {
     const map: Record<string, Project[]> = {};
     STAGES.forEach(s => (map[s] = []));
@@ -132,6 +180,50 @@ export default function CrmProjectsPage() {
     });
     return map;
   }, [filtered]);
+
+  // Drag handlers
+  const handleDragStart = (e: DragEvent, projectId: string) => {
+    dragItemId.current = projectId;
+    e.dataTransfer.effectAllowed = "move";
+    if (e.currentTarget instanceof HTMLElement) {
+      e.currentTarget.style.opacity = "0.5";
+    }
+  };
+
+  const handleDragEnd = (e: DragEvent) => {
+    if (e.currentTarget instanceof HTMLElement) {
+      e.currentTarget.style.opacity = "1";
+    }
+    setDragOverCol(null);
+  };
+
+  const handleDragOver = (e: DragEvent, colKey: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDragOverCol(colKey);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverCol(null);
+  };
+
+  const handleDrop = (e: DragEvent, colKey: string) => {
+    e.preventDefault();
+    setDragOverCol(null);
+    const projectId = dragItemId.current;
+    if (!projectId) return;
+
+    const project = projects.find(p => p.id === projectId);
+    if (!project || project.privacy === colKey) return;
+
+    // Optimistic update
+    queryClient.setQueryData(["crm-projects"], (old: Project[] | undefined) =>
+      (old || []).map(p => p.id === projectId ? { ...p, privacy: colKey } : p)
+    );
+
+    updateStageMutation.mutate({ projectId, stage: colKey });
+    dragItemId.current = null;
+  };
 
   return (
     <div className="space-y-4">
@@ -170,7 +262,6 @@ export default function CrmProjectsPage() {
 
           <div className="w-px h-6 bg-border mx-1" />
 
-          {/* View toggle */}
           <div className="flex items-center border border-border rounded-md overflow-hidden">
             <button
               onClick={() => setView("kanban")}
@@ -201,15 +292,40 @@ export default function CrmProjectsPage() {
             </DialogHeader>
             <div className="space-y-3 mt-2">
               <div>
-                <Label className="text-[13px]">Название</Label>
+                <Label className="text-[13px]">Название *</Label>
                 <Input value={newName} onChange={e => setNewName(e.target.value)} placeholder="Название клиента / проекта" className="mt-1" />
               </div>
               <div>
                 <Label className="text-[13px]">Домен</Label>
                 <Input value={newUrl} onChange={e => setNewUrl(e.target.value)} placeholder="example.ru" className="mt-1" />
               </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-[13px]">Этап</Label>
+                  <Select value={newStage} onValueChange={setNewStage}>
+                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {STAGES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-[13px]">Дедлайн</Label>
+                  <Input type="date" value={newDeadline} onChange={e => setNewDeadline(e.target.value)} className="mt-1" />
+                </div>
+              </div>
+              <div>
+                <Label className="text-[13px]">Ответственный</Label>
+                <Select value={newManager} onValueChange={setNewManager}>
+                  <SelectTrigger className="mt-1"><SelectValue placeholder="Выберите сотрудника" /></SelectTrigger>
+                  <SelectContent>
+                    {members.map(m => <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
               <Button onClick={() => addMutation.mutate()} disabled={!newName.trim() || addMutation.isPending} className="w-full">
-                {addMutation.isPending ? "Создание..." : "Создать проект"}
+                {addMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                Создать проект
               </Button>
             </div>
           </DialogContent>
@@ -226,13 +342,22 @@ export default function CrmProjectsPage() {
           <p className="text-muted-foreground">Нет проектов. Создайте первый!</p>
         </div>
       ) : view === "kanban" ? (
-        /* ---- KANBAN VIEW ---- */
         <ScrollArea className="w-full">
           <div className="flex gap-3 pb-4 min-w-max">
             {KANBAN_COLUMNS.map(col => {
               const items = columnData[col.key] || [];
+              const isOver = dragOverCol === col.key;
               return (
-                <div key={col.key} className="w-[280px] shrink-0 flex flex-col">
+                <div
+                  key={col.key}
+                  className={cn(
+                    "w-[280px] shrink-0 flex flex-col rounded-lg transition-colors",
+                    isOver && "bg-primary/5 ring-2 ring-primary/20"
+                  )}
+                  onDragOver={e => handleDragOver(e, col.key)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={e => handleDrop(e, col.key)}
+                >
                   {/* Column header */}
                   <div className="flex items-center justify-between px-3 py-2.5 mb-2">
                     <div className="flex items-center gap-2">
@@ -240,32 +365,33 @@ export default function CrmProjectsPage() {
                       <span className="text-[13px] font-semibold text-foreground">{col.key}</span>
                     </div>
                     <span className="text-[11px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                      {items.length} {items.length === 1 ? "проект" : "проектов"}
+                      {items.length}
                     </span>
                   </div>
 
                   {/* Cards */}
-                  <div className="space-y-2 min-h-[200px]">
+                  <div className="space-y-2 min-h-[200px] px-1">
                     {items.map(p => {
                       const manager = getManagerName(p.seo_specialist_id) || p.seo_specialist;
                       return (
                         <div
                           key={p.id}
+                          draggable
+                          onDragStart={e => handleDragStart(e, p.id)}
+                          onDragEnd={handleDragEnd}
                           onClick={() => navigate(`/crm-projects/${p.id}`)}
-                          className="bg-card rounded-md border border-border p-3 cursor-pointer transition-all hover:shadow-md hover:-translate-y-0.5 group"
+                          className="bg-card rounded-md border border-border p-3 cursor-grab active:cursor-grabbing transition-all hover:shadow-md hover:-translate-y-0.5 group"
+                          style={{ borderLeftWidth: 3, borderLeftColor: col.color }}
                         >
-                          {/* Top: drag handle + tag */}
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent/10 text-accent font-medium uppercase">SEO</span>
                             <GripVertical className="h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors" />
                           </div>
 
-                          {/* Title */}
                           <p className="text-[14px] font-semibold text-foreground leading-tight mb-1.5">
                             {p.company?.name || p.name}
                           </p>
 
-                          {/* Domain */}
                           {p.url && (
                             <div className="flex items-center gap-1.5 mb-1.5">
                               <Globe className="h-3 w-3 text-muted-foreground" />
@@ -273,15 +399,13 @@ export default function CrmProjectsPage() {
                             </div>
                           )}
 
-                          {/* Deadline */}
                           <div className="flex items-center gap-1.5 mb-1.5">
                             <CalendarDays className="h-3 w-3 text-muted-foreground" />
                             <span className={cn("text-[12px]", getDeadlineColor(p.updated_at))}>
-                              Дедлайн: {format(parseISO(p.updated_at), "dd MMM", { locale: undefined })}
+                              {format(parseISO(p.created_at), "dd.MM.yyyy")}
                             </span>
                           </div>
 
-                          {/* Manager */}
                           {manager && (
                             <div className="flex items-center gap-1.5 mb-1.5">
                               <AvatarCircle name={manager} />
@@ -289,10 +413,11 @@ export default function CrmProjectsPage() {
                             </div>
                           )}
 
-                          {/* Comment stub */}
                           <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-border/50">
                             <MessageSquare className="h-3 w-3 text-muted-foreground/50" />
-                            <span className="text-[11px] text-muted-foreground italic truncate">Ожидает проверки...</span>
+                            <span className="text-[11px] text-muted-foreground italic truncate">
+                              {p.latestComment?.body || "Нет комментариев"}
+                            </span>
                           </div>
                         </div>
                       );
@@ -300,7 +425,7 @@ export default function CrmProjectsPage() {
 
                     {items.length === 0 && (
                       <div className="flex items-center justify-center h-24 text-[12px] text-muted-foreground/50 border border-dashed border-border rounded-md">
-                        0 проектов
+                        Перетащите сюда
                       </div>
                     )}
                   </div>
@@ -311,7 +436,6 @@ export default function CrmProjectsPage() {
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
       ) : (
-        /* ---- LIST VIEW ---- */
         <div className="overflow-x-auto rounded-lg border border-border bg-card shadow-sm">
           <table className="crm-table min-w-[800px]">
             <thead>
@@ -330,9 +454,7 @@ export default function CrmProjectsPage() {
                 const manager = getManagerName(p.seo_specialist_id) || p.seo_specialist;
                 return (
                   <tr key={p.id} onClick={() => navigate(`/crm-projects/${p.id}`)} className="cursor-pointer">
-                    <td>
-                      <span className="text-[13px] font-semibold text-foreground">{p.name}</span>
-                    </td>
+                    <td><span className="text-[13px] font-semibold text-foreground">{p.name}</span></td>
                     <td className="text-[13px] text-muted-foreground">{p.company?.name || "—"}</td>
                     <td className="text-[13px] text-accent">{p.url || "—"}</td>
                     <td>
