@@ -20,13 +20,8 @@ import { ru as ruLocale } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
 const STAGE_COLORS: Record<string, string> = {
-  "Новые заявки": "#9E9E9E",
-  "Анализ сайта": "#2196F3",
-  "Составление стратегии": "#FF9800",
   "В работе": "#4CAF50",
-  "На проверке": "#9C27B0",
-  "Успешно завершено": "#4CAF50",
-  "Отказ": "#F44336",
+  "На паузе": "#FF9800",
 };
 
 const Index = () => {
@@ -87,11 +82,9 @@ const Index = () => {
   });
 
   // ─── Computed metrics ───
-  const activeProjects = projects.filter(
-    p => p.privacy !== "Успешно завершено" && p.privacy !== "Отказ"
-  ).length;
-
-  const completedProjects = projects.filter(p => p.privacy === "Успешно завершено").length;
+  const activeProjects = projects.filter(p => p.privacy === "В работе" || !p.privacy).length;
+  const pausedProjects = projects.filter(p => p.privacy === "На паузе").length;
+  const completedProjects = 0;
 
   const overdueTasks = useMemo(
     () => tasks.filter(t => t.deadline && isPast(parseISO(t.deadline)) && t.stage !== "Завершена"),
