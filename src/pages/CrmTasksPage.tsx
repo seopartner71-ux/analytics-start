@@ -315,20 +315,65 @@ function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null; open: 
   };
 
   // Complete task
-  const completeTask = () => {
-    // Validate: check if there's at least one non-system comment (as "attachment")
+  const completeTask = async () => {
+    if (!task) return;
+
+    // Validate: must have at least one non-system comment (attachment/result)
     const hasAttachment = comments.some(c => !c.is_system);
     if (!hasAttachment) {
       toast.warning("Для завершения задачи необходимо прикрепить файл или ссылку как результат работы.", { duration: 4000 });
       return;
     }
+
+    // Find the project's account manager to notify
+    const projectId = editProjectId || task.project_id;
+    let managerName = "";
+
+    if (projectId) {
+      const proj = projects.find(p => p.id === projectId);
+      // Fetch full project with account_manager_id
+      const { data: fullProj } = await supabase
+        .from("projects")
+        .select("account_manager_id, owner_id, name")
+        .eq("id", projectId)
+        .single();
+
+      if (fullProj?.account_manager_id) {
+        // Find the team member's owner_id (actual user) to send notification
+        const { data: tm } = await supabase
+          .from("team_members")
+          .select("owner_id, full_name")
+          .eq("id", fullProj.account_manager_id)
+          .single();
+
+        if (tm) {
+          managerName = tm.full_name;
+          await supabase.from("notifications").insert({
+            user_id: tm.owner_id,
+            project_id: projectId,
+            title: `Задача завершена: ${task.title}`,
+            body: `Исполнитель завершил задачу. Требуется проверка.`,
+          });
+        }
+      } else if (!fullProj?.account_manager_id) {
+        toast.info("У проекта не назначен аккаунт-менеджер. Задача завершена без передачи на проверку.", { duration: 4000 });
+      }
+    } else {
+      toast.info("Задача не привязана к проекту. Завершена без передачи на проверку.", { duration: 4000 });
+    }
+
     updateField.mutate({
       field: "stage", value: "Завершена",
-      logMsg: `Задача завершена`,
+      logMsg: managerName
+        ? `Задача завершена и передана на проверку → ${managerName}`
+        : `Задача завершена`,
     });
-    supabase.from("crm_tasks").update({ stage_color: "#10b981", stage: "Завершена", stage_progress: 100 } as any).eq("id", task!.id);
+    await supabase.from("crm_tasks").update({ stage_color: "#10b981", stage: "Завершена", stage_progress: 100 } as any).eq("id", task.id);
     setEditStage("Завершена");
-    toast.success("Задача завершена. Передана на проверку аккаунт-менеджеру.");
+
+    if (managerName) {
+      toast.success(`Задача завершена. Передана на проверку → ${managerName}`);
+    }
   };
 
   // Subtask operations
