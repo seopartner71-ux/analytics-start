@@ -111,7 +111,16 @@ Deno.serve(async (req) => {
           { headers: wmHeaders }
         );
         const diag = diagResp.ok ? await diagResp.json() : {};
-        const diagProblems = Array.isArray(diag?.problems) ? diag.problems : Array.isArray(diag) ? diag : [];
+        const diagProblems = diag?.problems && typeof diag.problems === "object"
+          ? Object.entries(diag.problems).map(([problemId, problem]) => ({
+              problem_id: problemId,
+              ...(problem as Record<string, unknown>),
+            }))
+          : Array.isArray(diag?.problems)
+            ? diag.problems
+            : Array.isArray(diag)
+              ? diag
+              : [];
 
         const threeMonthsAgo = new Date();
         threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
@@ -122,19 +131,20 @@ Deno.serve(async (req) => {
         const idxData = idxResp.ok ? await idxResp.json() : {};
 
         let indexedPages = 0;
-        if (idxData?.indicators?.SEARCHABLE) {
-          const searchable = idxData.indicators.SEARCHABLE;
-          if (searchable.length > 0) {
-            indexedPages = searchable[searchable.length - 1].value || 0;
-          }
+        const searchableSeries = idxData?.indicators?.SEARCHABLE || idxData?.indicators?.HTTP_2XX || [];
+        if (Array.isArray(searchableSeries) && searchableSeries.length > 0) {
+          indexedPages = searchableSeries[searchableSeries.length - 1]?.value || 0;
         }
+
+        const totalPages = Number(summary?.searchable_pages_count ?? summary?.searchable_count ?? indexedPages ?? 0);
+        const warningsCount = diagProblems.filter((p: any) => p.state === "PRESENT").length;
 
         const yandexMetrics = [
           { metric_name: "indexed_pages", metric_value: String(indexedPages) },
-          { metric_name: "total_pages", metric_value: String(summary?.searchable_count || indexedPages) },
+          { metric_name: "total_pages", metric_value: String(totalPages) },
           { metric_name: "sitemap_status", metric_value: summary?.sitemaps_cnt > 0 ? "ok" : "not_configured" },
           { metric_name: "last_crawl", metric_value: summary?.last_access || now },
-          { metric_name: "warnings", metric_value: String(diagProblems.filter((p: any) => p.state === "PRESENT" && p.severity === "WARNING")?.length || 0) },
+          { metric_name: "warnings", metric_value: String(warningsCount) },
         ];
 
         await adminClient.from("site_health").delete()
