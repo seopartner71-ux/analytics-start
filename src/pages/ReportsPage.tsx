@@ -289,16 +289,20 @@ export default function ReportsPage() {
       let y = 20;
 
       // Header
+      const headerH = comparisonMode !== "none" ? 42 : 35;
       pdf.setFillColor(26, 26, 27);
-      pdf.rect(0, 0, pageW, 35, "F");
+      pdf.rect(0, 0, pageW, headerH, "F");
       pdf.setTextColor(255, 255, 255);
       pdf.setFontSize(18);
       pdf.text(`Отчёт: ${project.name}`, 14, 16);
       pdf.setFontSize(10);
       pdf.setTextColor(180, 180, 180);
-      pdf.text(periodLabel, 14, 25);
-      if (project.url) pdf.text(project.url, 14, 31);
-      y = 45;
+      pdf.text(`Период: ${periodLabel}`, 14, 25);
+      if (comparisonMode !== "none" && compPeriodLabel) {
+        pdf.text(`Сравнение: ${compPeriodLabel} (${comparisonMode === "previous" ? "пред. период" : "прошлый год"})`, 14, 31);
+      }
+      if (project.url) pdf.text(project.url, 14, comparisonMode !== "none" ? 37 : 31);
+      y = headerH + 10;
 
       pdf.setTextColor(40, 40, 40);
 
