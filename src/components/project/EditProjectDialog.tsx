@@ -51,6 +51,12 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
   // Integration fields
   const [integrationValues, setIntegrationValues] = useState<Record<string, Record<string, string>>>({});
 
+  // Yandex OAuth state
+  const [yandexOAuthStep, setYandexOAuthStep] = useState<"idle" | "code" | "loading" | "done">("idle");
+  const [yandexCodeInput, setYandexCodeInput] = useState("");
+  const YANDEX_REDIRECT_URI = "https://oauth.yandex.ru/verification_code";
+  const projectRef = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+
   // Load team members
   const { data: members = [] } = useQuery({
     queryKey: ["team-members-edit"],
