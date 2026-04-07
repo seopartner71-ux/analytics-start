@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,13 +10,19 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Plus, Search, Clock, AlertTriangle, Send, List, LayoutGrid, GripVertical, AlertCircle, ChevronDown, MessageSquare, Hash, Loader2, ClipboardList } from "lucide-react";
+import {
+  Plus, Search, Clock, AlertTriangle, Send, List, LayoutGrid, GripVertical,
+  AlertCircle, ChevronDown, MessageSquare, Hash, Loader2, ClipboardList,
+  User, CalendarDays, Hourglass, FolderOpen, Eye, Paperclip, Copy,
+  Video, UserPlus, Search as SearchIcon, Edit3, Play, CheckCircle2,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
+import { cn } from "@/lib/utils";
 
 type CrmTask = Tables<"crm_tasks"> & {
   creator?: Tables<"team_members"> | null;
@@ -134,13 +140,19 @@ function AddTaskDialog() {
   );
 }
 
-/* ─── Task Detail Sheet ─── */
+/* ─── Seeded avatar URL from name ─── */
+function getAvatarUrl(name: string) {
+  const hash = name.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+  return `https://i.pravatar.cc/80?u=${hash}`;
+}
+
+/* ─── Task Detail Sheet (Premium Redesign) ─── */
 function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null; open: boolean; onClose: () => void }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [msg, setMsg] = useState("");
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // Fetch comments with realtime
   const { data: comments = [] } = useQuery({
     queryKey: ["task-comments", task?.id],
     queryFn: async () => {
@@ -156,17 +168,21 @@ function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null; open: 
     enabled: !!task,
   });
 
-  // Realtime subscription
   useEffect(() => {
     if (!task) return;
+    const channelName = `task-${task.id}-${Date.now()}`;
     const channel = supabase
-      .channel(`task-${task.id}`)
+      .channel(channelName)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "task_comments", filter: `task_id=eq.${task.id}` }, () => {
         queryClient.invalidateQueries({ queryKey: ["task-comments", task.id] });
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [task?.id, queryClient]);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [comments.length]);
 
   const sendComment = useMutation({
     mutationFn: async () => {
@@ -189,107 +205,240 @@ function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null; open: 
   const deadlineDate = task.deadline ? new Date(task.deadline) : null;
   const isOverdue = deadlineDate ? deadlineDate < new Date() && task.stage !== "Завершена" : false;
   const diffDays = deadlineDate ? Math.abs(Math.ceil((deadlineDate.getTime() - Date.now()) / 86400000)) : 0;
+  const overduePeriod = diffDays >= 30 ? `${Math.floor(diffDays / 30)} месяц${diffDays >= 60 ? "а" : ""}` : `${diffDays} дн.`;
+  const taskIdShort = task.id.slice(0, 4).toUpperCase();
+
+  const copyId = () => {
+    navigator.clipboard.writeText(task.id);
+    toast.success("ID скопирован");
+  };
 
   return (
     <Sheet open={open} onOpenChange={onClose}>
-      <SheetContent className="w-full md:w-[85vw] md:max-w-[85vw] p-0 overflow-hidden" side="right">
-        <div className="px-5 py-4 border-b border-border bg-gradient-to-r from-primary/[0.03] to-transparent">
-          <SheetTitle className="text-base font-bold text-foreground leading-tight tracking-tight">{task.title}</SheetTitle>
-          <div className="flex items-center gap-2 mt-1.5">
-            <Badge variant="outline" className="text-[10px] font-medium" style={{ borderColor: task.stage_color || undefined, color: task.stage_color || undefined }}>
-              {task.stage}
-            </Badge>
-            {task.project && (
-              <>
-                <span className="text-[11px] text-muted-foreground">·</span>
-                <span className="text-[11px] text-muted-foreground">{task.project.name}</span>
-              </>
-            )}
-          </div>
+      <SheetContent className="w-full md:w-[88vw] md:max-w-[88vw] p-0 overflow-hidden border-l-0 shadow-2xl" side="right">
+        {/* Minimal header */}
+        <div className="px-6 py-4 border-b border-border/60 bg-gradient-to-r from-primary/[0.04] to-transparent">
+          <SheetTitle className="text-lg font-bold text-foreground leading-tight tracking-tight">
+            {task.title}
+          </SheetTitle>
         </div>
 
-        <div className="flex flex-col md:flex-row h-[calc(100vh-80px)]">
-          {/* LEFT: Properties */}
-          <div className="w-full md:w-[42%] lg:w-[38%] border-b md:border-b-0 md:border-r border-border overflow-y-auto">
-            <div className="p-5 space-y-0">
-              {task.creator && (
-                <PropertyRow label="Постановщик">
-                  <div className="flex items-center gap-2.5">
-                    <AvatarCircle initials={getInitials(task.creator.full_name)} className="h-8 w-8 avatar-ring" />
-                    <span className="text-sm font-medium text-foreground">{task.creator.full_name}</span>
-                  </div>
-                </PropertyRow>
-              )}
-              {task.assignee && (
-                <PropertyRow label="Исполнитель">
-                  <div className="flex items-center gap-2.5">
-                    <AvatarCircle initials={getInitials(task.assignee.full_name)} className="h-8 w-8 avatar-ring" />
-                    <span className="text-sm font-medium text-foreground">{task.assignee.full_name}</span>
-                  </div>
-                </PropertyRow>
-              )}
-              {deadlineDate && (
-                <PropertyRow label="Крайний срок">
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span className={`text-sm font-medium ${isOverdue ? "text-destructive" : "text-foreground"}`}>
-                      {deadlineDate.toLocaleDateString("ru-RU", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}
-                    </span>
-                  </div>
-                  {isOverdue && (
-                    <Badge className="mt-1.5 text-[10px] bg-destructive/10 text-destructive border-destructive/20 hover:bg-destructive/10">
-                      Просрочена на {diffDays} дн.
-                    </Badge>
-                  )}
-                </PropertyRow>
-              )}
-              <PropertyRow label="Статус">
-                <Badge variant="outline" className="text-xs font-medium" style={{ borderColor: task.stage_color || undefined, color: task.stage_color || undefined }}>
-                  {task.stage} <ChevronDown className="h-3 w-3 ml-1" />
-                </Badge>
-              </PropertyRow>
-              <PropertyRow label="Приоритет">
-                <Badge variant={task.priority === "high" ? "destructive" : "secondary"} className="text-[10px]">
-                  {task.priority === "high" ? "Высокий" : task.priority === "low" ? "Низкий" : "Средний"}
-                </Badge>
-              </PropertyRow>
-              <PropertyRow label="Создана">
-                <span className="text-sm text-muted-foreground flex items-center gap-1.5">
-                  <Hash className="h-3.5 w-3.5" />
-                  {new Date(task.created_at).toLocaleDateString("ru-RU", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}
-                </span>
-              </PropertyRow>
+        <div className="flex flex-col md:flex-row h-[calc(100vh-72px)]">
+          {/* ════ LEFT COLUMN: Properties ════ */}
+          <div className="w-full md:w-[44%] lg:w-[40%] flex flex-col border-r border-border/50 bg-[hsl(var(--muted)/0.3)]">
+            <div className="flex-1 overflow-y-auto p-5 space-y-4">
 
-              {task.project && (
-                <>
-                  <Separator className="my-3" />
-                  <PropertyRow label="Проект">
-                    <div className="flex items-center gap-2">
-                      <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center ring-1 ring-primary/10">
-                        <span className="text-[8px] font-bold text-primary">{task.project.name.slice(0, 2).toUpperCase()}</span>
+              {/* Card 1: Description */}
+              <Card className="bg-card shadow-sm border-border/60 rounded-xl">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
+                    <Edit3 className="h-4 w-4" />
+                    <span className="text-sm text-muted-foreground/60 italic">Описание</span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Card 2: Main properties */}
+              <Card className="bg-card shadow-sm border-border/60 rounded-xl">
+                <CardContent className="p-0 divide-y divide-border/40">
+                  {/* Creator */}
+                  {task.creator && (
+                    <div className="flex items-center gap-4 px-4 py-3.5">
+                      <User className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <span className="text-xs text-muted-foreground w-24 shrink-0">Постановщик</span>
+                      <div className="flex items-center gap-2.5">
+                        <img
+                          src={getAvatarUrl(task.creator.full_name)}
+                          alt={task.creator.full_name}
+                          className="h-7 w-7 rounded-full object-cover ring-2 ring-background shadow-sm"
+                        />
+                        <span className="text-sm font-medium text-foreground">{task.creator.full_name}</span>
                       </div>
-                      <span className="text-sm font-medium text-foreground">{task.project.name}</span>
                     </div>
-                  </PropertyRow>
-                </>
+                  )}
+
+                  {/* Assignee */}
+                  {task.assignee && (
+                    <div className="flex items-center gap-4 px-4 py-3.5">
+                      <User className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <span className="text-xs text-muted-foreground w-24 shrink-0">Исполнитель</span>
+                      <div className="flex items-center gap-2.5">
+                        <img
+                          src={getAvatarUrl(task.assignee.full_name)}
+                          alt={task.assignee.full_name}
+                          className="h-7 w-7 rounded-full object-cover ring-2 ring-background shadow-sm"
+                        />
+                        <span className="text-sm font-medium text-foreground">{task.assignee.full_name}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Deadline */}
+                  <div className="flex items-start gap-4 px-4 py-3.5">
+                    <CalendarDays className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                    <span className="text-xs text-muted-foreground w-24 shrink-0 pt-0.5">Крайний срок</span>
+                    <div>
+                      {deadlineDate ? (
+                        <div className="flex flex-col gap-1.5">
+                          <span className={cn("text-sm font-semibold", isOverdue ? "text-destructive" : "text-foreground")}>
+                            {deadlineDate.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })}{" "}
+                            {deadlineDate.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                          {isOverdue && (
+                            <span className="inline-flex items-center self-start px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-destructive/10 text-destructive border border-destructive/20">
+                              Просрочена на {overduePeriod}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">Не задан</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Status */}
+                  <div className="flex items-center gap-4 px-4 py-3.5">
+                    <Hourglass className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className="text-xs text-muted-foreground w-24 shrink-0">Статус</span>
+                    <Badge
+                      variant="outline"
+                      className="text-xs font-medium gap-1"
+                      style={{ borderColor: task.stage_color || undefined, color: task.stage_color || undefined }}
+                    >
+                      {task.stage}
+                    </Badge>
+                  </div>
+
+                  {/* Created */}
+                  <div className="flex items-center gap-4 px-4 py-3.5">
+                    <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className="text-xs text-muted-foreground w-24 shrink-0">Дата создания</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-foreground">
+                        {new Date(task.created_at).toLocaleDateString("ru-RU", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                      <span className="text-xs text-muted-foreground/60">/ ID {taskIdShort}</span>
+                      <button onClick={copyId} className="text-muted-foreground/40 hover:text-foreground transition-colors">
+                        <Copy className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Card 3: Project */}
+              {task.project && (
+                <Card className="bg-card shadow-sm border-border/60 rounded-xl">
+                  <CardContent className="p-0">
+                    <div className="flex items-center gap-4 px-4 py-3.5">
+                      <FolderOpen className="h-4 w-4 text-primary shrink-0" />
+                      <span className="text-xs text-muted-foreground w-24 shrink-0">Проект</span>
+                      <div className="flex items-center gap-2">
+                        <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center">
+                          <span className="text-[8px] font-bold text-primary">{task.project.name.slice(0, 2).toUpperCase()}</span>
+                        </div>
+                        <span className="text-sm font-medium text-foreground">{task.project.name}</span>
+                      </div>
+                    </div>
+                    {task.project.url && (
+                      <div className="flex items-center gap-4 px-4 py-2.5 border-t border-border/30">
+                        <div className="w-4" />
+                        <span className="text-xs text-muted-foreground w-24 shrink-0">Стадия</span>
+                        <Badge variant="secondary" className="text-[11px] bg-[hsl(var(--chart-1))]/10 text-[hsl(var(--chart-1))]">
+                          {task.project.privacy || "Новые"}
+                        </Badge>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               )}
+
+              {/* Card 4: Observers (decorative) */}
+              <Card className="bg-card shadow-sm border-border/60 rounded-xl">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-4">
+                    <Eye className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className="text-xs text-muted-foreground w-24 shrink-0">Наблюдатели</span>
+                    <div className="flex -space-x-2">
+                      {[task.creator, task.assignee].filter(Boolean).map((person, i) => (
+                        <img
+                          key={i}
+                          src={getAvatarUrl(person!.full_name)}
+                          alt=""
+                          className="h-7 w-7 rounded-full object-cover ring-2 ring-card shadow-sm"
+                        />
+                      ))}
+                      <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center ring-2 ring-card text-[10px] font-medium text-muted-foreground">
+                        +
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Subtasks placeholder */}
+              <Card className="bg-card shadow-sm border-border/60 rounded-xl">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Hash className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium text-foreground">Подзадачи: 0</span>
+                    </div>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Sticky bottom action bar */}
+            <div className="border-t border-border/60 bg-card px-5 py-3 flex items-center gap-3 shrink-0">
+              <Button size="sm" className="gap-1.5 shadow-sm bg-primary hover:bg-primary/90">
+                <Play className="h-3.5 w-3.5" /> Начать
+              </Button>
+              <Button variant="outline" size="sm" className="gap-1.5">
+                <CheckCircle2 className="h-3.5 w-3.5" /> Завершить
+              </Button>
+              <Button variant="ghost" size="sm" className="text-muted-foreground ml-auto">
+                •••
+              </Button>
+              <span className="text-xs text-muted-foreground">Оценить задачу</span>
             </div>
           </div>
 
-          {/* RIGHT: Chat */}
-          <div className="flex-1 flex flex-col min-h-0 bg-muted/[0.03]">
-            <div className="px-5 py-3 border-b border-border flex items-center justify-between">
-              <div className="flex items-center gap-2">
+          {/* ════ RIGHT COLUMN: Chat ════ */}
+          <div className="flex-1 flex flex-col min-h-0">
+            {/* Chat header */}
+            <div className="px-5 py-3 border-b border-border/60 bg-card flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-3">
                 <MessageSquare className="h-4 w-4 text-muted-foreground" />
                 <h3 className="text-sm font-semibold text-foreground">Чат задачи</h3>
-                <Badge variant="secondary" className="text-[10px] h-5">{comments.length}</Badge>
+                <span className="text-xs text-muted-foreground">
+                  {[task.creator, task.assignee].filter(Boolean).length + 1} участника
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                  <Video className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                  <UserPlus className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                  <SearchIcon className="h-4 w-4" />
+                </Button>
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+            {/* Chat messages area */}
+            <div
+              className="flex-1 overflow-y-auto px-5 py-4 space-y-4"
+              style={{ backgroundColor: "hsl(var(--muted) / 0.15)" }}
+            >
               {comments.length === 0 && (
                 <div className="text-center py-16">
-                  <MessageSquare className="h-10 w-10 mx-auto mb-3 text-muted-foreground/20" />
+                  <MessageSquare className="h-10 w-10 mx-auto mb-3 text-muted-foreground/15" />
                   <p className="text-sm text-muted-foreground">Нет сообщений. Начните обсуждение...</p>
                 </div>
               )}
@@ -299,19 +448,12 @@ function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null; open: 
                 const showDateSep = curDate !== prevDate;
 
                 return (
-                  <motion.div
-                    key={m.id}
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.03, duration: 0.2 }}
-                  >
+                  <div key={m.id}>
                     {showDateSep && (
-                      <div className="flex items-center justify-center my-4">
-                        <div className="h-px flex-1 bg-border/50" />
-                        <Badge variant="secondary" className="text-[10px] px-3 py-0.5 font-medium mx-3">
+                      <div className="flex justify-center my-5">
+                        <span className="text-[11px] text-muted-foreground bg-muted/60 px-4 py-1.5 rounded-full font-medium shadow-sm border border-border/30">
                           {new Date(curDate).toLocaleDateString("ru-RU", { weekday: "long", day: "numeric", month: "long" })}
-                        </Badge>
-                        <div className="h-px flex-1 bg-border/50" />
+                        </span>
                       </div>
                     )}
                     {m.is_system ? (
@@ -321,10 +463,16 @@ function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null; open: 
                         </div>
                       </div>
                     ) : (
-                      <div className="flex gap-3 group">
-                        <AvatarCircle
-                          initials={m.author ? getInitials(m.author.full_name) : "?"}
-                          className="h-9 w-9 mt-0.5 avatar-ring"
+                      <motion.div
+                        className="flex gap-3 group"
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.02, duration: 0.2 }}
+                      >
+                        <img
+                          src={m.author ? getAvatarUrl(m.author.full_name) : "https://i.pravatar.cc/80?u=anon"}
+                          alt=""
+                          className="h-9 w-9 rounded-full object-cover ring-2 ring-background shadow-sm mt-0.5 shrink-0"
                         />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-baseline gap-2 mb-1">
@@ -333,29 +481,37 @@ function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null; open: 
                               {new Date(m.created_at).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
                             </span>
                           </div>
-                          <div className="bg-card rounded-2xl rounded-tl-md p-3.5 border border-border/50 shadow-sm">
+                          <div className="bg-card rounded-2xl rounded-tl-md p-3.5 border border-border/40 shadow-sm max-w-[85%]">
                             <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">{m.body}</p>
                           </div>
+                          <span className="text-[10px] text-muted-foreground/50 ml-1 mt-1 block">
+                            {new Date(m.created_at).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
+                          </span>
                         </div>
-                      </div>
+                      </motion.div>
                     )}
-                  </motion.div>
+                  </div>
                 );
               })}
+              <div ref={chatEndRef} />
             </div>
 
-            <div className="px-5 py-3 border-t border-border bg-card/80 backdrop-blur-sm">
-              <div className="flex gap-2">
+            {/* Chat input */}
+            <div className="px-4 py-3 border-t border-border/40 bg-card/80 backdrop-blur-sm shrink-0">
+              <div className="flex items-center gap-2 bg-muted/30 border border-border/50 rounded-xl px-3 py-1.5 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/40 transition-all">
+                <button className="text-muted-foreground hover:text-foreground transition-colors shrink-0">
+                  <Paperclip className="h-4.5 w-4.5" />
+                </button>
                 <Input
-                  placeholder="Написать сообщение..."
+                  placeholder="Нажмите @ или +, чтобы упомянуть человека, чат или AI"
                   value={msg}
                   onChange={e => setMsg(e.target.value)}
-                  className="flex-1 h-10 bg-muted/30 border-border/60 focus:bg-card transition-colors"
+                  className="flex-1 h-9 border-0 bg-transparent shadow-none focus-visible:ring-0 text-sm placeholder:text-muted-foreground/50"
                   onKeyDown={e => e.key === "Enter" && msg.trim() && sendComment.mutate()}
                 />
                 <Button
-                  size="sm"
-                  className="h-10 px-4 shadow-sm"
+                  size="icon"
+                  className="h-8 w-8 rounded-lg shrink-0 shadow-sm"
                   disabled={!msg.trim() || sendComment.isPending}
                   onClick={() => sendComment.mutate()}
                 >
@@ -370,6 +526,7 @@ function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null; open: 
   );
 }
 
+/* ─── unused PropertyRow kept for compatibility ─── */
 function PropertyRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-start gap-6 py-3 border-b border-border/30 last:border-0 group">
