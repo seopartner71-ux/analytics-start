@@ -283,6 +283,18 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     [dailyData, appliedCompRange],
   );
 
+  // ── Channel-filtered ratio ──
+  const channelVisitRatio = useMemo(() => {
+    if (channel === "all" || !metrikaStats?.traffic_sources) return 1;
+    const sources = metrikaStats.traffic_sources as { source: string; visits: number }[];
+    const totalAll = sources.reduce((s, src) => s + (src.visits || 0), 0);
+    if (totalAll === 0) return 1;
+    const channelVisits = sources
+      .filter(src => SOURCE_TO_CHANNEL[src.source] === channel)
+      .reduce((s, src) => s + (src.visits || 0), 0);
+    return channelVisits / totalAll;
+  }, [metrikaStats, channel]);
+
   // Merged chart data for comparison (with channel filter applied)
   const trafficChart = useMemo(() => {
     const applyRatio = (v: number) => Math.round(v * channelVisitRatio);
@@ -304,18 +316,6 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     }
     return result;
   }, [filteredData, filteredCompData, metrikaHistory, showComparison, channelVisitRatio]);
-
-  // ── Channel-filtered visits ──
-  const channelVisitRatio = useMemo(() => {
-    if (channel === "all" || !metrikaStats?.traffic_sources) return 1;
-    const sources = metrikaStats.traffic_sources as { source: string; visits: number }[];
-    const totalAll = sources.reduce((s, src) => s + (src.visits || 0), 0);
-    if (totalAll === 0) return 1;
-    const channelVisits = sources
-      .filter(src => SOURCE_TO_CHANNEL[src.source] === channel)
-      .reduce((s, src) => s + (src.visits || 0), 0);
-    return channelVisits / totalAll;
-  }, [metrikaStats, channel]);
 
   const totalVisits = Math.round(
     (filteredData.length > 0
