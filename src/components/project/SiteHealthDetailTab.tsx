@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -18,6 +18,7 @@ interface Props {
 
 export default function SiteHealthDetailTab({ projectId }: Props) {
   const queryClient = useQueryClient();
+  const [refreshing, setRefreshing] = useState(false);
 
   const { data: healthMetrics = [], isLoading: healthLoading } = useQuery({
     queryKey: ["site-health", projectId],
@@ -131,13 +132,42 @@ export default function SiteHealthDetailTab({ projectId }: Props) {
             variant="outline"
             size="sm"
             className="h-8 text-[12px] gap-1.5"
-            onClick={() => {
-              queryClient.invalidateQueries({ queryKey: ["site-health", projectId] });
-              queryClient.invalidateQueries({ queryKey: ["site-errors", projectId] });
-              toast.info("Данные обновлены");
+            disabled={refreshing}
+            onClick={async () => {
+              setRefreshing(true);
+              try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session) throw new Error("Не авторизован");
+                const projectRef = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+                const resp = await fetch(
+                  `https://${projectRef}.supabase.co/functions/v1/fetch-site-health`,
+                  {
+                    method: "POST",
+                    headers: {
+                      Authorization: `Bearer ${session.access_token}`,
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ project_id: projectId }),
+                  }
+                );
+                const result = await resp.json();
+                if (!resp.ok) throw new Error(result.error || "Ошибка обновления");
+                queryClient.invalidateQueries({ queryKey: ["site-health", projectId] });
+                queryClient.invalidateQueries({ queryKey: ["site-errors", projectId] });
+                const parts: string[] = [];
+                if (result.results?.yandex === "ok") parts.push("Яндекс ✓");
+                else if (result.results?.yandex) parts.push(`Яндекс: ${result.results.yandex}`);
+                if (result.results?.google === "ok") parts.push("Google ✓");
+                else if (result.results?.google) parts.push(`Google: ${result.results.google}`);
+                toast.success(parts.length > 0 ? `Обновлено: ${parts.join(", ")}` : "Нет подключённых сервисов для обновления");
+              } catch (e: any) {
+                toast.error(e.message || "Ошибка при обновлении данных");
+              } finally {
+                setRefreshing(false);
+              }
             }}
           >
-            <RefreshCw className="h-3.5 w-3.5" /> Обновить данные
+            <RefreshCw className={cn("h-3.5 w-3.5", refreshing && "animate-spin")} /> Обновить данные
           </Button>
         </div>
       </div>

@@ -46,19 +46,31 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
   const [tvApiKey, setTvApiKey] = useState("");
   const [tvProjectId, setTvProjectId] = useState("");
 
+  // Yandex Webmaster dialog state
+  const [wmDialog, setWmDialog] = useState(false);
+  const [wmSiteUrl, setWmSiteUrl] = useState("");
+  const [wmToken, setWmToken] = useState("");
+
+  // Google Search Console dialog state
+  const [gscDialog, setGscDialog] = useState(false);
+  const [gscPropertyUrl, setGscPropertyUrl] = useState("");
+  const [gscToken, setGscToken] = useState("");
+
   const getIntegration = (key: string) => integrations.find((i) => i.service_name === key);
 
   const connectMutation = useMutation({
-    mutationFn: async ({ serviceName, apiKey, externalProjectId, counterId }: { serviceName: string; apiKey?: string; externalProjectId?: string; counterId?: string }) => {
+    mutationFn: async ({ serviceName, apiKey, externalProjectId, counterId, accessToken }: {
+      serviceName: string; apiKey?: string; externalProjectId?: string; counterId?: string; accessToken?: string;
+    }) => {
       const existing = getIntegration(serviceName);
       if (existing) {
         const { error } = await supabase.from("integrations").update({
           connected: true,
           last_sync: new Date().toISOString(),
-          access_token: "mock_token_" + Date.now(),
-          api_key: apiKey || null,
-          external_project_id: externalProjectId || null,
-          counter_id: counterId || null,
+          access_token: accessToken || existing.access_token || "mock_token_" + Date.now(),
+          api_key: apiKey || existing.api_key || null,
+          external_project_id: externalProjectId || existing.external_project_id || null,
+          counter_id: counterId || existing.counter_id || null,
         }).eq("id", existing.id);
         if (error) throw error;
       } else {
@@ -67,7 +79,7 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
           service_name: serviceName,
           connected: true,
           last_sync: new Date().toISOString(),
-          access_token: "mock_token_" + Date.now(),
+          access_token: accessToken || "mock_token_" + Date.now(),
           api_key: apiKey || null,
           external_project_id: externalProjectId || null,
           counter_id: counterId || null,
@@ -125,12 +137,9 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
         const data = await resp.json();
         if (data.error) throw new Error(data.error);
 
-        // Parse and save stats to metrika_stats table
-        // Totals order: visits, users, bounceRate, pageDepth, avgDuration
         const totals = data.totals?.data?.[0]?.metrics || [0, 0, 0, 0, 0];
         const timeSeries = data.timeSeries;
         
-        // Build visits_by_day from time series
         const visitsByDay: { day: string; visits: number }[] = [];
         if (timeSeries?.time_intervals && timeSeries?.data?.[0]?.metrics?.[0]) {
           const intervals = timeSeries.time_intervals;
@@ -142,7 +151,6 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
           }
         }
 
-        // Parse traffic sources
         const trafficSources: { source: string; visits: number }[] = [];
         if (data.trafficSources?.data) {
           for (const row of data.trafficSources.data) {
@@ -156,7 +164,6 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
         const dateFrom = new Date(now.getTime() - 30 * 86400000).toISOString().split("T")[0];
         const dateTo = now.toISOString().split("T")[0];
 
-        // Upsert: delete old stats for this project, insert new
         await supabase.from("metrika_stats").delete().eq("project_id", integration.project_id);
 
         const { error: insertError } = await supabase.from("metrika_stats").insert({
@@ -175,14 +182,12 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
         } as any);
         if (insertError) throw insertError;
 
-        // Update last_sync timestamp
         await supabase.from("integrations").update({
           last_sync: now.toISOString(),
         }).eq("id", integration.id);
 
         return data;
       }
-      // For other integrations just update sync time
       await supabase.from("integrations").update({
         last_sync: new Date().toISOString(),
       }).eq("id", integration.id);
@@ -202,17 +207,58 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
   const handleConnect = (meta: IntegrationMeta) => {
     if (meta.key === "yandexMetrika") {
       setMetrikaDialog(true);
-    } else if (meta.authType === "oauth") {
-      setOauthDialog(meta.key);
+    } else if (meta.key === "yandexWebmaster") {
+      // Pre-fill from existing integration
+      const existing = getIntegration("yandexWebmaster");
+      setWmSiteUrl(existing?.counter_id || "");
+      setWmToken(existing?.access_token || "");
+      setWmDialog(true);
+    } else if (meta.key === "googleSearchConsole") {
+      const existing = getIntegration("googleSearchConsole");
+      setGscPropertyUrl(existing?.counter_id || "");
+      setGscToken(existing?.access_token || "");
+      setGscDialog(true);
     } else {
       setTopvisorDialog(true);
     }
   };
 
-  const handleOAuthConfirm = () => {
-    if (!oauthDialog) return;
-    connectMutation.mutate({ serviceName: oauthDialog });
-    setOauthDialog(null);
+  const handleWmConnect = () => {
+    if (!wmToken.trim()) {
+      toast.error("Введите OAuth токен Яндекса");
+      return;
+    }
+    // Save host_id to project if site URL provided
+    if (wmSiteUrl.trim()) {
+      supabase.from("projects").update({
+        yandex_webmaster_host_id: wmSiteUrl.trim(),
+      }).eq("id", projectId).then(() => {
+        queryClient.invalidateQueries({ queryKey: ["project-detail", projectId] });
+      });
+    }
+    connectMutation.mutate({
+      serviceName: "yandexWebmaster",
+      accessToken: wmToken.trim(),
+      counterId: wmSiteUrl.trim() || undefined,
+    });
+    setWmDialog(false);
+    setWmSiteUrl("");
+    setWmToken("");
+  };
+
+  const handleGscConnect = () => {
+    if (!gscPropertyUrl.trim() || !gscToken.trim()) {
+      toast.error("Заполните все поля");
+      return;
+    }
+    connectMutation.mutate({
+      serviceName: "googleSearchConsole",
+      accessToken: gscToken.trim(),
+      counterId: gscPropertyUrl.trim(), // store property URL in counter_id
+    });
+    setGscDialog(false);
+    setGscPropertyUrl("");
+    setGscToken("");
   };
 
   const handleTopvisorConnect = () => {
@@ -220,14 +266,11 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
       toast.error(t("integrations.fillFields"));
       return;
     }
-    // tvProjectId here is actually the User ID for Topvisor
     connectMutation.mutate({ serviceName: "topvisor", apiKey: tvApiKey.trim(), counterId: tvProjectId.trim() });
     setTopvisorDialog(false);
     setTvApiKey("");
     setTvProjectId("");
   };
-
-  const oauthMeta = integrationsMeta.find((m) => m.key === oauthDialog);
 
   return (
     <div className="space-y-4">
@@ -294,24 +337,91 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
         })}
       </div>
 
-      {/* OAuth Dialog */}
-      <Dialog open={!!oauthDialog} onOpenChange={(open) => !open && setOauthDialog(null)}>
+      {/* Yandex Webmaster Dialog */}
+      <Dialog open={wmDialog} onOpenChange={setWmDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{t("integrations.oauthTitle", { service: oauthMeta ? t(`integrations.names.${oauthMeta.key}`) : "" })}</DialogTitle>
-            <DialogDescription>{t("integrations.oauthDesc")}</DialogDescription>
+            <DialogTitle>Подключение Яндекс Вебмастера</DialogTitle>
+            <DialogDescription>
+              Введите URL сайта и OAuth-токен Яндекса для доступа к данным Вебмастера.
+              Токен можно получить на{" "}
+              <a href="https://oauth.yandex.ru/" target="_blank" rel="noopener noreferrer" className="text-primary underline">
+                oauth.yandex.ru
+              </a>
+            </DialogDescription>
           </DialogHeader>
-          <div className="flex items-center justify-center py-8">
-            <div className="text-center space-y-4">
-              <div className="h-16 w-16 mx-auto rounded-2xl bg-muted flex items-center justify-center">
-                {oauthMeta?.icon}
-              </div>
-              <p className="text-sm text-muted-foreground">{t("integrations.oauthPlaceholder")}</p>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>URL сайта</Label>
+              <Input
+                value={wmSiteUrl}
+                onChange={(e) => setWmSiteUrl(e.target.value)}
+                placeholder="https://example.com:443"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Формат: https://example.com:443 (как в Яндекс Вебмастере)
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label>OAuth токен *</Label>
+              <Input
+                type="password"
+                value={wmToken}
+                onChange={(e) => setWmToken(e.target.value)}
+                placeholder="y0_AgAAAAD..."
+              />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOauthDialog(null)}>{t("common.cancel")}</Button>
-            <Button onClick={handleOAuthConfirm}>{t("integrations.authorize")}</Button>
+            <Button variant="outline" onClick={() => setWmDialog(false)}>Отмена</Button>
+            <Button onClick={handleWmConnect} disabled={connectMutation.isPending}>
+              <KeyRound className="h-3.5 w-3.5 mr-1.5" /> Подключить
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Google Search Console Dialog */}
+      <Dialog open={gscDialog} onOpenChange={setGscDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Подключение Google Search Console</DialogTitle>
+            <DialogDescription>
+              Введите URL ресурса GSC и OAuth2 access token для доступа к данным.
+              Токен можно получить через{" "}
+              <a href="https://developers.google.com/oauthplayground/" target="_blank" rel="noopener noreferrer" className="text-primary underline">
+                Google OAuth Playground
+              </a>
+              {" "}с scope webmasters.readonly.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Property URL *</Label>
+              <Input
+                value={gscPropertyUrl}
+                onChange={(e) => setGscPropertyUrl(e.target.value)}
+                placeholder="https://example.com/ или sc-domain:example.com"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                URL ресурса из Google Search Console
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label>Access Token *</Label>
+              <Input
+                type="password"
+                value={gscToken}
+                onChange={(e) => setGscToken(e.target.value)}
+                placeholder="ya29.a0AfH..."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setGscDialog(false)}>Отмена</Button>
+            <Button onClick={handleGscConnect} disabled={connectMutation.isPending}>
+              <KeyRound className="h-3.5 w-3.5 mr-1.5" /> Подключить
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
