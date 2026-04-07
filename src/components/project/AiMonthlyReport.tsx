@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles, Loader2, ChevronDown, ChevronUp, TrendingUp, TrendingDown,
@@ -8,6 +8,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -15,6 +17,14 @@ import { cn } from "@/lib/utils";
 interface TrafficSource {
   source: string;
   visits: number;
+}
+
+interface GoalData {
+  id: number;
+  name: string;
+  reaches: number;
+  conversionRate: number;
+  change: number;
 }
 
 interface Props {
@@ -31,6 +41,7 @@ interface Props {
     traffic_sources: any;
   } | null;
   keywords: { keyword: string; position: number; change: number }[];
+  goals?: GoalData[];
 }
 
 interface ReportData {
@@ -42,15 +53,18 @@ interface ReportData {
   channels: Record<string, { insight: string; trend: "up" | "down" | "stable" }>;
   business_insight?: string;
   recommendations?: { text: string; priority: string; category: string }[];
+  goals_insight?: string;
 }
 
-const CHANNEL_ICONS: Record<string, any> = {
-  search: Search,
-  direct: Globe,
-  ad: Megaphone,
-  social: Share2,
-  referral: Link,
-};
+type ChannelKey = "search" | "direct" | "ad" | "social" | "referral";
+
+const CHANNEL_OPTIONS: { key: ChannelKey; label: string; icon: any }[] = [
+  { key: "search", label: "Поисковый", icon: Search },
+  { key: "direct", label: "Прямой", icon: Globe },
+  { key: "ad", label: "Рекламный", icon: Megaphone },
+  { key: "social", label: "Соцсети", icon: Share2 },
+  { key: "referral", label: "Реферальный", icon: Link },
+];
 
 const CHANNEL_LABELS: Record<string, string> = {
   search: "Поисковый",
@@ -67,13 +81,12 @@ const PRIORITY_STYLES: Record<string, string> = {
 };
 
 const CATEGORY_ICONS: Record<string, string> = {
-  SEO: "🔍",
-  Content: "✍️",
-  Technical: "⚙️",
-  UX: "🎨",
-  Ads: "📢",
-  Analytics: "📊",
-  Links: "🔗",
+  SEO: "🔍", Content: "✍️", Technical: "⚙️", UX: "🎨",
+  Ads: "📢", Analytics: "📊", Links: "🔗", Conversions: "🎯",
+};
+
+const CHANNEL_ICONS: Record<string, any> = {
+  search: Search, direct: Globe, ad: Megaphone, social: Share2, referral: Link,
 };
 
 function TrendIcon({ trend }: { trend: "up" | "down" | "stable" }) {
@@ -82,18 +95,29 @@ function TrendIcon({ trend }: { trend: "up" | "down" | "stable" }) {
   return <Minus className="h-3.5 w-3.5 text-muted-foreground" />;
 }
 
-export default function AiMonthlyReport({ projectId, metrikaStats, keywords }: Props) {
+export default function AiMonthlyReport({ projectId, metrikaStats, keywords, goals = [] }: Props) {
   const [report, setReport] = useState<ReportData | null>(null);
   const [generating, setGenerating] = useState(false);
   const [expanded, setExpanded] = useState(true);
+  const [selectedChannels, setSelectedChannels] = useState<ChannelKey[]>(["search"]);
+  const [includeGoals, setIncludeGoals] = useState(true);
+
+  const toggleChannel = (ch: ChannelKey) => {
+    setSelectedChannels(prev =>
+      prev.includes(ch) ? prev.filter(c => c !== ch) : [...prev, ch]
+    );
+  };
 
   const handleGenerate = async () => {
+    if (selectedChannels.length === 0) {
+      toast.error("Выберите хотя бы один канал трафика");
+      return;
+    }
     setGenerating(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Необходима авторизация");
 
-      // Build rich context from available data
       const sources = (metrikaStats?.traffic_sources || []) as TrafficSource[];
       const dailyVisits = (metrikaStats?.visits_by_day || []) as { day: string; visits: number }[];
 
@@ -110,6 +134,7 @@ export default function AiMonthlyReport({ projectId, metrikaStats, keywords }: P
           const total = sources.reduce((acc, src) => acc + src.visits, 0);
           return { name: s.source, value: s.visits, pct: total > 0 ? Math.round((s.visits / total) * 100) : 0 };
         }),
+        selectedChannels,
       };
 
       // Add keywords context
@@ -127,6 +152,21 @@ export default function AiMonthlyReport({ projectId, metrikaStats, keywords }: P
           avgPosition: avgPos.toFixed(1),
           improved, declined,
           topKeywords: keywords.slice(0, 15).map(k => `${k.keyword} (pos ${k.position}, ${k.change > 0 ? "+" : ""}${k.change})`),
+        };
+      }
+
+      // Add goals context
+      if (includeGoals && goals.length > 0) {
+        liveMetrics.goalsContext = {
+          total: goals.length,
+          totalReaches: goals.reduce((s, g) => s + g.reaches, 0),
+          avgConversionRate: (goals.reduce((s, g) => s + g.conversionRate, 0) / goals.length).toFixed(2),
+          goals: goals.slice(0, 10).map(g => ({
+            name: g.name,
+            reaches: g.reaches,
+            cr: g.conversionRate,
+            change: g.change,
+          })),
         };
       }
 
@@ -156,6 +196,7 @@ export default function AiMonthlyReport({ projectId, metrikaStats, keywords }: P
         channels: data.summary?.channels || {},
         business_insight: data.business_insight,
         recommendations: data.recommendations,
+        goals_insight: data.goals_insight,
       };
 
       setReport(result);
@@ -168,29 +209,83 @@ export default function AiMonthlyReport({ projectId, metrikaStats, keywords }: P
     }
   };
 
+  // Channel selection UI block
+  const ChannelSelector = () => (
+    <div className="space-y-2.5">
+      <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
+        Каналы трафика для анализа
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {CHANNEL_OPTIONS.map(({ key, label, icon: Icon }) => {
+          const checked = selectedChannels.includes(key);
+          return (
+            <label
+              key={key}
+              className={cn(
+                "flex items-center gap-2 rounded-lg border px-3 py-1.5 cursor-pointer transition-colors text-[12px]",
+                checked
+                  ? "border-primary/40 bg-primary/10 text-foreground"
+                  : "border-border bg-card text-muted-foreground hover:border-primary/20"
+              )}
+            >
+              <Checkbox
+                checked={checked}
+                onCheckedChange={() => toggleChannel(key)}
+                className="h-3.5 w-3.5"
+              />
+              <Icon className="h-3 w-3" />
+              {label}
+            </label>
+          );
+        })}
+      </div>
+      {/* Goals toggle */}
+      {goals.length > 0 && (
+        <label className={cn(
+          "flex items-center gap-2 rounded-lg border px-3 py-1.5 cursor-pointer transition-colors text-[12px] w-fit",
+          includeGoals
+            ? "border-primary/40 bg-primary/10 text-foreground"
+            : "border-border bg-card text-muted-foreground hover:border-primary/20"
+        )}>
+          <Checkbox
+            checked={includeGoals}
+            onCheckedChange={(v) => setIncludeGoals(!!v)}
+            className="h-3.5 w-3.5"
+          />
+          <Target className="h-3 w-3" />
+          Цели и конверсии ({goals.length})
+        </label>
+      )}
+    </div>
+  );
+
   if (!report && !generating) {
     return (
       <Card className="border-primary/20 bg-gradient-to-r from-primary/5 via-card to-purple-500/5 overflow-hidden">
-        <div className="p-5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center shadow-lg shadow-primary/20">
-              <Sparkles className="h-5 w-5 text-primary-foreground" />
+        <div className="p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center shadow-lg shadow-primary/20">
+                <Sparkles className="h-5 w-5 text-primary-foreground" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">AI-аналитика за месяц</h3>
+                <p className="text-[11px] text-muted-foreground">
+                  Профессиональный SEO-отчёт на основе данных Метрики
+                  {keywords.length > 0 ? ` и ${keywords.length} ключевых слов` : ""}
+                  {goals.length > 0 ? ` • ${goals.length} целей` : ""}
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-sm font-semibold text-foreground">AI-аналитика за месяц</h3>
-              <p className="text-[11px] text-muted-foreground">
-                Профессиональный SEO-отчёт на основе данных Метрики
-                {keywords.length > 0 ? ` и ${keywords.length} ключевых слов` : ""}
-              </p>
-            </div>
+            <Button
+              onClick={handleGenerate}
+              className="gap-2 bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 text-primary-foreground shadow-lg shadow-primary/20"
+            >
+              <Sparkles className="h-4 w-4" />
+              Сгенерировать отчёт
+            </Button>
           </div>
-          <Button
-            onClick={handleGenerate}
-            className="gap-2 bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 text-primary-foreground shadow-lg shadow-primary/20"
-          >
-            <Sparkles className="h-4 w-4" />
-            Сгенерировать отчёт
-          </Button>
+          <ChannelSelector />
         </div>
       </Card>
     );
@@ -208,7 +303,10 @@ export default function AiMonthlyReport({ projectId, metrikaStats, keywords }: P
           </div>
           <div className="text-center">
             <p className="text-sm font-medium text-foreground">Анализирую данные...</p>
-            <p className="text-[11px] text-muted-foreground mt-1">AI формирует профессиональный отчёт уровня Senior SEO</p>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              Каналы: {selectedChannels.map(ch => CHANNEL_LABELS[ch]).join(", ")}
+              {includeGoals && goals.length > 0 ? " + конверсии" : ""}
+            </p>
           </div>
         </div>
       </Card>
@@ -216,6 +314,10 @@ export default function AiMonthlyReport({ projectId, metrikaStats, keywords }: P
   }
 
   if (!report) return null;
+
+  // Filter channels to only show selected ones
+  const displayChannels = Object.entries(report.channels)
+    .filter(([key]) => selectedChannels.includes(key as ChannelKey));
 
   return (
     <Card className="border-primary/20 overflow-hidden">
@@ -229,10 +331,19 @@ export default function AiMonthlyReport({ projectId, metrikaStats, keywords }: P
             <h3 className="text-sm font-semibold text-foreground">AI-отчёт за месяц</h3>
             <p className="text-[10px] text-muted-foreground">
               {metrikaStats?.date_from} — {metrikaStats?.date_to}
+              {" • "}
+              {selectedChannels.map(ch => CHANNEL_LABELS[ch]).join(", ")}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="ghost" size="sm"
+            className="h-7 text-[11px] gap-1.5 text-muted-foreground hover:text-primary"
+            onClick={() => { setReport(null); }}
+          >
+            Настроить
+          </Button>
           <Button
             variant="ghost" size="sm"
             className="h-7 text-[11px] gap-1.5 text-muted-foreground hover:text-primary"
@@ -283,14 +394,19 @@ export default function AiMonthlyReport({ projectId, metrikaStats, keywords }: P
                 ))}
               </div>
 
-              {/* Channel breakdown */}
-              {Object.keys(report.channels).length > 0 && (
+              {/* Channel breakdown — only selected */}
+              {displayChannels.length > 0 && (
                 <div>
                   <h4 className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-                    Анализ по каналам трафика
+                    Анализ по выбранным каналам
                   </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2.5">
-                    {Object.entries(report.channels).map(([key, data], i) => {
+                  <div className={cn(
+                    "grid gap-2.5",
+                    displayChannels.length <= 2 ? "grid-cols-1 sm:grid-cols-2" :
+                    displayChannels.length <= 3 ? "grid-cols-1 sm:grid-cols-3" :
+                    "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"
+                  )}>
+                    {displayChannels.map(([key, data], i) => {
                       const Icon = CHANNEL_ICONS[key] || Globe;
                       return (
                         <motion.div
@@ -317,6 +433,24 @@ export default function AiMonthlyReport({ projectId, metrikaStats, keywords }: P
                     })}
                   </div>
                 </div>
+              )}
+
+              {/* Goals insight */}
+              {report.goals_insight && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.45 }}
+                  className="rounded-lg border border-emerald-500/15 bg-emerald-500/5 p-4"
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <Target className="h-4 w-4 text-emerald-500" />
+                    <span className="text-[12px] font-semibold text-emerald-500 uppercase tracking-wide">
+                      Цели и конверсии
+                    </span>
+                  </div>
+                  <p className="text-[13px] text-foreground leading-relaxed">{report.goals_insight}</p>
+                </motion.div>
               )}
 
               {/* Business insight */}
