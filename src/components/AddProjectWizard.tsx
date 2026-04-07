@@ -79,8 +79,9 @@ export function AddProjectWizard({ onCreated }: AddProjectWizardProps) {
 
   const steps = [
     { label: t("wizard.step1", "Основная информация") },
-    { label: t("wizard.step2", "Яндекс") },
-    { label: t("wizard.step3", "Topvisor") },
+    { label: t("wizard.step2", "Команда") },
+    { label: t("wizard.step3", "Яндекс") },
+    { label: t("wizard.step4", "Topvisor") },
   ];
 
   // Reset on close
