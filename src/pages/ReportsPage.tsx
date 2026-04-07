@@ -759,7 +759,7 @@ export default function ReportsPage() {
     if (!reportData) return {};
     return {
       kpi: 4,
-      traffic: reportData.metrika.trafficSources.length + reportData.analytics.length,
+      traffic: (reportData.metrika?.trafficSources?.length || 0) + (reportData.analytics?.length || 0),
       tasks: reportData.tasks.length,
       worklog: reportData.workLogs.length,
       positions: reportData.keywords.length,
