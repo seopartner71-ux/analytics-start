@@ -306,6 +306,32 @@ export default function ReportsPage() {
 
       pdf.setTextColor(40, 40, 40);
 
+      // Comparison summary block
+      if (comparisonMode !== "none" && compData) {
+        pdf.setFillColor(245, 245, 245);
+        pdf.roundedRect(14, y, pageW - 28, 22, 2, 2, "F");
+        pdf.setFontSize(10);
+        pdf.setFont("helvetica", "bold");
+        pdf.text("Сравнение с " + (comparisonMode === "previous" ? "предыдущим периодом" : "прошлым годом"), 18, y + 6);
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(9);
+
+        const curTasks = reportData.tasks.length;
+        const curLogs = reportData.workLogs.length;
+        const curTraffic = reportData.analytics.reduce((s: number, a: any) => s + (a.organic_traffic || 0), 0);
+        const dTasks = calcDelta(curTasks, compData.tasksCount);
+        const dLogs = calcDelta(curLogs, compData.workLogsCount);
+        const dTraffic = calcDelta(curTraffic, compData.totalTraffic);
+
+        const items = [
+          `Задачи: ${curTasks} (${dTasks >= 0 ? "+" : ""}${dTasks}%)`,
+          `Работы: ${curLogs} (${dLogs >= 0 ? "+" : ""}${dLogs}%)`,
+          `Трафик: ${curTraffic.toLocaleString()} (${dTraffic >= 0 ? "+" : ""}${dTraffic}%)`,
+        ];
+        pdf.text(items.join("   |   "), 18, y + 14);
+        y += 30;
+      }
+
       const addSection = (title: string, headers: string[], rows: string[][]) => {
         if (y > 260) { pdf.addPage(); y = 20; }
         pdf.setFontSize(14);
