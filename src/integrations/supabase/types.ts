@@ -73,6 +73,185 @@ export type Database = {
           },
         ]
       }
+      companies: {
+        Row: {
+          address: string | null
+          created_at: string
+          description: string | null
+          email: string | null
+          employee_count: number | null
+          id: string
+          industry: string | null
+          inn: string | null
+          logo: string | null
+          name: string
+          owner_id: string
+          phone: string | null
+          responsible_id: string | null
+          type: string
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          description?: string | null
+          email?: string | null
+          employee_count?: number | null
+          id?: string
+          industry?: string | null
+          inn?: string | null
+          logo?: string | null
+          name: string
+          owner_id: string
+          phone?: string | null
+          responsible_id?: string | null
+          type?: string
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          description?: string | null
+          email?: string | null
+          employee_count?: number | null
+          id?: string
+          industry?: string | null
+          inn?: string | null
+          logo?: string | null
+          name?: string
+          owner_id?: string
+          phone?: string | null
+          responsible_id?: string | null
+          type?: string
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "companies_responsible_id_fkey"
+            columns: ["responsible_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_tasks: {
+        Row: {
+          assignee_id: string | null
+          created_at: string
+          creator_id: string | null
+          deadline: string | null
+          description: string | null
+          id: string
+          owner_id: string
+          priority: string
+          project_id: string | null
+          stage: string
+          stage_color: string | null
+          stage_progress: number | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assignee_id?: string | null
+          created_at?: string
+          creator_id?: string | null
+          deadline?: string | null
+          description?: string | null
+          id?: string
+          owner_id: string
+          priority?: string
+          project_id?: string | null
+          stage?: string
+          stage_color?: string | null
+          stage_progress?: number | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assignee_id?: string | null
+          created_at?: string
+          creator_id?: string | null
+          deadline?: string | null
+          description?: string | null
+          id?: string
+          owner_id?: string
+          priority?: string
+          project_id?: string | null
+          stage?: string
+          stage_color?: string | null
+          stage_progress?: number | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_tasks_assignee_id_fkey"
+            columns: ["assignee_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_tasks_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deals: {
+        Row: {
+          amount: number | null
+          company_id: string
+          created_at: string
+          id: string
+          owner_id: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number | null
+          company_id: string
+          created_at?: string
+          id?: string
+          owner_id: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          owner_id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deals_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integrations: {
         Row: {
           access_token: string | null
@@ -223,13 +402,16 @@ export type Database = {
           account_manager: string | null
           account_manager_id: string | null
           client_email: string | null
+          company_id: string | null
           created_at: string
           description: string | null
+          efficiency: number | null
           id: string
           logo_url: string | null
           metrika_counter_id: string | null
           name: string
           owner_id: string
+          privacy: string | null
           seo_specialist: string | null
           seo_specialist_id: string | null
           share_link_expires_at: string | null
@@ -245,13 +427,16 @@ export type Database = {
           account_manager?: string | null
           account_manager_id?: string | null
           client_email?: string | null
+          company_id?: string | null
           created_at?: string
           description?: string | null
+          efficiency?: number | null
           id?: string
           logo_url?: string | null
           metrika_counter_id?: string | null
           name: string
           owner_id: string
+          privacy?: string | null
           seo_specialist?: string | null
           seo_specialist_id?: string | null
           share_link_expires_at?: string | null
@@ -267,13 +452,16 @@ export type Database = {
           account_manager?: string | null
           account_manager_id?: string | null
           client_email?: string | null
+          company_id?: string | null
           created_at?: string
           description?: string | null
+          efficiency?: number | null
           id?: string
           logo_url?: string | null
           metrika_counter_id?: string | null
           name?: string
           owner_id?: string
+          privacy?: string | null
           seo_specialist?: string | null
           seo_specialist_id?: string | null
           share_link_expires_at?: string | null
@@ -291,6 +479,13 @@ export type Database = {
             columns: ["account_manager_id"]
             isOneToOne: false
             referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
           {
@@ -346,35 +541,86 @@ export type Database = {
           },
         ]
       }
+      task_comments: {
+        Row: {
+          author_id: string | null
+          body: string
+          created_at: string
+          id: string
+          is_system: boolean
+          task_id: string
+        }
+        Insert: {
+          author_id?: string | null
+          body: string
+          created_at?: string
+          id?: string
+          is_system?: boolean
+          task_id: string
+        }
+        Update: {
+          author_id?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          is_system?: boolean
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_comments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "crm_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_members: {
         Row: {
           created_at: string
+          department: string | null
           email: string | null
           full_name: string
           id: string
+          last_active: string | null
           owner_id: string
           phone: string | null
           role: string
+          status: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
+          department?: string | null
           email?: string | null
           full_name: string
           id?: string
+          last_active?: string | null
           owner_id: string
           phone?: string | null
           role?: string
+          status?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
+          department?: string | null
           email?: string | null
           full_name?: string
           id?: string
+          last_active?: string | null
           owner_id?: string
           phone?: string | null
           role?: string
+          status?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -455,13 +701,16 @@ export type Database = {
           account_manager: string | null
           account_manager_id: string | null
           client_email: string | null
+          company_id: string | null
           created_at: string
           description: string | null
+          efficiency: number | null
           id: string
           logo_url: string | null
           metrika_counter_id: string | null
           name: string
           owner_id: string
+          privacy: string | null
           seo_specialist: string | null
           seo_specialist_id: string | null
           share_link_expires_at: string | null
