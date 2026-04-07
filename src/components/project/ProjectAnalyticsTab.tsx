@@ -608,7 +608,9 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
         {/* Traffic chart */}
         <Card className="lg:col-span-3 bg-card rounded-lg shadow-sm border border-border p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-foreground">Органический трафик</h3>
+            <h3 className="text-sm font-semibold text-foreground">
+              {channel === "all" ? "Органический трафик" : CHANNEL_LABELS[channel]}
+            </h3>
             {showComparison && (
               <div className="flex items-center gap-3 text-[10px]">
                 <span className="flex items-center gap-1"><span className="w-2.5 h-0.5 bg-primary rounded" /> Период А</span>
