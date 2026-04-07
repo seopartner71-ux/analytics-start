@@ -23,6 +23,7 @@ import CrmProjectsPage from "./pages/CrmProjectsPage";
 import CrmProjectDetailPage from "./pages/CrmProjectDetailPage";
 import ContentPage from "./pages/ContentPage";
 import LinksPage from "./pages/LinksPage";
+import ProfilePage from "./pages/ProfilePage";
 import { CrmLayout } from "./components/CrmLayout";
 
 const queryClient = new QueryClient();
@@ -52,6 +53,7 @@ const App = () => (
                 <Route path="/project/:id" element={<ProtectedRoute><ProjectDetail /></ProtectedRoute>} />
                 <Route path="/team" element={<ProtectedRoute><CrmLayout><Team /></CrmLayout></ProtectedRoute>} />
                 <Route path="/admin" element={<ProtectedRoute><CrmLayout><AdminPanel /></CrmLayout></ProtectedRoute>} />
+                <Route path="/profile" element={<ProtectedRoute><CrmLayout><ProfilePage /></CrmLayout></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
