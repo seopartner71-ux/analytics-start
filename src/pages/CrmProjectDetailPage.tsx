@@ -422,11 +422,15 @@ export default function CrmProjectDetailPage() {
                 return (
                   <div
                     key={task.id}
-                    className={cn("flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors", i % 2 === 1 && "bg-muted/10")}
+                    className={cn("flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors cursor-pointer", i % 2 === 1 && "bg-muted/10")}
+                    onClick={() => navigate(`/crm-tasks?task=${task.id}`)}
                   >
                     <Checkbox
                       checked={done}
-                      onCheckedChange={(v) => toggleTask.mutate({ taskId: task.id, done: !!v })}
+                      onCheckedChange={(v) => {
+                        v !== undefined && toggleTask.mutate({ taskId: task.id, done: !!v });
+                      }}
+                      onClick={(e) => e.stopPropagation()}
                     />
                     <span className={cn("flex-1 text-[13px] text-foreground", done && "line-through text-muted-foreground")}>
                       {task.title}
