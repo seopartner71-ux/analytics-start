@@ -116,14 +116,27 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
   // Save project
   const saveProject = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("projects").update({
+      const projectUpdate: any = {
         name,
         url,
         deadline: deadline || null,
         seo_specialist_id: seoSpecialistId || null,
         account_manager_id: accountManagerId || null,
-      } as any).eq("id", projectId);
+      };
+      // Save selected counter/host to project
+      if (selectedCounter) projectUpdate.metrika_counter_id = selectedCounter;
+      if (selectedHost) projectUpdate.yandex_webmaster_host_id = selectedHost;
+
+      const { error } = await supabase.from("projects").update(projectUpdate).eq("id", projectId);
       if (error) throw error;
+
+      // Update counter_id on metrika integration
+      if (selectedCounter) {
+        const metrikaInt = integrations.find(i => i.service_name === "yandexMetrika");
+        if (metrikaInt) {
+          await supabase.from("integrations").update({ counter_id: selectedCounter }).eq("id", metrikaInt.id);
+        }
+      }
 
       // Upsert integrations
       for (const def of INTEGRATION_DEFS) {
