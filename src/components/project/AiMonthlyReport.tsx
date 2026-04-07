@@ -211,50 +211,48 @@ export default function AiMonthlyReport({ projectId, metrikaStats, keywords, goa
 
   // Channel selection UI block
   const ChannelSelector = () => (
-    <div className="space-y-2.5">
-      <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
-        Каналы трафика для анализа
-      </p>
-      <div className="flex flex-wrap gap-2">
-        {CHANNEL_OPTIONS.map(({ key, label, icon: Icon }) => {
-          const checked = selectedChannels.includes(key);
-          return (
-            <label
-              key={key}
-              className={cn(
-                "flex items-center gap-2 rounded-lg border px-3 py-1.5 cursor-pointer transition-colors text-[12px]",
-                checked
-                  ? "border-primary/40 bg-primary/10 text-foreground"
-                  : "border-border bg-card text-muted-foreground hover:border-primary/20"
-              )}
-            >
-              <Checkbox
-                checked={checked}
-                onCheckedChange={() => toggleChannel(key)}
-                className="h-3.5 w-3.5"
-              />
-              <Icon className="h-3 w-3" />
-              {label}
-            </label>
-          );
-        })}
-      </div>
-      {/* Goals toggle */}
+    <div className="flex items-center gap-2 flex-wrap">
+      {CHANNEL_OPTIONS.map(({ key, label, icon: Icon }) => {
+        const checked = selectedChannels.includes(key);
+        return (
+          <label
+            key={key}
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 cursor-pointer transition-all text-[12px] font-medium select-none",
+              checked
+                ? "border-primary bg-primary/10 text-foreground shadow-sm"
+                : "border-border bg-card text-muted-foreground hover:border-primary/30 hover:bg-muted/50"
+            )}
+          >
+            <Checkbox
+              checked={checked}
+              onCheckedChange={() => toggleChannel(key)}
+              className="h-3.5 w-3.5 rounded-[4px]"
+            />
+            <Icon className="h-3 w-3" />
+            {label}
+          </label>
+        );
+      })}
+
       {goals.length > 0 && (
-        <label className={cn(
-          "flex items-center gap-2 rounded-lg border px-3 py-1.5 cursor-pointer transition-colors text-[12px] w-fit",
-          includeGoals
-            ? "border-primary/40 bg-primary/10 text-foreground"
-            : "border-border bg-card text-muted-foreground hover:border-primary/20"
-        )}>
-          <Checkbox
-            checked={includeGoals}
-            onCheckedChange={(v) => setIncludeGoals(!!v)}
-            className="h-3.5 w-3.5"
-          />
-          <Target className="h-3 w-3" />
-          Цели и конверсии ({goals.length})
-        </label>
+        <>
+          <div className="w-px h-5 bg-border mx-0.5" />
+          <label className={cn(
+            "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 cursor-pointer transition-all text-[12px] font-medium select-none",
+            includeGoals
+              ? "border-primary bg-primary/10 text-foreground shadow-sm"
+              : "border-border bg-card text-muted-foreground hover:border-primary/30 hover:bg-muted/50"
+          )}>
+            <Checkbox
+              checked={includeGoals}
+              onCheckedChange={(v) => setIncludeGoals(!!v)}
+              className="h-3.5 w-3.5 rounded-[4px]"
+            />
+            <Target className="h-3 w-3" />
+            Цели и конверсии ({goals.length})
+          </label>
+        </>
       )}
     </div>
   );
