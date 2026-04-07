@@ -602,6 +602,7 @@ export type Database = {
           client_email: string | null
           company_id: string | null
           created_at: string
+          deadline: string | null
           description: string | null
           efficiency: number | null
           id: string
@@ -627,6 +628,7 @@ export type Database = {
           client_email?: string | null
           company_id?: string | null
           created_at?: string
+          deadline?: string | null
           description?: string | null
           efficiency?: number | null
           id?: string
@@ -652,6 +654,7 @@ export type Database = {
           client_email?: string | null
           company_id?: string | null
           created_at?: string
+          deadline?: string | null
           description?: string | null
           efficiency?: number | null
           id?: string
@@ -974,6 +977,7 @@ export type Database = {
           client_email: string | null
           company_id: string | null
           created_at: string
+          deadline: string | null
           description: string | null
           efficiency: number | null
           id: string
