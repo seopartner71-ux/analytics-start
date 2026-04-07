@@ -261,7 +261,7 @@ Deno.serve(async (req) => {
 
     if (action === "fetch-goals") {
       const body = await req.json();
-      const { access_token: accessToken, counter_id: counterId, date1, date2 } = body;
+      const { access_token: accessToken, counter_id: counterId, date1, date2, traffic_source } = body;
       if (!accessToken || !counterId) {
         return new Response(
           JSON.stringify({ error: "access_token and counter_id are required" }),
@@ -271,7 +271,20 @@ Deno.serve(async (req) => {
 
       const startDate = date1 || new Date(Date.now() - 30 * 86400000).toISOString().split("T")[0];
       const endDate = date2 || new Date().toISOString().split("T")[0];
-      const accuracyParams = "robot_less=1&accuracy=full&attribution=cross_device_last_significant";
+      let accuracyParams = "robot_less=1&accuracy=full&attribution=cross_device_last_significant";
+      
+      // Add traffic source filter if specified
+      if (traffic_source === "organic") {
+        accuracyParams += "&filters=ym:s:lastSignTrafficSource=='organic'";
+      } else if (traffic_source === "direct") {
+        accuracyParams += "&filters=ym:s:lastSignTrafficSource=='direct'";
+      } else if (traffic_source === "referral") {
+        accuracyParams += "&filters=ym:s:lastSignTrafficSource=='referral'";
+      } else if (traffic_source === "social") {
+        accuracyParams += "&filters=ym:s:lastSignTrafficSource=='social'";
+      } else if (traffic_source === "ad") {
+        accuracyParams += "&filters=ym:s:lastSignTrafficSource=='ad'";
+      }
 
       // 1. Fetch list of goals
       const goalsResp = await fetch(
