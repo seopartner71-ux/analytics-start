@@ -151,6 +151,7 @@ export default function CrmProjectDetailPage() {
   const [newTask, setNewTask] = useState({ title: "", priority: "medium", deadline: "", assignee_id: "" });
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedTask, setSelectedTask] = useState<CrmTask | null>(null);
 
   // Toggle task completion
   const toggleTask = useMutation({
@@ -421,7 +422,7 @@ export default function CrmProjectDetailPage() {
                   <div
                     key={task.id}
                     className={cn("flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors cursor-pointer", i % 2 === 1 && "bg-muted/10")}
-                    onClick={() => navigate(`/tasks?task=${task.id}`)}
+                    onClick={() => setSelectedTask(task)}
                   >
                     <Checkbox
                       checked={done}
@@ -634,6 +635,7 @@ export default function CrmProjectDetailPage() {
         </TabsContent>
       </Tabs>
       <EditProjectDialog open={editOpen} onOpenChange={setEditOpen} project={project} projectId={id!} />
+      <TaskDetailSheet task={selectedTask} open={!!selectedTask} onClose={() => setSelectedTask(null)} />
     </div>
   );
 }
