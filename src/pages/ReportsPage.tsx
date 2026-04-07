@@ -328,7 +328,17 @@ export default function ReportsPage() {
       });
 
       if (error) throw error;
-      const summary = data?.choices?.[0]?.message?.content || data?.summary || "Не удалось сгенерировать выводы";
+      const general = data?.summary?.general;
+      const parts: string[] = [];
+      if (general?.happened) parts.push(general.happened);
+      if (general?.why) parts.push(general.why);
+      if (general?.recommendation) parts.push(general.recommendation);
+      if (data?.business_insight) parts.push(data.business_insight);
+      if (data?.goals_insight) parts.push(data.goals_insight);
+      if (data?.recommendations?.length) {
+        parts.push(data.recommendations.map((r: any) => `[${r.priority}] ${r.text}`).join("\n"));
+      }
+      const summary = parts.length > 0 ? parts.join("\n\n") : "Не удалось сгенерировать выводы";
       setConclusions(summary);
       toast.success("AI-выводы сгенерированы");
     } catch (err: any) {
