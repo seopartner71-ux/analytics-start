@@ -38,6 +38,18 @@ const CHANNEL_LABELS: Record<TrafficChannel, string> = {
   ad: "Реклама",
 };
 
+// Map Yandex Metrika source names to channel keys
+const SOURCE_TO_CHANNEL: Record<string, TrafficChannel> = {
+  "Search engine traffic": "organic",
+  "Direct traffic": "direct",
+  "Link traffic": "referral",
+  "Social network traffic": "social",
+  "Ad traffic": "ad",
+  "Messenger traffic": "social",
+  "Recommendation system traffic": "referral",
+  "Internal traffic": "direct",
+};
+
 const PRESETS = [
   { key: "7d", label: "7 дней", days: 7 },
   { key: "14d", label: "14 дней", days: 14 },
