@@ -14,7 +14,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   ArrowLeft, Plus, Send, Clock, CalendarDays, User, Tag, FileText,
   Upload, Download, Trash2, Loader2, Globe, Edit, XCircle, MessageSquare,
-  BarChart3,
+  BarChart3, ShieldCheck,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -67,7 +67,7 @@ export default function CrmProjectDetailPage() {
   const [searchParams] = useSearchParams();
   const { user, canEdit, isViewer } = useAuth();
   const queryClient = useQueryClient();
-  const defaultTab = searchParams.get("tab") === "analytics" ? "analytics" : "checklist";
+  const defaultTab = searchParams.get("tab") === "analytics" ? "analytics" : searchParams.get("tab") === "health" ? "health" : "checklist";
 
   // Project
   const { data: project, isLoading: projectLoading } = useQuery({
@@ -334,10 +334,17 @@ export default function CrmProjectDetailPage() {
           <TabsTrigger value="analytics" className="gap-1.5 text-[13px]">
             <BarChart3 className="h-3.5 w-3.5" /> Аналитика
           </TabsTrigger>
+          <TabsTrigger value="health" className="gap-1.5 text-[13px]">
+            <ShieldCheck className="h-3.5 w-3.5" /> Состояние сайта
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="analytics">
           <ProjectAnalyticsTab projectId={id!} />
+        </TabsContent>
+
+        <TabsContent value="health">
+          <SiteHealthDetailTab projectId={id!} />
         </TabsContent>
 
         <TabsContent value="checklist">
