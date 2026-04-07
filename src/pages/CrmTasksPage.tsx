@@ -72,7 +72,7 @@ function AddTaskDialog() {
         stage_color: form.stage === "Новые" ? "#3b82f6" : form.stage === "В работе" ? "#f59e0b" : form.stage === "Завершена" ? "#10b981" : "#8b5cf6",
         priority: form.priority,
         deadline: form.deadline || null,
-        project_id: projectId || null,
+        project_id: projectId,
         owner_id: user!.id,
       });
       if (error) throw error;
@@ -122,16 +122,16 @@ function AddTaskDialog() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div><Label className="text-xs">Крайний срок</Label><Input type="datetime-local" value={form.deadline} onChange={e => setForm(f => ({ ...f, deadline: e.target.value }))} /></div>
-            <div><Label className="text-xs">Проект</Label>
+            <div><Label className="text-xs">Проект *</Label>
               <Select value={projectId} onValueChange={setProjectId}>
-                <SelectTrigger><SelectValue placeholder="Выбрать..." /></SelectTrigger>
+                <SelectTrigger className={cn(!projectId && "border-destructive")}><SelectValue placeholder="Выбрать..." /></SelectTrigger>
                 <SelectContent>
                   {projects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
           </div>
-          <Button onClick={() => mutation.mutate()} disabled={!form.title.trim() || mutation.isPending} className="w-full">
+          <Button onClick={() => mutation.mutate()} disabled={!form.title.trim() || !projectId || mutation.isPending} className="w-full">
             {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
             Создать задачу
           </Button>
