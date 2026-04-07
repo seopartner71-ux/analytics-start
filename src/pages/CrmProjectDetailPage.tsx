@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -102,28 +102,54 @@ export default function CrmProjectDetailPage() {
     },
   });
 
-  // Comments for project-level activity
+  // Project-level comments
   const { data: projectComments = [] } = useQuery({
     queryKey: ["project-comments", id],
     queryFn: async () => {
-      // Get all comments for all tasks in this project
-      const taskIds = tasks.map(t => t.id);
-      if (taskIds.length === 0) return [];
       const { data, error } = await supabase
-        .from("task_comments")
+        .from("project_comments")
         .select("*, author:team_members(*)")
-        .in("task_id", taskIds)
+        .eq("project_id", id!)
         .order("created_at", { ascending: false })
-        .limit(20);
+        .limit(30);
       if (error) throw error;
-      return data as TaskComment[];
+      return data;
     },
-    enabled: tasks.length > 0,
+    enabled: !!id,
   });
+
+  // Project files
+  const { data: projectFiles = [] } = useQuery({
+    queryKey: ["project-files", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("project_files")
+        .select("*")
+        .eq("project_id", id!)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!id,
+  });
+
+  // Realtime comments
+  useEffect(() => {
+    if (!id) return;
+    const channel = supabase
+      .channel(`project-comments-${id}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "project_comments", filter: `project_id=eq.${id}` }, () => {
+        queryClient.invalidateQueries({ queryKey: ["project-comments", id] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [id, queryClient]);
 
   const [commentText, setCommentText] = useState("");
   const [addTaskOpen, setAddTaskOpen] = useState(false);
   const [newTask, setNewTask] = useState({ title: "", priority: "medium", deadline: "", assignee_id: "" });
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Toggle task completion
   const toggleTask = useMutation({
@@ -160,24 +186,57 @@ export default function CrmProjectDetailPage() {
     },
   });
 
-  // Send comment (to first task or create a system comment)
+  // Send project comment
   const sendComment = useMutation({
     mutationFn: async () => {
-      if (tasks.length === 0) {
-        toast.error("Сначала создайте задачу");
-        return;
-      }
-      const { error } = await supabase.from("task_comments").insert({
-        task_id: tasks[0].id,
+      const { error } = await supabase.from("project_comments").insert({
+        project_id: id!,
         body: commentText,
-        is_system: false,
       });
       if (error) throw error;
     },
     onSuccess: () => {
       setCommentText("");
       queryClient.invalidateQueries({ queryKey: ["project-comments", id] });
-      toast.success("Комментарий добавлен");
+    },
+  });
+
+  // Upload file
+  const handleFileUpload = useCallback(async (files: FileList | null) => {
+    if (!files || files.length === 0 || !id) return;
+    setUploading(true);
+    try {
+      for (const file of Array.from(files)) {
+        const path = `${id}/${Date.now()}_${file.name}`;
+        const { error: uploadError } = await supabase.storage.from("project-files").upload(path, file);
+        if (uploadError) throw uploadError;
+        const { data: { publicUrl } } = supabase.storage.from("project-files").getPublicUrl(path);
+        await supabase.from("project_files").insert({
+          project_id: id,
+          name: file.name,
+          url: publicUrl,
+          size: file.size,
+          mime_type: file.type,
+        });
+      }
+      queryClient.invalidateQueries({ queryKey: ["project-files", id] });
+      toast.success("Файл загружен");
+    } catch (e: any) {
+      toast.error(e.message || "Ошибка загрузки");
+    } finally {
+      setUploading(false);
+    }
+  }, [id, queryClient]);
+
+  // Delete file
+  const deleteFile = useMutation({
+    mutationFn: async (fileId: string) => {
+      const { error } = await supabase.from("project_files").delete().eq("id", fileId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["project-files", id] });
+      toast.success("Файл удалён");
     },
   });
 
@@ -488,35 +547,59 @@ export default function CrmProjectDetailPage() {
           <Card className="bg-card rounded-lg shadow-sm border border-border p-5">
             <h3 className="text-sm font-semibold text-foreground mb-3">Файлы проекта</h3>
 
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept=".pdf,.docx,.xlsx,.png,.jpg,.jpeg"
+              className="hidden"
+              onChange={e => handleFileUpload(e.target.files)}
+            />
+
             {/* Drop zone */}
-            <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/30 transition-colors cursor-pointer">
-              <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground/40" />
+            <div
+              className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/30 transition-colors cursor-pointer"
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
+              onDrop={e => { e.preventDefault(); e.stopPropagation(); handleFileUpload(e.dataTransfer.files); }}
+            >
+              {uploading ? (
+                <Loader2 className="h-8 w-8 mx-auto mb-2 text-primary animate-spin" />
+              ) : (
+                <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground/40" />
+              )}
               <p className="text-[13px] text-muted-foreground">Перетащите файлы или нажмите для загрузки</p>
               <p className="text-[11px] text-muted-foreground/60 mt-1">PDF, DOCX, XLSX, PNG</p>
             </div>
 
-            {/* Demo files */}
-            <div className="mt-4 space-y-2">
-              {[
-                { name: "Технический_аудит.pdf", size: "2.4 MB", date: "01.04.2026" },
-                { name: "Семантическое_ядро.xlsx", size: "1.1 MB", date: "28.03.2026" },
-                { name: "Стратегия_продвижения.docx", size: "340 KB", date: "25.03.2026" },
-              ].map(file => (
-                <div key={file.name} className="flex items-center gap-3 p-2.5 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors">
-                  <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[12px] font-medium text-foreground truncate">{file.name}</p>
-                    <p className="text-[10px] text-muted-foreground">{file.size} · {file.date}</p>
-                  </div>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground">
-                    <Download className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive">
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              ))}
-            </div>
+            {/* Uploaded files */}
+            {projectFiles.length > 0 && (
+              <div className="mt-4 space-y-2">
+                {projectFiles.map(file => {
+                  const sizeStr = file.size > 1048576 ? `${(file.size / 1048576).toFixed(1)} MB` : `${(file.size / 1024).toFixed(0)} KB`;
+                  return (
+                    <div key={file.id} className="flex items-center gap-3 p-2.5 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors">
+                      <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[12px] font-medium text-foreground truncate">{file.name}</p>
+                        <p className="text-[10px] text-muted-foreground">{sizeStr} · {format(parseISO(file.created_at), "dd.MM.yyyy")}</p>
+                      </div>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" asChild>
+                        <a href={file.url} target="_blank" rel="noopener noreferrer"><Download className="h-3.5 w-3.5" /></a>
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => deleteFile.mutate(file.id)}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {projectFiles.length === 0 && (
+              <p className="text-[12px] text-muted-foreground text-center mt-3">Нет загруженных файлов</p>
+            )}
           </Card>
         </div>
       </div>

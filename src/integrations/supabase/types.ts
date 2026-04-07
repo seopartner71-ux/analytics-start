@@ -397,6 +397,86 @@ export type Database = {
         }
         Relationships: []
       }
+      project_comments: {
+        Row: {
+          author_id: string | null
+          body: string
+          created_at: string
+          id: string
+          project_id: string
+        }
+        Insert: {
+          author_id?: string | null
+          body: string
+          created_at?: string
+          id?: string
+          project_id: string
+        }
+        Update: {
+          author_id?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_comments_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_files: {
+        Row: {
+          created_at: string
+          id: string
+          mime_type: string | null
+          name: string
+          project_id: string
+          size: number
+          uploaded_by: string | null
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mime_type?: string | null
+          name: string
+          project_id: string
+          size?: number
+          uploaded_by?: string | null
+          url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mime_type?: string | null
+          name?: string
+          project_id?: string
+          size?: number
+          uploaded_by?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_files_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           account_manager: string | null
