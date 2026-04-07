@@ -93,6 +93,7 @@ export function AddProjectWizard({ onCreated }: AddProjectWizardProps) {
       setCounters([]); setSelectedCounter(""); setWmHosts([]); setSelectedHost(""); setWmError("");
       setTvUserId(""); setTvApiKey(""); setTvProjects([]); setSelectedTvProject("");
       setTvLoading(false); setTvConnected(false); setTvError("");
+      setSeoSpecialistId(""); setAccountManagerId(""); setObserverId("");
       setSaving(false);
     }
   }, [open]);
