@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -102,28 +102,54 @@ export default function CrmProjectDetailPage() {
     },
   });
 
-  // Comments for project-level activity
+  // Project-level comments
   const { data: projectComments = [] } = useQuery({
     queryKey: ["project-comments", id],
     queryFn: async () => {
-      // Get all comments for all tasks in this project
-      const taskIds = tasks.map(t => t.id);
-      if (taskIds.length === 0) return [];
       const { data, error } = await supabase
-        .from("task_comments")
+        .from("project_comments")
         .select("*, author:team_members(*)")
-        .in("task_id", taskIds)
+        .eq("project_id", id!)
         .order("created_at", { ascending: false })
-        .limit(20);
+        .limit(30);
       if (error) throw error;
-      return data as TaskComment[];
+      return data;
     },
-    enabled: tasks.length > 0,
+    enabled: !!id,
   });
+
+  // Project files
+  const { data: projectFiles = [] } = useQuery({
+    queryKey: ["project-files", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("project_files")
+        .select("*")
+        .eq("project_id", id!)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!id,
+  });
+
+  // Realtime comments
+  useEffect(() => {
+    if (!id) return;
+    const channel = supabase
+      .channel(`project-comments-${id}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "project_comments", filter: `project_id=eq.${id}` }, () => {
+        queryClient.invalidateQueries({ queryKey: ["project-comments", id] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [id, queryClient]);
 
   const [commentText, setCommentText] = useState("");
   const [addTaskOpen, setAddTaskOpen] = useState(false);
   const [newTask, setNewTask] = useState({ title: "", priority: "medium", deadline: "", assignee_id: "" });
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Toggle task completion
   const toggleTask = useMutation({
@@ -160,24 +186,57 @@ export default function CrmProjectDetailPage() {
     },
   });
 
-  // Send comment (to first task or create a system comment)
+  // Send project comment
   const sendComment = useMutation({
     mutationFn: async () => {
-      if (tasks.length === 0) {
-        toast.error("Сначала создайте задачу");
-        return;
-      }
-      const { error } = await supabase.from("task_comments").insert({
-        task_id: tasks[0].id,
+      const { error } = await supabase.from("project_comments").insert({
+        project_id: id!,
         body: commentText,
-        is_system: false,
       });
       if (error) throw error;
     },
     onSuccess: () => {
       setCommentText("");
       queryClient.invalidateQueries({ queryKey: ["project-comments", id] });
-      toast.success("Комментарий добавлен");
+    },
+  });
+
+  // Upload file
+  const handleFileUpload = useCallback(async (files: FileList | null) => {
+    if (!files || files.length === 0 || !id) return;
+    setUploading(true);
+    try {
+      for (const file of Array.from(files)) {
+        const path = `${id}/${Date.now()}_${file.name}`;
+        const { error: uploadError } = await supabase.storage.from("project-files").upload(path, file);
+        if (uploadError) throw uploadError;
+        const { data: { publicUrl } } = supabase.storage.from("project-files").getPublicUrl(path);
+        await supabase.from("project_files").insert({
+          project_id: id,
+          name: file.name,
+          url: publicUrl,
+          size: file.size,
+          mime_type: file.type,
+        });
+      }
+      queryClient.invalidateQueries({ queryKey: ["project-files", id] });
+      toast.success("Файл загружен");
+    } catch (e: any) {
+      toast.error(e.message || "Ошибка загрузки");
+    } finally {
+      setUploading(false);
+    }
+  }, [id, queryClient]);
+
+  // Delete file
+  const deleteFile = useMutation({
+    mutationFn: async (fileId: string) => {
+      const { error } = await supabase.from("project_files").delete().eq("id", fileId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["project-files", id] });
+      toast.success("Файл удалён");
     },
   });
 
