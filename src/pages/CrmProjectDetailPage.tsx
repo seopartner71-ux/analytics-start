@@ -636,6 +636,7 @@ export default function CrmProjectDetailPage() {
       </div>
         </TabsContent>
       </Tabs>
+      <EditProjectDialog open={editOpen} onOpenChange={setEditOpen} project={project} projectId={id!} />
     </div>
   );
 }
