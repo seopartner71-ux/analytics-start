@@ -144,9 +144,8 @@ export function AiInsightsBlock({ projectId, summary: rawSummary, isAdmin, onSav
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
 
-      const projectRef = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const resp = await fetch(
-        `https://${projectRef}.supabase.co/functions/v1/generate-ai-summary`,
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-ai-summary`,
         {
           method: "POST",
           headers: {
