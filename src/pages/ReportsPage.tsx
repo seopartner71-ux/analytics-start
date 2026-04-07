@@ -195,6 +195,26 @@ export default function ReportsPage() {
     setSections(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
+  // Delta helper
+  const calcDelta = (current: number, prev: number) => {
+    if (prev === 0) return current > 0 ? 100 : 0;
+    return Math.round(((current - prev) / prev) * 100);
+  };
+
+  const deltaLabel = (current: number, prev: number, invert = false) => {
+    const d = calcDelta(current, prev);
+    if (d === 0) return "0%";
+    const sign = d > 0 ? "+" : "";
+    return `${sign}${d}%`;
+  };
+
+  const deltaColor = (current: number, prev: number, invert = false) => {
+    const d = calcDelta(current, prev);
+    if (d === 0) return "text-muted-foreground";
+    const isPositive = invert ? d < 0 : d > 0;
+    return isPositive ? "text-green-500" : "text-destructive";
+  };
+
   const buildWordSections = useCallback((): WordSection[] => {
     if (!reportData || !project) return [];
     const result: WordSection[] = [];
