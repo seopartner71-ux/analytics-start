@@ -423,7 +423,7 @@ export default function CrmProjectDetailPage() {
                   <div
                     key={task.id}
                     className={cn("flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors cursor-pointer", i % 2 === 1 && "bg-muted/10")}
-                    onClick={() => navigate(`/crm-tasks?task=${task.id}`)}
+                    onClick={() => navigate(`/tasks?task=${task.id}`)}
                   >
                     <Checkbox
                       checked={done}
