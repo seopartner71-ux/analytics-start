@@ -395,9 +395,55 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
               )}
 
               {yandexOAuthStep === "done" && (
-                <Button size="sm" variant="ghost" className="gap-1.5 text-[11px] text-muted-foreground" onClick={() => { setYandexOAuthStep("idle"); setYandexCodeInput(""); }}>
-                  Переавторизоваться
-                </Button>
+                <div className="space-y-3">
+                  {/* Counter selector */}
+                  {yandexCounters.length > 0 && (
+                    <div className="space-y-1">
+                      <Label className="text-[11px] text-muted-foreground">Счётчик Яндекс.Метрики</Label>
+                      <Select value={selectedCounter} onValueChange={setSelectedCounter}>
+                        <SelectTrigger className="h-8 text-[12px]">
+                          <SelectValue placeholder="Выберите счётчик..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {yandexCounters.map(c => (
+                            <SelectItem key={c.id} value={c.id}>{c.name} ({c.site}) — ID: {c.id}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {selectedCounter && (
+                        <p className="text-[11px] text-emerald-500 flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Выбран</p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Host selector */}
+                  {yandexHosts.length > 0 && (
+                    <div className="space-y-1">
+                      <Label className="text-[11px] text-muted-foreground">Сайт в Яндекс.Вебмастере</Label>
+                      <Select value={selectedHost} onValueChange={setSelectedHost}>
+                        <SelectTrigger className="h-8 text-[12px]">
+                          <SelectValue placeholder="Выберите сайт..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {yandexHosts.map(h => (
+                            <SelectItem key={h.host_id} value={h.host_id}>{h.unicode_host_url}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {selectedHost && (
+                        <p className="text-[11px] text-emerald-500 flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Выбран</p>
+                      )}
+                    </div>
+                  )}
+
+                  {yandexCounters.length === 0 && yandexHosts.length === 0 && (
+                    <p className="text-[11px] text-muted-foreground">Данные не найдены. Проверьте настройки аккаунта Яндекс.</p>
+                  )}
+
+                  <Button size="sm" variant="ghost" className="gap-1.5 text-[11px] text-muted-foreground" onClick={() => { setYandexOAuthStep("idle"); setYandexCodeInput(""); }}>
+                    Переавторизоваться
+                  </Button>
+                </div>
               )}
             </div>
 
