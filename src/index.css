@@ -132,4 +132,72 @@
   .safe-area-bottom {
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
+
+  /* CRM Table polish */
+  .crm-table {
+    @apply w-full;
+  }
+  .crm-table thead tr {
+    @apply border-b border-border bg-muted/30;
+  }
+  .crm-table thead th {
+    @apply text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground p-3;
+  }
+  .crm-table tbody tr {
+    @apply border-b border-border/40 transition-all duration-150 cursor-pointer;
+  }
+  .crm-table tbody tr:hover {
+    @apply bg-primary/[0.04];
+  }
+  .crm-table tbody td {
+    @apply p-3;
+  }
+
+  /* Glow effect for cards */
+  .card-glow {
+    @apply transition-all duration-300;
+  }
+  .card-glow:hover {
+    box-shadow: 0 0 0 1px hsl(var(--primary) / 0.15), 0 4px 20px -4px hsl(var(--primary) / 0.12);
+  }
+
+  /* Page heading gradient line */
+  .page-heading::after {
+    content: '';
+    @apply block w-12 h-0.5 mt-2 rounded-full;
+    background: linear-gradient(90deg, hsl(var(--primary)), transparent);
+  }
+
+  /* Smooth sheet animations */
+  .sheet-smooth [data-state="open"] {
+    animation: sheet-slide-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes sheet-slide-in {
+    from {
+      opacity: 0;
+      transform: translateX(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  /* Avatar ring on hover */
+  .avatar-ring {
+    @apply ring-2 ring-transparent transition-all duration-200;
+  }
+  .avatar-ring:hover {
+    @apply ring-primary/30;
+  }
+
+  /* Status dot pulse */
+  .status-online {
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
 }
