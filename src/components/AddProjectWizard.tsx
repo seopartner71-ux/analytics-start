@@ -59,8 +59,23 @@ export function AddProjectWizard({ onCreated }: AddProjectWizardProps) {
   const [tvConnected, setTvConnected] = useState(false);
   const [tvError, setTvError] = useState("");
 
+  // Step 4: Team (required)
+  const [seoSpecialistId, setSeoSpecialistId] = useState("");
+  const [accountManagerId, setAccountManagerId] = useState("");
+  const [observerId, setObserverId] = useState("");
+
   // Saving
   const [saving, setSaving] = useState(false);
+
+  // Load team members
+  const { data: members = [] } = useQuery({
+    queryKey: ["team-members-wizard"],
+    queryFn: async () => {
+      const { data } = await supabase.from("team_members").select("id, full_name, role").order("full_name");
+      return data || [];
+    },
+    enabled: open,
+  });
 
   const steps = [
     { label: t("wizard.step1", "Основная информация") },
