@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,13 +14,21 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import {
   FileText, Download, Mail, Loader2, Calendar, CheckCircle2,
   ListOrdered, TrendingUp, ClipboardList, BarChart3, Send,
-  FileDown, Eye,
+  FileDown, Eye, GitCompareArrows,
 } from "lucide-react";
 import { toast } from "sonner";
-import { format, subDays, startOfMonth, endOfMonth, subMonths } from "date-fns";
+import { format, subDays, startOfMonth, endOfMonth, subMonths, subYears, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { exportToWord, type WordSection } from "@/lib/export-utils";
 import jsPDF from "jspdf";
+
+const COMPARISON_MODES = [
+  { key: "none", label: "Без сравнения" },
+  { key: "previous", label: "Предыдущий период" },
+  { key: "lastYear", label: "Тот же период, прошлый год" },
+] as const;
+
+type ComparisonMode = typeof COMPARISON_MODES[number]["key"];
 
 const PERIOD_PRESETS = [
   { key: "last30", label: "Последние 30 дней" },
@@ -70,6 +78,7 @@ export default function ReportsPage() {
   const [clientEmail, setClientEmail] = useState("");
   const [sending, setSending] = useState(false);
   const [lastGeneratedFormat, setLastGeneratedFormat] = useState<string | null>(null);
+  const [comparisonMode, setComparisonMode] = useState<ComparisonMode>("previous");
 
   // Load projects
   const { data: projects = [] } = useQuery({
@@ -84,6 +93,21 @@ export default function ReportsPage() {
   const project = projects.find(p => p.id === selectedProject);
   const dateRange = getDateRange(periodPreset, customFrom, customTo);
   const periodLabel = `${format(dateRange.from, "dd.MM.yyyy")} — ${format(dateRange.to, "dd.MM.yyyy")}`;
+
+  // Comparison period computation
+  const compDateRange = useMemo(() => {
+    if (comparisonMode === "none") return null;
+    const days = differenceInDays(dateRange.to, dateRange.from);
+    if (comparisonMode === "previous") {
+      return { from: subDays(dateRange.from, days + 1), to: subDays(dateRange.from, 1) };
+    }
+    // lastYear
+    return { from: subYears(dateRange.from, 1), to: subYears(dateRange.to, 1) };
+  }, [dateRange, comparisonMode]);
+
+  const compPeriodLabel = compDateRange
+    ? `${format(compDateRange.from, "dd.MM.yyyy")} — ${format(compDateRange.to, "dd.MM.yyyy")}`
+    : "";
 
   const enabledSections = Object.entries(sections).filter(([, v]) => v).map(([k]) => k);
 
@@ -126,8 +150,69 @@ export default function ReportsPage() {
     enabled: !!selectedProject,
   });
 
+  // Load comparison period data
+  const { data: compData } = useQuery({
+    queryKey: ["report-comp-data", selectedProject, comparisonMode, periodPreset, customFrom, customTo],
+    queryFn: async () => {
+      if (!selectedProject || !compDateRange) return null;
+
+      const [tasksRes, workLogsRes, analyticsRes] = await Promise.all([
+        supabase.from("crm_tasks")
+          .select("id")
+          .eq("project_id", selectedProject)
+          .eq("stage", "Завершена")
+          .gte("updated_at", format(compDateRange.from, "yyyy-MM-dd"))
+          .lte("updated_at", format(compDateRange.to, "yyyy-MM-dd")),
+        supabase.from("work_logs")
+          .select("id")
+          .eq("project_id", selectedProject)
+          .gte("task_date", format(compDateRange.from, "yyyy-MM-dd"))
+          .lte("task_date", format(compDateRange.to, "yyyy-MM-dd")),
+        supabase.from("project_analytics")
+          .select("month, organic_traffic, avg_position")
+          .eq("project_id", selectedProject)
+          .gte("month", format(compDateRange.from, "yyyy-MM-dd"))
+          .lte("month", format(compDateRange.to, "yyyy-MM-dd")),
+      ]);
+
+      const compAnalytics = analyticsRes.data || [];
+      const compTraffic = compAnalytics.reduce((s, a) => s + (a.organic_traffic || 0), 0);
+      const compAvgPos = compAnalytics.length > 0
+        ? compAnalytics.reduce((s, a) => s + Number(a.avg_position || 0), 0) / compAnalytics.length
+        : 0;
+
+      return {
+        tasksCount: tasksRes.data?.length || 0,
+        workLogsCount: workLogsRes.data?.length || 0,
+        totalTraffic: compTraffic,
+        avgPosition: compAvgPos,
+      };
+    },
+    enabled: !!selectedProject && comparisonMode !== "none" && !!compDateRange,
+  });
+
   const toggleSection = (key: string) => {
     setSections(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  // Delta helper
+  const calcDelta = (current: number, prev: number) => {
+    if (prev === 0) return current > 0 ? 100 : 0;
+    return Math.round(((current - prev) / prev) * 100);
+  };
+
+  const deltaLabel = (current: number, prev: number, invert = false) => {
+    const d = calcDelta(current, prev);
+    if (d === 0) return "0%";
+    const sign = d > 0 ? "+" : "";
+    return `${sign}${d}%`;
+  };
+
+  const deltaColor = (current: number, prev: number, invert = false) => {
+    const d = calcDelta(current, prev);
+    if (d === 0) return "text-muted-foreground";
+    const isPositive = invert ? d < 0 : d > 0;
+    return isPositive ? "text-green-500" : "text-destructive";
   };
 
   const buildWordSections = useCallback((): WordSection[] => {
@@ -204,18 +289,48 @@ export default function ReportsPage() {
       let y = 20;
 
       // Header
+      const headerH = comparisonMode !== "none" ? 42 : 35;
       pdf.setFillColor(26, 26, 27);
-      pdf.rect(0, 0, pageW, 35, "F");
+      pdf.rect(0, 0, pageW, headerH, "F");
       pdf.setTextColor(255, 255, 255);
       pdf.setFontSize(18);
       pdf.text(`Отчёт: ${project.name}`, 14, 16);
       pdf.setFontSize(10);
       pdf.setTextColor(180, 180, 180);
-      pdf.text(periodLabel, 14, 25);
-      if (project.url) pdf.text(project.url, 14, 31);
-      y = 45;
+      pdf.text(`Период: ${periodLabel}`, 14, 25);
+      if (comparisonMode !== "none" && compPeriodLabel) {
+        pdf.text(`Сравнение: ${compPeriodLabel} (${comparisonMode === "previous" ? "пред. период" : "прошлый год"})`, 14, 31);
+      }
+      if (project.url) pdf.text(project.url, 14, comparisonMode !== "none" ? 37 : 31);
+      y = headerH + 10;
 
       pdf.setTextColor(40, 40, 40);
+
+      // Comparison summary block
+      if (comparisonMode !== "none" && compData) {
+        pdf.setFillColor(245, 245, 245);
+        pdf.roundedRect(14, y, pageW - 28, 22, 2, 2, "F");
+        pdf.setFontSize(10);
+        pdf.setFont("helvetica", "bold");
+        pdf.text("Сравнение с " + (comparisonMode === "previous" ? "предыдущим периодом" : "прошлым годом"), 18, y + 6);
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(9);
+
+        const curTasks = reportData.tasks.length;
+        const curLogs = reportData.workLogs.length;
+        const curTraffic = reportData.analytics.reduce((s: number, a: any) => s + (a.organic_traffic || 0), 0);
+        const dTasks = calcDelta(curTasks, compData.tasksCount);
+        const dLogs = calcDelta(curLogs, compData.workLogsCount);
+        const dTraffic = calcDelta(curTraffic, compData.totalTraffic);
+
+        const items = [
+          `Задачи: ${curTasks} (${dTasks >= 0 ? "+" : ""}${dTasks}%)`,
+          `Работы: ${curLogs} (${dLogs >= 0 ? "+" : ""}${dLogs}%)`,
+          `Трафик: ${curTraffic.toLocaleString()} (${dTraffic >= 0 ? "+" : ""}${dTraffic}%)`,
+        ];
+        pdf.text(items.join("   |   "), 18, y + 14);
+        y += 30;
+      }
 
       const addSection = (title: string, headers: string[], rows: string[][]) => {
         if (y > 260) { pdf.addPage(); y = 20; }
@@ -425,6 +540,34 @@ export default function ReportsPage() {
                     <span className="text-xs text-muted-foreground">{periodLabel}</span>
                   </div>
                 )}
+
+                <Separator className="my-3" />
+
+                {/* Comparison Mode */}
+                <div>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                    <GitCompareArrows className="h-3.5 w-3.5" /> Сравнение
+                  </Label>
+                  <div className="flex flex-wrap gap-1.5 mt-1.5">
+                    {COMPARISON_MODES.map(m => (
+                      <Button
+                        key={m.key}
+                        variant={comparisonMode === m.key ? "default" : "outline"}
+                        size="sm"
+                        className="text-xs h-7"
+                        onClick={() => setComparisonMode(m.key)}
+                      >
+                        {m.label}
+                      </Button>
+                    ))}
+                  </div>
+                  {comparisonMode !== "none" && compPeriodLabel && (
+                    <div className="flex items-center gap-1.5 mt-2">
+                      <GitCompareArrows className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">vs {compPeriodLabel}</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -557,18 +700,61 @@ export default function ReportsPage() {
                     <span>Период</span>
                     <span className="text-foreground font-medium">{periodLabel}</span>
                   </div>
-                  <div className="flex justify-between">
+                  {comparisonMode !== "none" && compPeriodLabel && (
+                    <div className="flex justify-between">
+                      <span>Сравнение</span>
+                      <span className="text-foreground font-medium">{compPeriodLabel}</span>
+                    </div>
+                  )}
+                  <Separator className="my-1" />
+                  <div className="flex justify-between items-center">
                     <span>Задач выполнено</span>
-                    <span className="text-foreground font-medium">{reportData.tasks.length}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-foreground font-medium">{reportData.tasks.length}</span>
+                      {compData && comparisonMode !== "none" && (
+                        <span className={cn("text-[10px] font-medium", deltaColor(reportData.tasks.length, compData.tasksCount))}>
+                          {deltaLabel(reportData.tasks.length, compData.tasksCount)}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between items-center">
                     <span>Записей работ</span>
-                    <span className="text-foreground font-medium">{reportData.workLogs.length}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-foreground font-medium">{reportData.workLogs.length}</span>
+                      {compData && comparisonMode !== "none" && (
+                        <span className={cn("text-[10px] font-medium", deltaColor(reportData.workLogs.length, compData.workLogsCount))}>
+                          {deltaLabel(reportData.workLogs.length, compData.workLogsCount)}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="flex justify-between">
                     <span>Ключевых слов</span>
                     <span className="text-foreground font-medium">{reportData.keywords.length}</span>
                   </div>
+                  {compData && comparisonMode !== "none" && reportData.analytics.length > 0 && (
+                    <>
+                      <Separator className="my-1" />
+                      <div className="flex justify-between items-center">
+                        <span>Трафик (орг.)</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-foreground font-medium">
+                            {reportData.analytics.reduce((s: number, a: any) => s + (a.organic_traffic || 0), 0).toLocaleString()}
+                          </span>
+                          <span className={cn("text-[10px] font-medium", deltaColor(
+                            reportData.analytics.reduce((s: number, a: any) => s + (a.organic_traffic || 0), 0),
+                            compData.totalTraffic
+                          ))}>
+                            {deltaLabel(
+                              reportData.analytics.reduce((s: number, a: any) => s + (a.organic_traffic || 0), 0),
+                              compData.totalTraffic
+                            )}
+                          </span>
+                        </div>
+                      </div>
+                    </>
+                  )}
                   <div className="flex justify-between">
                     <span>Разделов</span>
                     <span className="text-foreground font-medium">{enabledSections.length} из {SECTIONS.length}</span>
