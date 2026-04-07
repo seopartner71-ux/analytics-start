@@ -751,39 +751,29 @@ function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null; open: 
                 </CardContent>
               </Card>
 
-              {/* Account Manager selector */}
-              <Card className="bg-card shadow-sm border-border/60 rounded-xl">
-                <CardContent className="p-0">
-                  <div className="flex items-center gap-4 px-4 py-3.5">
-                    <Briefcase className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <span className="text-xs text-muted-foreground w-28 shrink-0">Аккаунт-менеджер</span>
-                    {canEditFields && currentProject ? (
-                      <Select
-                        value={(currentProject as any).account_manager_id || ""}
-                        onValueChange={async (val) => {
-                          const mName = members.find(m => m.id === val)?.full_name || "снят";
-                          await supabase.from("projects").update({ account_manager_id: val || null } as any).eq("id", currentProject.id);
-                          await addSystemLog(`Аккаунт-менеджер проекта изменён на ${mName}`);
-                          queryClient.invalidateQueries({ queryKey: ["projects-list-detail"] });
-                          queryClient.invalidateQueries({ queryKey: ["project-detail"] });
-                          toast.success(`Аккаунт-менеджер: ${mName}`);
-                        }}
-                      >
-                        <SelectTrigger className="h-8 text-sm border-0 bg-transparent shadow-none p-0 w-auto gap-2">
-                          <SelectValue placeholder="Назначить..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {members.map(m => <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    ) : currentProject ? (
-                      <span className="text-sm text-muted-foreground">Не назначен</span>
-                    ) : (
-                      <span className="text-sm text-muted-foreground/60 italic">Сначала привяжите проект</span>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+              {/* Account Manager (read-only from project) */}
+              {currentProject && (
+                <Card className="bg-card shadow-sm border-border/60 rounded-xl">
+                  <CardContent className="p-0">
+                    <div className="flex items-center gap-4 px-4 py-3.5">
+                      <Briefcase className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <span className="text-xs text-muted-foreground w-28 shrink-0">Аккаунт-менеджер</span>
+                      {(() => {
+                        const amId = (currentProject as any).account_manager_id;
+                        const am = amId ? members.find(m => m.id === amId) : null;
+                        return am ? (
+                          <div className="flex items-center gap-2">
+                            <img src={getAvatarUrl(am.full_name)} alt="" className="h-6 w-6 rounded-full object-cover" />
+                            <span className="text-sm font-medium text-foreground">{am.full_name}</span>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">Не назначен в проекте</span>
+                        );
+                      })()}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
 
             {/* Sticky bottom action bar */}
