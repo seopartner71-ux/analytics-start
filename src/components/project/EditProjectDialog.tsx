@@ -12,7 +12,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Settings2, Globe, CalendarDays, Link2, Wifi, WifiOff,
   Users, Save, X, BarChart3, Search, Eye, UserPlus,
-  CheckCircle2, AlertCircle,
+  CheckCircle2, AlertCircle, ExternalLink, Loader2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -51,6 +51,12 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
   // Integration fields
   const [integrationValues, setIntegrationValues] = useState<Record<string, Record<string, string>>>({});
 
+  // Yandex OAuth state
+  const [yandexOAuthStep, setYandexOAuthStep] = useState<"idle" | "code" | "loading" | "done">("idle");
+  const [yandexCodeInput, setYandexCodeInput] = useState("");
+  const YANDEX_REDIRECT_URI = "https://oauth.yandex.ru/verification_code";
+  const projectRef = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+
   // Load team members
   const { data: members = [] } = useQuery({
     queryKey: ["team-members-edit"],
@@ -82,6 +88,8 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
     setAccountManagerId(project.account_manager_id || "");
     setCoExecutors([]);
     setObservers([]);
+    setYandexOAuthStep("idle");
+    setYandexCodeInput("");
   }, [project, open]);
 
   // Init integration values
@@ -146,6 +154,82 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
     },
     onError: (e: any) => toast.error(e.message || "Ошибка сохранения"),
   });
+
+  const getSession = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session;
+  };
+
+  const handleYandexStartOAuth = async () => {
+    try {
+      const session = await getSession();
+      if (!session) return;
+      const resp = await fetch(
+        `https://${projectRef}.supabase.co/functions/v1/yandex-metrika-auth?action=auth-url&redirect_uri=${encodeURIComponent(YANDEX_REDIRECT_URI)}`,
+        { headers: { Authorization: `Bearer ${session.access_token}` } }
+      );
+      const data = await resp.json();
+      if (data.url) {
+        window.open(data.url, "_blank", "noopener,noreferrer");
+        setYandexOAuthStep("code");
+      }
+    } catch { toast.error("Ошибка OAuth"); }
+  };
+
+  const handleYandexCode = async () => {
+    const code = yandexCodeInput.trim();
+    if (!code) return;
+    setYandexOAuthStep("loading");
+    try {
+      const session = await getSession();
+      if (!session) return;
+
+      const tokenResp = await fetch(
+        `https://${projectRef}.supabase.co/functions/v1/yandex-metrika-auth?action=exchange-token`,
+        { method: "POST", headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" }, body: JSON.stringify({ code }) }
+      );
+      const tokenData = await tokenResp.json();
+      if (tokenData.error) throw new Error(tokenData.error);
+      const accessToken = tokenData.access_token;
+
+      // Fetch counters
+      const countersResp = await fetch(
+        `https://${projectRef}.supabase.co/functions/v1/yandex-metrika-auth?action=list-counters`,
+        { method: "POST", headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" }, body: JSON.stringify({ access_token: accessToken }) }
+      );
+      const countersData = await countersResp.json();
+
+      // Save token to yandexMetrika integration
+      const existingMetrika = integrations.find(i => i.service_name === "yandexMetrika");
+      if (existingMetrika) {
+        await supabase.from("integrations").update({ access_token: accessToken, connected: true }).eq("id", existingMetrika.id);
+      } else {
+        await supabase.from("integrations").insert({ project_id: projectId, service_name: "yandexMetrika", access_token: accessToken, connected: true } as any);
+      }
+
+      // Save token to yandexWebmaster integration too
+      const existingWm = integrations.find(i => i.service_name === "yandexWebmaster");
+      if (existingWm) {
+        await supabase.from("integrations").update({ access_token: accessToken, connected: true }).eq("id", existingWm.id);
+      } else {
+        await supabase.from("integrations").insert({ project_id: projectId, service_name: "yandexWebmaster", access_token: accessToken, connected: true } as any);
+      }
+
+      // Update connected status in UI
+      setIntegrationValues(prev => ({
+        ...prev,
+        yandexMetrika: { ...prev.yandexMetrika, connected: "true" },
+        yandexWebmaster: { ...prev.yandexWebmaster, connected: "true" },
+      }));
+
+      queryClient.invalidateQueries({ queryKey: ["project-integrations-edit", projectId] });
+      setYandexOAuthStep("done");
+      toast.success("Яндекс авторизован! Токен сохранён для Метрики и Вебмастера.");
+    } catch (err: any) {
+      toast.error(err.message || "Ошибка авторизации");
+      setYandexOAuthStep("idle");
+    }
+  };
 
   const setIntField = (service: string, field: string, value: string) => {
     setIntegrationValues(prev => ({
@@ -227,6 +311,59 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
 
           {/* Integrations Tab */}
           <TabsContent value="integrations" className="px-6 py-5 space-y-4 mt-0">
+            {/* Yandex OAuth Block */}
+            <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-lg flex items-center justify-center text-xs font-bold text-white bg-[hsl(var(--primary))]">Я</div>
+                  <div>
+                    <p className="text-[13px] font-semibold text-foreground">Авторизация Яндекс</p>
+                    <p className="text-[11px] text-muted-foreground">Один токен для Метрики и Вебмастера</p>
+                  </div>
+                </div>
+                {yandexOAuthStep === "done" ? (
+                  <Badge className="bg-emerald-500/10 text-emerald-500 border-0 gap-1 text-[11px]">
+                    <CheckCircle2 className="h-3 w-3" /> Авторизовано
+                  </Badge>
+                ) : null}
+              </div>
+
+              {yandexOAuthStep === "idle" && (
+                <Button size="sm" variant="outline" className="gap-1.5 text-[12px]" onClick={handleYandexStartOAuth}>
+                  <ExternalLink className="h-3.5 w-3.5" /> Войти через Яндекс
+                </Button>
+              )}
+
+              {yandexOAuthStep === "code" && (
+                <div className="flex gap-2">
+                  <Input
+                    value={yandexCodeInput}
+                    onChange={e => setYandexCodeInput(e.target.value)}
+                    placeholder="Вставьте код подтверждения"
+                    className="h-8 text-[12px] flex-1"
+                    autoFocus
+                  />
+                  <Button size="sm" className="h-8 text-[12px]" onClick={handleYandexCode} disabled={!yandexCodeInput.trim()}>
+                    Подтвердить
+                  </Button>
+                </div>
+              )}
+
+              {yandexOAuthStep === "loading" && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Авторизация...
+                </div>
+              )}
+
+              {yandexOAuthStep === "done" && (
+                <Button size="sm" variant="ghost" className="gap-1.5 text-[11px] text-muted-foreground" onClick={() => { setYandexOAuthStep("idle"); setYandexCodeInput(""); }}>
+                  Переавторизоваться
+                </Button>
+              )}
+            </div>
+
+            <Separator />
+
             {INTEGRATION_DEFS.map(def => {
               const vals = integrationValues[def.key] || {};
               const isConnected = vals.connected === "true" && vals[def.fieldKey]?.trim();
