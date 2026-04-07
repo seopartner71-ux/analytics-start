@@ -23,6 +23,7 @@ const allNav = [
   { title: "Клиенты", url: "/companies", icon: Building2, minRole: "admin" as const },
   { title: "Календарь", url: "/content", icon: CalendarDays, minRole: "manager" as const },
   { title: "Сотрудники", url: "/employees", icon: Users, minRole: "admin" as const },
+  { title: "Интеграции", url: "/admin?tab=keys", icon: Plug, minRole: "admin" as const },
 ];
 
 const analyticsNav = [
