@@ -1,14 +1,14 @@
 import {
-  BarChart3, LayoutDashboard, TrendingUp, ListOrdered,
-  Building2, FolderKanban, ClipboardList, FileText, Link2,
-  Users, Plug, ChevronLeft, ChevronDown, Settings,
+  BarChart3, LayoutDashboard, FolderKanban, ClipboardList,
+  Building2, CalendarDays, Users, ChevronLeft, Settings, Plug,
+  TrendingUp, ListOrdered, FileText, Link2,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
-  SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
+  SidebarMenu, SidebarMenuButton, SidebarMenuItem,
   SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -16,30 +16,19 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
-// CRM Navigation
-const crmNav = [
-  { title: "Компании", url: "/companies", icon: Building2 },
-  { title: "Проекты", url: "/crm-projects", icon: FolderKanban },
+const mainNav = [
+  { title: "Дашборд", url: "/", icon: LayoutDashboard },
+  { title: "SEO Проекты", url: "/crm-projects", icon: FolderKanban },
+  { title: "Задачи", url: "/tasks", icon: ClipboardList },
+  { title: "Клиенты", url: "/companies", icon: Building2 },
+  { title: "Календарь", url: "/content", icon: CalendarDays },
+  { title: "Сотрудники", url: "/employees", icon: Users },
 ];
 
-// Analytics (project-context)
 const analyticsNav = [
   { title: "Обзор", tab: "overview", icon: LayoutDashboard },
   { title: "Трафик", tab: "searchSystems", icon: TrendingUp },
   { title: "Позиции", tab: "positions", icon: ListOrdered },
-];
-
-// SEO Management
-const seoNav = [
-  { title: "Задачи", url: "/tasks", icon: ClipboardList },
-  { title: "Контент", url: "/content", icon: FileText },
-  { title: "Ссылки", url: "/links", icon: Link2 },
-];
-
-// Team
-const teamNav = [
-  { title: "Сотрудники", url: "/employees", icon: Users },
-  { title: "Интеграции", tab: "integrations", icon: Plug },
 ];
 
 interface AppSidebarProps {
@@ -68,21 +57,25 @@ export function AppSidebar({ activeTab, onTabChange, projectName, projectLogo }:
     },
   });
 
-  const renderGroupLabel = (label: string) => {
-    if (collapsed) return null;
-    return (
-      <SidebarGroupLabel className="text-[10px] uppercase tracking-wider text-sidebar-foreground/40 font-semibold px-3">
-        {label}
-      </SidebarGroupLabel>
-    );
+  const isActive = (url: string) => {
+    if (url === "/") return location.pathname === "/";
+    return location.pathname.startsWith(url);
   };
 
-  const renderNavLink = (item: { title: string; url: string; icon: React.ElementType }) => (
+  const renderNavItem = (item: { title: string; url: string; icon: React.ElementType }) => (
     <SidebarMenuItem key={item.url}>
-      <SidebarMenuButton asChild>
-        <NavLink to={item.url} end={item.url === "/"} className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors rounded-md" activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium">
-          <item.icon className="mr-2.5 h-4 w-4 shrink-0" />
-          {!collapsed && <span className="text-[13px]">{item.title}</span>}
+      <SidebarMenuButton asChild className="p-0">
+        <NavLink
+          to={item.url}
+          end={item.url === "/"}
+          className={cn(
+            "flex items-center gap-2.5 px-3 py-2 text-[13px] rounded-none transition-colors",
+            "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+          )}
+          activeClassName="bg-primary/[0.08] text-primary font-medium border-l-[3px] border-primary"
+        >
+          <item.icon className="h-4 w-4 shrink-0" />
+          {!collapsed && <span>{item.title}</span>}
         </NavLink>
       </SidebarMenuButton>
     </SidebarMenuItem>
@@ -93,23 +86,24 @@ export function AppSidebar({ activeTab, onTabChange, projectName, projectLogo }:
       <SidebarMenuButton
         onClick={() => onTabChange?.(item.tab)}
         className={cn(
-          "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors rounded-md cursor-pointer",
-          activeTab === item.tab && "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+          "flex items-center gap-2.5 px-3 py-2 text-[13px] rounded-none transition-colors cursor-pointer",
+          "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+          activeTab === item.tab && "bg-primary/[0.08] text-primary font-medium border-l-[3px] border-primary"
         )}
       >
-        <item.icon className="mr-2.5 h-4 w-4 shrink-0" />
-        {!collapsed && <span className="text-[13px]">{item.title}</span>}
+        <item.icon className="h-4 w-4 shrink-0" />
+        {!collapsed && <span>{item.title}</span>}
       </SidebarMenuButton>
     </SidebarMenuItem>
   );
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="icon" className="border-r-0" style={{ width: collapsed ? undefined : '220px' }}>
       <SidebarContent>
         {/* Logo */}
-        <div className="flex items-center gap-2.5 px-4 py-5 border-b border-sidebar-border">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary shrink-0">
-            <BarChart3 className="h-4.5 w-4.5 text-sidebar-primary-foreground" />
+        <div className="flex items-center gap-2.5 px-4 py-4 border-b border-sidebar-border">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary shrink-0">
+            <BarChart3 className="h-4 w-4 text-primary-foreground" />
           </div>
           {!collapsed && (
             <span className="text-[15px] font-semibold tracking-tight text-sidebar-accent-foreground">
@@ -120,28 +114,26 @@ export function AppSidebar({ activeTab, onTabChange, projectName, projectLogo }:
 
         {isProjectPage ? (
           <>
-            {/* Back */}
             <SidebarGroup>
               <SidebarGroupContent>
                 <SidebarMenu>
                   <SidebarMenuItem>
-                    <SidebarMenuButton onClick={() => navigate("/")} className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors rounded-md cursor-pointer">
-                      <ChevronLeft className="mr-2 h-4 w-4 shrink-0" />
-                      {!collapsed && <span className="text-[13px]">Все проекты</span>}
+                    <SidebarMenuButton onClick={() => navigate("/")} className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer rounded-none">
+                      <ChevronLeft className="h-4 w-4 shrink-0" />
+                      {!collapsed && <span>Все проекты</span>}
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
 
-            {/* Project identity */}
             {!collapsed && projectName && (
               <div className="px-4 py-3 border-b border-sidebar-border">
                 <div className="flex items-center gap-2.5">
                   {projectLogo ? (
-                    <img src={projectLogo} alt={projectName} className="h-7 w-7 rounded-md object-cover" />
+                    <img src={projectLogo} alt={projectName} className="h-7 w-7 rounded object-cover" />
                   ) : (
-                    <div className="h-7 w-7 rounded-md bg-sidebar-primary/20 flex items-center justify-center text-[11px] font-bold text-sidebar-primary">
+                    <div className="h-7 w-7 rounded bg-primary/20 flex items-center justify-center text-[11px] font-bold text-primary">
                       {projectName.slice(0, 2).toUpperCase()}
                     </div>
                   )}
@@ -150,9 +142,7 @@ export function AppSidebar({ activeTab, onTabChange, projectName, projectLogo }:
               </div>
             )}
 
-            {/* Analytics tabs */}
             <SidebarGroup>
-              {renderGroupLabel("АНАЛИТИКА")}
               <SidebarGroupContent>
                 <SidebarMenu>
                   {analyticsNav.map(renderTabButton)}
@@ -160,14 +150,12 @@ export function AppSidebar({ activeTab, onTabChange, projectName, projectLogo }:
               </SidebarGroupContent>
             </SidebarGroup>
 
-            {/* Project management tabs */}
             <SidebarGroup>
-              {renderGroupLabel("УПРАВЛЕНИЕ")}
               <SidebarGroupContent>
                 <SidebarMenu>
                   {[
                     { title: "Задачи", tab: "worklog", icon: ClipboardList },
-                    { title: "Конструктор отчётов", tab: "builder", icon: FileText },
+                    { title: "Отчёты", tab: "builder", icon: FileText },
                     { title: "Интеграции", tab: "integrations", icon: Plug },
                     { title: "Настройки", tab: "settings", icon: Settings },
                   ].map(renderTabButton)}
@@ -177,22 +165,19 @@ export function AppSidebar({ activeTab, onTabChange, projectName, projectLogo }:
           </>
         ) : (
           <>
-            {/* CRM */}
             <SidebarGroup>
-              {renderGroupLabel("CRM")}
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {crmNav.map(renderNavLink)}
+                  {mainNav.map(renderNavItem)}
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
 
-            {/* Project selector */}
             {!collapsed && projects.length > 0 && (
-              <div className="px-3 py-2">
+              <div className="px-3 py-2 border-t border-sidebar-border">
                 <Select onValueChange={(v) => navigate(`/project/${v}`)}>
                   <SelectTrigger className="w-full h-8 text-xs bg-sidebar-accent/50 border-sidebar-border text-sidebar-foreground">
-                    <SelectValue placeholder="Выбрать проект..." />
+                    <SelectValue placeholder="Аналитика проекта..." />
                   </SelectTrigger>
                   <SelectContent>
                     {projects.map(p => (
@@ -213,43 +198,12 @@ export function AppSidebar({ activeTab, onTabChange, projectName, projectLogo }:
                 </Select>
               </div>
             )}
-
-            {/* Analytics overview link */}
-            <SidebarGroup>
-              {renderGroupLabel("АНАЛИТИКА")}
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {renderNavLink({ title: "Обзор проектов", url: "/", icon: LayoutDashboard })}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-
-            {/* SEO Management */}
-            <SidebarGroup>
-              {renderGroupLabel("SEO УПРАВЛЕНИЕ")}
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {seoNav.map(renderNavLink)}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-
-            {/* Team */}
-            <SidebarGroup>
-              {renderGroupLabel("УПРАВЛЕНИЕ КОМАНДОЙ")}
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {teamNav.filter(i => i.url).map(i => renderNavLink(i as any))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
           </>
         )}
       </SidebarContent>
 
-      {/* Footer */}
       {!collapsed && (
-        <SidebarFooter className="border-t border-sidebar-border p-4">
+        <SidebarFooter className="border-t border-sidebar-border p-3">
           <div className="flex items-center gap-2.5">
             <div className="h-8 w-8 rounded-full bg-sidebar-muted flex items-center justify-center text-xs font-medium text-sidebar-foreground">
               {user?.email?.charAt(0).toUpperCase() || "U"}
