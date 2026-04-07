@@ -309,6 +309,59 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
 
           {/* Integrations Tab */}
           <TabsContent value="integrations" className="px-6 py-5 space-y-4 mt-0">
+            {/* Yandex OAuth Block */}
+            <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-lg flex items-center justify-center text-xs font-bold text-white bg-[hsl(var(--primary))]">Я</div>
+                  <div>
+                    <p className="text-[13px] font-semibold text-foreground">Авторизация Яндекс</p>
+                    <p className="text-[11px] text-muted-foreground">Один токен для Метрики и Вебмастера</p>
+                  </div>
+                </div>
+                {yandexOAuthStep === "done" ? (
+                  <Badge className="bg-emerald-500/10 text-emerald-500 border-0 gap-1 text-[11px]">
+                    <CheckCircle2 className="h-3 w-3" /> Авторизовано
+                  </Badge>
+                ) : null}
+              </div>
+
+              {yandexOAuthStep === "idle" && (
+                <Button size="sm" variant="outline" className="gap-1.5 text-[12px]" onClick={handleYandexStartOAuth}>
+                  <ExternalLink className="h-3.5 w-3.5" /> Войти через Яндекс
+                </Button>
+              )}
+
+              {yandexOAuthStep === "code" && (
+                <div className="flex gap-2">
+                  <Input
+                    value={yandexCodeInput}
+                    onChange={e => setYandexCodeInput(e.target.value)}
+                    placeholder="Вставьте код подтверждения"
+                    className="h-8 text-[12px] flex-1"
+                    autoFocus
+                  />
+                  <Button size="sm" className="h-8 text-[12px]" onClick={handleYandexCode} disabled={!yandexCodeInput.trim()}>
+                    Подтвердить
+                  </Button>
+                </div>
+              )}
+
+              {yandexOAuthStep === "loading" && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Авторизация...
+                </div>
+              )}
+
+              {yandexOAuthStep === "done" && (
+                <Button size="sm" variant="ghost" className="gap-1.5 text-[11px] text-muted-foreground" onClick={() => { setYandexOAuthStep("idle"); setYandexCodeInput(""); }}>
+                  Переавторизоваться
+                </Button>
+              )}
+            </div>
+
+            <Separator />
+
             {INTEGRATION_DEFS.map(def => {
               const vals = integrationValues[def.key] || {};
               const isConnected = vals.connected === "true" && vals[def.fieldKey]?.trim();
