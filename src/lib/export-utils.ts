@@ -106,6 +106,7 @@ export function exportToExcel(sheets: ExcelSheet[], meta: ExportMeta) {
 /* ═══════════════ WORD ═══════════════ */
 export interface WordSection {
   title: string;
+  content?: string;
   paragraphs?: string[];
   table?: { headers: string[]; rows: (string | number)[][] };
 }
