@@ -88,6 +88,8 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
     setAccountManagerId(project.account_manager_id || "");
     setCoExecutors([]);
     setObservers([]);
+    setYandexOAuthStep("idle");
+    setYandexCodeInput("");
   }, [project, open]);
 
   // Init integration values
