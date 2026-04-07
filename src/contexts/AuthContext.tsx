@@ -11,6 +11,10 @@ interface AuthContextType {
   role: AppRole | null;
   profile: Database["public"]["Tables"]["profiles"]["Row"] | null;
   loading: boolean;
+  isAdmin: boolean;
+  isManager: boolean;
+  isViewer: boolean;
+  canEdit: boolean;
   signOut: () => Promise<void>;
 }
 
@@ -20,6 +24,10 @@ const AuthContext = createContext<AuthContextType>({
   role: null,
   profile: null,
   loading: true,
+  isAdmin: false,
+  isManager: false,
+  isViewer: false,
+  canEdit: false,
   signOut: async () => {},
 });
 
@@ -39,7 +47,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(session?.user ?? null);
 
         if (session?.user) {
-          // Fetch role and profile using setTimeout to avoid deadlock
           setTimeout(async () => {
             const [{ data: roles }, { data: prof }] = await Promise.all([
               supabase.from("user_roles").select("role").eq("user_id", session.user.id).limit(1),
@@ -68,8 +75,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   };
 
+  const isAdmin = role === "admin";
+  const isManager = role === "manager";
+  const isViewer = role === "viewer";
+  const canEdit = isAdmin || isManager;
+
   return (
-    <AuthContext.Provider value={{ session, user, role, profile, loading, signOut }}>
+    <AuthContext.Provider value={{ session, user, role, profile, loading, isAdmin, isManager, isViewer, canEdit, signOut }}>
       {children}
     </AuthContext.Provider>
   );
