@@ -15,6 +15,7 @@ import {
   AlertCircle, ChevronDown, MessageSquare, Hash, Loader2, ClipboardList,
   User, CalendarDays, Hourglass, FolderOpen, Eye, Paperclip, Copy,
   Video, UserPlus, Search as SearchIcon, Edit3, Play, CheckCircle2,
+  RotateCcw, Link, FileText, Upload, Briefcase,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
