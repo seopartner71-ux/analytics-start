@@ -21,6 +21,7 @@ import {
 import { format, parseISO, subMonths, subDays, subYears, differenceInDays, startOfMonth, endOfMonth } from "date-fns";
 import { ru } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import AiMonthlyReport from "./AiMonthlyReport";
 
 interface Props {
   projectId: string;
@@ -516,6 +517,13 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
           )}
         </div>
       </Card>
+
+      {/* AI Monthly Report */}
+      <AiMonthlyReport
+        projectId={projectId}
+        metrikaStats={metrikaStats || null}
+        keywords={keywords}
+      />
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
