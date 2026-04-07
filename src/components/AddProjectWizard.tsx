@@ -232,6 +232,8 @@ export function AddProjectWizard({ onCreated }: AddProjectWizardProps) {
         url: url.trim(),
         owner_id: user.id,
         logo_url: logoUrl,
+        seo_specialist_id: seoSpecialistId || null,
+        account_manager_id: accountManagerId || null,
       };
 
       if (selectedCounter) insertData.metrika_counter_id = selectedCounter;
