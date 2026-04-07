@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
 import ProjectAnalyticsTab from "@/components/project/ProjectAnalyticsTab";
 import SiteHealthDetailTab from "@/components/project/SiteHealthDetailTab";
+import EditProjectDialog from "@/components/project/EditProjectDialog";
 
 type CrmTask = Tables<"crm_tasks"> & {
   assignee?: Tables<"team_members"> | null;
