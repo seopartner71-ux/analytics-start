@@ -12,7 +12,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Settings2, Globe, CalendarDays, Link2, Wifi, WifiOff,
   Users, Save, X, BarChart3, Search, Eye, UserPlus,
-  CheckCircle2, AlertCircle,
+  CheckCircle2, AlertCircle, ExternalLink, Loader2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
