@@ -423,10 +423,7 @@ export default function CrmProjectsPage() {
                 )}
               </div>
             );
-          })}
-          </div>
-          <ScrollBar orientation="horizontal" />
-        </ScrollArea>
+        </div>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-border bg-card shadow-sm">
           <table className="crm-table min-w-[800px]">
