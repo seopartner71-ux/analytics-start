@@ -94,6 +94,21 @@ export default function ReportsPage() {
   const dateRange = getDateRange(periodPreset, customFrom, customTo);
   const periodLabel = `${format(dateRange.from, "dd.MM.yyyy")} — ${format(dateRange.to, "dd.MM.yyyy")}`;
 
+  // Comparison period computation
+  const compDateRange = useMemo(() => {
+    if (comparisonMode === "none") return null;
+    const days = differenceInDays(dateRange.to, dateRange.from);
+    if (comparisonMode === "previous") {
+      return { from: subDays(dateRange.from, days + 1), to: subDays(dateRange.from, 1) };
+    }
+    // lastYear
+    return { from: subYears(dateRange.from, 1), to: subYears(dateRange.to, 1) };
+  }, [dateRange, comparisonMode]);
+
+  const compPeriodLabel = compDateRange
+    ? `${format(compDateRange.from, "dd.MM.yyyy")} — ${format(compDateRange.to, "dd.MM.yyyy")}`
+    : "";
+
   const enabledSections = Object.entries(sections).filter(([, v]) => v).map(([k]) => k);
 
   // Load report data
@@ -133,6 +148,47 @@ export default function ReportsPage() {
       };
     },
     enabled: !!selectedProject,
+  });
+
+  // Load comparison period data
+  const { data: compData } = useQuery({
+    queryKey: ["report-comp-data", selectedProject, comparisonMode, periodPreset, customFrom, customTo],
+    queryFn: async () => {
+      if (!selectedProject || !compDateRange) return null;
+
+      const [tasksRes, workLogsRes, analyticsRes] = await Promise.all([
+        supabase.from("crm_tasks")
+          .select("id")
+          .eq("project_id", selectedProject)
+          .eq("stage", "Завершена")
+          .gte("updated_at", format(compDateRange.from, "yyyy-MM-dd"))
+          .lte("updated_at", format(compDateRange.to, "yyyy-MM-dd")),
+        supabase.from("work_logs")
+          .select("id")
+          .eq("project_id", selectedProject)
+          .gte("task_date", format(compDateRange.from, "yyyy-MM-dd"))
+          .lte("task_date", format(compDateRange.to, "yyyy-MM-dd")),
+        supabase.from("project_analytics")
+          .select("month, organic_traffic, avg_position")
+          .eq("project_id", selectedProject)
+          .gte("month", format(compDateRange.from, "yyyy-MM-dd"))
+          .lte("month", format(compDateRange.to, "yyyy-MM-dd")),
+      ]);
+
+      const compAnalytics = analyticsRes.data || [];
+      const compTraffic = compAnalytics.reduce((s, a) => s + (a.organic_traffic || 0), 0);
+      const compAvgPos = compAnalytics.length > 0
+        ? compAnalytics.reduce((s, a) => s + Number(a.avg_position || 0), 0) / compAnalytics.length
+        : 0;
+
+      return {
+        tasksCount: tasksRes.data?.length || 0,
+        workLogsCount: workLogsRes.data?.length || 0,
+        totalTraffic: compTraffic,
+        avgPosition: compAvgPos,
+      };
+    },
+    enabled: !!selectedProject && comparisonMode !== "none" && !!compDateRange,
   });
 
   const toggleSection = (key: string) => {
