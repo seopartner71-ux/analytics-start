@@ -110,7 +110,8 @@ Deno.serve(async (req) => {
           `${WM_BASE}/user/${wmUserId}/hosts/${encodedHost}/diagnostics`,
           { headers: wmHeaders }
         );
-        const diag = diagResp.ok ? await diagResp.json() : { problems: [] };
+        const diag = diagResp.ok ? await diagResp.json() : {};
+        const diagProblems = Array.isArray(diag?.problems) ? diag.problems : Array.isArray(diag) ? diag : [];
 
         const threeMonthsAgo = new Date();
         threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
