@@ -20,7 +20,7 @@ import { toast } from "sonner";
 import { format, subDays, startOfMonth, endOfMonth, subMonths, subYears, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { exportToWord, type WordSection } from "@/lib/export-utils";
-import jsPDF from "jspdf";
+
 
 const COMPARISON_MODES = [
   { key: "none", label: "Без сравнения" },
