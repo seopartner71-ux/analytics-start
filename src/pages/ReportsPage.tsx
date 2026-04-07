@@ -20,7 +20,7 @@ import { toast } from "sonner";
 import { format, subDays, startOfMonth, endOfMonth, subMonths, subYears, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { exportToWord, type WordSection } from "@/lib/export-utils";
-import jsPDF from "jspdf";
+
 
 const COMPARISON_MODES = [
   { key: "none", label: "Без сравнения" },
@@ -280,137 +280,131 @@ export default function ReportsPage() {
     return result;
   }, [reportData, project, sections]);
 
+  const buildPdfHtml = useCallback(() => {
+    if (!reportData || !project) return "";
+
+    const escHtml = (s: string) => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+    let html = `<div style="font-family:'Segoe UI',Arial,sans-serif;color:#222;padding:0;margin:0;">`;
+    // Header
+    html += `<div style="background:#1A1A1B;padding:20px 24px;border-radius:8px 8px 0 0;">`;
+    html += `<h1 style="color:#fff;margin:0;font-size:22px;">Отчёт: ${escHtml(project.name)}</h1>`;
+    html += `<p style="color:#b4b4b4;margin:4px 0 0;font-size:12px;">Период: ${periodLabel}</p>`;
+    if (comparisonMode !== "none" && compPeriodLabel) {
+      html += `<p style="color:#b4b4b4;margin:2px 0 0;font-size:12px;">Сравнение: ${compPeriodLabel} (${comparisonMode === "previous" ? "пред. период" : "прошлый год"})</p>`;
+    }
+    if (project.url) html += `<p style="color:#f97316;margin:4px 0 0;font-size:12px;">${escHtml(project.url)}</p>`;
+    html += `</div>`;
+
+    // Comparison summary
+    if (comparisonMode !== "none" && compData) {
+      const curTasks = reportData.tasks.length;
+      const curLogs = reportData.workLogs.length;
+      const curTraffic = reportData.analytics.reduce((s: number, a: any) => s + (a.organic_traffic || 0), 0);
+      const dTasks = calcDelta(curTasks, compData.tasksCount);
+      const dLogs = calcDelta(curLogs, compData.workLogsCount);
+      const dTraffic = calcDelta(curTraffic, compData.totalTraffic);
+      const fmt = (v: number) => `${v >= 0 ? "+" : ""}${v}%`;
+      const clr = (v: number) => v > 0 ? "#22c55e" : v < 0 ? "#ef4444" : "#888";
+
+      html += `<div style="background:#f5f5f5;padding:12px 18px;margin:12px 0;border-radius:6px;font-size:12px;">`;
+      html += `<b>Сравнение с ${comparisonMode === "previous" ? "предыдущим периодом" : "прошлым годом"}</b><br/>`;
+      html += `<span>Задачи: ${curTasks} <span style="color:${clr(dTasks)}">(${fmt(dTasks)})</span></span> &nbsp;|&nbsp; `;
+      html += `<span>Работы: ${curLogs} <span style="color:${clr(dLogs)}">(${fmt(dLogs)})</span></span> &nbsp;|&nbsp; `;
+      html += `<span>Трафик: ${curTraffic.toLocaleString()} <span style="color:${clr(dTraffic)}">(${fmt(dTraffic)})</span></span>`;
+      html += `</div>`;
+    }
+
+    const tableStyle = `width:100%;border-collapse:collapse;font-size:11px;margin-bottom:20px;`;
+    const thStyle = `text-align:left;padding:6px 8px;border-bottom:2px solid #ddd;font-weight:600;background:#fafafa;`;
+    const tdStyle = `padding:5px 8px;border-bottom:1px solid #eee;`;
+
+    const addTable = (title: string, headers: string[], rows: string[][]) => {
+      html += `<h2 style="font-size:16px;margin:20px 0 8px;padding:0 4px;">${escHtml(title)}</h2>`;
+      html += `<table style="${tableStyle}"><thead><tr>`;
+      headers.forEach(h => { html += `<th style="${thStyle}">${escHtml(h)}</th>`; });
+      html += `</tr></thead><tbody>`;
+      rows.forEach(row => {
+        html += `<tr>`;
+        row.forEach(cell => { html += `<td style="${tdStyle}">${escHtml(String(cell))}</td>`; });
+        html += `</tr>`;
+      });
+      html += `</tbody></table>`;
+    };
+
+    if (sections.tasks && reportData.tasks.length > 0) {
+      addTable("Выполненные задачи", ["Задача", "Приоритет", "Исполнитель", "Дедлайн"],
+        reportData.tasks.map((t: any) => [
+          t.title,
+          t.priority === "high" ? "Высокий" : t.priority === "low" ? "Низкий" : "Средний",
+          t.assignee?.full_name || "—",
+          t.deadline ? format(new Date(t.deadline), "dd.MM.yyyy") : "—",
+        ])
+      );
+    }
+
+    if (sections.worklog && reportData.workLogs.length > 0) {
+      addTable("Проделанная работа", ["Дата", "Описание", "Категория", "Статус"],
+        reportData.workLogs.map((w: any) => [
+          format(new Date(w.task_date), "dd.MM.yyyy"),
+          w.description,
+          w.category,
+          w.status === "done" ? "Готово" : "В работе",
+        ])
+      );
+    }
+
+    if (sections.positions && reportData.keywords.length > 0) {
+      addTable("Позиции по ключевым словам", ["Запрос", "Позиция", "Изменение"],
+        reportData.keywords.map((k: any) => [
+          k.keyword,
+          String(k.position),
+          k.position_change > 0 ? `+${k.position_change}` : String(k.position_change),
+        ])
+      );
+    }
+
+    if (sections.traffic && reportData.analytics.length > 0) {
+      addTable("Трафик", ["Месяц", "Органический трафик", "Ср. позиция"],
+        reportData.analytics.map((a: any) => [
+          format(new Date(a.month), "MM.yyyy"),
+          String(a.organic_traffic),
+          a.avg_position.toFixed(1),
+        ])
+      );
+    }
+
+    // Footer
+    html += `<p style="font-size:9px;color:#999;margin-top:30px;text-align:center;">Сгенерировано StatPulse · ${format(new Date(), "dd.MM.yyyy HH:mm")}</p>`;
+    html += `</div>`;
+    return html;
+  }, [reportData, project, sections, periodLabel, comparisonMode, compPeriodLabel, compData]);
+
   const handleGeneratePdf = useCallback(async () => {
     if (!reportData || !project) return;
     setGenerating(true);
     try {
-      const pdf = new jsPDF("p", "mm", "a4");
-      const pageW = 210;
-      let y = 20;
+      const htmlContent = buildPdfHtml();
+      if (!htmlContent) { toast.error("Нет данных для отчёта"); return; }
 
-      // Header
-      const headerH = comparisonMode !== "none" ? 42 : 35;
-      pdf.setFillColor(26, 26, 27);
-      pdf.rect(0, 0, pageW, headerH, "F");
-      pdf.setTextColor(255, 255, 255);
-      pdf.setFontSize(18);
-      pdf.text(`Отчёт: ${project.name}`, 14, 16);
-      pdf.setFontSize(10);
-      pdf.setTextColor(180, 180, 180);
-      pdf.text(`Период: ${periodLabel}`, 14, 25);
-      if (comparisonMode !== "none" && compPeriodLabel) {
-        pdf.text(`Сравнение: ${compPeriodLabel} (${comparisonMode === "previous" ? "пред. период" : "прошлый год"})`, 14, 31);
-      }
-      if (project.url) pdf.text(project.url, 14, comparisonMode !== "none" ? 37 : 31);
-      y = headerH + 10;
+      const container = document.createElement("div");
+      container.innerHTML = htmlContent;
+      container.style.width = "210mm";
+      container.style.position = "absolute";
+      container.style.left = "-9999px";
+      document.body.appendChild(container);
 
-      pdf.setTextColor(40, 40, 40);
+      const html2pdf = (await import("html2pdf.js")).default;
+      await html2pdf().set({
+        margin: [10, 10, 10, 10],
+        filename: `Отчёт_${project.name}_${format(dateRange.from, "dd.MM.yyyy")}.pdf`,
+        image: { type: "jpeg", quality: 0.95 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        pagebreak: { mode: ["avoid-all", "css", "legacy"] },
+      }).from(container).save();
 
-      // Comparison summary block
-      if (comparisonMode !== "none" && compData) {
-        pdf.setFillColor(245, 245, 245);
-        pdf.roundedRect(14, y, pageW - 28, 22, 2, 2, "F");
-        pdf.setFontSize(10);
-        pdf.setFont("helvetica", "bold");
-        pdf.text("Сравнение с " + (comparisonMode === "previous" ? "предыдущим периодом" : "прошлым годом"), 18, y + 6);
-        pdf.setFont("helvetica", "normal");
-        pdf.setFontSize(9);
-
-        const curTasks = reportData.tasks.length;
-        const curLogs = reportData.workLogs.length;
-        const curTraffic = reportData.analytics.reduce((s: number, a: any) => s + (a.organic_traffic || 0), 0);
-        const dTasks = calcDelta(curTasks, compData.tasksCount);
-        const dLogs = calcDelta(curLogs, compData.workLogsCount);
-        const dTraffic = calcDelta(curTraffic, compData.totalTraffic);
-
-        const items = [
-          `Задачи: ${curTasks} (${dTasks >= 0 ? "+" : ""}${dTasks}%)`,
-          `Работы: ${curLogs} (${dLogs >= 0 ? "+" : ""}${dLogs}%)`,
-          `Трафик: ${curTraffic.toLocaleString()} (${dTraffic >= 0 ? "+" : ""}${dTraffic}%)`,
-        ];
-        pdf.text(items.join("   |   "), 18, y + 14);
-        y += 30;
-      }
-
-      const addSection = (title: string, headers: string[], rows: string[][]) => {
-        if (y > 260) { pdf.addPage(); y = 20; }
-        pdf.setFontSize(14);
-        pdf.setFont("helvetica", "bold");
-        pdf.text(title, 14, y);
-        y += 8;
-
-        pdf.setFontSize(9);
-        pdf.setFont("helvetica", "bold");
-        const colW = (pageW - 28) / headers.length;
-        headers.forEach((h, i) => pdf.text(h, 14 + i * colW, y));
-        y += 2;
-        pdf.setDrawColor(200); pdf.line(14, y, pageW - 14, y);
-        y += 5;
-
-        pdf.setFont("helvetica", "normal");
-        rows.forEach(row => {
-          if (y > 275) { pdf.addPage(); y = 20; }
-          row.forEach((cell, i) => {
-            const text = String(cell).substring(0, 40);
-            pdf.text(text, 14 + i * colW, y);
-          });
-          y += 5;
-        });
-        y += 8;
-      };
-
-      if (sections.tasks && reportData.tasks.length > 0) {
-        addSection("Выполненные задачи",
-          ["Задача", "Приоритет", "Исполнитель", "Дедлайн"],
-          reportData.tasks.map((t: any) => [
-            t.title,
-            t.priority === "high" ? "Высокий" : t.priority === "low" ? "Низкий" : "Средний",
-            t.assignee?.full_name || "—",
-            t.deadline ? format(new Date(t.deadline), "dd.MM.yyyy") : "—",
-          ])
-        );
-      }
-
-      if (sections.worklog && reportData.workLogs.length > 0) {
-        addSection("Проделанная работа",
-          ["Дата", "Описание", "Категория", "Статус"],
-          reportData.workLogs.map((w: any) => [
-            format(new Date(w.task_date), "dd.MM.yyyy"),
-            w.description,
-            w.category,
-            w.status === "done" ? "Готово" : "В работе",
-          ])
-        );
-      }
-
-      if (sections.positions && reportData.keywords.length > 0) {
-        addSection("Позиции по ключевым словам",
-          ["Запрос", "Позиция", "Изменение"],
-          reportData.keywords.map((k: any) => [
-            k.keyword,
-            String(k.position),
-            k.position_change > 0 ? `+${k.position_change}` : String(k.position_change),
-          ])
-        );
-      }
-
-      if (sections.traffic && reportData.analytics.length > 0) {
-        addSection("Трафик",
-          ["Месяц", "Органический трафик", "Ср. позиция"],
-          reportData.analytics.map((a: any) => [
-            format(new Date(a.month), "MM.yyyy"),
-            String(a.organic_traffic),
-            a.avg_position.toFixed(1),
-          ])
-        );
-      }
-
-      // Footer
-      pdf.setFontSize(8);
-      pdf.setTextColor(150);
-      pdf.text(`Сгенерировано StatPulse · ${format(new Date(), "dd.MM.yyyy HH:mm")}`, 14, 290);
-
-      pdf.save(`Отчёт_${project.name}_${format(dateRange.from, "dd.MM.yyyy")}.pdf`);
+      document.body.removeChild(container);
       setLastGeneratedFormat("pdf");
       toast.success("PDF-отчёт сгенерирован");
     } catch (err: any) {
@@ -418,7 +412,7 @@ export default function ReportsPage() {
     } finally {
       setGenerating(false);
     }
-  }, [reportData, project, sections, periodLabel, dateRange]);
+  }, [reportData, project, sections, periodLabel, dateRange, buildPdfHtml]);
 
   const handleGenerateDocx = useCallback(async () => {
     if (!reportData || !project) return;
