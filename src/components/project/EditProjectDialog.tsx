@@ -196,22 +196,41 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
       if (tokenData.error) throw new Error(tokenData.error);
       const accessToken = tokenData.access_token;
 
-      // Fetch counters
-      const countersResp = await fetch(
-        `https://${projectRef}.supabase.co/functions/v1/yandex-metrika-auth?action=list-counters`,
-        { method: "POST", headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" }, body: JSON.stringify({ access_token: accessToken }) }
-      );
-      const countersData = await countersResp.json();
+      // Fetch counters + hosts in parallel
+      const [countersResp, hostsResp] = await Promise.all([
+        fetch(`https://${projectRef}.supabase.co/functions/v1/yandex-metrika-auth?action=list-counters`, {
+          method: "POST", headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ access_token: accessToken }),
+        }),
+        fetch(`https://${projectRef}.supabase.co/functions/v1/yandex-webmaster`, {
+          method: "POST", headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "get-hosts", access_token: accessToken }),
+        }),
+      ]);
 
-      // Save token to yandexMetrika integration
+      const countersData = await countersResp.json();
+      setYandexCounters(countersData.counters || []);
+
+      try {
+        const hostsData = await hostsResp.json();
+        const hosts = (hostsData.hosts || []).map((h: any) => ({
+          host_id: h.host_id,
+          unicode_host_url: h.unicode_host_url || h.ascii_host_url || h.host_id,
+        }));
+        setYandexHosts(hosts);
+      } catch { setYandexHosts([]); }
+
+      // Pre-select existing values
       const existingMetrika = integrations.find(i => i.service_name === "yandexMetrika");
+      if (existingMetrika?.counter_id) setSelectedCounter(existingMetrika.counter_id);
+
+      // Save token to both integrations
       if (existingMetrika) {
         await supabase.from("integrations").update({ access_token: accessToken, connected: true }).eq("id", existingMetrika.id);
       } else {
         await supabase.from("integrations").insert({ project_id: projectId, service_name: "yandexMetrika", access_token: accessToken, connected: true } as any);
       }
 
-      // Save token to yandexWebmaster integration too
       const existingWm = integrations.find(i => i.service_name === "yandexWebmaster");
       if (existingWm) {
         await supabase.from("integrations").update({ access_token: accessToken, connected: true }).eq("id", existingWm.id);
@@ -219,7 +238,6 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
         await supabase.from("integrations").insert({ project_id: projectId, service_name: "yandexWebmaster", access_token: accessToken, connected: true } as any);
       }
 
-      // Update connected status in UI
       setIntegrationValues(prev => ({
         ...prev,
         yandexMetrika: { ...prev.yandexMetrika, connected: "true" },
@@ -228,7 +246,7 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
 
       queryClient.invalidateQueries({ queryKey: ["project-integrations-edit", projectId] });
       setYandexOAuthStep("done");
-      toast.success("Яндекс авторизован! Токен сохранён для Метрики и Вебмастера.");
+      toast.success("Яндекс авторизован! Выберите счётчик и сайт.");
     } catch (err: any) {
       toast.error(err.message || "Ошибка авторизации");
       setYandexOAuthStep("idle");
