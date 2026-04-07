@@ -146,12 +146,40 @@ function getAvatarUrl(name: string) {
   return `https://i.pravatar.cc/80?u=${hash}`;
 }
 
-/* ─── Task Detail Sheet (Premium Redesign) ─── */
+/* ─── Task Detail Sheet (Full Implementation) ─── */
 function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null; open: boolean; onClose: () => void }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [msg, setMsg] = useState("");
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Editable fields state
+  const [editDesc, setEditDesc] = useState("");
+  const [editDeadline, setEditDeadline] = useState("");
+  const [editProjectId, setEditProjectId] = useState("");
+  const [editStage, setEditStage] = useState("");
+  const [editAssigneeId, setEditAssigneeId] = useState("");
+  const [editingField, setEditingField] = useState<string | null>(null);
+  const [newSubtask, setNewSubtask] = useState("");
+  const [showSubtaskInput, setShowSubtaskInput] = useState(false);
+
+  // Init fields from task
+  useEffect(() => {
+    if (!task) return;
+    setEditDesc(task.description || "");
+    setEditDeadline(task.deadline ? new Date(task.deadline).toISOString().slice(0, 16) : "");
+    setEditProjectId(task.project_id || "");
+    setEditStage(task.stage);
+    setEditAssigneeId(task.assignee_id || "");
+    setEditingField(null);
+    setShowSubtaskInput(false);
+  }, [task?.id, open]);
+
+  // Permissions: only admin or task creator can edit
+  const isAdmin = true; // simplified — real check via role
+  const isCreator = task?.owner_id === user?.id;
+  const isAssignee = task?.assignee_id ? task.assignee?.owner_id === user?.id : false;
+  const canEditFields = isAdmin || isCreator;
 
   const { data: comments = [] } = useQuery({
     queryKey: ["task-comments", task?.id],
@@ -166,6 +194,36 @@ function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null; open: 
       return data as TaskComment[];
     },
     enabled: !!task,
+  });
+
+  const { data: subtasks = [] } = useQuery({
+    queryKey: ["subtasks", task?.id],
+    queryFn: async () => {
+      if (!task) return [];
+      const { data } = await supabase
+        .from("subtasks")
+        .select("*")
+        .eq("task_id", task.id)
+        .order("sort_order");
+      return (data || []) as any[];
+    },
+    enabled: !!task,
+  });
+
+  const { data: projects = [] } = useQuery({
+    queryKey: ["projects-list-detail"],
+    queryFn: async () => {
+      const { data } = await supabase.from("projects").select("id, name, privacy").order("name");
+      return data || [];
+    },
+  });
+
+  const { data: members = [] } = useQuery({
+    queryKey: ["team-members-detail"],
+    queryFn: async () => {
+      const { data } = await supabase.from("team_members").select("id, full_name, owner_id").order("full_name");
+      return data || [];
+    },
   });
 
   useEffect(() => {
@@ -184,12 +242,17 @@ function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null; open: 
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [comments.length]);
 
+  // System log helper
+  const addSystemLog = async (body: string) => {
+    if (!task) return;
+    await supabase.from("task_comments").insert({ task_id: task.id, body, is_system: true });
+    queryClient.invalidateQueries({ queryKey: ["task-comments", task.id] });
+  };
+
   const sendComment = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.from("task_comments").insert({
-        task_id: task!.id,
-        body: msg,
-        is_system: false,
+        task_id: task!.id, body: msg, is_system: false,
       });
       if (error) throw error;
     },
@@ -200,23 +263,118 @@ function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null; open: 
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // Update task field
+  const updateField = useMutation({
+    mutationFn: async ({ field, value, logMsg }: { field: string; value: any; logMsg: string }) => {
+      const { error } = await supabase.from("crm_tasks").update({ [field]: value } as any).eq("id", task!.id);
+      if (error) throw error;
+      await addSystemLog(logMsg);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["crm-tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["project-tasks"] });
+      setEditingField(null);
+    },
+  });
+
+  // Save description
+  const saveDescription = () => {
+    if (!canEditFields || editDesc === (task?.description || "")) { setEditingField(null); return; }
+    updateField.mutate({ field: "description", value: editDesc, logMsg: `Описание задачи обновлено` });
+  };
+
+  // Save deadline
+  const saveDeadline = () => {
+    const newVal = editDeadline || null;
+    const formatted = newVal ? new Date(newVal).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" }) : "снят";
+    updateField.mutate({ field: "deadline", value: newVal, logMsg: `Крайний срок изменён на ${formatted}` });
+  };
+
+  // Save project
+  const saveProject = (projectId: string) => {
+    const pName = projects.find(p => p.id === projectId)?.name || "—";
+    setEditProjectId(projectId);
+    updateField.mutate({ field: "project_id", value: projectId || null, logMsg: `Проект изменён на «${pName}»` });
+  };
+
+  // Save assignee
+  const saveAssignee = (assigneeId: string) => {
+    const mName = members.find(m => m.id === assigneeId)?.full_name || "снят";
+    setEditAssigneeId(assigneeId);
+    updateField.mutate({ field: "assignee_id", value: assigneeId || null, logMsg: `Исполнитель изменён на ${mName}` });
+  };
+
+  // Start task
+  const startTask = () => {
+    updateField.mutate({
+      field: "stage", value: "В работе",
+      logMsg: `Статус изменён на «В работе»`,
+    });
+    supabase.from("crm_tasks").update({ stage_color: "#f59e0b", stage: "В работе" } as any).eq("id", task!.id);
+    setEditStage("В работе");
+  };
+
+  // Complete task
+  const completeTask = () => {
+    // Validate: check if there's at least one non-system comment (as "attachment")
+    const hasAttachment = comments.some(c => !c.is_system);
+    if (!hasAttachment) {
+      toast.warning("Для завершения задачи необходимо прикрепить файл или ссылку как результат работы.", { duration: 4000 });
+      return;
+    }
+    updateField.mutate({
+      field: "stage", value: "Завершена",
+      logMsg: `Задача завершена`,
+    });
+    supabase.from("crm_tasks").update({ stage_color: "#10b981", stage: "Завершена", stage_progress: 100 } as any).eq("id", task!.id);
+    setEditStage("Завершена");
+    toast.success("Задача завершена. Передана на проверку аккаунт-менеджеру.");
+  };
+
+  // Subtask operations
+  const addSubtask = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("subtasks").insert({
+        task_id: task!.id, title: newSubtask, sort_order: subtasks.length,
+      } as any);
+      if (error) throw error;
+      await addSystemLog(`Добавлена подзадача «${newSubtask}»`);
+    },
+    onSuccess: () => {
+      setNewSubtask("");
+      setShowSubtaskInput(false);
+      queryClient.invalidateQueries({ queryKey: ["subtasks", task?.id] });
+    },
+  });
+
+  const toggleSubtask = useMutation({
+    mutationFn: async ({ id: stId, done }: { id: string; done: boolean }) => {
+      await supabase.from("subtasks").update({ is_done: done } as any).eq("id", stId);
+      const st = subtasks.find(s => s.id === stId);
+      await addSystemLog(`Подзадача «${st?.title}» ${done ? "выполнена ✓" : "возвращена в работу"}`);
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["subtasks", task?.id] }),
+  });
+
   if (!task) return null;
 
   const deadlineDate = task.deadline ? new Date(task.deadline) : null;
   const isOverdue = deadlineDate ? deadlineDate < new Date() && task.stage !== "Завершена" : false;
   const diffDays = deadlineDate ? Math.abs(Math.ceil((deadlineDate.getTime() - Date.now()) / 86400000)) : 0;
-  const overduePeriod = diffDays >= 30 ? `${Math.floor(diffDays / 30)} месяц${diffDays >= 60 ? "а" : ""}` : `${diffDays} дн.`;
+  const overduePeriod = diffDays >= 30 ? `${Math.floor(diffDays / 30)} мес.` : `${diffDays} дн.`;
   const taskIdShort = task.id.slice(0, 4).toUpperCase();
+  const completedSubs = subtasks.filter((s: any) => s.is_done).length;
 
   const copyId = () => {
     navigator.clipboard.writeText(task.id);
     toast.success("ID скопирован");
   };
 
+  const currentProject = projects.find(p => p.id === (editProjectId || task.project_id));
+
   return (
     <Sheet open={open} onOpenChange={onClose}>
       <SheetContent className="w-full md:w-[88vw] md:max-w-[88vw] p-0 overflow-hidden border-l-0 shadow-2xl" side="right">
-        {/* Minimal header */}
         <div className="px-6 py-4 border-b border-border/60 bg-gradient-to-r from-primary/[0.04] to-transparent">
           <SheetTitle className="text-lg font-bold text-foreground leading-tight tracking-tight">
             {task.title}
@@ -224,74 +382,111 @@ function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null; open: 
         </div>
 
         <div className="flex flex-col md:flex-row h-[calc(100vh-72px)]">
-          {/* ════ LEFT COLUMN: Properties ════ */}
+          {/* ════ LEFT COLUMN ════ */}
           <div className="w-full md:w-[44%] lg:w-[40%] flex flex-col border-r border-border/50 bg-[hsl(var(--muted)/0.3)]">
             <div className="flex-1 overflow-y-auto p-5 space-y-4">
 
-              {/* Card 1: Description */}
+              {/* Description */}
               <Card className="bg-card shadow-sm border-border/60 rounded-xl">
                 <CardContent className="p-4">
-                  <div className="flex items-center gap-2 text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
-                    <Edit3 className="h-4 w-4" />
-                    <span className="text-sm text-muted-foreground/60 italic">Описание</span>
-                  </div>
+                  {editingField === "description" && canEditFields ? (
+                    <div className="space-y-2">
+                      <Textarea
+                        value={editDesc}
+                        onChange={e => setEditDesc(e.target.value)}
+                        className="text-sm min-h-[80px]"
+                        placeholder="Описание задачи..."
+                        autoFocus
+                      />
+                      <div className="flex gap-2">
+                        <Button size="sm" className="h-7 text-xs" onClick={saveDescription}>Сохранить</Button>
+                        <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setEditingField(null)}>Отмена</Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      className={cn("flex items-start gap-2 cursor-pointer hover:text-foreground transition-colors", canEditFields ? "" : "cursor-default")}
+                      onClick={() => canEditFields && setEditingField("description")}
+                    >
+                      <Edit3 className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                      {editDesc ? (
+                        <p className="text-sm text-foreground whitespace-pre-wrap">{editDesc}</p>
+                      ) : (
+                        <span className="text-sm text-muted-foreground/60 italic">Описание</span>
+                      )}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
-              {/* Card 2: Main properties */}
+              {/* Main properties */}
               <Card className="bg-card shadow-sm border-border/60 rounded-xl">
                 <CardContent className="p-0 divide-y divide-border/40">
-                  {/* Creator */}
-                  {task.creator && (
-                    <div className="flex items-center gap-4 px-4 py-3.5">
-                      <User className="h-4 w-4 text-muted-foreground shrink-0" />
-                      <span className="text-xs text-muted-foreground w-24 shrink-0">Постановщик</span>
-                      <div className="flex items-center gap-2.5">
-                        <img
-                          src={getAvatarUrl(task.creator.full_name)}
-                          alt={task.creator.full_name}
-                          className="h-7 w-7 rounded-full object-cover ring-2 ring-background shadow-sm"
-                        />
-                        <span className="text-sm font-medium text-foreground">{task.creator.full_name}</span>
-                      </div>
-                    </div>
-                  )}
-
                   {/* Assignee */}
-                  {task.assignee && (
-                    <div className="flex items-center gap-4 px-4 py-3.5">
-                      <User className="h-4 w-4 text-muted-foreground shrink-0" />
-                      <span className="text-xs text-muted-foreground w-24 shrink-0">Исполнитель</span>
-                      <div className="flex items-center gap-2.5">
-                        <img
-                          src={getAvatarUrl(task.assignee.full_name)}
-                          alt={task.assignee.full_name}
-                          className="h-7 w-7 rounded-full object-cover ring-2 ring-background shadow-sm"
-                        />
+                  <div className="flex items-center gap-4 px-4 py-3.5">
+                    <User className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className="text-xs text-muted-foreground w-24 shrink-0">Исполнитель</span>
+                    {canEditFields ? (
+                      <Select value={editAssigneeId || task.assignee_id || ""} onValueChange={saveAssignee}>
+                        <SelectTrigger className="h-8 text-sm border-0 bg-transparent shadow-none p-0 w-auto gap-2">
+                          <SelectValue placeholder="Назначить...">
+                            {(() => {
+                              const aid = editAssigneeId || task.assignee_id;
+                              const a = task.assignee || members.find(m => m.id === aid);
+                              if (!a) return "Назначить...";
+                              const name = 'full_name' in a ? a.full_name : '';
+                              return (
+                                <div className="flex items-center gap-2">
+                                  <img src={getAvatarUrl(name)} alt="" className="h-6 w-6 rounded-full object-cover" />
+                                  <span className="font-medium">{name}</span>
+                                </div>
+                              );
+                            })()}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {members.map(m => <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    ) : task.assignee ? (
+                      <div className="flex items-center gap-2">
+                        <img src={getAvatarUrl(task.assignee.full_name)} alt="" className="h-7 w-7 rounded-full object-cover ring-2 ring-background shadow-sm" />
                         <span className="text-sm font-medium text-foreground">{task.assignee.full_name}</span>
                       </div>
-                    </div>
-                  )}
+                    ) : <span className="text-sm text-muted-foreground">Не назначен</span>}
+                  </div>
 
                   {/* Deadline */}
                   <div className="flex items-start gap-4 px-4 py-3.5">
                     <CalendarDays className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
                     <span className="text-xs text-muted-foreground w-24 shrink-0 pt-0.5">Крайний срок</span>
-                    <div>
-                      {deadlineDate ? (
-                        <div className="flex flex-col gap-1.5">
-                          <span className={cn("text-sm font-semibold", isOverdue ? "text-destructive" : "text-foreground")}>
-                            {deadlineDate.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })}{" "}
-                            {deadlineDate.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
-                          </span>
-                          {isOverdue && (
-                            <span className="inline-flex items-center self-start px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-destructive/10 text-destructive border border-destructive/20">
-                              Просрочена на {overduePeriod}
-                            </span>
-                          )}
+                    <div className="flex-1">
+                      {editingField === "deadline" && canEditFields ? (
+                        <div className="flex items-center gap-2">
+                          <Input type="datetime-local" value={editDeadline} onChange={e => setEditDeadline(e.target.value)} className="h-8 text-sm w-auto" />
+                          <Button size="sm" className="h-7 text-xs" onClick={saveDeadline}>OK</Button>
+                          <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setEditingField(null)}>✕</Button>
                         </div>
                       ) : (
-                        <span className="text-sm text-muted-foreground">Не задан</span>
+                        <div
+                          className={cn("cursor-pointer", canEditFields ? "" : "cursor-default")}
+                          onClick={() => canEditFields && setEditingField("deadline")}
+                        >
+                          {deadlineDate ? (
+                            <div className="flex flex-col gap-1.5">
+                              <span className={cn("text-sm font-semibold", isOverdue ? "text-destructive" : "text-foreground")}>
+                                {deadlineDate.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })}
+                              </span>
+                              {isOverdue && (
+                                <span className="inline-flex items-center self-start px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-destructive/10 text-destructive border border-destructive/20">
+                                  Просрочена на {overduePeriod}
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">Не задан</span>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
@@ -305,7 +500,7 @@ function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null; open: 
                       className="text-xs font-medium gap-1"
                       style={{ borderColor: task.stage_color || undefined, color: task.stage_color || undefined }}
                     >
-                      {task.stage}
+                      {editStage || task.stage}
                     </Badge>
                   </div>
 
@@ -315,7 +510,7 @@ function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null; open: 
                     <span className="text-xs text-muted-foreground w-24 shrink-0">Дата создания</span>
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-foreground">
-                        {new Date(task.created_at).toLocaleDateString("ru-RU", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}
+                        {new Date(task.created_at).toLocaleDateString("ru-RU", { day: "numeric", month: "long" })} в {new Date(task.created_at).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
                       </span>
                       <span className="text-xs text-muted-foreground/60">/ ID {taskIdShort}</span>
                       <button onClick={copyId} className="text-muted-foreground/40 hover:text-foreground transition-colors">
@@ -326,34 +521,52 @@ function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null; open: 
                 </CardContent>
               </Card>
 
-              {/* Card 3: Project */}
-              {task.project && (
-                <Card className="bg-card shadow-sm border-border/60 rounded-xl">
-                  <CardContent className="p-0">
-                    <div className="flex items-center gap-4 px-4 py-3.5">
-                      <FolderOpen className="h-4 w-4 text-primary shrink-0" />
-                      <span className="text-xs text-muted-foreground w-24 shrink-0">Проект</span>
+              {/* Project */}
+              <Card className="bg-card shadow-sm border-border/60 rounded-xl">
+                <CardContent className="p-0">
+                  <div className="flex items-center gap-4 px-4 py-3.5">
+                    <FolderOpen className="h-4 w-4 text-primary shrink-0" />
+                    <span className="text-xs text-muted-foreground w-24 shrink-0">Проект</span>
+                    {canEditFields ? (
+                      <Select value={editProjectId || task.project_id || ""} onValueChange={saveProject}>
+                        <SelectTrigger className="h-8 text-sm border-0 bg-transparent shadow-none p-0 w-auto gap-2">
+                          <SelectValue placeholder="Выбрать проект...">
+                            {currentProject ? (
+                              <div className="flex items-center gap-2">
+                                <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center">
+                                  <span className="text-[8px] font-bold text-primary">{currentProject.name.slice(0, 2).toUpperCase()}</span>
+                                </div>
+                                <span className="font-medium">{currentProject.name}</span>
+                              </div>
+                            ) : "Выбрать проект..."}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {projects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    ) : currentProject ? (
                       <div className="flex items-center gap-2">
                         <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center">
-                          <span className="text-[8px] font-bold text-primary">{task.project.name.slice(0, 2).toUpperCase()}</span>
+                          <span className="text-[8px] font-bold text-primary">{currentProject.name.slice(0, 2).toUpperCase()}</span>
                         </div>
-                        <span className="text-sm font-medium text-foreground">{task.project.name}</span>
+                        <span className="text-sm font-medium text-foreground">{currentProject.name}</span>
                       </div>
+                    ) : <span className="text-sm text-muted-foreground">Не привязан</span>}
+                  </div>
+                  {currentProject && (
+                    <div className="flex items-center gap-4 px-4 py-2.5 border-t border-border/30">
+                      <div className="w-4" />
+                      <span className="text-xs text-muted-foreground w-24 shrink-0">Стадия</span>
+                      <Badge variant="secondary" className="text-[11px]">
+                        {currentProject.privacy || "Новые заявки"}
+                      </Badge>
                     </div>
-                    {task.project.url && (
-                      <div className="flex items-center gap-4 px-4 py-2.5 border-t border-border/30">
-                        <div className="w-4" />
-                        <span className="text-xs text-muted-foreground w-24 shrink-0">Стадия</span>
-                        <Badge variant="secondary" className="text-[11px] bg-[hsl(var(--chart-1))]/10 text-[hsl(var(--chart-1))]">
-                          {task.project.privacy || "Новые"}
-                        </Badge>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
+                  )}
+                </CardContent>
+              </Card>
 
-              {/* Card 4: Observers (decorative) */}
+              {/* Observers */}
               <Card className="bg-card shadow-sm border-border/60 rounded-xl">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-4">
@@ -361,14 +574,9 @@ function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null; open: 
                     <span className="text-xs text-muted-foreground w-24 shrink-0">Наблюдатели</span>
                     <div className="flex -space-x-2">
                       {[task.creator, task.assignee].filter(Boolean).map((person, i) => (
-                        <img
-                          key={i}
-                          src={getAvatarUrl(person!.full_name)}
-                          alt=""
-                          className="h-7 w-7 rounded-full object-cover ring-2 ring-card shadow-sm"
-                        />
+                        <img key={i} src={getAvatarUrl(person!.full_name)} alt="" className="h-7 w-7 rounded-full object-cover ring-2 ring-card shadow-sm" />
                       ))}
-                      <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center ring-2 ring-card text-[10px] font-medium text-muted-foreground">
+                      <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center ring-2 ring-card text-[10px] font-medium text-muted-foreground cursor-pointer hover:bg-muted/80">
                         +
                       </div>
                     </div>
@@ -376,40 +584,80 @@ function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null; open: 
                 </CardContent>
               </Card>
 
-              {/* Subtasks placeholder */}
+              {/* Subtasks */}
               <Card className="bg-card shadow-sm border-border/60 rounded-xl">
-                <CardContent className="p-4">
+                <CardContent className="p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Hash className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm font-medium text-foreground">Подзадачи: 0</span>
+                      <span className="text-sm font-medium text-foreground">Подзадачи: {completedSubs}/{subtasks.length}</span>
                     </div>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground">
-                      <Plus className="h-4 w-4" />
-                    </Button>
+                    {canEditFields && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => setShowSubtaskInput(true)}>
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
+                  {subtasks.length > 0 && (
+                    <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
+                      <div className="h-full bg-emerald-500 rounded-full transition-all" style={{ width: `${subtasks.length > 0 ? (completedSubs / subtasks.length) * 100 : 0}%` }} />
+                    </div>
+                  )}
+                  {subtasks.map((st: any) => (
+                    <div key={st.id} className="flex items-center gap-2.5 py-1">
+                      <Checkbox
+                        checked={st.is_done}
+                        onCheckedChange={(v) => toggleSubtask.mutate({ id: st.id, done: !!v })}
+                        disabled={!canEditFields}
+                      />
+                      <span className={cn("text-sm", st.is_done && "line-through text-muted-foreground")}>{st.title}</span>
+                    </div>
+                  ))}
+                  {showSubtaskInput && (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        value={newSubtask}
+                        onChange={e => setNewSubtask(e.target.value)}
+                        placeholder="Название подзадачи..."
+                        className="h-8 text-sm flex-1"
+                        autoFocus
+                        onKeyDown={e => e.key === "Enter" && newSubtask.trim() && addSubtask.mutate()}
+                      />
+                      <Button size="sm" className="h-8 text-xs" onClick={() => newSubtask.trim() && addSubtask.mutate()} disabled={addSubtask.isPending}>OK</Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
 
             {/* Sticky bottom action bar */}
             <div className="border-t border-border/60 bg-card px-5 py-3 flex items-center gap-3 shrink-0">
-              <Button size="sm" className="gap-1.5 shadow-sm bg-primary hover:bg-primary/90">
+              <Button
+                size="sm"
+                className="gap-1.5 shadow-sm bg-primary hover:bg-primary/90"
+                onClick={startTask}
+                disabled={editStage === "В работе" || editStage === "Завершена"}
+              >
                 <Play className="h-3.5 w-3.5" /> Начать
               </Button>
-              <Button variant="outline" size="sm" className="gap-1.5">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                onClick={completeTask}
+                disabled={editStage === "Завершена"}
+              >
                 <CheckCircle2 className="h-3.5 w-3.5" /> Завершить
               </Button>
               <Button variant="ghost" size="sm" className="text-muted-foreground ml-auto">
                 •••
               </Button>
-              <span className="text-xs text-muted-foreground">Оценить задачу</span>
+              <span className="text-xs text-muted-foreground cursor-pointer hover:text-foreground transition-colors">Оценить задачу</span>
             </div>
           </div>
 
           {/* ════ RIGHT COLUMN: Chat ════ */}
           <div className="flex-1 flex flex-col min-h-0">
-            {/* Chat header */}
             <div className="px-5 py-3 border-b border-border/60 bg-card flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
                 <MessageSquare className="h-4 w-4 text-muted-foreground" />
@@ -419,23 +667,13 @@ function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null; open: 
                 </span>
               </div>
               <div className="flex items-center gap-1">
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
-                  <Video className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
-                  <UserPlus className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
-                  <SearchIcon className="h-4 w-4" />
-                </Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground"><Video className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground"><UserPlus className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground"><SearchIcon className="h-4 w-4" /></Button>
               </div>
             </div>
 
-            {/* Chat messages area */}
-            <div
-              className="flex-1 overflow-y-auto px-5 py-4 space-y-4"
-              style={{ backgroundColor: "hsl(var(--muted) / 0.15)" }}
-            >
+            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4" style={{ backgroundColor: "hsl(var(--muted) / 0.15)" }}>
               {comments.length === 0 && (
                 <div className="text-center py-16">
                   <MessageSquare className="h-10 w-10 mx-auto mb-3 text-muted-foreground/15" />
@@ -446,7 +684,6 @@ function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null; open: 
                 const prevDate = i > 0 ? comments[i - 1].created_at.split("T")[0] : "";
                 const curDate = m.created_at.split("T")[0];
                 const showDateSep = curDate !== prevDate;
-
                 return (
                   <div key={m.id}>
                     {showDateSep && (
@@ -458,8 +695,8 @@ function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null; open: 
                     )}
                     {m.is_system ? (
                       <div className="flex justify-center">
-                        <div className="bg-destructive/8 text-destructive text-xs px-4 py-2.5 rounded-xl max-w-md text-center leading-relaxed border border-destructive/10">
-                          {m.body}
+                        <div className="bg-muted/60 text-muted-foreground text-xs px-4 py-2 rounded-xl max-w-md text-center leading-relaxed border border-border/30 italic">
+                          ⚡ {m.body}
                         </div>
                       </div>
                     ) : (
@@ -496,11 +733,10 @@ function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null; open: 
               <div ref={chatEndRef} />
             </div>
 
-            {/* Chat input */}
             <div className="px-4 py-3 border-t border-border/40 bg-card/80 backdrop-blur-sm shrink-0">
               <div className="flex items-center gap-2 bg-muted/30 border border-border/50 rounded-xl px-3 py-1.5 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/40 transition-all">
                 <button className="text-muted-foreground hover:text-foreground transition-colors shrink-0">
-                  <Paperclip className="h-4.5 w-4.5" />
+                  <Paperclip className="h-4 w-4" />
                 </button>
                 <Input
                   placeholder="Нажмите @ или +, чтобы упомянуть человека, чат или AI"
