@@ -178,7 +178,7 @@ export function AppSidebar({ activeTab, onTabChange, projectName, projectLogo }:
 
             {!collapsed && projects.length > 0 && (
               <div className="px-3 py-2 border-t border-sidebar-border">
-                <Select onValueChange={(v) => navigate(`/project/${v}`)}>
+                <Select onValueChange={(v) => navigate(`/crm-projects/${v}?tab=analytics`)}>
                   <SelectTrigger className="w-full h-8 text-xs bg-sidebar-accent/50 border-sidebar-border text-sidebar-foreground">
                     <SelectValue placeholder="Аналитика проекта..." />
                   </SelectTrigger>
