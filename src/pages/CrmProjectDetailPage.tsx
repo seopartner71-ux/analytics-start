@@ -60,7 +60,7 @@ function AvatarCircle({ name, size = "sm" }: { name: string; size?: "sm" | "md" 
 export default function CrmProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, canEdit, isViewer } = useAuth();
   const queryClient = useQueryClient();
 
   // Project
