@@ -1,7 +1,8 @@
 import { ReactNode, useCallback } from "react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { LogOut, Sun, Moon, Bell, Search, RefreshCw, CalendarDays } from "lucide-react";
+import { LogOut, Sun, Moon, Search, RefreshCw, CalendarDays } from "lucide-react";
+import { NotificationBell } from "@/components/NotificationBell";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -133,10 +134,7 @@ export function PageHeader({
         {/* Right: actions */}
         <div className="flex items-center gap-1">
           {actions}
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground relative">
-            <Bell className="h-4 w-4" />
-            <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary" />
-          </Button>
+          <NotificationBell />
           <Button variant="ghost" size="icon" onClick={toggleTheme} className="h-8 w-8 text-muted-foreground hover:text-foreground">
             {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
