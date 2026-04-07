@@ -2,9 +2,6 @@ import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { SidebarProvider } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/AppSidebar";
-import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -128,42 +125,23 @@ export default function AdminPanel() {
   };
 
   if (checkingRole) {
-    return (
-      <SidebarProvider>
-        <div className="flex min-h-screen w-full bg-background">
-          <AppSidebar />
-          <main className="flex-1 p-6">
-            <p className="text-muted-foreground">{t("common.loading")}</p>
-          </main>
-        </div>
-      </SidebarProvider>
-    );
+    return <p className="text-muted-foreground p-6">{t("common.loading")}</p>;
   }
 
   if (!isAdmin) {
     return (
-      <SidebarProvider>
-        <div className="flex min-h-screen w-full bg-background">
-          <AppSidebar />
-          <main className="flex-1 flex items-center justify-center">
-            <div className="text-center">
-              <Shield className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h2 className="text-lg font-semibold text-foreground">{t("admin.accessDenied")}</h2>
-              <p className="text-sm text-muted-foreground">{t("admin.accessDeniedDesc")}</p>
-            </div>
-          </main>
+      <div className="flex-1 flex items-center justify-center">
+        <div className="text-center">
+          <Shield className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+          <h2 className="text-lg font-semibold text-foreground">{t("admin.accessDenied")}</h2>
+          <p className="text-sm text-muted-foreground">{t("admin.accessDeniedDesc")}</p>
         </div>
-      </SidebarProvider>
+      </div>
     );
   }
 
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-background">
-        <AppSidebar />
-        <main className="flex-1 overflow-auto">
-          <PageHeader />
-          <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
             <div className="flex items-center gap-3 mb-6">
               <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
                 <Shield className="h-5 w-5 text-primary" />
@@ -344,10 +322,7 @@ export default function AdminPanel() {
                   </CardContent>
                 </Card>
               </TabsContent>
-            </Tabs>
-          </div>
-        </main>
-      </div>
-    </SidebarProvider>
+          </Tabs>
+        </div>
   );
 }
