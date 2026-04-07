@@ -208,12 +208,16 @@ export function AppSidebar({ activeTab, onTabChange, projectName, projectLogo }:
 
       {!collapsed && (
         <SidebarFooter className="border-t border-sidebar-border p-3">
-          <div className="flex items-center gap-2.5">
+          <div
+            className="flex items-center gap-2.5 cursor-pointer hover:bg-sidebar-accent/50 rounded-lg p-1.5 -m-1.5 transition-colors"
+            onClick={() => navigate("/profile")}
+          >
             <div className="h-8 w-8 rounded-full bg-sidebar-muted flex items-center justify-center text-xs font-medium text-sidebar-foreground">
               {user?.email?.charAt(0).toUpperCase() || "U"}
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-[12px] font-medium text-sidebar-accent-foreground truncate">{user?.email}</p>
+              <p className="text-[10px] text-sidebar-foreground/50">Мой профиль</p>
             </div>
           </div>
         </SidebarFooter>
