@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Upload, ChevronRight, ChevronLeft, Check, Loader2, ExternalLink, CheckCircle2, AlertCircle } from "lucide-react";
+import { Plus, Upload, ChevronRight, ChevronLeft, Check, Loader2, ExternalLink, CheckCircle2, AlertCircle, Users } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
