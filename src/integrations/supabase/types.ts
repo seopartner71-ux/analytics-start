@@ -691,6 +691,79 @@ export type Database = {
           },
         ]
       }
+      site_errors: {
+        Row: {
+          detected_at: string
+          error_type: string
+          id: string
+          project_id: string
+          source: string
+          status: string
+          url: string
+        }
+        Insert: {
+          detected_at?: string
+          error_type: string
+          id?: string
+          project_id: string
+          source?: string
+          status?: string
+          url?: string
+        }
+        Update: {
+          detected_at?: string
+          error_type?: string
+          id?: string
+          project_id?: string
+          source?: string
+          status?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_errors_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      site_health: {
+        Row: {
+          id: string
+          metric_name: string
+          metric_value: string
+          project_id: string
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          metric_name: string
+          metric_value?: string
+          project_id: string
+          source?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          metric_name?: string
+          metric_value?: string
+          project_id?: string
+          source?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_health_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_comments: {
         Row: {
           author_id: string | null
