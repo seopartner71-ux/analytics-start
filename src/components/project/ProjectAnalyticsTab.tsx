@@ -392,11 +392,24 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     });
   }, [metrikaStats]);
 
-  // Filter daily data by applied range
-  const filteredData = useMemo(
-    () => dailyData.filter(d => d.date >= appliedRange.from && d.date <= appliedRange.to),
-    [dailyData, appliedRange],
-  );
+  // Filter daily data by applied range, padding missing days with zero
+  const filteredData = useMemo(() => {
+    const days = differenceInDays(appliedRange.to, appliedRange.from);
+    const dailyMap = new Map(dailyData.map(d => [format(d.date, "yyyy-MM-dd"), d]));
+    const result = [];
+    for (let i = 0; i <= days; i++) {
+      const date = new Date(appliedRange.from);
+      date.setDate(date.getDate() + i);
+      const key = format(date, "yyyy-MM-dd");
+      const existing = dailyMap.get(key);
+      result.push({
+        date,
+        dateStr: format(date, "dd.MM", { locale: ru }),
+        visits: existing?.visits || 0,
+      });
+    }
+    return result;
+  }, [dailyData, appliedRange]);
 
   const filteredCompData = useMemo(
     () => dailyData.filter(d => d.date >= appliedCompRange.from && d.date <= appliedCompRange.to),
