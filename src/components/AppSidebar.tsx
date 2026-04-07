@@ -1,56 +1,45 @@
 import {
-  FolderKanban, Users, Shield, BarChart3, LayoutDashboard,
-  TrendingUp, Target, KeyRound, FileSearch, ClipboardList,
-  Sparkles, GitCompare, Settings, Plug, FileText, ChevronLeft,
-  ListOrdered,
+  BarChart3, LayoutDashboard, TrendingUp, ListOrdered,
+  Building2, FolderKanban, ClipboardList, FileText, Link2,
+  Users, Plug, ChevronLeft, ChevronDown, Settings,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useQuery } from "@tanstack/react-query";
-import { useTranslation } from "react-i18next";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarFooter,
-  useSidebar,
+  Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
+  SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
+  SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
-const mainNav = [
-  { titleKey: "nav.projects", url: "/", icon: FolderKanban },
-  { titleKey: "nav.team", url: "/team", icon: Users },
+// CRM Navigation
+const crmNav = [
+  { title: "Компании", url: "/companies", icon: Building2 },
+  { title: "Проекты", url: "/crm-projects", icon: FolderKanban },
 ];
 
-interface ProjectSection {
-  titleKey: string;
-  tab: string;
-  icon: React.ElementType;
-}
-
-const projectSections: ProjectSection[] = [
-  { titleKey: "portalNav.overview", tab: "overview", icon: LayoutDashboard },
-  { titleKey: "portalNav.traffic", tab: "searchSystems", icon: TrendingUp },
-  { titleKey: "portalNav.conversions", tab: "goals", icon: Target },
-  { titleKey: "portalNav.keywords", tab: "seo", icon: KeyRound },
-  { titleKey: "portalNav.indexing", tab: "pages", icon: FileSearch },
-  { titleKey: "portalNav.workLog", tab: "worklog", icon: ClipboardList },
-  { titleKey: "portalNav.aiAnalytics", tab: "ai", icon: Sparkles },
-  { titleKey: "portalNav.positions", tab: "positions", icon: ListOrdered },
-  { titleKey: "portalNav.comparison", tab: "comparison", icon: GitCompare },
-  { titleKey: "portalNav.reports", tab: "builder", icon: FileText },
+// Analytics (project-context)
+const analyticsNav = [
+  { title: "Обзор", tab: "overview", icon: LayoutDashboard },
+  { title: "Трафик", tab: "searchSystems", icon: TrendingUp },
+  { title: "Позиции", tab: "positions", icon: ListOrdered },
 ];
 
-const projectUtilSections: ProjectSection[] = [
-  { titleKey: "portalNav.integrations", tab: "integrations", icon: Plug },
-  { titleKey: "portalNav.settings", tab: "settings", icon: Settings },
+// SEO Management
+const seoNav = [
+  { title: "Задачи", url: "/tasks", icon: ClipboardList },
+  { title: "Контент", url: "/content", icon: FileText },
+  { title: "Ссылки", url: "/links", icon: Link2 },
+];
+
+// Team
+const teamNav = [
+  { title: "Сотрудники", url: "/employees", icon: Users },
+  { title: "Интеграции", tab: "integrations", icon: Plug },
 ];
 
 interface AppSidebarProps {
@@ -63,21 +52,56 @@ interface AppSidebarProps {
 export function AppSidebar({ activeTab, onTabChange, projectName, projectLogo }: AppSidebarProps) {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
-  const { t } = useTranslation();
   const { user } = useAuth();
   const { id: projectId } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const isProjectPage = !!projectId && !!onTabChange;
 
-  const { data: isAdmin } = useQuery({
-    queryKey: ["user-role", user?.id],
+  const { data: projects = [] } = useQuery({
+    queryKey: ["projects-sidebar"],
     queryFn: async () => {
-      const { data } = await supabase.rpc("has_role", { _user_id: user!.id, _role: "admin" });
-      return data === true;
+      const { data, error } = await supabase.from("projects").select("id, name, logo_url").order("name");
+      if (error) throw error;
+      return data;
     },
-    enabled: !!user,
   });
+
+  const renderGroupLabel = (label: string) => {
+    if (collapsed) return null;
+    return (
+      <SidebarGroupLabel className="text-[10px] uppercase tracking-wider text-sidebar-foreground/40 font-semibold px-3">
+        {label}
+      </SidebarGroupLabel>
+    );
+  };
+
+  const renderNavLink = (item: { title: string; url: string; icon: React.ElementType }) => (
+    <SidebarMenuItem key={item.url}>
+      <SidebarMenuButton asChild>
+        <NavLink to={item.url} end={item.url === "/"} className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors rounded-md" activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium">
+          <item.icon className="mr-2.5 h-4 w-4 shrink-0" />
+          {!collapsed && <span className="text-[13px]">{item.title}</span>}
+        </NavLink>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  );
+
+  const renderTabButton = (item: { title: string; tab: string; icon: React.ElementType }) => (
+    <SidebarMenuItem key={item.tab}>
+      <SidebarMenuButton
+        onClick={() => onTabChange?.(item.tab)}
+        className={cn(
+          "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors rounded-md cursor-pointer",
+          activeTab === item.tab && "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+        )}
+      >
+        <item.icon className="mr-2.5 h-4 w-4 shrink-0" />
+        {!collapsed && <span className="text-[13px]">{item.title}</span>}
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  );
 
   return (
     <Sidebar collapsible="icon">
@@ -96,17 +120,14 @@ export function AppSidebar({ activeTab, onTabChange, projectName, projectLogo }:
 
         {isProjectPage ? (
           <>
-            {/* Back to projects */}
+            {/* Back */}
             <SidebarGroup>
               <SidebarGroupContent>
                 <SidebarMenu>
                   <SidebarMenuItem>
-                    <SidebarMenuButton
-                      onClick={() => navigate("/")}
-                      className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors rounded-md cursor-pointer"
-                    >
+                    <SidebarMenuButton onClick={() => navigate("/")} className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors rounded-md cursor-pointer">
                       <ChevronLeft className="mr-2 h-4 w-4 shrink-0" />
-                      {!collapsed && <span className="text-[13px]">{t("nav.projects")}</span>}
+                      {!collapsed && <span className="text-[13px]">Все проекты</span>}
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </SidebarMenu>
@@ -129,106 +150,104 @@ export function AppSidebar({ activeTab, onTabChange, projectName, projectLogo }:
               </div>
             )}
 
-            {/* Project analytics nav */}
+            {/* Analytics tabs */}
             <SidebarGroup>
-              {!collapsed && (
-                <SidebarGroupLabel className="text-[11px] uppercase tracking-wider text-sidebar-foreground/50 font-medium px-3">
-                  {t("portalNav.analytics")}
-                </SidebarGroupLabel>
-              )}
+              {renderGroupLabel("АНАЛИТИКА")}
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {projectSections.map((item) => (
-                    <SidebarMenuItem key={item.tab}>
-                      <SidebarMenuButton
-                        onClick={() => onTabChange(item.tab)}
-                        className={cn(
-                          "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors rounded-md cursor-pointer",
-                          activeTab === item.tab && "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                        )}
-                      >
-                        <item.icon className="mr-2.5 h-4 w-4 shrink-0" />
-                        {!collapsed && <span className="text-[13px]">{t(item.titleKey)}</span>}
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
+                  {analyticsNav.map(renderTabButton)}
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
 
-            {/* Project utils */}
+            {/* Project management tabs */}
             <SidebarGroup>
-              {!collapsed && (
-                <SidebarGroupLabel className="text-[11px] uppercase tracking-wider text-sidebar-foreground/50 font-medium px-3">
-                  {t("portalNav.manage")}
-                </SidebarGroupLabel>
-              )}
+              {renderGroupLabel("УПРАВЛЕНИЕ")}
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {projectUtilSections.map((item) => (
-                    <SidebarMenuItem key={item.tab}>
-                      <SidebarMenuButton
-                        onClick={() => onTabChange(item.tab)}
-                        className={cn(
-                          "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors rounded-md cursor-pointer",
-                          activeTab === item.tab && "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                        )}
-                      >
-                        <item.icon className="mr-2.5 h-4 w-4 shrink-0" />
-                        {!collapsed && <span className="text-[13px]">{t(item.titleKey)}</span>}
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
+                  {[
+                    { title: "Задачи", tab: "worklog", icon: ClipboardList },
+                    { title: "Конструктор отчётов", tab: "builder", icon: FileText },
+                    { title: "Интеграции", tab: "integrations", icon: Plug },
+                    { title: "Настройки", tab: "settings", icon: Settings },
+                  ].map(renderTabButton)}
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
           </>
         ) : (
-          /* Main Navigation (non-project pages) */
-          <SidebarGroup>
-            {!collapsed && (
-              <SidebarGroupLabel className="text-[11px] uppercase tracking-wider text-sidebar-foreground/50 font-medium px-3">
-                {t("nav.projects")}
-              </SidebarGroupLabel>
+          <>
+            {/* CRM */}
+            <SidebarGroup>
+              {renderGroupLabel("CRM")}
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {crmNav.map(renderNavLink)}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+
+            {/* Project selector */}
+            {!collapsed && projects.length > 0 && (
+              <div className="px-3 py-2">
+                <Select onValueChange={(v) => navigate(`/project/${v}`)}>
+                  <SelectTrigger className="w-full h-8 text-xs bg-sidebar-accent/50 border-sidebar-border text-sidebar-foreground">
+                    <SelectValue placeholder="Выбрать проект..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projects.map(p => (
+                      <SelectItem key={p.id} value={p.id}>
+                        <div className="flex items-center gap-2">
+                          {p.logo_url ? (
+                            <img src={p.logo_url} alt="" className="h-4 w-4 rounded object-cover" />
+                          ) : (
+                            <div className="h-4 w-4 rounded bg-primary/20 text-[8px] flex items-center justify-center font-bold text-primary">
+                              {p.name.slice(0, 2).toUpperCase()}
+                            </div>
+                          )}
+                          <span>{p.name}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             )}
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {mainNav.map((item) => (
-                  <SidebarMenuItem key={item.titleKey}>
-                    <SidebarMenuButton asChild>
-                      <NavLink
-                        to={item.url}
-                        end={item.url === "/"}
-                        className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors rounded-md"
-                        activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                      >
-                        <item.icon className="mr-2.5 h-4 w-4 shrink-0" />
-                        {!collapsed && <span className="text-[13px]">{t(item.titleKey)}</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-                {isAdmin && (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <NavLink
-                        to="/admin"
-                        className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors rounded-md"
-                        activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                      >
-                        <Shield className="mr-2.5 h-4 w-4 shrink-0" />
-                        {!collapsed && <span className="text-[13px]">{t("nav.admin")}</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+
+            {/* Analytics overview link */}
+            <SidebarGroup>
+              {renderGroupLabel("АНАЛИТИКА")}
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {renderNavLink({ title: "Обзор проектов", url: "/", icon: LayoutDashboard })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+
+            {/* SEO Management */}
+            <SidebarGroup>
+              {renderGroupLabel("SEO УПРАВЛЕНИЕ")}
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {seoNav.map(renderNavLink)}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+
+            {/* Team */}
+            <SidebarGroup>
+              {renderGroupLabel("УПРАВЛЕНИЕ КОМАНДОЙ")}
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {teamNav.filter(i => i.url).map(i => renderNavLink(i as any))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </>
         )}
       </SidebarContent>
 
-      {/* Footer with user info */}
+      {/* Footer */}
       {!collapsed && (
         <SidebarFooter className="border-t border-sidebar-border p-4">
           <div className="flex items-center gap-2.5">
@@ -236,9 +255,7 @@ export function AppSidebar({ activeTab, onTabChange, projectName, projectLogo }:
               {user?.email?.charAt(0).toUpperCase() || "U"}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[12px] font-medium text-sidebar-accent-foreground truncate">
-                {user?.email}
-              </p>
+              <p className="text-[12px] font-medium text-sidebar-accent-foreground truncate">{user?.email}</p>
             </div>
           </div>
         </SidebarFooter>

@@ -1,8 +1,7 @@
-import { ReactNode, useState, useCallback } from "react";
+import { ReactNode, useCallback } from "react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Globe, LogOut, Sun, Moon, RefreshCw, CalendarDays, ChevronDown } from "lucide-react";
-import { useTranslation } from "react-i18next";
+import { LogOut, Sun, Moon, RefreshCw, CalendarDays, Palette } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useNavigate } from "react-router-dom";
@@ -14,16 +13,15 @@ import { Calendar } from "@/components/ui/calendar";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { format, subDays, startOfMonth, endOfMonth, subMonths } from "date-fns";
-import { ru as ruLocale, enUS } from "date-fns/locale";
-import { cn } from "@/lib/utils";
+import { ru as ruLocale } from "date-fns/locale";
 import { ChannelFilter } from "@/components/project/ChannelFilter";
+import { useWorkspaceColor } from "@/contexts/WorkspaceColorContext";
+import { WORKSPACE_COLORS } from "@/data/crm-mock";
 
 interface PageHeaderProps {
   breadcrumbs?: ReactNode;
   actions?: ReactNode;
-  /** Project-mode: show date picker and project selector */
   projectId?: string;
-  /** Controlled date range */
   dateRange?: { from: Date; to: Date };
   onDateRangeChange?: (range: { from: Date; to: Date }) => void;
   compRange?: { from: Date; to: Date };
@@ -37,25 +35,17 @@ interface PageHeaderProps {
 }
 
 export function PageHeader({
-  breadcrumbs,
-  actions,
-  projectId,
-  dateRange,
-  onDateRangeChange,
-  compRange,
-  onCompRangeChange,
-  showComparison,
-  onShowComparisonChange,
-  onApply,
-  onRefresh,
-  lastUpdated,
+  breadcrumbs, actions, projectId,
+  dateRange, onDateRangeChange,
+  compRange, onCompRangeChange,
+  showComparison, onShowComparisonChange,
+  onApply, onRefresh, lastUpdated,
   showDatePicker = false,
 }: PageHeaderProps) {
-  const { t, i18n } = useTranslation();
   const { signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
-  const locale = i18n.language === "ru" ? ruLocale : enUS;
+  const { colorHsl, setColorHsl } = useWorkspaceColor();
 
   const { data: projects = [] } = useQuery({
     queryKey: ["projects-list"],
@@ -67,26 +57,14 @@ export function PageHeader({
     enabled: !!projectId,
   });
 
-  const toggleLang = () => i18n.changeLanguage(i18n.language === "ru" ? "en" : "ru");
-
   const applyPreset = useCallback((type: "7d" | "30d" | "thisMonth" | "lastMonth") => {
     if (!onDateRangeChange) return;
     const today = new Date();
     switch (type) {
-      case "7d":
-        onDateRangeChange({ from: subDays(today, 7), to: today });
-        break;
-      case "30d":
-        onDateRangeChange({ from: subDays(today, 30), to: today });
-        break;
-      case "thisMonth":
-        onDateRangeChange({ from: startOfMonth(today), to: today });
-        break;
-      case "lastMonth": {
-        const prev = subMonths(today, 1);
-        onDateRangeChange({ from: startOfMonth(prev), to: endOfMonth(prev) });
-        break;
-      }
+      case "7d": onDateRangeChange({ from: subDays(today, 7), to: today }); break;
+      case "30d": onDateRangeChange({ from: subDays(today, 30), to: today }); break;
+      case "thisMonth": onDateRangeChange({ from: startOfMonth(today), to: today }); break;
+      case "lastMonth": { const prev = subMonths(today, 1); onDateRangeChange({ from: startOfMonth(prev), to: endOfMonth(prev) }); break; }
     }
   }, [onDateRangeChange]);
 
@@ -94,7 +72,6 @@ export function PageHeader({
 
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur-sm">
-      {/* Top row */}
       <div className="h-14 flex items-center justify-between px-4">
         <div className="flex items-center gap-3">
           <SidebarTrigger className="text-muted-foreground" />
@@ -121,44 +98,56 @@ export function PageHeader({
               </SelectContent>
             </Select>
           ) : (
-            breadcrumbs || (
-              <span className="text-sm font-medium text-muted-foreground">StatPulse</span>
-            )
+            breadcrumbs || <span className="text-sm font-medium text-muted-foreground">StatPulse</span>
           )}
         </div>
         <div className="flex items-center gap-1.5">
           {actions}
+          {/* Workspace color picker */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                <Palette className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-3" align="end">
+              <p className="text-xs font-medium text-muted-foreground mb-2">Цвет рабочего пространства</p>
+              <div className="flex gap-2">
+                {WORKSPACE_COLORS.map(c => (
+                  <button
+                    key={c.hsl}
+                    onClick={() => setColorHsl(c.hsl)}
+                    className={`h-7 w-7 rounded-full border-2 transition-all ${colorHsl === c.hsl ? "border-foreground scale-110" : "border-transparent"}`}
+                    style={{ backgroundColor: `hsl(${c.hsl})` }}
+                    title={c.name}
+                  />
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
           <Button variant="ghost" size="icon" onClick={toggleTheme} className="h-8 w-8 text-muted-foreground hover:text-foreground">
             {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
-          <Button variant="ghost" size="sm" onClick={toggleLang} className="gap-1.5 text-xs text-muted-foreground hover:text-foreground h-8">
-            <Globe className="h-3.5 w-3.5" />
-            {i18n.language === "ru" ? "EN" : "RU"}
-          </Button>
           <Button variant="ghost" size="sm" onClick={signOut} className="gap-1.5 text-xs text-muted-foreground hover:text-foreground h-8">
             <LogOut className="h-3.5 w-3.5" />
-            {t("auth.logout")}
+            <span className="hidden sm:inline">Выход</span>
           </Button>
         </div>
       </div>
 
-      {/* Date controls row (project pages only) */}
       {showDatePicker && dateRange && onDateRangeChange && onApply && (
         <div className="h-11 flex items-center gap-2 px-4 border-t border-border/50 overflow-x-auto">
-          {/* Presets */}
           <div className="flex items-center gap-1">
-            {(["7d", "30d", "thisMonth", "lastMonth"] as const).map((p) => (
-              <Button key={p} variant="ghost" size="sm" className="h-7 text-[11px] px-2 text-muted-foreground hover:text-foreground"
-                onClick={() => applyPreset(p)}
-              >
-                {t(`datePresets.${p}`)}
-              </Button>
-            ))}
+            {(["7d", "30d", "thisMonth", "lastMonth"] as const).map((p) => {
+              const labels: Record<string, string> = { "7d": "7 дней", "30d": "30 дней", "thisMonth": "Этот месяц", "lastMonth": "Прошлый месяц" };
+              return (
+                <Button key={p} variant="ghost" size="sm" className="h-7 text-[11px] px-2 text-muted-foreground hover:text-foreground" onClick={() => applyPreset(p)}>
+                  {labels[p]}
+                </Button>
+              );
+            })}
           </div>
-
           <div className="w-px h-5 bg-border mx-1" />
-
-          {/* Period A picker */}
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1.5 px-2.5">
@@ -167,36 +156,15 @@ export function PageHeader({
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="range"
-                selected={{ from: dateRange.from, to: dateRange.to }}
-                onSelect={(r) => {
-                  if (r?.from && r?.to) onDateRangeChange({ from: r.from, to: r.to });
-                  else if (r?.from) onDateRangeChange({ from: r.from, to: r.from });
-                }}
-                numberOfMonths={1}
-                locale={locale}
-                weekStartsOn={1}
-                className="p-3 pointer-events-auto"
-              />
+              <Calendar mode="range" selected={{ from: dateRange.from, to: dateRange.to }} onSelect={(r) => { if (r?.from && r?.to) onDateRangeChange({ from: r.from, to: r.to }); else if (r?.from) onDateRangeChange({ from: r.from, to: r.from }); }} numberOfMonths={1} locale={ruLocale} weekStartsOn={1} className="p-3 pointer-events-auto" />
             </PopoverContent>
           </Popover>
-
-          {/* Comparison toggle */}
           {onShowComparisonChange && (
             <div className="flex items-center gap-1.5">
-              <Switch
-                checked={showComparison}
-                onCheckedChange={onShowComparisonChange}
-                className="scale-75"
-              />
-              <Label className="text-[11px] text-muted-foreground cursor-pointer" onClick={() => onShowComparisonChange?.(!showComparison)}>
-                {t("comparison.enable")}
-              </Label>
+              <Switch checked={showComparison} onCheckedChange={onShowComparisonChange} className="scale-75" />
+              <Label className="text-[11px] text-muted-foreground cursor-pointer" onClick={() => onShowComparisonChange?.(!showComparison)}>Сравнение</Label>
             </div>
           )}
-
-          {/* Period B picker */}
           {showComparison && compRange && onCompRangeChange && (
             <Popover>
               <PopoverTrigger asChild>
@@ -206,43 +174,17 @@ export function PageHeader({
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="range"
-                  selected={{ from: compRange.from, to: compRange.to }}
-                  onSelect={(r) => {
-                    if (r?.from && r?.to) onCompRangeChange({ from: r.from, to: r.to });
-                    else if (r?.from) onCompRangeChange({ from: r.from, to: r.from });
-                  }}
-                  numberOfMonths={1}
-                  locale={locale}
-                  weekStartsOn={1}
-                  className="p-3 pointer-events-auto"
-                />
+                <Calendar mode="range" selected={{ from: compRange.from, to: compRange.to }} onSelect={(r) => { if (r?.from && r?.to) onCompRangeChange({ from: r.from, to: r.to }); else if (r?.from) onCompRangeChange({ from: r.from, to: r.from }); }} numberOfMonths={1} locale={ruLocale} weekStartsOn={1} className="p-3 pointer-events-auto" />
               </PopoverContent>
             </Popover>
           )}
-
-          {/* Channel filter */}
           <ChannelFilter />
-
           <div className="w-px h-5 bg-border mx-1" />
-
-          {/* Apply */}
-          <Button size="sm" className="h-7 text-[11px] px-3" onClick={onApply}>
-            {t("datePicker.apply")}
-          </Button>
-
-          {/* Refresh */}
+          <Button size="sm" className="h-7 text-[11px] px-3" onClick={onApply}>Применить</Button>
           {onRefresh && (
             <>
-              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" onClick={onRefresh}>
-                <RefreshCw className="h-3.5 w-3.5" />
-              </Button>
-              {lastUpdated && (
-                <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-                  {t("portalNav.updated")}: {lastUpdated}
-                </span>
-              )}
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" onClick={onRefresh}><RefreshCw className="h-3.5 w-3.5" /></Button>
+              {lastUpdated && <span className="text-[10px] text-muted-foreground whitespace-nowrap">Обновлено: {lastUpdated}</span>}
             </>
           )}
         </div>
