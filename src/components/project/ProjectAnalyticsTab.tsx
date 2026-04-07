@@ -564,6 +564,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
         projectId={projectId}
         metrikaStats={metrikaStats || null}
         keywords={keywords}
+        goals={goalsData}
       />
 
       {/* KPI cards */}
