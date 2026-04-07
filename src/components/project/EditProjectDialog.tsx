@@ -54,6 +54,10 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
   // Yandex OAuth state
   const [yandexOAuthStep, setYandexOAuthStep] = useState<"idle" | "code" | "loading" | "done">("idle");
   const [yandexCodeInput, setYandexCodeInput] = useState("");
+  const [yandexCounters, setYandexCounters] = useState<{ id: string; name: string; site: string }[]>([]);
+  const [yandexHosts, setYandexHosts] = useState<{ host_id: string; unicode_host_url: string }[]>([]);
+  const [selectedCounter, setSelectedCounter] = useState("");
+  const [selectedHost, setSelectedHost] = useState("");
   const YANDEX_REDIRECT_URI = "https://oauth.yandex.ru/verification_code";
   const projectRef = import.meta.env.VITE_SUPABASE_PROJECT_ID;
 
@@ -90,6 +94,10 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
     setObservers([]);
     setYandexOAuthStep("idle");
     setYandexCodeInput("");
+    setYandexCounters([]);
+    setYandexHosts([]);
+    setSelectedCounter(project.metrika_counter_id || "");
+    setSelectedHost(project.yandex_webmaster_host_id || "");
   }, [project, open]);
 
   // Init integration values
@@ -112,14 +120,27 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
   // Save project
   const saveProject = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("projects").update({
+      const projectUpdate: any = {
         name,
         url,
         deadline: deadline || null,
         seo_specialist_id: seoSpecialistId || null,
         account_manager_id: accountManagerId || null,
-      } as any).eq("id", projectId);
+      };
+      // Save selected counter/host to project
+      if (selectedCounter) projectUpdate.metrika_counter_id = selectedCounter;
+      if (selectedHost) projectUpdate.yandex_webmaster_host_id = selectedHost;
+
+      const { error } = await supabase.from("projects").update(projectUpdate).eq("id", projectId);
       if (error) throw error;
+
+      // Update counter_id on metrika integration
+      if (selectedCounter) {
+        const metrikaInt = integrations.find(i => i.service_name === "yandexMetrika");
+        if (metrikaInt) {
+          await supabase.from("integrations").update({ counter_id: selectedCounter }).eq("id", metrikaInt.id);
+        }
+      }
 
       // Upsert integrations
       for (const def of INTEGRATION_DEFS) {
@@ -192,22 +213,41 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
       if (tokenData.error) throw new Error(tokenData.error);
       const accessToken = tokenData.access_token;
 
-      // Fetch counters
-      const countersResp = await fetch(
-        `https://${projectRef}.supabase.co/functions/v1/yandex-metrika-auth?action=list-counters`,
-        { method: "POST", headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" }, body: JSON.stringify({ access_token: accessToken }) }
-      );
-      const countersData = await countersResp.json();
+      // Fetch counters + hosts in parallel
+      const [countersResp, hostsResp] = await Promise.all([
+        fetch(`https://${projectRef}.supabase.co/functions/v1/yandex-metrika-auth?action=list-counters`, {
+          method: "POST", headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ access_token: accessToken }),
+        }),
+        fetch(`https://${projectRef}.supabase.co/functions/v1/yandex-webmaster`, {
+          method: "POST", headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "get-hosts", access_token: accessToken }),
+        }),
+      ]);
 
-      // Save token to yandexMetrika integration
+      const countersData = await countersResp.json();
+      setYandexCounters(countersData.counters || []);
+
+      try {
+        const hostsData = await hostsResp.json();
+        const hosts = (hostsData.hosts || []).map((h: any) => ({
+          host_id: h.host_id,
+          unicode_host_url: h.unicode_host_url || h.ascii_host_url || h.host_id,
+        }));
+        setYandexHosts(hosts);
+      } catch { setYandexHosts([]); }
+
+      // Pre-select existing values
       const existingMetrika = integrations.find(i => i.service_name === "yandexMetrika");
+      if (existingMetrika?.counter_id) setSelectedCounter(existingMetrika.counter_id);
+
+      // Save token to both integrations
       if (existingMetrika) {
         await supabase.from("integrations").update({ access_token: accessToken, connected: true }).eq("id", existingMetrika.id);
       } else {
         await supabase.from("integrations").insert({ project_id: projectId, service_name: "yandexMetrika", access_token: accessToken, connected: true } as any);
       }
 
-      // Save token to yandexWebmaster integration too
       const existingWm = integrations.find(i => i.service_name === "yandexWebmaster");
       if (existingWm) {
         await supabase.from("integrations").update({ access_token: accessToken, connected: true }).eq("id", existingWm.id);
@@ -215,7 +255,6 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
         await supabase.from("integrations").insert({ project_id: projectId, service_name: "yandexWebmaster", access_token: accessToken, connected: true } as any);
       }
 
-      // Update connected status in UI
       setIntegrationValues(prev => ({
         ...prev,
         yandexMetrika: { ...prev.yandexMetrika, connected: "true" },
@@ -224,7 +263,7 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
 
       queryClient.invalidateQueries({ queryKey: ["project-integrations-edit", projectId] });
       setYandexOAuthStep("done");
-      toast.success("Яндекс авторизован! Токен сохранён для Метрики и Вебмастера.");
+      toast.success("Яндекс авторизован! Выберите счётчик и сайт.");
     } catch (err: any) {
       toast.error(err.message || "Ошибка авторизации");
       setYandexOAuthStep("idle");
@@ -356,9 +395,55 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
               )}
 
               {yandexOAuthStep === "done" && (
-                <Button size="sm" variant="ghost" className="gap-1.5 text-[11px] text-muted-foreground" onClick={() => { setYandexOAuthStep("idle"); setYandexCodeInput(""); }}>
-                  Переавторизоваться
-                </Button>
+                <div className="space-y-3">
+                  {/* Counter selector */}
+                  {yandexCounters.length > 0 && (
+                    <div className="space-y-1">
+                      <Label className="text-[11px] text-muted-foreground">Счётчик Яндекс.Метрики</Label>
+                      <Select value={selectedCounter} onValueChange={setSelectedCounter}>
+                        <SelectTrigger className="h-8 text-[12px]">
+                          <SelectValue placeholder="Выберите счётчик..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {yandexCounters.map(c => (
+                            <SelectItem key={c.id} value={c.id}>{c.name} ({c.site}) — ID: {c.id}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {selectedCounter && (
+                        <p className="text-[11px] text-emerald-500 flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Выбран</p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Host selector */}
+                  {yandexHosts.length > 0 && (
+                    <div className="space-y-1">
+                      <Label className="text-[11px] text-muted-foreground">Сайт в Яндекс.Вебмастере</Label>
+                      <Select value={selectedHost} onValueChange={setSelectedHost}>
+                        <SelectTrigger className="h-8 text-[12px]">
+                          <SelectValue placeholder="Выберите сайт..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {yandexHosts.map(h => (
+                            <SelectItem key={h.host_id} value={h.host_id}>{h.unicode_host_url}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {selectedHost && (
+                        <p className="text-[11px] text-emerald-500 flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Выбран</p>
+                      )}
+                    </div>
+                  )}
+
+                  {yandexCounters.length === 0 && yandexHosts.length === 0 && (
+                    <p className="text-[11px] text-muted-foreground">Данные не найдены. Проверьте настройки аккаунта Яндекс.</p>
+                  )}
+
+                  <Button size="sm" variant="ghost" className="gap-1.5 text-[11px] text-muted-foreground" onClick={() => { setYandexOAuthStep("idle"); setYandexCodeInput(""); }}>
+                    Переавторизоваться
+                  </Button>
+                </div>
               )}
             </div>
 
