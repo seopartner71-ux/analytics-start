@@ -25,12 +25,7 @@ import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 import { cn } from "@/lib/utils";
 
-type CrmTask = Tables<"crm_tasks"> & {
-  creator?: Tables<"team_members"> | null;
-  assignee?: Tables<"team_members"> | null;
-  project?: Tables<"projects"> | null;
-  comments?: Tables<"task_comments">[];
-};
+import { TaskDetailSheet, CrmTask, getAvatarUrl } from "@/components/project/TaskDetailSheet";
 
 type TaskComment = Tables<"task_comments"> & {
   author?: Tables<"team_members"> | null;
