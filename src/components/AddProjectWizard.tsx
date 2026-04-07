@@ -561,7 +561,7 @@ export function AddProjectWizard({ onCreated }: AddProjectWizardProps) {
                 Далее <ChevronRight className="h-4 w-4" />
               </Button>
             ) : (
-              <Button onClick={handleFinish} disabled={saving || !step1Valid} className="gap-1">
+              <Button onClick={handleFinish} disabled={saving || !step1Valid || !step2Valid} className="gap-1">
                 {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Check className="h-4 w-4 mr-1" />}
                 Создать проект
               </Button>
