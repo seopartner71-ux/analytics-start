@@ -24,6 +24,7 @@ import { format, isPast, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
 import ProjectAnalyticsTab from "@/components/project/ProjectAnalyticsTab";
+import SiteHealthDetailTab from "@/components/project/SiteHealthDetailTab";
 
 type CrmTask = Tables<"crm_tasks"> & {
   assignee?: Tables<"team_members"> | null;
