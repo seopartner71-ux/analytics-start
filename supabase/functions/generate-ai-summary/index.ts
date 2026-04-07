@@ -102,6 +102,17 @@ Yandex Metrika LIVE data for project "${project?.name || "Unknown"}" (${project?
           dataContext += `- ${d.name}: ${d.value} visits (${d.pct}%)\n`;
         }
       }
+      if (m.keywordsContext) {
+        const kw = m.keywordsContext;
+        dataContext += `\nKeyword positions (Topvisor):\n`;
+        dataContext += `- Total tracked keywords: ${kw.total}\n`;
+        dataContext += `- Top 3: ${kw.top3}, Top 10: ${kw.top10}, Top 30: ${kw.top30}\n`;
+        dataContext += `- Average position: ${kw.avgPosition}\n`;
+        dataContext += `- Improved: ${kw.improved}, Declined: ${kw.declined}\n`;
+        if (kw.topKeywords?.length) {
+          dataContext += `- Top keywords: ${kw.topKeywords.join("; ")}\n`;
+        }
+      }
     } else {
       // Fallback: read cached stats from DB
       const { data: stats } = await supabase
