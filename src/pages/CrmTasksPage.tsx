@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,8 +10,19 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Plus, Search, Clock, AlertTriangle, Send, List, LayoutGrid, GripVertical, AlertCircle, ChevronDown, MessageSquare, Hash, Loader2, ClipboardList } from "lucide-react";
+import {
+  Plus, Search, Clock, AlertTriangle, Send, List, LayoutGrid, GripVertical,
+  AlertCircle, ChevronDown, MessageSquare, Hash, Loader2, ClipboardList,
+  User, CalendarDays, Hourglass, FolderOpen, Eye, Paperclip, Copy,
+  Video, UserPlus, Search as SearchIcon, Edit3, Play, CheckCircle2,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
+import type { Tables } from "@/integrations/supabase/types";
+import { cn } from "@/lib/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
