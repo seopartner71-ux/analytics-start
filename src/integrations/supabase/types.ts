@@ -397,6 +397,41 @@ export type Database = {
         }
         Relationships: []
       }
+      project_analytics: {
+        Row: {
+          avg_position: number
+          created_at: string
+          id: string
+          month: string
+          organic_traffic: number
+          project_id: string
+        }
+        Insert: {
+          avg_position?: number
+          created_at?: string
+          id?: string
+          month: string
+          organic_traffic?: number
+          project_id: string
+        }
+        Update: {
+          avg_position?: number
+          created_at?: string
+          id?: string
+          month?: string
+          organic_traffic?: number
+          project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_analytics_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_comments: {
         Row: {
           author_id: string | null
@@ -470,6 +505,41 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "project_files_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_keywords: {
+        Row: {
+          id: string
+          keyword: string
+          position: number
+          position_change: number
+          project_id: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          keyword: string
+          position?: number
+          position_change?: number
+          project_id: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          keyword?: string
+          position?: number
+          position_change?: number
+          project_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_keywords_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
