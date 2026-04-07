@@ -300,6 +300,7 @@ ${period_b ? "- Compare Period A and Period B for each channel." : ""}
     if (isDeep) {
       if (parsed.business_insight) result.business_insight = parsed.business_insight;
       if (parsed.recommendations) result.recommendations = parsed.recommendations;
+      if (parsed.goals_insight) result.goals_insight = parsed.goals_insight;
     }
 
     return new Response(JSON.stringify(result), {
