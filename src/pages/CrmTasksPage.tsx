@@ -723,10 +723,71 @@ function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null; open: 
                   )}
                 </CardContent>
               </Card>
+
+              {/* Result field */}
+              <Card className="bg-card shadow-sm border-border/60 rounded-xl">
+                <CardContent className="p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium text-foreground">Результат работы</span>
+                  </div>
+                  <div className="space-y-2">
+                    <Textarea
+                      value={resultText}
+                      onChange={e => setResultText(e.target.value)}
+                      placeholder="Введите текст, ссылку на результат..."
+                      className="text-sm min-h-[60px] resize-none"
+                    />
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" className="h-7 text-xs gap-1" onClick={saveResult} disabled={!resultText.trim()}>
+                        <Link className="h-3 w-3" /> Сохранить
+                      </Button>
+                      <input ref={resultFileRef} type="file" className="hidden" accept="image/*,.pdf,.docx,.xlsx" onChange={e => handleResultUpload(e.target.files)} />
+                      <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => resultFileRef.current?.click()} disabled={resultUploading}>
+                        {resultUploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />} Файл
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Account Manager selector */}
+              <Card className="bg-card shadow-sm border-border/60 rounded-xl">
+                <CardContent className="p-0">
+                  <div className="flex items-center gap-4 px-4 py-3.5">
+                    <Briefcase className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className="text-xs text-muted-foreground w-28 shrink-0">Аккаунт-менеджер</span>
+                    {canEditFields && currentProject ? (
+                      <Select
+                        value={(currentProject as any).account_manager_id || ""}
+                        onValueChange={async (val) => {
+                          const mName = members.find(m => m.id === val)?.full_name || "снят";
+                          await supabase.from("projects").update({ account_manager_id: val || null } as any).eq("id", currentProject.id);
+                          await addSystemLog(`Аккаунт-менеджер проекта изменён на ${mName}`);
+                          queryClient.invalidateQueries({ queryKey: ["projects-list-detail"] });
+                          queryClient.invalidateQueries({ queryKey: ["project-detail"] });
+                          toast.success(`Аккаунт-менеджер: ${mName}`);
+                        }}
+                      >
+                        <SelectTrigger className="h-8 text-sm border-0 bg-transparent shadow-none p-0 w-auto gap-2">
+                          <SelectValue placeholder="Назначить..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {members.map(m => <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    ) : currentProject ? (
+                      <span className="text-sm text-muted-foreground">Не назначен</span>
+                    ) : (
+                      <span className="text-sm text-muted-foreground/60 italic">Сначала привяжите проект</span>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
             </div>
 
             {/* Sticky bottom action bar */}
-            <div className="border-t border-border/60 bg-card px-5 py-3 flex items-center gap-3 shrink-0">
+            <div className="border-t border-border/60 bg-card px-5 py-3 flex items-center gap-3 shrink-0 flex-wrap">
               <Button
                 size="sm"
                 className="gap-1.5 shadow-sm bg-primary hover:bg-primary/90"
@@ -744,6 +805,16 @@ function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null; open: 
               >
                 <CheckCircle2 className="h-3.5 w-3.5" /> Завершить
               </Button>
+              {editStage === "Завершена" && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 border-primary/30 text-primary hover:bg-primary/5"
+                  onClick={resumeTask}
+                >
+                  <RotateCcw className="h-3.5 w-3.5" /> Возобновить
+                </Button>
+              )}
               <Button variant="ghost" size="sm" className="text-muted-foreground ml-auto">
                 •••
               </Button>
