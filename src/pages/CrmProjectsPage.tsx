@@ -344,35 +344,33 @@ export default function CrmProjectsPage() {
           <p className="text-muted-foreground">Нет проектов. Создайте первый!</p>
         </div>
       ) : view === "kanban" ? (
-        <ScrollArea className="w-full">
-          <div className="flex gap-3 pb-4 min-w-max">
-            {KANBAN_COLUMNS.map(col => {
-              const items = columnData[col.key] || [];
-              const isOver = dragOverCol === col.key;
-              return (
-                <div
-                  key={col.key}
-                  className={cn(
-                    "w-[280px] shrink-0 flex flex-col rounded-lg transition-colors",
-                    isOver && "bg-primary/5 ring-2 ring-primary/20"
-                  )}
-                  onDragOver={e => handleDragOver(e, col.key)}
-                  onDragLeave={handleDragLeave}
-                  onDrop={e => handleDrop(e, col.key)}
-                >
-                  {/* Column header */}
-                  <div className="flex items-center justify-between px-3 py-2.5 mb-2">
-                    <div className="flex items-center gap-2">
-                      <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: col.color }} />
-                      <span className="text-[13px] font-semibold text-foreground">{col.key}</span>
-                    </div>
-                    <span className="text-[11px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                      {items.length}
-                    </span>
-                  </div>
+        <div className="space-y-6">
+          {KANBAN_COLUMNS.map(col => {
+            const items = columnData[col.key] || [];
+            const isOver = dragOverCol === col.key;
+            return (
+              <div
+                key={col.key}
+                className={cn(
+                  "rounded-lg transition-colors",
+                  isOver && "bg-primary/5 ring-2 ring-primary/20"
+                )}
+                onDragOver={e => handleDragOver(e, col.key)}
+                onDragLeave={handleDragLeave}
+                onDrop={e => handleDrop(e, col.key)}
+              >
+                {/* Row header */}
+                <div className="flex items-center gap-2 px-1 py-2 mb-2">
+                  <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: col.color }} />
+                  <span className="text-[13px] font-semibold text-foreground">{col.key}</span>
+                  <span className="text-[11px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                    {items.length}
+                  </span>
+                </div>
 
-                  {/* Cards */}
-                  <div className="space-y-2 min-h-[200px] px-1">
+                {/* Cards grid */}
+                {items.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                     {items.map(p => {
                       const manager = getManagerName(p.seo_specialist_id) || p.seo_specialist;
                       return (
@@ -390,53 +388,43 @@ export default function CrmProjectsPage() {
                             <GripVertical className="h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors" />
                           </div>
 
-                          <p className="text-[14px] font-semibold text-foreground leading-tight mb-1.5">
+                          <p className="text-[14px] font-semibold text-foreground leading-tight mb-1.5 truncate">
                             {p.company?.name || p.name}
                           </p>
 
                           {p.url && (
                             <div className="flex items-center gap-1.5 mb-1.5">
-                              <Globe className="h-3 w-3 text-muted-foreground" />
-                              <span className="text-[12px] text-muted-foreground">{p.url}</span>
+                              <Globe className="h-3 w-3 text-muted-foreground shrink-0" />
+                              <span className="text-[12px] text-muted-foreground truncate">{p.url}</span>
                             </div>
                           )}
 
                           <div className="flex items-center gap-1.5 mb-1.5">
-                            <CalendarDays className="h-3 w-3 text-muted-foreground" />
+                            <CalendarDays className="h-3 w-3 text-muted-foreground shrink-0" />
                             <span className={cn("text-[12px]", getDeadlineColor(p.updated_at))}>
                               {format(parseISO(p.created_at), "dd.MM.yyyy")}
                             </span>
                           </div>
 
                           {manager && (
-                            <div className="flex items-center gap-1.5 mb-1.5">
+                            <div className="flex items-center gap-1.5">
                               <AvatarCircle name={manager} />
-                              <span className="text-[12px] text-muted-foreground">{manager}</span>
+                              <span className="text-[12px] text-muted-foreground truncate">{manager}</span>
                             </div>
                           )}
-
-                          <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-border/50">
-                            <MessageSquare className="h-3 w-3 text-muted-foreground/50" />
-                            <span className="text-[11px] text-muted-foreground italic truncate">
-                              {p.latestComment?.body || "Нет комментариев"}
-                            </span>
-                          </div>
                         </div>
                       );
                     })}
-
-                    {items.length === 0 && (
-                      <div className="flex items-center justify-center h-24 text-[12px] text-muted-foreground/50 border border-dashed border-border rounded-md">
-                        Перетащите сюда
-                      </div>
-                    )}
                   </div>
-                </div>
-              );
-            })}
-          </div>
-          <ScrollBar orientation="horizontal" />
-        </ScrollArea>
+                ) : (
+                  <div className="flex items-center justify-center h-16 text-[12px] text-muted-foreground/50 border border-dashed border-border rounded-md">
+                    Перетащите сюда
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-border bg-card shadow-sm">
           <table className="crm-table min-w-[800px]">
