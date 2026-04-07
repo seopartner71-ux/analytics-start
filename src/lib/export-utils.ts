@@ -106,6 +106,7 @@ export function exportToExcel(sheets: ExcelSheet[], meta: ExportMeta) {
 /* ═══════════════ WORD ═══════════════ */
 export interface WordSection {
   title: string;
+  content?: string;
   paragraphs?: string[];
   table?: { headers: string[]; rows: (string | number)[][] };
 }
@@ -141,6 +142,18 @@ export async function exportToWord(sections: WordSection[], meta: ExportMeta) {
         spacing: { before: 300 },
       })
     );
+
+    if (section.content) {
+      const lines = section.content.split("\n").filter(Boolean);
+      for (const line of lines) {
+        children.push(
+          new Paragraph({
+            children: [new TextRun({ text: line, size: 22, font: "Arial" })],
+            spacing: { after: 120 },
+          })
+        );
+      }
+    }
 
     if (section.paragraphs) {
       for (const p of section.paragraphs) {
