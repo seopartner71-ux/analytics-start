@@ -488,7 +488,7 @@ export default function ReportsPage() {
                 disabled={!selectedProject || enabledSections.length === 0 || generating}
                 onClick={handleGeneratePdf}
               >
-                {generating && lastGeneratedFormat !== "docx" ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4 text-red-400" />}
+                {generating && lastGeneratedFormat !== "docx" ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4 text-destructive" />}
                 Скачать PDF
               </Button>
               <Button
@@ -497,7 +497,7 @@ export default function ReportsPage() {
                 disabled={!selectedProject || enabledSections.length === 0 || generating}
                 onClick={handleGenerateDocx}
               >
-                {generating && lastGeneratedFormat === "docx" ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4 text-blue-400" />}
+                {generating && lastGeneratedFormat === "docx" ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4 text-primary" />}
                 Скачать DOCX
               </Button>
             </CardContent>
