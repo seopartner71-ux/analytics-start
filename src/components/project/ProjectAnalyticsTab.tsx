@@ -283,13 +283,14 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     [dailyData, appliedCompRange],
   );
 
-  // Merged chart data for comparison
+  // Merged chart data for comparison (with channel filter applied)
   const trafficChart = useMemo(() => {
+    const applyRatio = (v: number) => Math.round(v * channelVisitRatio);
     if (!showComparison) {
-      if (filteredData.length > 0) return filteredData.map(d => ({ date: d.dateStr, visits: d.visits }));
+      if (filteredData.length > 0) return filteredData.map(d => ({ date: d.dateStr, visits: applyRatio(d.visits) }));
       return metrikaHistory.map(h => ({
         date: format(parseISO(h.date_from), "dd MMM", { locale: ru }),
-        visits: h.total_visits,
+        visits: applyRatio(h.total_visits),
       }));
     }
     const maxLen = Math.max(filteredData.length, filteredCompData.length);
@@ -297,12 +298,12 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     for (let i = 0; i < maxLen; i++) {
       result.push({
         date: filteredData[i]?.dateStr || `${i + 1}`,
-        visits: filteredData[i]?.visits || 0,
-        previous: filteredCompData[i]?.visits || 0,
+        visits: applyRatio(filteredData[i]?.visits || 0),
+        previous: applyRatio(filteredCompData[i]?.visits || 0),
       });
     }
     return result;
-  }, [filteredData, filteredCompData, metrikaHistory, showComparison]);
+  }, [filteredData, filteredCompData, metrikaHistory, showComparison, channelVisitRatio]);
 
   // ── Channel-filtered visits ──
   const channelVisitRatio = useMemo(() => {
