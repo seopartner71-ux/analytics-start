@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -5,76 +6,211 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { FolderKanban, TrendingUp, Key, AlertTriangle, Users, ArrowUp, ArrowDown } from "lucide-react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from "recharts";
-import { format, isPast, parseISO } from "date-fns";
+import { Badge } from "@/components/ui/badge";
+import {
+  FolderKanban, TrendingUp, Key, AlertTriangle, Users,
+  ArrowUp, ArrowDown, Loader2, CheckCircle2,
+} from "lucide-react";
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie,
+} from "recharts";
+import { format, isPast, parseISO, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { ru as ruLocale } from "date-fns/locale";
-import { AddProjectWizard } from "@/components/AddProjectWizard";
+import { cn } from "@/lib/utils";
 
-// Mock traffic data for chart
-const trafficByMonth = [
-  { month: "Ноя", current: 98000, prev: 82000 },
-  { month: "Дек", current: 105000, prev: 88000 },
-  { month: "Янв", current: 92000, prev: 95000 },
-  { month: "Фев", current: 110000, prev: 99000 },
-  { month: "Мар", current: 118000, prev: 102000 },
-  { month: "Апр", current: 124500, prev: 108000 },
-];
-
-const topProjects = [
-  { name: "avto-parts.ru", value: 42300 },
-  { name: "domstroy24.ru", value: 31200 },
-  { name: "medclinica.ru", value: 24800 },
-  { name: "fitnessclub.ru", value: 18600 },
-  { name: "autoservice.ru", value: 12100 },
-];
-
-const managerKpi = [
-  { name: "Иван Петров", pct: 87 },
-  { name: "Алиса Синицына", pct: 92 },
-  { name: "Дмитрий Козлов", pct: 74 },
-  { name: "Мария Волкова", pct: 68 },
-];
+const STAGE_COLORS: Record<string, string> = {
+  "Новые заявки": "#9E9E9E",
+  "Анализ сайта": "#2196F3",
+  "Составление стратегии": "#FF9800",
+  "В работе": "#4CAF50",
+  "На проверке": "#9C27B0",
+  "Успешно завершено": "#4CAF50",
+  "Отказ": "#F44336",
+};
 
 const Index = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const { data: projects = [], isLoading } = useQuery({
-    queryKey: ["projects"],
+  // ─── Projects ───
+  const { data: projects = [], isLoading: loadingProjects } = useQuery({
+    queryKey: ["dashboard-projects"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("projects").select("*").order("created_at", { ascending: false });
+      const { data, error } = await supabase
+        .from("projects")
+        .select("id, name, url, privacy, efficiency, created_at, seo_specialist_id, account_manager_id")
+        .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
   });
 
-  const { data: tasks = [] } = useQuery({
-    queryKey: ["crm-tasks-dashboard"],
+  // ─── Tasks ───
+  const { data: tasks = [], isLoading: loadingTasks } = useQuery({
+    queryKey: ["dashboard-tasks"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("crm_tasks").select("*, project:projects(name, url)").order("deadline", { ascending: true });
+      const { data, error } = await supabase
+        .from("crm_tasks")
+        .select("id, title, stage, deadline, assignee_id, project_id, stage_color, priority")
+        .order("deadline", { ascending: true });
       if (error) throw error;
       return data;
     },
   });
 
+  // ─── Team members ───
   const { data: members = [] } = useQuery({
-    queryKey: ["team-members-dashboard"],
+    queryKey: ["dashboard-members"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("team_members").select("id, full_name, role");
+      const { data, error } = await supabase
+        .from("team_members")
+        .select("id, full_name, role")
+        .order("full_name");
       if (error) throw error;
       return data;
     },
   });
 
-  const overdueTasks = tasks.filter(t => t.deadline && isPast(parseISO(t.deadline)) && t.stage !== "Закрыто");
-  const activeProjects = projects.length;
+  // ─── Metrika stats (for traffic card & chart) ───
+  const { data: metrikaStats = [] } = useQuery({
+    queryKey: ["dashboard-metrika"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("metrika_stats")
+        .select("project_id, total_visits, total_users, date_from, date_to, fetched_at")
+        .order("fetched_at", { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return data;
+    },
+  });
 
-  const getAssigneeName = (id: string | null) => {
-    if (!id) return "—";
-    const m = members.find(m => m.id === id);
-    return m?.full_name || "—";
-  };
+  // ─── Computed metrics ───
+  const activeProjects = projects.filter(
+    p => p.privacy !== "Успешно завершено" && p.privacy !== "Отказ"
+  ).length;
+
+  const completedProjects = projects.filter(p => p.privacy === "Успешно завершено").length;
+
+  const overdueTasks = useMemo(
+    () => tasks.filter(t => t.deadline && isPast(parseISO(t.deadline)) && t.stage !== "Завершена"),
+    [tasks]
+  );
+
+  const totalTasks = tasks.length;
+  const completedTasks = tasks.filter(t => t.stage === "Завершена").length;
+  const taskCompletionPct = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+  // Total traffic from latest metrika snapshots (deduplicated by project)
+  const totalTraffic = useMemo(() => {
+    const seen = new Set<string>();
+    let sum = 0;
+    for (const s of metrikaStats) {
+      if (!seen.has(s.project_id)) {
+        seen.add(s.project_id);
+        sum += s.total_visits;
+      }
+    }
+    return sum;
+  }, [metrikaStats]);
+
+  // ─── Manager KPI: % of completed tasks per assignee ───
+  const managerKpi = useMemo(() => {
+    const map: Record<string, { total: number; done: number; name: string }> = {};
+    for (const t of tasks) {
+      if (!t.assignee_id) continue;
+      if (!map[t.assignee_id]) {
+        const m = members.find(m => m.id === t.assignee_id);
+        map[t.assignee_id] = { total: 0, done: 0, name: m?.full_name || "—" };
+      }
+      map[t.assignee_id].total++;
+      if (t.stage === "Завершена") map[t.assignee_id].done++;
+    }
+    return Object.values(map)
+      .map(v => ({ name: v.name, pct: v.total > 0 ? Math.round((v.done / v.total) * 100) : 0, total: v.total, done: v.done }))
+      .sort((a, b) => b.pct - a.pct)
+      .slice(0, 5);
+  }, [tasks, members]);
+
+  // ─── Projects by stage (for pie/bar chart) ───
+  const projectsByStage = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const p of projects) {
+      const stage = p.privacy || "Новые заявки";
+      map[stage] = (map[stage] || 0) + 1;
+    }
+    return Object.entries(map).map(([name, value]) => ({
+      name,
+      value,
+      color: STAGE_COLORS[name] || "#9E9E9E",
+    }));
+  }, [projects]);
+
+  // ─── Projects created per month (last 6 months, for line chart) ───
+  const projectsByMonth = useMemo(() => {
+    const months: { month: string; count: number; tasks_done: number }[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = subMonths(new Date(), i);
+      const start = startOfMonth(d);
+      const end = endOfMonth(d);
+      const count = projects.filter(p => {
+        const c = parseISO(p.created_at);
+        return c >= start && c <= end;
+      }).length;
+      const tasksDone = tasks.filter(t => {
+        if (t.stage !== "Завершена" || !t.deadline) return false;
+        const dl = parseISO(t.deadline);
+        return dl >= start && dl <= end;
+      }).length;
+      months.push({
+        month: format(d, "LLL", { locale: ruLocale }),
+        count,
+        tasks_done: tasksDone,
+      });
+    }
+    return months;
+  }, [projects, tasks]);
+
+  // ─── Top projects by efficiency ───
+  const topProjects = useMemo(() =>
+    [...projects]
+      .filter(p => (p.efficiency || 0) > 0)
+      .sort((a, b) => (b.efficiency || 0) - (a.efficiency || 0))
+      .slice(0, 5)
+      .map(p => ({ name: p.url || p.name, value: p.efficiency || 0 })),
+    [projects]
+  );
+
+  // ─── Overdue projects (from projects with deadline-like logic via tasks) ───
+  const overdueProjects = useMemo(() => {
+    const projectOverdue: Record<string, { name: string; url: string; deadline: string; assignee: string; stage: string; stageColor: string; projectId: string }> = {};
+    for (const t of overdueTasks) {
+      if (t.project_id && !projectOverdue[t.project_id]) {
+        const p = projects.find(pr => pr.id === t.project_id);
+        projectOverdue[t.project_id] = {
+          name: p?.name || "—",
+          url: p?.url || "—",
+          deadline: t.deadline!,
+          assignee: members.find(m => m.id === t.assignee_id)?.full_name || "—",
+          stage: p?.privacy || "—",
+          stageColor: STAGE_COLORS[p?.privacy || ""] || "#9E9E9E",
+          projectId: t.project_id,
+        };
+      }
+    }
+    return Object.values(projectOverdue);
+  }, [overdueTasks, projects, members]);
+
+  const isLoading = loadingProjects || loadingTasks;
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -84,18 +220,23 @@ const Index = () => {
           <h1 className="text-xl font-bold text-foreground">Дашборд</h1>
           <p className="text-[13px] text-muted-foreground mt-0.5">Сводка по SEO-отделу</p>
         </div>
-        <AddProjectWizard onCreated={(id) => navigate(`/project/${id}`)} />
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-        {/* Проекты */}
+        {/* Active projects */}
         <Card className="p-4 bg-card rounded-lg shadow-sm border border-border">
           <div className="flex items-start justify-between">
             <div>
               <p className="text-[12px] text-muted-foreground font-medium uppercase tracking-wide">Проекты в работе</p>
               <p className="text-3xl font-bold text-foreground mt-1">{activeProjects}</p>
               <p className="text-[12px] text-muted-foreground mt-1">активных проектов</p>
+              {completedProjects > 0 && (
+                <div className="flex items-center gap-1 mt-1">
+                  <CheckCircle2 className="h-3 w-3 text-success" />
+                  <span className="text-[11px] text-success font-medium">{completedProjects} завершено</span>
+                </div>
+              )}
             </div>
             <div className="h-10 w-10 rounded-lg bg-accent/10 flex items-center justify-center">
               <FolderKanban className="h-5 w-5 text-accent" />
@@ -103,17 +244,21 @@ const Index = () => {
           </div>
         </Card>
 
-        {/* Трафик */}
+        {/* Traffic */}
         <Card className="p-4 bg-card rounded-lg shadow-sm border border-border">
           <div className="flex items-start justify-between">
             <div>
               <p className="text-[12px] text-muted-foreground font-medium uppercase tracking-wide">Органический трафик</p>
-              <p className="text-3xl font-bold text-foreground mt-1">124 500</p>
+              <p className="text-3xl font-bold text-foreground mt-1">
+                {totalTraffic > 0 ? totalTraffic.toLocaleString("ru-RU") : "—"}
+              </p>
               <p className="text-[12px] text-muted-foreground mt-1">визитов за месяц</p>
-              <div className="flex items-center gap-1 mt-1">
-                <ArrowUp className="h-3 w-3 text-success" />
-                <span className="text-[11px] font-medium text-success">+12% к прошлому месяцу</span>
-              </div>
+              {totalTraffic > 0 && (
+                <div className="flex items-center gap-1 mt-1">
+                  <ArrowUp className="h-3 w-3 text-success" />
+                  <span className="text-[11px] font-medium text-success">данные из Метрики</span>
+                </div>
+              )}
             </div>
             <div className="h-10 w-10 rounded-lg bg-success/10 flex items-center justify-center">
               <TrendingUp className="h-5 w-5 text-success" />
@@ -121,31 +266,30 @@ const Index = () => {
           </div>
         </Card>
 
-        {/* Средняя позиция */}
+        {/* Task completion rate */}
         <Card className="p-4 bg-card rounded-lg shadow-sm border border-border">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-[12px] text-muted-foreground font-medium uppercase tracking-wide">Средняя позиция</p>
-              <p className="text-3xl font-bold text-foreground mt-1">14.3</p>
-              <p className="text-[12px] text-muted-foreground mt-1">по ключевым словам</p>
-              <div className="flex items-center gap-1 mt-1">
-                <ArrowDown className="h-3 w-3 text-destructive" />
-                <span className="text-[11px] font-medium text-destructive">-2.1 к прошлому месяцу</span>
-              </div>
+              <p className="text-[12px] text-muted-foreground font-medium uppercase tracking-wide">Выполнение задач</p>
+              <p className="text-3xl font-bold text-foreground mt-1">{taskCompletionPct}%</p>
+              <p className="text-[12px] text-muted-foreground mt-1">{completedTasks} из {totalTasks} задач</p>
+              <Progress value={taskCompletionPct} className="h-1.5 mt-2" />
             </div>
-            <div className="h-10 w-10 rounded-lg bg-warning/10 flex items-center justify-center">
-              <Key className="h-5 w-5 text-warning" />
+            <div className="h-10 w-10 rounded-lg bg-accent/10 flex items-center justify-center">
+              <Key className="h-5 w-5 text-accent" />
             </div>
           </div>
         </Card>
 
-        {/* Просроченные */}
+        {/* Overdue */}
         <Card className="p-4 bg-card rounded-lg shadow-sm border border-border border-l-[3px] border-l-destructive">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-[12px] text-muted-foreground font-medium uppercase tracking-wide">Просроченные дедлайны</p>
-              <p className="text-3xl font-bold text-destructive mt-1">{overdueTasks.length || 5}</p>
-              <p className="text-[12px] text-muted-foreground mt-1">проектов просрочено</p>
+              <p className="text-[12px] text-muted-foreground font-medium uppercase tracking-wide">Просроченные задачи</p>
+              <p className="text-3xl font-bold text-destructive mt-1">{overdueTasks.length}</p>
+              <p className="text-[12px] text-muted-foreground mt-1">
+                {overdueProjects.length} {overdueProjects.length === 1 ? "проект" : "проектов"}
+              </p>
             </div>
             <div className="h-10 w-10 rounded-lg bg-destructive/10 flex items-center justify-center">
               <AlertTriangle className="h-5 w-5 text-destructive" />
@@ -153,69 +297,104 @@ const Index = () => {
           </div>
         </Card>
 
-        {/* KPI менеджеров */}
+        {/* Manager KPI */}
         <Card className="p-4 bg-card rounded-lg shadow-sm border border-border">
           <p className="text-[12px] text-muted-foreground font-medium uppercase tracking-wide mb-3">KPI менеджеров</p>
-          <div className="space-y-2.5">
-            {managerKpi.map(m => (
-              <div key={m.name}>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[12px] text-foreground">{m.name.split(" ")[0]}</span>
-                  <span className="text-[11px] font-medium text-foreground">{m.pct}%</span>
+          {managerKpi.length > 0 ? (
+            <div className="space-y-2.5">
+              {managerKpi.map(m => (
+                <div key={m.name}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[12px] text-foreground truncate max-w-[100px]">{m.name.split(" ")[0]}</span>
+                    <span className={cn(
+                      "text-[11px] font-medium",
+                      m.pct >= 80 ? "text-success" : m.pct >= 50 ? "text-warning" : "text-destructive"
+                    )}>{m.pct}%</span>
+                  </div>
+                  <Progress value={m.pct} className="h-1.5" />
                 </div>
-                <Progress value={m.pct} className="h-1.5" />
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-[12px] text-muted-foreground text-center py-4">Нет данных</p>
+          )}
         </Card>
       </div>
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-        {/* Traffic line chart */}
+        {/* Activity line chart — projects created & tasks completed per month */}
         <Card className="lg:col-span-3 p-5 bg-card rounded-lg shadow-sm border border-border">
-          <h3 className="text-sm font-semibold text-foreground mb-4">Органический трафик по месяцам</h3>
+          <h3 className="text-sm font-semibold text-foreground mb-4">Активность по месяцам</h3>
           <div className="h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={trafficByMonth}>
+              <LineChart data={projectsByMonth}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="month" tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} />
-                <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
+                <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
                 <Tooltip
                   contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 6, fontSize: 12 }}
-                  formatter={(v: number) => [v.toLocaleString("ru-RU"), ""]}
                 />
-                <Line type="monotone" dataKey="current" stroke="#2FC6F6" strokeWidth={2.5} dot={{ r: 4, fill: "#2FC6F6" }} name="Текущий год" />
-                <Line type="monotone" dataKey="prev" stroke="#828282" strokeWidth={1.5} strokeDasharray="5 5" dot={{ r: 3, fill: "#828282" }} name="Прошлый год" />
+                <Line type="monotone" dataKey="count" stroke="#2FC6F6" strokeWidth={2.5} dot={{ r: 4, fill: "#2FC6F6" }} name="Новых проектов" />
+                <Line type="monotone" dataKey="tasks_done" stroke="#4CAF50" strokeWidth={2} dot={{ r: 3, fill: "#4CAF50" }} name="Задач выполнено" />
               </LineChart>
             </ResponsiveContainer>
           </div>
           <div className="flex items-center gap-6 mt-3">
             <div className="flex items-center gap-2">
-              <div className="h-0.5 w-5 rounded bg-accent" />
-              <span className="text-[11px] text-muted-foreground">Текущий год</span>
+              <div className="h-2 w-5 rounded" style={{ backgroundColor: "#2FC6F6" }} />
+              <span className="text-[11px] text-muted-foreground">Новых проектов</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="h-0.5 w-5 rounded bg-muted-foreground border-dashed" style={{ borderTop: '2px dashed #828282', height: 0 }} />
-              <span className="text-[11px] text-muted-foreground">Прошлый год</span>
+              <div className="h-2 w-5 rounded" style={{ backgroundColor: "#4CAF50" }} />
+              <span className="text-[11px] text-muted-foreground">Задач выполнено</span>
             </div>
           </div>
         </Card>
 
-        {/* Top projects bar chart */}
+        {/* Projects by stage bar chart */}
         <Card className="lg:col-span-2 p-5 bg-card rounded-lg shadow-sm border border-border">
-          <h3 className="text-sm font-semibold text-foreground mb-4">Топ-5 проектов по трафику</h3>
-          <div className="h-[280px]">
+          <h3 className="text-sm font-semibold text-foreground mb-4">Проекты по этапам</h3>
+          {projectsByStage.length > 0 ? (
+            <div className="h-[280px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart layout="vertical" data={projectsByStage} margin={{ left: 10, right: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="hsl(var(--border))" />
+                  <XAxis type="number" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} allowDecimals={false} />
+                  <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--foreground))' }} width={130} />
+                  <Tooltip
+                    contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 6, fontSize: 12 }}
+                    formatter={(v: number) => [v + " проектов", ""]}
+                  />
+                  <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={20}>
+                    {projectsByStage.map((entry, i) => (
+                      <Cell key={i} fill={entry.color} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-[280px] text-muted-foreground text-[13px]">Нет проектов</div>
+          )}
+        </Card>
+      </div>
+
+      {/* Top projects by efficiency */}
+      {topProjects.length > 0 && (
+        <Card className="p-5 bg-card rounded-lg shadow-sm border border-border">
+          <h3 className="text-sm font-semibold text-foreground mb-4">Топ-5 проектов по эффективности</h3>
+          <div className="h-[200px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart layout="vertical" data={topProjects} margin={{ left: 10, right: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="hsl(var(--border))" />
-                <XAxis type="number" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
-                <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--foreground))' }} width={100} />
+                <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} tickFormatter={v => `${v}%`} />
+                <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--foreground))' }} width={130} />
                 <Tooltip
                   contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 6, fontSize: 12 }}
-                  formatter={(v: number) => [v.toLocaleString("ru-RU") + " визитов", ""]}
+                  formatter={(v: number) => [`${v}%`, "Эффективность"]}
                 />
-                <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={20}>
+                <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={18}>
                   {topProjects.map((_, i) => (
                     <Cell key={i} fill={i === 0 ? "#2FC6F6" : i === 1 ? "#4CAF50" : "#E0E0E0"} />
                   ))}
@@ -224,15 +403,13 @@ const Index = () => {
             </ResponsiveContainer>
           </div>
         </Card>
-      </div>
+      )}
 
       {/* Overdue table */}
       <Card className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
         <div className="flex items-center gap-3 p-4 border-b border-border">
           <h3 className="text-sm font-semibold text-foreground">Просроченные проекты</h3>
-          <span className="px-2 py-0.5 text-[11px] font-semibold bg-destructive/10 text-destructive rounded-full">
-            {overdueTasks.length || 5}
-          </span>
+          <Badge variant="destructive" className="text-[11px] h-5 px-2">{overdueProjects.length}</Badge>
         </div>
         <div className="overflow-x-auto">
           <table className="crm-table">
@@ -247,52 +424,34 @@ const Index = () => {
               </tr>
             </thead>
             <tbody>
-              {overdueTasks.length > 0 ? overdueTasks.slice(0, 10).map(t => {
-                const project = t.project as any;
-                return (
-                  <tr key={t.id} className="bg-destructive/[0.03] hover:bg-destructive/[0.06]">
-                    <td className="text-[13px] text-foreground font-medium">{project?.name || "—"}</td>
-                    <td className="text-[13px] text-muted-foreground">{project?.url || "—"}</td>
-                    <td className="text-[13px] text-destructive font-medium">
-                      {t.deadline ? format(parseISO(t.deadline), "dd.MM.yyyy") : "—"}
-                    </td>
-                    <td className="text-[13px] text-muted-foreground">{getAssigneeName(t.assignee_id)}</td>
-                    <td>
-                      <span className="px-2 py-0.5 text-[11px] rounded-full font-medium" style={{ background: `${t.stage_color || '#3b82f6'}20`, color: t.stage_color || '#3b82f6' }}>
-                        {t.stage}
-                      </span>
-                    </td>
-                    <td>
-                      <Button variant="outline" size="sm" className="h-7 text-[11px]" onClick={() => t.project_id && navigate(`/crm-projects/${t.project_id}`)}>
-                        Открыть
-                      </Button>
-                    </td>
-                  </tr>
-                );
-              }) : (
-                /* Demo rows when no real overdue tasks */
-                [
-                  { client: "KAT-Lubricants", domain: "kat-lub.ru", date: "28.03.2026", manager: "Иван Петров", stage: "Аудит", color: "#FF9800" },
-                  { client: "МедКлиника+", domain: "medclinica.ru", date: "25.03.2026", manager: "Алиса Синицына", stage: "Контент", color: "#9C27B0" },
-                  { client: "АвтоПартс", domain: "avto-parts.ru", date: "20.03.2026", manager: "Дмитрий Козлов", stage: "Ссылки", color: "#2196F3" },
-                  { client: "ФитнесКлуб", domain: "fitnessclub.ru", date: "15.03.2026", manager: "Мария Волкова", stage: "Оптимизация", color: "#4CAF50" },
-                  { client: "СтройДом24", domain: "domstroy24.ru", date: "10.03.2026", manager: "Иван Петров", stage: "Техаудит", color: "#FF5752" },
-                ].map((row, i) => (
-                  <tr key={i} className="bg-destructive/[0.03] hover:bg-destructive/[0.06]">
-                    <td className="text-[13px] text-foreground font-medium">{row.client}</td>
-                    <td className="text-[13px] text-muted-foreground">{row.domain}</td>
-                    <td className="text-[13px] text-destructive font-medium">{row.date}</td>
-                    <td className="text-[13px] text-muted-foreground">{row.manager}</td>
-                    <td>
-                      <span className="px-2 py-0.5 text-[11px] rounded-full font-medium" style={{ background: `${row.color}20`, color: row.color }}>
-                        {row.stage}
-                      </span>
-                    </td>
-                    <td>
-                      <Button variant="outline" size="sm" className="h-7 text-[11px]">Открыть</Button>
-                    </td>
-                  </tr>
-                ))
+              {overdueProjects.length > 0 ? overdueProjects.slice(0, 10).map((row, i) => (
+                <tr key={i} className="bg-destructive/[0.03] hover:bg-destructive/[0.06]">
+                  <td className="text-[13px] text-foreground font-medium">{row.name}</td>
+                  <td className="text-[13px] text-muted-foreground">{row.url}</td>
+                  <td className="text-[13px] text-destructive font-medium">
+                    {format(parseISO(row.deadline), "dd.MM.yyyy")}
+                  </td>
+                  <td className="text-[13px] text-muted-foreground">{row.assignee}</td>
+                  <td>
+                    <span
+                      className="px-2 py-0.5 text-[11px] rounded-full font-medium"
+                      style={{ background: `${row.stageColor}20`, color: row.stageColor }}
+                    >
+                      {row.stage}
+                    </span>
+                  </td>
+                  <td>
+                    <Button variant="outline" size="sm" className="h-7 text-[11px]" onClick={() => navigate(`/crm-projects/${row.projectId}`)}>
+                      Открыть
+                    </Button>
+                  </td>
+                </tr>
+              )) : (
+                <tr>
+                  <td colSpan={6} className="text-center py-8 text-[13px] text-muted-foreground">
+                    Нет просроченных проектов 🎉
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>
