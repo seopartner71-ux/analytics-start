@@ -661,23 +661,6 @@ function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null; open: 
                 </CardContent>
               </Card>
 
-              {/* Observers */}
-              <Card className="bg-card shadow-sm border-border/60 rounded-xl">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-4">
-                    <Eye className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <span className="text-xs text-muted-foreground w-24 shrink-0">Наблюдатели</span>
-                    <div className="flex -space-x-2">
-                      {[task.creator, task.assignee].filter(Boolean).map((person, i) => (
-                        <img key={i} src={getAvatarUrl(person!.full_name)} alt="" className="h-7 w-7 rounded-full object-cover ring-2 ring-card shadow-sm" />
-                      ))}
-                      <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center ring-2 ring-card text-[10px] font-medium text-muted-foreground cursor-pointer hover:bg-muted/80">
-                        +
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
 
               {/* Subtasks */}
               <Card className="bg-card shadow-sm border-border/60 rounded-xl">
@@ -751,29 +734,6 @@ function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null; open: 
                 </CardContent>
               </Card>
 
-              {/* Account Manager (read-only from project) */}
-              {currentProject && (
-                <Card className="bg-card shadow-sm border-border/60 rounded-xl">
-                  <CardContent className="p-0">
-                    <div className="flex items-center gap-4 px-4 py-3.5">
-                      <Briefcase className="h-4 w-4 text-muted-foreground shrink-0" />
-                      <span className="text-xs text-muted-foreground w-28 shrink-0">Аккаунт-менеджер</span>
-                      {(() => {
-                        const amId = (currentProject as any).account_manager_id;
-                        const am = amId ? members.find(m => m.id === amId) : null;
-                        return am ? (
-                          <div className="flex items-center gap-2">
-                            <img src={getAvatarUrl(am.full_name)} alt="" className="h-6 w-6 rounded-full object-cover" />
-                            <span className="text-sm font-medium text-foreground">{am.full_name}</span>
-                          </div>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">Не назначен в проекте</span>
-                        );
-                      })()}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
             </div>
 
             {/* Sticky bottom action bar */}
