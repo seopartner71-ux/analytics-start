@@ -1,402 +1,71 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
-import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
-  Plus, Search, Clock, AlertTriangle, Send, List, LayoutGrid, GripVertical,
-  AlertCircle, ChevronDown, MessageSquare, Hash, Loader2, ClipboardList, ArrowLeft, Globe, Users
+  ArrowLeft, Plus, Send, Clock, CalendarDays, User, Tag, FileText,
+  Upload, Download, Trash2, Loader2, Globe, Edit, XCircle, MessageSquare,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { format, isPast, parseISO } from "date-fns";
+import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
 
 type CrmTask = Tables<"crm_tasks"> & {
-  creator?: Tables<"team_members"> | null;
   assignee?: Tables<"team_members"> | null;
-  project?: Tables<"projects"> | null;
 };
-
 type TaskComment = Tables<"task_comments"> & {
   author?: Tables<"team_members"> | null;
 };
 
-function getInitials(name: string) {
-  return name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
-}
+const STAGES = [
+  { key: "Новые заявки", color: "#9E9E9E" },
+  { key: "Анализ сайта", color: "#2196F3" },
+  { key: "Составление стратегии", color: "#FF9800" },
+  { key: "В работе", color: "#4CAF50" },
+  { key: "На проверке", color: "#9C27B0" },
+  { key: "Успешно завершено", color: "#4CAF50" },
+  { key: "Отказ", color: "#F44336" },
+];
 
-function AvatarCircle({ initials, className = "" }: { initials: string; className?: string }) {
+const TASK_STAGES = ["Новые", "В работе", "Ждёт выполнения", "Завершена"];
+const PRIORITY_MAP: Record<string, { label: string; color: string }> = {
+  high: { label: "Высокий", color: "#F44336" },
+  medium: { label: "Средний", color: "#FF9800" },
+  low: { label: "Низкий", color: "#4CAF50" },
+};
+const TAGS = ["SEO", "Аудит", "Ссылки", "Контент", "Техаудит"];
+
+function AvatarCircle({ name, size = "sm" }: { name: string; size?: "sm" | "md" }) {
+  const initials = name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+  const sz = size === "md" ? "h-9 w-9 text-[12px]" : "h-6 w-6 text-[10px]";
   return (
-    <div className={`flex items-center justify-center rounded-full bg-primary/15 text-primary text-xs font-bold shrink-0 ${className}`}>
+    <div className={`${sz} rounded-full bg-primary/15 text-primary font-bold flex items-center justify-center shrink-0`}>
       {initials}
     </div>
   );
 }
 
-function PropertyRow({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex items-start gap-6 py-3 border-b border-border/30 last:border-0 group">
-      <span className="text-[11px] text-muted-foreground w-28 shrink-0 pt-1 uppercase tracking-wider">{label}</span>
-      <div className="flex-1">{children}</div>
-    </div>
-  );
-}
-
-/* ─── Add Task Dialog (project-scoped) ─── */
-function AddTaskDialog({ projectId }: { projectId: string }) {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
-  const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ title: "", stage: "Новые", priority: "medium", deadline: "" });
-
-  const { data: members = [] } = useQuery({
-    queryKey: ["team-members-select"],
-    queryFn: async () => {
-      const { data } = await supabase.from("team_members").select("id, full_name").order("full_name");
-      return data || [];
-    },
-  });
-  const [assigneeId, setAssigneeId] = useState("");
-  const [creatorId, setCreatorId] = useState("");
-
-  const mutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.from("crm_tasks").insert({
-        title: form.title,
-        stage: form.stage,
-        stage_color: form.stage === "Новые" ? "#3b82f6" : form.stage === "В работе" ? "#f59e0b" : form.stage === "Завершена" ? "#10b981" : "#8b5cf6",
-        priority: form.priority,
-        deadline: form.deadline || null,
-        project_id: projectId,
-        owner_id: user!.id,
-        assignee_id: assigneeId || null,
-        creator_id: creatorId || null,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["project-tasks", projectId] });
-      queryClient.invalidateQueries({ queryKey: ["crm-tasks"] });
-      toast.success("Задача создана");
-      setOpen(false);
-      setForm({ title: "", stage: "Новые", priority: "medium", deadline: "" });
-      setAssigneeId("");
-      setCreatorId("");
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm" className="gap-1.5 h-8 shadow-sm">
-          <Plus className="h-4 w-4" /> Создать
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader><DialogTitle>Новая задача</DialogTitle></DialogHeader>
-        <div className="space-y-3">
-          <div><Label className="text-xs">Название *</Label><Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} /></div>
-          <div className="grid grid-cols-2 gap-3">
-            <div><Label className="text-xs">Стадия</Label>
-              <Select value={form.stage} onValueChange={v => setForm(f => ({ ...f, stage: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Новые">Новые</SelectItem>
-                  <SelectItem value="В работе">В работе</SelectItem>
-                  <SelectItem value="Ждёт выполнения">Ждёт выполнения</SelectItem>
-                  <SelectItem value="Завершена">Завершена</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div><Label className="text-xs">Приоритет</Label>
-              <Select value={form.priority} onValueChange={v => setForm(f => ({ ...f, priority: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="high">Высокий</SelectItem>
-                  <SelectItem value="medium">Средний</SelectItem>
-                  <SelectItem value="low">Низкий</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div><Label className="text-xs">Крайний срок</Label><Input type="datetime-local" value={form.deadline} onChange={e => setForm(f => ({ ...f, deadline: e.target.value }))} /></div>
-            <div><Label className="text-xs">Исполнитель</Label>
-              <Select value={assigneeId} onValueChange={setAssigneeId}>
-                <SelectTrigger><SelectValue placeholder="Выбрать..." /></SelectTrigger>
-                <SelectContent>
-                  {members.map(m => <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div>
-            <Label className="text-xs">Постановщик</Label>
-            <Select value={creatorId} onValueChange={setCreatorId}>
-              <SelectTrigger><SelectValue placeholder="Выбрать..." /></SelectTrigger>
-              <SelectContent>
-                {members.map(m => <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <Button onClick={() => mutation.mutate()} disabled={!form.title.trim() || mutation.isPending} className="w-full">
-            {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-            Создать задачу
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-/* ─── Task Detail Sheet ─── */
-function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null; open: boolean; onClose: () => void }) {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
-  const [msg, setMsg] = useState("");
-
-  const { data: comments = [] } = useQuery({
-    queryKey: ["task-comments", task?.id],
-    queryFn: async () => {
-      if (!task) return [];
-      const { data, error } = await supabase
-        .from("task_comments")
-        .select("*, author:team_members(*)")
-        .eq("task_id", task.id)
-        .order("created_at", { ascending: true });
-      if (error) throw error;
-      return data as TaskComment[];
-    },
-    enabled: !!task,
-  });
-
-  useEffect(() => {
-    if (!task) return;
-    const channel = supabase
-      .channel(`task-${task.id}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "task_comments", filter: `task_id=eq.${task.id}` }, () => {
-        queryClient.invalidateQueries({ queryKey: ["task-comments", task.id] });
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [task?.id, queryClient]);
-
-  const sendComment = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.from("task_comments").insert({ task_id: task!.id, body: msg, is_system: false });
-      if (error) throw error;
-    },
-    onSuccess: () => { setMsg(""); queryClient.invalidateQueries({ queryKey: ["task-comments", task?.id] }); },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  if (!task) return null;
-
-  const deadlineDate = task.deadline ? new Date(task.deadline) : null;
-  const isOverdue = deadlineDate ? deadlineDate < new Date() && task.stage !== "Завершена" : false;
-  const diffDays = deadlineDate ? Math.abs(Math.ceil((deadlineDate.getTime() - Date.now()) / 86400000)) : 0;
-
-  return (
-    <Sheet open={open} onOpenChange={onClose}>
-      <SheetContent className="w-full md:w-[85vw] md:max-w-[85vw] p-0 overflow-hidden" side="right">
-        <div className="px-5 py-4 border-b border-border bg-gradient-to-r from-primary/[0.03] to-transparent">
-          <SheetTitle className="text-base font-bold text-foreground leading-tight tracking-tight">{task.title}</SheetTitle>
-          <div className="flex items-center gap-2 mt-1.5">
-            <Badge variant="outline" className="text-[10px] font-medium" style={{ borderColor: task.stage_color || undefined, color: task.stage_color || undefined }}>
-              {task.stage}
-            </Badge>
-          </div>
-        </div>
-
-        <div className="flex flex-col md:flex-row h-[calc(100vh-80px)]">
-          <div className="w-full md:w-[42%] lg:w-[38%] border-b md:border-b-0 md:border-r border-border overflow-y-auto">
-            <div className="p-5 space-y-0">
-              {task.creator && (
-                <PropertyRow label="Постановщик">
-                  <div className="flex items-center gap-2.5">
-                    <AvatarCircle initials={getInitials(task.creator.full_name)} className="h-8 w-8 avatar-ring" />
-                    <span className="text-sm font-medium text-foreground">{task.creator.full_name}</span>
-                  </div>
-                </PropertyRow>
-              )}
-              {task.assignee && (
-                <PropertyRow label="Исполнитель">
-                  <div className="flex items-center gap-2.5">
-                    <AvatarCircle initials={getInitials(task.assignee.full_name)} className="h-8 w-8 avatar-ring" />
-                    <span className="text-sm font-medium text-foreground">{task.assignee.full_name}</span>
-                  </div>
-                </PropertyRow>
-              )}
-              {deadlineDate && (
-                <PropertyRow label="Крайний срок">
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span className={`text-sm font-medium ${isOverdue ? "text-destructive" : "text-foreground"}`}>
-                      {deadlineDate.toLocaleDateString("ru-RU", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}
-                    </span>
-                  </div>
-                  {isOverdue && (
-                    <Badge className="mt-1.5 text-[10px] bg-destructive/10 text-destructive border-destructive/20 hover:bg-destructive/10">
-                      Просрочена на {diffDays} дн.
-                    </Badge>
-                  )}
-                </PropertyRow>
-              )}
-              <PropertyRow label="Статус">
-                <Badge variant="outline" className="text-xs font-medium" style={{ borderColor: task.stage_color || undefined, color: task.stage_color || undefined }}>
-                  {task.stage} <ChevronDown className="h-3 w-3 ml-1" />
-                </Badge>
-              </PropertyRow>
-              <PropertyRow label="Приоритет">
-                <Badge variant={task.priority === "high" ? "destructive" : "secondary"} className="text-[10px]">
-                  {task.priority === "high" ? "Высокий" : task.priority === "low" ? "Низкий" : "Средний"}
-                </Badge>
-              </PropertyRow>
-              <PropertyRow label="Создана">
-                <span className="text-sm text-muted-foreground flex items-center gap-1.5">
-                  <Hash className="h-3.5 w-3.5" />
-                  {new Date(task.created_at).toLocaleDateString("ru-RU", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}
-                </span>
-              </PropertyRow>
-            </div>
-          </div>
-
-          {/* Chat */}
-          <div className="flex-1 flex flex-col min-h-0 bg-muted/[0.03]">
-            <div className="px-5 py-3 border-b border-border flex items-center gap-2">
-              <MessageSquare className="h-4 w-4 text-muted-foreground" />
-              <h3 className="text-sm font-semibold text-foreground">Чат задачи</h3>
-              <Badge variant="secondary" className="text-[10px] h-5">{comments.length}</Badge>
-            </div>
-            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
-              {comments.length === 0 && (
-                <div className="text-center py-16">
-                  <MessageSquare className="h-10 w-10 mx-auto mb-3 text-muted-foreground/20" />
-                  <p className="text-sm text-muted-foreground">Нет сообщений. Начните обсуждение...</p>
-                </div>
-              )}
-              {comments.map((m, i) => {
-                const prevDate = i > 0 ? comments[i - 1].created_at.split("T")[0] : "";
-                const curDate = m.created_at.split("T")[0];
-                const showDateSep = curDate !== prevDate;
-                return (
-                  <motion.div key={m.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03, duration: 0.2 }}>
-                    {showDateSep && (
-                      <div className="flex items-center justify-center my-4">
-                        <div className="h-px flex-1 bg-border/50" />
-                        <Badge variant="secondary" className="text-[10px] px-3 py-0.5 font-medium mx-3">
-                          {new Date(curDate).toLocaleDateString("ru-RU", { weekday: "long", day: "numeric", month: "long" })}
-                        </Badge>
-                        <div className="h-px flex-1 bg-border/50" />
-                      </div>
-                    )}
-                    {m.is_system ? (
-                      <div className="flex justify-center">
-                        <div className="bg-destructive/8 text-destructive text-xs px-4 py-2.5 rounded-xl max-w-md text-center leading-relaxed border border-destructive/10">{m.body}</div>
-                      </div>
-                    ) : (
-                      <div className="flex gap-3 group">
-                        <AvatarCircle initials={m.author ? getInitials(m.author.full_name) : "?"} className="h-9 w-9 mt-0.5 avatar-ring" />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-baseline gap-2 mb-1">
-                            <span className="text-sm font-semibold text-primary">{m.author?.full_name || "Аноним"}</span>
-                            <span className="text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
-                              {new Date(m.created_at).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
-                            </span>
-                          </div>
-                          <div className="bg-card rounded-2xl rounded-tl-md p-3.5 border border-border/50 shadow-sm">
-                            <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">{m.body}</p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </motion.div>
-                );
-              })}
-            </div>
-            <div className="px-5 py-3 border-t border-border bg-card/80 backdrop-blur-sm">
-              <div className="flex gap-2">
-                <Input placeholder="Написать сообщение..." value={msg} onChange={e => setMsg(e.target.value)} className="flex-1 h-10 bg-muted/30 border-border/60 focus:bg-card transition-colors" onKeyDown={e => e.key === "Enter" && msg.trim() && sendComment.mutate()} />
-                <Button size="sm" className="h-10 px-4 shadow-sm" disabled={!msg.trim() || sendComment.isPending} onClick={() => sendComment.mutate()}>
-                  <Send className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </SheetContent>
-    </Sheet>
-  );
-}
-
-/* ─── Kanban View ─── */
-function KanbanView({ tasks, onSelect }: { tasks: CrmTask[]; onSelect: (t: CrmTask) => void }) {
-  const stages = ["Новые", "В работе", "Ждёт выполнения", "Завершена"];
-  const stageColors: Record<string, string> = { "Новые": "#3b82f6", "В работе": "#f59e0b", "Ждёт выполнения": "#8b5cf6", "Завершена": "#10b981" };
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      {stages.map(stage => {
-        const stageTasks = tasks.filter(t => t.stage === stage);
-        const color = stageColors[stage];
-        return (
-          <div key={stage} className="space-y-2.5">
-            <div className="flex items-center gap-2 pb-2.5 border-b-2" style={{ borderColor: color }}>
-              <span className="text-sm font-semibold text-foreground">{stage}</span>
-              <Badge variant="secondary" className="text-[10px] h-5 min-w-5 flex items-center justify-center rounded-full">{stageTasks.length}</Badge>
-            </div>
-            <AnimatePresence>
-              {stageTasks.map((t, i) => {
-                const isOverdue = t.deadline ? new Date(t.deadline) < new Date() && t.stage !== "Завершена" : false;
-                return (
-                  <motion.div key={t.id} initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05, duration: 0.2 }}>
-                    <Card className="cursor-pointer card-glow" onClick={() => onSelect(t)}>
-                      <CardContent className="p-3.5 space-y-2.5">
-                        <p className="text-sm font-medium text-foreground line-clamp-2 leading-snug">{t.title}</p>
-                        <div className="flex items-center justify-between">
-                          <span className={`text-[11px] ${isOverdue ? "text-destructive font-semibold" : "text-muted-foreground"}`}>
-                            {isOverdue && <AlertTriangle className="h-3 w-3 inline mr-1" />}
-                            {t.deadline ? new Date(t.deadline).toLocaleDateString("ru-RU", { day: "numeric", month: "short" }) : "—"}
-                          </span>
-                          {t.assignee && <AvatarCircle initials={getInitials(t.assignee.full_name)} className="h-6 w-6 text-[10px]" />}
-                        </div>
-                        <div className="w-full h-1.5 rounded-full overflow-hidden bg-muted">
-                          <div className="h-full rounded-full transition-all duration-500" style={{ width: `${t.stage_progress || 0}%`, backgroundColor: color }} />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                );
-              })}
-            </AnimatePresence>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-/* ─── Main Page ─── */
 export default function CrmProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [search, setSearch] = useState("");
-  const [selectedTask, setSelectedTask] = useState<CrmTask | null>(null);
-  const [view, setView] = useState<"list" | "kanban">("list");
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
 
+  // Project
   const { data: project, isLoading: projectLoading } = useQuery({
-    queryKey: ["crm-project", id],
+    queryKey: ["project-detail", id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
@@ -409,12 +78,13 @@ export default function CrmProjectDetailPage() {
     enabled: !!id,
   });
 
-  const { data: tasks = [], isLoading: tasksLoading } = useQuery({
+  // Tasks
+  const { data: tasks = [] } = useQuery({
     queryKey: ["project-tasks", id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("crm_tasks")
-        .select("*, creator:team_members!crm_tasks_creator_id_fkey(*), assignee:team_members!crm_tasks_assignee_id_fkey(*), project:projects(*)")
+        .select("*, assignee:team_members!crm_tasks_assignee_id_fkey(*)")
         .eq("project_id", id!)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -423,193 +93,433 @@ export default function CrmProjectDetailPage() {
     enabled: !!id,
   });
 
-  const filtered = tasks.filter(t =>
-    t.title.toLowerCase().includes(search.toLowerCase()) ||
-    (t.assignee?.full_name || "").toLowerCase().includes(search.toLowerCase())
-  );
+  // Members
+  const { data: members = [] } = useQuery({
+    queryKey: ["team-members"],
+    queryFn: async () => {
+      const { data } = await supabase.from("team_members").select("id, full_name").order("full_name");
+      return data || [];
+    },
+  });
 
-  const overdueCount = tasks.filter(t => t.deadline && new Date(t.deadline) < new Date() && t.stage !== "Завершена").length;
-  const toggle = (tid: string) => { const s = new Set(selected); s.has(tid) ? s.delete(tid) : s.add(tid); setSelected(s); };
+  // Comments for project-level activity
+  const { data: projectComments = [] } = useQuery({
+    queryKey: ["project-comments", id],
+    queryFn: async () => {
+      // Get all comments for all tasks in this project
+      const taskIds = tasks.map(t => t.id);
+      if (taskIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from("task_comments")
+        .select("*, author:team_members(*)")
+        .in("task_id", taskIds)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      return data as TaskComment[];
+    },
+    enabled: tasks.length > 0,
+  });
+
+  const [commentText, setCommentText] = useState("");
+  const [addTaskOpen, setAddTaskOpen] = useState(false);
+  const [newTask, setNewTask] = useState({ title: "", priority: "medium", deadline: "", assignee_id: "" });
+
+  // Toggle task completion
+  const toggleTask = useMutation({
+    mutationFn: async ({ taskId, done }: { taskId: string; done: boolean }) => {
+      const { error } = await supabase.from("crm_tasks").update({
+        stage: done ? "Завершена" : "Новые",
+        stage_color: done ? "#10b981" : "#3b82f6",
+      }).eq("id", taskId);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["project-tasks", id] }),
+  });
+
+  // Add task
+  const addTask = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("crm_tasks").insert({
+        title: newTask.title,
+        priority: newTask.priority,
+        deadline: newTask.deadline || null,
+        assignee_id: newTask.assignee_id || null,
+        project_id: id!,
+        owner_id: user!.id,
+        stage: "Новые",
+        stage_color: "#3b82f6",
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["project-tasks", id] });
+      setAddTaskOpen(false);
+      setNewTask({ title: "", priority: "medium", deadline: "", assignee_id: "" });
+      toast.success("Задача создана");
+    },
+  });
+
+  // Send comment (to first task or create a system comment)
+  const sendComment = useMutation({
+    mutationFn: async () => {
+      if (tasks.length === 0) {
+        toast.error("Сначала создайте задачу");
+        return;
+      }
+      const { error } = await supabase.from("task_comments").insert({
+        task_id: tasks[0].id,
+        body: commentText,
+        is_system: false,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setCommentText("");
+      queryClient.invalidateQueries({ queryKey: ["project-comments", id] });
+      toast.success("Комментарий добавлен");
+    },
+  });
+
+  // Update project stage
+  const updateStage = useMutation({
+    mutationFn: async (stage: string) => {
+      const { error } = await supabase.from("projects").update({ privacy: stage }).eq("id", id!);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["project-detail", id] });
+      toast.success("Этап обновлён");
+    },
+  });
+
+  const completedCount = tasks.filter(t => t.stage === "Завершена").length;
+  const totalCount = tasks.length;
+  const progressPct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
+  const managerName = project?.seo_specialist ||
+    (project?.seo_specialist_id ? members.find(m => m.id === project.seo_specialist_id)?.full_name : null);
+
+  const currentStage = STAGES.find(s => s.key === (project?.privacy || "Новые заявки"));
 
   if (projectLoading) {
-    return <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+    return (
+      <div className="flex justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
   }
 
   if (!project) {
     return (
-      <div className="text-center py-20">
-        <p className="text-muted-foreground">Проект не найден</p>
-        <Button variant="ghost" className="mt-4" onClick={() => navigate("/crm-projects")}>
-          <ArrowLeft className="h-4 w-4 mr-2" /> Назад к проектам
-        </Button>
+      <div className="text-center py-20 text-muted-foreground">
+        Проект не найден
       </div>
     );
   }
 
   return (
     <div className="space-y-5">
-      {/* Project Header */}
-      <div className="flex items-start gap-4">
-        <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 mt-0.5" onClick={() => navigate("/crm-projects")}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={() => navigate("/crm-projects")} className="h-8 w-8 text-muted-foreground">
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-sm font-bold text-primary ring-1 ring-primary/10 shrink-0">
-                {project.name.slice(0, 2).toUpperCase()}
+              <h1 className="text-xl font-bold text-foreground">{project.company?.name || project.name}</h1>
+              <Badge
+                className="text-[11px] font-medium border-0"
+                style={{ backgroundColor: `${currentStage?.color || '#9E9E9E'}20`, color: currentStage?.color || '#9E9E9E' }}
+              >
+                {project.privacy || "Новые заявки"}
+              </Badge>
+            </div>
+            {project.url && (
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <Globe className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-[13px] text-muted-foreground">{project.url}</span>
               </div>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          {managerName && (
+            <div className="flex items-center gap-2 mr-3">
+              <AvatarCircle name={managerName} size="md" />
+              <span className="text-[13px] text-foreground">{managerName}</span>
+            </div>
+          )}
+          <Button variant="outline" size="sm" className="h-8 text-[13px] gap-1.5">
+            <Edit className="h-3.5 w-3.5" /> Редактировать
+          </Button>
+          <Button variant="outline" size="sm" className="h-8 text-[13px] gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/5">
+            <XCircle className="h-3.5 w-3.5" /> Закрыть проект
+          </Button>
+        </div>
+      </div>
+
+      {/* Two-column layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
+        {/* LEFT COLUMN (65%) */}
+        <div className="lg:col-span-3 space-y-5">
+          {/* Tasks checklist */}
+          <Card className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-foreground">Чеклист задач</h3>
+                <span className="text-[12px] text-muted-foreground">{completedCount} из {totalCount} выполнено</span>
+              </div>
+              <Dialog open={addTaskOpen} onOpenChange={setAddTaskOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm" className="h-7 text-[12px] gap-1">
+                    <Plus className="h-3.5 w-3.5" /> Добавить задачу
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader><DialogTitle>Новая задача</DialogTitle></DialogHeader>
+                  <div className="space-y-3 mt-2">
+                    <div>
+                      <Label className="text-[12px]">Название</Label>
+                      <Input value={newTask.title} onChange={e => setNewTask(f => ({ ...f, title: e.target.value }))} placeholder="Название задачи" className="mt-1" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-[12px]">Приоритет</Label>
+                        <Select value={newTask.priority} onValueChange={v => setNewTask(f => ({ ...f, priority: v }))}>
+                          <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="high">Высокий</SelectItem>
+                            <SelectItem value="medium">Средний</SelectItem>
+                            <SelectItem value="low">Низкий</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-[12px]">Срок</Label>
+                        <Input type="date" value={newTask.deadline} onChange={e => setNewTask(f => ({ ...f, deadline: e.target.value }))} className="mt-1" />
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-[12px]">Исполнитель</Label>
+                      <Select value={newTask.assignee_id} onValueChange={v => setNewTask(f => ({ ...f, assignee_id: v }))}>
+                        <SelectTrigger className="mt-1"><SelectValue placeholder="Выбрать..." /></SelectTrigger>
+                        <SelectContent>
+                          {members.map(m => <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button onClick={() => addTask.mutate()} disabled={!newTask.title.trim() || addTask.isPending} className="w-full">
+                      Создать задачу
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            {/* Progress bar */}
+            <div className="px-4 pt-3">
+              <Progress value={progressPct} className="h-2" />
+            </div>
+
+            {/* Task rows */}
+            <div className="divide-y divide-border/40">
+              {tasks.length === 0 ? (
+                <div className="py-12 text-center">
+                  <FileText className="h-10 w-10 mx-auto mb-2 text-muted-foreground/20" />
+                  <p className="text-[13px] text-muted-foreground">Нет данных</p>
+                </div>
+              ) : tasks.map((task, i) => {
+                const done = task.stage === "Завершена";
+                const pri = PRIORITY_MAP[task.priority] || PRIORITY_MAP.medium;
+                const overdue = task.deadline && isPast(parseISO(task.deadline)) && !done;
+                return (
+                  <div
+                    key={task.id}
+                    className={cn("flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors", i % 2 === 1 && "bg-muted/10")}
+                  >
+                    <Checkbox
+                      checked={done}
+                      onCheckedChange={(v) => toggleTask.mutate({ taskId: task.id, done: !!v })}
+                    />
+                    <span className={cn("flex-1 text-[13px] text-foreground", done && "line-through text-muted-foreground")}>
+                      {task.title}
+                    </span>
+                    {task.assignee && <AvatarCircle name={task.assignee.full_name} />}
+                    {task.deadline && (
+                      <span className={cn("text-[11px]", overdue ? "text-destructive font-medium" : "text-muted-foreground")}>
+                        {format(parseISO(task.deadline), "dd.MM")}
+                      </span>
+                    )}
+                    <span
+                      className="text-[10px] px-1.5 py-0.5 rounded font-medium"
+                      style={{ backgroundColor: `${pri.color}15`, color: pri.color }}
+                    >
+                      {pri.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+
+          {/* Comments */}
+          <Card className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
+            <div className="flex items-center gap-2 p-4 border-b border-border">
+              <MessageSquare className="h-4 w-4 text-muted-foreground" />
+              <h3 className="text-sm font-semibold text-foreground">Комментарии</h3>
+              <Badge variant="secondary" className="text-[10px] h-5">{projectComments.length}</Badge>
+            </div>
+            <div className="max-h-[400px] overflow-y-auto divide-y divide-border/30">
+              {projectComments.length === 0 ? (
+                <div className="py-12 text-center">
+                  <MessageSquare className="h-10 w-10 mx-auto mb-2 text-muted-foreground/20" />
+                  <p className="text-[13px] text-muted-foreground">Нет данных</p>
+                </div>
+              ) : projectComments.map(c => (
+                <div key={c.id} className="flex gap-3 p-4">
+                  <AvatarCircle name={c.author?.full_name || "?"} size="md" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline gap-2 mb-1">
+                      <span className="text-[13px] font-semibold text-foreground">{c.author?.full_name || "Аноним"}</span>
+                      <span className="text-[11px] text-muted-foreground">
+                        {format(parseISO(c.created_at), "dd.MM.yyyy HH:mm")}
+                      </span>
+                    </div>
+                    <p className="text-[13px] text-foreground leading-relaxed">{c.body}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="p-4 border-t border-border flex gap-2">
+              <Input
+                placeholder="Написать комментарий..."
+                value={commentText}
+                onChange={e => setCommentText(e.target.value)}
+                className="flex-1 h-9 text-[13px]"
+                onKeyDown={e => e.key === "Enter" && commentText.trim() && sendComment.mutate()}
+              />
+              <Button size="sm" className="h-9 px-4" disabled={!commentText.trim() || sendComment.isPending} onClick={() => sendComment.mutate()}>
+                <Send className="h-4 w-4 mr-1.5" /> Отправить
+              </Button>
+            </div>
+          </Card>
+        </div>
+
+        {/* RIGHT COLUMN (35%) */}
+        <div className="lg:col-span-2 space-y-5">
+          {/* Project info */}
+          <Card className="bg-card rounded-lg shadow-sm border border-border p-5 space-y-4">
+            <h3 className="text-sm font-semibold text-foreground mb-1">Информация о проекте</h3>
+
+            {/* Deadline */}
+            <div className="flex items-start gap-3">
+              <CalendarDays className="h-4 w-4 text-muted-foreground mt-0.5" />
               <div>
-                <h1 className="text-xl font-bold text-foreground tracking-tight">{project.name}</h1>
-                {project.url && (
-                  <a href={project.url.startsWith("http") ? project.url : `https://${project.url}`} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline flex items-center gap-1 mt-0.5">
-                    <Globe className="h-3 w-3" /> {project.url}
-                  </a>
+                <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Дедлайн</p>
+                <p className={cn("text-[13px] font-medium", project.updated_at && isPast(parseISO(project.updated_at)) ? "text-destructive" : "text-foreground")}>
+                  {format(parseISO(project.created_at), "dd.MM.yyyy")}
+                </p>
+              </div>
+            </div>
+
+            {/* Manager */}
+            <div className="flex items-start gap-3">
+              <User className="h-4 w-4 text-muted-foreground mt-0.5" />
+              <div>
+                <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Ответственный</p>
+                {managerName ? (
+                  <div className="flex items-center gap-2 mt-1">
+                    <AvatarCircle name={managerName} />
+                    <span className="text-[13px] font-medium text-foreground">{managerName}</span>
+                  </div>
+                ) : (
+                  <p className="text-[13px] text-muted-foreground">Не назначен</p>
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-2 sm:ml-auto">
-              {(project as any).company && (
-                <Badge variant="outline" className="text-xs">
-                  <Users className="h-3 w-3 mr-1" /> {(project as any).company.name}
-                </Badge>
-              )}
-              {project.seo_specialist && (
-                <Badge variant="secondary" className="text-xs">{project.seo_specialist}</Badge>
-              )}
-            </div>
-          </div>
-          {project.description && <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{project.description}</p>}
-        </div>
-      </div>
 
-      <Separator />
-
-      {/* Tasks section header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <h2 className="text-lg font-semibold text-foreground">Задачи проекта</h2>
-          <AddTaskDialog projectId={id!} />
-        </div>
-        <div className="relative w-full sm:w-64">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Поиск задачи..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-8 text-sm bg-muted/30 border-border/60 focus:bg-card transition-colors" />
-        </div>
-      </div>
-
-      {/* View tabs */}
-      <div className="flex items-center gap-1 border-b border-border pb-px overflow-x-auto">
-        <Button variant={view === "list" ? "default" : "ghost"} size="sm" className="h-8 text-xs gap-1.5 rounded-b-none" onClick={() => setView("list")}>
-          <List className="h-3.5 w-3.5" /> Список
-        </Button>
-        <Button variant={view === "kanban" ? "default" : "ghost"} size="sm" className="h-8 text-xs gap-1.5 rounded-b-none" onClick={() => setView("kanban")}>
-          <LayoutGrid className="h-3.5 w-3.5" /> Канбан
-        </Button>
-        <div className="w-px h-5 bg-border mx-2" />
-        {overdueCount > 0 && (
-          <Badge variant="destructive" className="text-[10px] h-5 gap-1">
-            <AlertCircle className="h-3 w-3" />{overdueCount} Просрочены
-          </Badge>
-        )}
-        <Badge variant="secondary" className="text-[10px] h-5 ml-1">Все: {tasks.length}</Badge>
-      </div>
-
-      {/* Content */}
-      {tasksLoading ? (
-        <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
-      ) : tasks.length === 0 ? (
-        <div className="text-center py-20">
-          <ClipboardList className="h-12 w-12 mx-auto mb-3 text-muted-foreground/30" />
-          <p className="text-muted-foreground">Нет задач в этом проекте. Создайте первую!</p>
-        </div>
-      ) : view === "kanban" ? (
-        <KanbanView tasks={filtered} onSelect={setSelectedTask} />
-      ) : (
-        <div className="overflow-x-auto rounded-xl border border-border/60 bg-card shadow-sm">
-          <table className="crm-table min-w-[800px]">
-            <thead>
-              <tr>
-                <th className="w-8"><Checkbox /></th>
-                <th className="w-8"></th>
-                <th>Название</th>
-                <th>Стадия канбана</th>
-                <th>Активность</th>
-                <th>Крайний срок</th>
-                <th>Постановщик</th>
-                <th>Исполнитель</th>
-              </tr>
-            </thead>
-            <tbody>
-              <AnimatePresence>
-                {filtered.map((t, idx) => {
-                  const isOverdue = t.deadline ? new Date(t.deadline) < new Date() && t.stage !== "Завершена" : false;
-                  const diffD = t.deadline ? Math.abs(Math.ceil((new Date(t.deadline).getTime() - Date.now()) / 86400000)) : 0;
-                  return (
-                    <motion.tr key={t.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.03, duration: 0.2 }} onClick={() => setSelectedTask(t)} className="cursor-pointer">
-                      <td onClick={e => e.stopPropagation()}><Checkbox checked={selected.has(t.id)} onCheckedChange={() => toggle(t.id)} /></td>
-                      <td className="text-muted-foreground/20"><GripVertical className="h-4 w-4" /></td>
-                      <td className="max-w-[280px]"><p className="text-sm font-medium text-foreground leading-snug">{t.title}</p></td>
-                      <td>
-                        <div className="space-y-1">
-                          <div className="w-24 h-2 rounded-full overflow-hidden bg-muted">
-                            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${t.stage_progress || 0}%`, backgroundColor: t.stage_color || "#3b82f6" }} />
-                          </div>
-                          <span className="text-[11px] text-muted-foreground">{t.stage}</span>
+            {/* Stage selector */}
+            <div className="flex items-start gap-3">
+              <Tag className="h-4 w-4 text-muted-foreground mt-0.5" />
+              <div className="flex-1">
+                <p className="text-[11px] text-muted-foreground uppercase tracking-wide mb-1">Этап воронки</p>
+                <Select value={project.privacy || "Новые заявки"} onValueChange={v => updateStage.mutate(v)}>
+                  <SelectTrigger className="h-8 text-[13px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {STAGES.map(s => (
+                      <SelectItem key={s.key} value={s.key}>
+                        <div className="flex items-center gap-2">
+                          <div className="h-2 w-2 rounded-full" style={{ backgroundColor: s.color }} />
+                          {s.key}
                         </div>
-                      </td>
-                      <td>
-                        {isOverdue ? (
-                          <Badge className="text-[10px] bg-destructive/10 text-destructive border-0 hover:bg-destructive/10 font-medium">
-                            <AlertCircle className="h-3 w-3 mr-1" /> Просрочена
-                          </Badge>
-                        ) : (
-                          <span className="text-[11px] text-muted-foreground">—</span>
-                        )}
-                      </td>
-                      <td>
-                        {t.deadline ? (
-                          <div className="flex items-center gap-1.5">
-                            <span className={`text-sm ${isOverdue ? "text-destructive font-medium" : "text-muted-foreground"}`}>
-                              {new Date(t.deadline).toLocaleDateString("ru-RU", { day: "numeric", month: "long" })}
-                            </span>
-                            {isOverdue && (
-                              <Badge className="text-[9px] bg-destructive/10 text-destructive border-0 hover:bg-destructive/10 ml-1">
-                                – {diffD > 30 ? `${Math.ceil(diffD / 30)} мес.` : `${diffD} дн.`}
-                              </Badge>
-                            )}
-                          </div>
-                        ) : <span className="text-sm text-muted-foreground">—</span>}
-                      </td>
-                      <td>
-                        {t.creator ? (
-                          <div className="flex items-center gap-2">
-                            <AvatarCircle initials={getInitials(t.creator.full_name)} className="h-7 w-7 text-[10px]" />
-                            <span className="text-sm text-foreground">{t.creator.full_name}</span>
-                          </div>
-                        ) : <span className="text-sm text-muted-foreground">—</span>}
-                      </td>
-                      <td>
-                        {t.assignee ? (
-                          <div className="flex items-center gap-2">
-                            <AvatarCircle initials={getInitials(t.assignee.full_name)} className="h-7 w-7 text-[10px]" />
-                            <span className="text-sm text-foreground">{t.assignee.full_name}</span>
-                          </div>
-                        ) : <span className="text-sm text-muted-foreground">—</span>}
-                      </td>
-                    </motion.tr>
-                  );
-                })}
-              </AnimatePresence>
-            </tbody>
-          </table>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Tags */}
+            <div className="flex items-start gap-3">
+              <Tag className="h-4 w-4 text-muted-foreground mt-0.5" />
+              <div>
+                <p className="text-[11px] text-muted-foreground uppercase tracking-wide mb-1.5">Теги</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {TAGS.map(tag => (
+                    <Badge key={tag} variant="secondary" className="text-[11px] font-medium">{tag}</Badge>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Created date */}
+            <div className="flex items-start gap-3">
+              <Clock className="h-4 w-4 text-muted-foreground mt-0.5" />
+              <div>
+                <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Дата создания</p>
+                <p className="text-[13px] text-foreground">{format(parseISO(project.created_at), "dd.MM.yyyy")}</p>
+              </div>
+            </div>
+          </Card>
+
+          {/* File upload */}
+          <Card className="bg-card rounded-lg shadow-sm border border-border p-5">
+            <h3 className="text-sm font-semibold text-foreground mb-3">Файлы проекта</h3>
+
+            {/* Drop zone */}
+            <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/30 transition-colors cursor-pointer">
+              <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground/40" />
+              <p className="text-[13px] text-muted-foreground">Перетащите файлы или нажмите для загрузки</p>
+              <p className="text-[11px] text-muted-foreground/60 mt-1">PDF, DOCX, XLSX, PNG</p>
+            </div>
+
+            {/* Demo files */}
+            <div className="mt-4 space-y-2">
+              {[
+                { name: "Технический_аудит.pdf", size: "2.4 MB", date: "01.04.2026" },
+                { name: "Семантическое_ядро.xlsx", size: "1.1 MB", date: "28.03.2026" },
+                { name: "Стратегия_продвижения.docx", size: "340 KB", date: "25.03.2026" },
+              ].map(file => (
+                <div key={file.name} className="flex items-center gap-3 p-2.5 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors">
+                  <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[12px] font-medium text-foreground truncate">{file.name}</p>
+                    <p className="text-[10px] text-muted-foreground">{file.size} · {file.date}</p>
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground">
+                    <Download className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </Card>
         </div>
-      )}
-
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span>Отмечено: <span className="font-medium text-foreground">{selected.size}</span> / {tasks.length}</span>
       </div>
-
-      <TaskDetailSheet task={selectedTask} open={!!selectedTask} onClose={() => setSelectedTask(null)} />
     </div>
   );
 }
