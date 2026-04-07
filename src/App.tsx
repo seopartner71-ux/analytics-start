@@ -20,6 +20,7 @@ import CompaniesPage from "./pages/CompaniesPage";
 import EmployeesPage from "./pages/EmployeesPage";
 import CrmTasksPage from "./pages/CrmTasksPage";
 import CrmProjectsPage from "./pages/CrmProjectsPage";
+import CrmProjectDetailPage from "./pages/CrmProjectDetailPage";
 import ContentPage from "./pages/ContentPage";
 import LinksPage from "./pages/LinksPage";
 import { CrmLayout } from "./components/CrmLayout";
