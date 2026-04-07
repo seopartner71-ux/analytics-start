@@ -16,13 +16,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
-const mainNav = [
-  { title: "Дашборд", url: "/", icon: LayoutDashboard },
-  { title: "SEO Проекты", url: "/crm-projects", icon: FolderKanban },
-  { title: "Задачи", url: "/tasks", icon: ClipboardList },
-  { title: "Клиенты", url: "/companies", icon: Building2 },
-  { title: "Календарь", url: "/content", icon: CalendarDays },
-  { title: "Сотрудники", url: "/employees", icon: Users },
+const allNav = [
+  { title: "Дашборд", url: "/", icon: LayoutDashboard, minRole: "viewer" as const },
+  { title: "SEO Проекты", url: "/crm-projects", icon: FolderKanban, minRole: "viewer" as const },
+  { title: "Задачи", url: "/tasks", icon: ClipboardList, minRole: "manager" as const },
+  { title: "Клиенты", url: "/companies", icon: Building2, minRole: "admin" as const },
+  { title: "Календарь", url: "/content", icon: CalendarDays, minRole: "manager" as const },
+  { title: "Сотрудники", url: "/employees", icon: Users, minRole: "admin" as const },
 ];
 
 const analyticsNav = [
