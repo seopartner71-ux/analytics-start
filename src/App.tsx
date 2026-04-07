@@ -25,6 +25,7 @@ import ContentPage from "./pages/ContentPage";
 import LinksPage from "./pages/LinksPage";
 import ProfilePage from "./pages/ProfilePage";
 import ChatPage from "./pages/ChatPage";
+import ReportsPage from "./pages/ReportsPage";
 import { CrmLayout } from "./components/CrmLayout";
 
 const queryClient = new QueryClient();
@@ -56,6 +57,7 @@ const App = () => (
                 <Route path="/admin" element={<ProtectedRoute><CrmLayout><AdminPanel /></CrmLayout></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><CrmLayout><ProfilePage /></CrmLayout></ProtectedRoute>} />
                 <Route path="/chat" element={<ProtectedRoute><CrmLayout><ChatPage /></CrmLayout></ProtectedRoute>} />
+                <Route path="/reports" element={<ProtectedRoute><CrmLayout><ReportsPage /></CrmLayout></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
