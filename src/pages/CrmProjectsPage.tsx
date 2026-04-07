@@ -22,16 +22,16 @@ type Project = Tables<"projects"> & {
 };
 
 const KANBAN_COLUMNS = [
-  { key: "Новые заявки", color: "#9E9E9E" },
-  { key: "Анализ сайта", color: "#2196F3" },
-  { key: "Составление стратегии", color: "#FF9800" },
   { key: "В работе", color: "#4CAF50" },
-  { key: "На проверке", color: "#9C27B0" },
-  { key: "Успешно завершено", color: "#4CAF50" },
-  { key: "Отказ", color: "#F44336" },
+  { key: "На паузе", color: "#FF9800" },
 ];
 
 const STAGES = KANBAN_COLUMNS.map(c => c.key);
+
+// Roles allowed to create projects
+function canAddProject(role: string | null): boolean {
+  return role === "admin" || role === "manager";
+}
 
 function getDeadlineColor(deadline: string | null) {
   if (!deadline) return "text-muted-foreground";
@@ -52,7 +52,7 @@ function AvatarCircle({ name }: { name: string }) {
 
 export default function CrmProjectsPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [view, setView] = useState<"kanban" | "list">("kanban");
@@ -60,7 +60,7 @@ export default function CrmProjectsPage() {
   const [addOpen, setAddOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [newUrl, setNewUrl] = useState("");
-  const [newStage, setNewStage] = useState("Новые заявки");
+  const [newStage, setNewStage] = useState("В работе");
   const [newDeadline, setNewDeadline] = useState("");
   const [newManager, setNewManager] = useState("");
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
@@ -125,7 +125,7 @@ export default function CrmProjectsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["crm-projects"] });
       setAddOpen(false);
-      setNewName(""); setNewUrl(""); setNewStage("Новые заявки"); setNewDeadline(""); setNewManager("");
+      setNewName(""); setNewUrl(""); setNewStage("В работе"); setNewDeadline(""); setNewManager("");
       toast.success("Проект создан");
     },
     onError: (e: Error) => toast.error(e.message),
@@ -174,9 +174,9 @@ export default function CrmProjectsPage() {
     const map: Record<string, Project[]> = {};
     STAGES.forEach(s => (map[s] = []));
     filtered.forEach(p => {
-      const stage = p.privacy || "Новые заявки";
+      const stage = p.privacy || "В работе";
       if (map[stage]) map[stage].push(p);
-      else map["Новые заявки"].push(p);
+      else map["В работе"].push(p);
     });
     return map;
   }, [filtered]);
@@ -280,56 +280,58 @@ export default function CrmProjectsPage() {
           </div>
         </div>
 
-        <Dialog open={addOpen} onOpenChange={setAddOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 h-9 text-[13px] shadow-sm">
-              <Plus className="h-4 w-4" /> Добавить проект
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Новый проект</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-3 mt-2">
-              <div>
-                <Label className="text-[13px]">Название *</Label>
-                <Input value={newName} onChange={e => setNewName(e.target.value)} placeholder="Название клиента / проекта" className="mt-1" />
-              </div>
-              <div>
-                <Label className="text-[13px]">Домен</Label>
-                <Input value={newUrl} onChange={e => setNewUrl(e.target.value)} placeholder="example.ru" className="mt-1" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
+        {canAddProject(role) && (
+          <Dialog open={addOpen} onOpenChange={setAddOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 h-9 text-[13px] shadow-sm">
+                <Plus className="h-4 w-4" /> Добавить проект
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Новый проект</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3 mt-2">
                 <div>
-                  <Label className="text-[13px]">Этап</Label>
-                  <Select value={newStage} onValueChange={setNewStage}>
-                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                  <Label className="text-[13px]">Название *</Label>
+                  <Input value={newName} onChange={e => setNewName(e.target.value)} placeholder="Название клиента / проекта" className="mt-1" />
+                </div>
+                <div>
+                  <Label className="text-[13px]">Домен</Label>
+                  <Input value={newUrl} onChange={e => setNewUrl(e.target.value)} placeholder="example.ru" className="mt-1" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-[13px]">Статус</Label>
+                    <Select value={newStage} onValueChange={setNewStage}>
+                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {STAGES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-[13px]">Дедлайн</Label>
+                    <Input type="date" value={newDeadline} onChange={e => setNewDeadline(e.target.value)} className="mt-1" />
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-[13px]">Ответственный</Label>
+                  <Select value={newManager} onValueChange={setNewManager}>
+                    <SelectTrigger className="mt-1"><SelectValue placeholder="Выберите сотрудника" /></SelectTrigger>
                     <SelectContent>
-                      {STAGES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                      {members.map(m => <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
-                  <Label className="text-[13px]">Дедлайн</Label>
-                  <Input type="date" value={newDeadline} onChange={e => setNewDeadline(e.target.value)} className="mt-1" />
-                </div>
+                <Button onClick={() => addMutation.mutate()} disabled={!newName.trim() || addMutation.isPending} className="w-full">
+                  {addMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  Создать проект
+                </Button>
               </div>
-              <div>
-                <Label className="text-[13px]">Ответственный</Label>
-                <Select value={newManager} onValueChange={setNewManager}>
-                  <SelectTrigger className="mt-1"><SelectValue placeholder="Выберите сотрудника" /></SelectTrigger>
-                  <SelectContent>
-                    {members.map(m => <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button onClick={() => addMutation.mutate()} disabled={!newName.trim() || addMutation.isPending} className="w-full">
-                {addMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                Создать проект
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       {isLoading ? (
@@ -450,7 +452,7 @@ export default function CrmProjectsPage() {
             </thead>
             <tbody>
               {filtered.map(p => {
-                const col = KANBAN_COLUMNS.find(c => c.key === (p.privacy || "Новые заявки"));
+                const col = KANBAN_COLUMNS.find(c => c.key === (p.privacy || "В работе"));
                 const manager = getManagerName(p.seo_specialist_id) || p.seo_specialist;
                 return (
                   <tr key={p.id} onClick={() => navigate(`/crm-projects/${p.id}`)} className="cursor-pointer">
@@ -462,7 +464,7 @@ export default function CrmProjectsPage() {
                         className="px-2 py-0.5 text-[11px] rounded-full font-medium"
                         style={{ background: `${col?.color || '#9E9E9E'}20`, color: col?.color || '#9E9E9E' }}
                       >
-                        {p.privacy || "Новые заявки"}
+                        {p.privacy || "В работе"}
                       </span>
                     </td>
                     <td>
