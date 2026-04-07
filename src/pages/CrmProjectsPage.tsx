@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ function getInitials(name: string) {
 }
 
 export default function CrmProjectsPage() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
 
   const { data: projects = [], isLoading } = useQuery({
@@ -102,13 +104,13 @@ export default function CrmProjectsPage() {
                   >
                     <td><Checkbox /></td>
                     <td className="text-muted-foreground/20"><GripVertical className="h-4 w-4" /></td>
-                    <td>
+                    <td className="cursor-pointer" onClick={() => navigate(`/crm-projects/${p.id}`)}>
                       <div className="flex items-center gap-2.5">
                         <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary shrink-0 ring-1 ring-primary/10">
                           {p.name.slice(0, 2).toUpperCase()}
                         </div>
                         <div>
-                          <span className="text-sm font-semibold text-foreground">{p.name}</span>
+                          <span className="text-sm font-semibold text-foreground hover:text-primary transition-colors">{p.name}</span>
                           {p.description && <p className="text-[11px] text-muted-foreground line-clamp-1">{p.description}</p>}
                         </div>
                       </div>

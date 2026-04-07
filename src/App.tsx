@@ -20,6 +20,7 @@ import CompaniesPage from "./pages/CompaniesPage";
 import EmployeesPage from "./pages/EmployeesPage";
 import CrmTasksPage from "./pages/CrmTasksPage";
 import CrmProjectsPage from "./pages/CrmProjectsPage";
+import CrmProjectDetailPage from "./pages/CrmProjectDetailPage";
 import ContentPage from "./pages/ContentPage";
 import LinksPage from "./pages/LinksPage";
 import { CrmLayout } from "./components/CrmLayout";
@@ -45,6 +46,7 @@ const App = () => (
                 <Route path="/employees" element={<ProtectedRoute><CrmLayout><EmployeesPage /></CrmLayout></ProtectedRoute>} />
                 <Route path="/tasks" element={<ProtectedRoute><CrmLayout><CrmTasksPage /></CrmLayout></ProtectedRoute>} />
                 <Route path="/crm-projects" element={<ProtectedRoute><CrmLayout><CrmProjectsPage /></CrmLayout></ProtectedRoute>} />
+                <Route path="/crm-projects/:id" element={<ProtectedRoute><CrmLayout><CrmProjectDetailPage /></CrmLayout></ProtectedRoute>} />
                 <Route path="/content" element={<ProtectedRoute><CrmLayout><ContentPage /></CrmLayout></ProtectedRoute>} />
                 <Route path="/links" element={<ProtectedRoute><CrmLayout><LinksPage /></CrmLayout></ProtectedRoute>} />
                 <Route path="/project/:id" element={<ProtectedRoute><ProjectDetail /></ProtectedRoute>} />
