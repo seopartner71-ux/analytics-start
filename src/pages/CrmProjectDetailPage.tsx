@@ -547,35 +547,59 @@ export default function CrmProjectDetailPage() {
           <Card className="bg-card rounded-lg shadow-sm border border-border p-5">
             <h3 className="text-sm font-semibold text-foreground mb-3">Файлы проекта</h3>
 
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept=".pdf,.docx,.xlsx,.png,.jpg,.jpeg"
+              className="hidden"
+              onChange={e => handleFileUpload(e.target.files)}
+            />
+
             {/* Drop zone */}
-            <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/30 transition-colors cursor-pointer">
-              <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground/40" />
+            <div
+              className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/30 transition-colors cursor-pointer"
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
+              onDrop={e => { e.preventDefault(); e.stopPropagation(); handleFileUpload(e.dataTransfer.files); }}
+            >
+              {uploading ? (
+                <Loader2 className="h-8 w-8 mx-auto mb-2 text-primary animate-spin" />
+              ) : (
+                <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground/40" />
+              )}
               <p className="text-[13px] text-muted-foreground">Перетащите файлы или нажмите для загрузки</p>
               <p className="text-[11px] text-muted-foreground/60 mt-1">PDF, DOCX, XLSX, PNG</p>
             </div>
 
-            {/* Demo files */}
-            <div className="mt-4 space-y-2">
-              {[
-                { name: "Технический_аудит.pdf", size: "2.4 MB", date: "01.04.2026" },
-                { name: "Семантическое_ядро.xlsx", size: "1.1 MB", date: "28.03.2026" },
-                { name: "Стратегия_продвижения.docx", size: "340 KB", date: "25.03.2026" },
-              ].map(file => (
-                <div key={file.name} className="flex items-center gap-3 p-2.5 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors">
-                  <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[12px] font-medium text-foreground truncate">{file.name}</p>
-                    <p className="text-[10px] text-muted-foreground">{file.size} · {file.date}</p>
-                  </div>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground">
-                    <Download className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive">
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              ))}
-            </div>
+            {/* Uploaded files */}
+            {projectFiles.length > 0 && (
+              <div className="mt-4 space-y-2">
+                {projectFiles.map(file => {
+                  const sizeStr = file.size > 1048576 ? `${(file.size / 1048576).toFixed(1)} MB` : `${(file.size / 1024).toFixed(0)} KB`;
+                  return (
+                    <div key={file.id} className="flex items-center gap-3 p-2.5 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors">
+                      <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[12px] font-medium text-foreground truncate">{file.name}</p>
+                        <p className="text-[10px] text-muted-foreground">{sizeStr} · {format(parseISO(file.created_at), "dd.MM.yyyy")}</p>
+                      </div>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" asChild>
+                        <a href={file.url} target="_blank" rel="noopener noreferrer"><Download className="h-3.5 w-3.5" /></a>
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => deleteFile.mutate(file.id)}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {projectFiles.length === 0 && (
+              <p className="text-[12px] text-muted-foreground text-center mt-3">Нет загруженных файлов</p>
+            )}
           </Card>
         </div>
       </div>
