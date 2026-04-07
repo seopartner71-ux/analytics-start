@@ -1,10 +1,10 @@
 import { ReactNode, useCallback } from "react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { LogOut, Sun, Moon, RefreshCw, CalendarDays, Palette } from "lucide-react";
+import { LogOut, Sun, Moon, Bell, Search, RefreshCw, CalendarDays } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -12,11 +12,22 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { format, subDays, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { ru as ruLocale } from "date-fns/locale";
 import { ChannelFilter } from "@/components/project/ChannelFilter";
-import { useWorkspaceColor } from "@/contexts/WorkspaceColorContext";
-import { WORKSPACE_COLORS } from "@/data/crm-mock";
+
+const PAGE_TITLES: Record<string, string> = {
+  "/": "Дашборд",
+  "/companies": "Клиенты",
+  "/crm-projects": "SEO Проекты",
+  "/tasks": "Задачи",
+  "/employees": "Сотрудники",
+  "/content": "Календарь",
+  "/links": "Ссылки",
+  "/team": "Команда",
+  "/admin": "Администрирование",
+};
 
 interface PageHeaderProps {
   breadcrumbs?: ReactNode;
@@ -42,10 +53,12 @@ export function PageHeader({
   onApply, onRefresh, lastUpdated,
   showDatePicker = false,
 }: PageHeaderProps) {
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
-  const { colorHsl, setColorHsl } = useWorkspaceColor();
+  const location = useLocation();
+
+  const pageTitle = PAGE_TITLES[location.pathname] || breadcrumbs || "StatPulse";
 
   const { data: projects = [] } = useQuery({
     queryKey: ["projects-list"],
@@ -70,10 +83,14 @@ export function PageHeader({
 
   const formatDate = (d: Date) => format(d, "dd.MM.yyyy");
 
+  const initials = user?.email ? user.email.slice(0, 2).toUpperCase() : "U";
+
   return (
-    <header className="sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur-sm">
-      <div className="h-14 flex items-center justify-between px-4">
-        <div className="flex items-center gap-3">
+    <header className="sticky top-0 z-30 bg-card border-b border-border">
+      {/* Main header row - 56px */}
+      <div className="h-14 flex items-center justify-between px-4 gap-4">
+        {/* Left: trigger + title */}
+        <div className="flex items-center gap-3 min-w-0">
           <SidebarTrigger className="text-muted-foreground" />
           {projectId && projects.length > 0 ? (
             <Select value={projectId} onValueChange={(v) => navigate(`/project/${v}`)}>
@@ -98,33 +115,28 @@ export function PageHeader({
               </SelectContent>
             </Select>
           ) : (
-            breadcrumbs || <span className="text-sm font-medium text-muted-foreground">StatPulse</span>
+            <h1 className="text-sm font-semibold text-foreground truncate">{pageTitle}</h1>
           )}
         </div>
-        <div className="flex items-center gap-1.5">
+
+        {/* Center: search */}
+        <div className="hidden md:flex flex-1 max-w-md">
+          <div className="relative w-full">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Поиск..."
+              className="pl-9 h-8 text-[13px] bg-muted/50 border-border"
+            />
+          </div>
+        </div>
+
+        {/* Right: actions */}
+        <div className="flex items-center gap-1">
           {actions}
-          {/* Workspace color picker */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
-                <Palette className="h-4 w-4" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-3" align="end">
-              <p className="text-xs font-medium text-muted-foreground mb-2">Цвет рабочего пространства</p>
-              <div className="flex gap-2">
-                {WORKSPACE_COLORS.map(c => (
-                  <button
-                    key={c.hsl}
-                    onClick={() => setColorHsl(c.hsl)}
-                    className={`h-7 w-7 rounded-full border-2 transition-all ${colorHsl === c.hsl ? "border-foreground scale-110" : "border-transparent"}`}
-                    style={{ backgroundColor: `hsl(${c.hsl})` }}
-                    title={c.name}
-                  />
-                ))}
-              </div>
-            </PopoverContent>
-          </Popover>
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground relative">
+            <Bell className="h-4 w-4" />
+            <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary" />
+          </Button>
           <Button variant="ghost" size="icon" onClick={toggleTheme} className="h-8 w-8 text-muted-foreground hover:text-foreground">
             {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
@@ -132,9 +144,13 @@ export function PageHeader({
             <LogOut className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Выход</span>
           </Button>
+          <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-[11px] font-semibold text-primary-foreground ml-1 cursor-default">
+            {initials}
+          </div>
         </div>
       </div>
 
+      {/* Date picker row */}
       {showDatePicker && dateRange && onDateRangeChange && onApply && (
         <div className="h-11 flex items-center gap-2 px-4 border-t border-border/50 overflow-x-auto">
           <div className="flex items-center gap-1">

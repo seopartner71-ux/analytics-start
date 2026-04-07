@@ -10,7 +10,7 @@ export function CrmLayout({ children }: { children: ReactNode }) {
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
           <PageHeader />
-          <main className="flex-1 p-4 md:p-6 lg:p-8 animate-in fade-in duration-300">
+          <main className="flex-1 p-4 md:p-6 animate-in fade-in duration-300">
             {children}
           </main>
         </div>
