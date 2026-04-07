@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,13 +14,21 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import {
   FileText, Download, Mail, Loader2, Calendar, CheckCircle2,
   ListOrdered, TrendingUp, ClipboardList, BarChart3, Send,
-  FileDown, Eye,
+  FileDown, Eye, GitCompareArrows,
 } from "lucide-react";
 import { toast } from "sonner";
-import { format, subDays, startOfMonth, endOfMonth, subMonths } from "date-fns";
+import { format, subDays, startOfMonth, endOfMonth, subMonths, subYears, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { exportToWord, type WordSection } from "@/lib/export-utils";
 import jsPDF from "jspdf";
+
+const COMPARISON_MODES = [
+  { key: "none", label: "Без сравнения" },
+  { key: "previous", label: "Предыдущий период" },
+  { key: "lastYear", label: "Тот же период, прошлый год" },
+] as const;
+
+type ComparisonMode = typeof COMPARISON_MODES[number]["key"];
 
 const PERIOD_PRESETS = [
   { key: "last30", label: "Последние 30 дней" },
