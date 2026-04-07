@@ -300,32 +300,45 @@ export default function ReportsPage() {
 
       const { data, error } = await supabase.functions.invoke("generate-ai-summary", {
         body: {
-          prompt: `Ты — SEO-аналитик. Напиши краткие профессиональные выводы и рекомендации по проекту на русском языке.
-          
-Данные проекта:
-- Название: ${context.projectName}
-- URL: ${context.projectUrl}
-- Период: ${context.period}
-- Визиты: ${context.visits}, Пользователи: ${context.users}
-- Отказы: ${context.bounceRate}%, Ср. время на сайте: ${Math.floor(context.avgDuration / 60)}:${String(context.avgDuration % 60).padStart(2, "0")}
-- Выполнено задач: ${context.tasksCompleted}
-- Записей работ: ${context.workLogEntries}
-- Отслеживается слов: ${context.keywordsTracked}
-- ТОП-5 запросов: ${context.top5Keywords.join(", ")}
-- Ошибок обнаружено: ${context.errorsCount}
-
-Напиши 3-4 абзаца:
-1. Общая оценка динамики проекта
-2. Что было сделано и результаты
-3. Проблемы и зоны роста
-4. Рекомендации на следующий период
-
-Формат: только текст, без заголовков и маркеров.`,
+          project_id: project.id,
+          language: "ru",
+          mode: "deep_analysis",
+          live_metrics: {
+            dateFrom: context.period,
+            dateTo: context.period,
+            visits: context.visits,
+            users: context.users,
+            bounceRate: context.bounceRate,
+            avgDuration: context.avgDuration,
+            topPages: [],
+            sourceBreakdown: (context.trafficSources || []).map((s: any) => ({
+              name: s.source || s.name,
+              value: s.visits || s.value,
+              pct: s.pct || 0,
+            })),
+            keywordsContext: {
+              total: context.keywordsTracked,
+              topKeywords: context.top5Keywords,
+              top3: 0, top10: 0, top30: 0,
+              avgPosition: 0, improved: 0, declined: 0,
+            },
+            selectedChannels: ["search", "direct", "ad"],
+          },
         },
       });
 
       if (error) throw error;
-      const summary = data?.choices?.[0]?.message?.content || data?.summary || "Не удалось сгенерировать выводы";
+      const general = data?.summary?.general;
+      const parts: string[] = [];
+      if (general?.happened) parts.push(general.happened);
+      if (general?.why) parts.push(general.why);
+      if (general?.recommendation) parts.push(general.recommendation);
+      if (data?.business_insight) parts.push(data.business_insight);
+      if (data?.goals_insight) parts.push(data.goals_insight);
+      if (data?.recommendations?.length) {
+        parts.push(data.recommendations.map((r: any) => `[${r.priority}] ${r.text}`).join("\n"));
+      }
+      const summary = parts.length > 0 ? parts.join("\n\n") : "Не удалось сгенерировать выводы";
       setConclusions(summary);
       toast.success("AI-выводы сгенерированы");
     } catch (err: any) {
