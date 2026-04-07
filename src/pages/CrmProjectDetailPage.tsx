@@ -35,13 +35,8 @@ type TaskComment = Tables<"task_comments"> & {
 };
 
 const STAGES = [
-  { key: "Новые заявки", color: "#9E9E9E" },
-  { key: "Анализ сайта", color: "#2196F3" },
-  { key: "Составление стратегии", color: "#FF9800" },
   { key: "В работе", color: "#4CAF50" },
-  { key: "На проверке", color: "#9C27B0" },
-  { key: "Успешно завершено", color: "#4CAF50" },
-  { key: "Отказ", color: "#F44336" },
+  { key: "На паузе", color: "#FF9800" },
 ];
 
 const TASK_STAGES = ["Новые", "В работе", "Ждёт выполнения", "Завершена"];
@@ -534,8 +529,8 @@ export default function CrmProjectDetailPage() {
             <div className="flex items-start gap-3">
               <Tag className="h-4 w-4 text-muted-foreground mt-0.5" />
               <div className="flex-1">
-                <p className="text-[11px] text-muted-foreground uppercase tracking-wide mb-1">Этап воронки</p>
-                <Select value={project.privacy || "Новые заявки"} onValueChange={v => updateStage.mutate(v)}>
+                <p className="text-[11px] text-muted-foreground uppercase tracking-wide mb-1">Статус проекта</p>
+                <Select value={project.privacy || "В работе"} onValueChange={v => updateStage.mutate(v)}>
                   <SelectTrigger className="h-8 text-[13px]"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {STAGES.map(s => (
