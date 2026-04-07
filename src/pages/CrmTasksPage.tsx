@@ -137,7 +137,7 @@ function AddTaskDialog() {
 }
 
 
-/* ─── unused PropertyRow kept for compatibility ─── */
+function PropertyRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-start gap-6 py-3 border-b border-border/30 last:border-0 group">
       <span className="text-[11px] text-muted-foreground w-28 shrink-0 pt-1 uppercase tracking-wider">{label}</span>
