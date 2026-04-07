@@ -304,16 +304,29 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     return result;
   }, [filteredData, filteredCompData, metrikaHistory, showComparison]);
 
-  // ── KPI values ──
-  const totalVisits = filteredData.length > 0
-    ? filteredData.reduce((s, d) => s + d.visits, 0)
-    : (metrikaStats?.total_visits || 0);
-  const totalUsers = metrikaStats?.total_users || 0;
+  // ── Channel-filtered visits ──
+  const channelVisitRatio = useMemo(() => {
+    if (channel === "all" || !metrikaStats?.traffic_sources) return 1;
+    const sources = metrikaStats.traffic_sources as { source: string; visits: number }[];
+    const totalAll = sources.reduce((s, src) => s + (src.visits || 0), 0);
+    if (totalAll === 0) return 1;
+    const channelVisits = sources
+      .filter(src => SOURCE_TO_CHANNEL[src.source] === channel)
+      .reduce((s, src) => s + (src.visits || 0), 0);
+    return channelVisits / totalAll;
+  }, [metrikaStats, channel]);
+
+  const totalVisits = Math.round(
+    (filteredData.length > 0
+      ? filteredData.reduce((s, d) => s + d.visits, 0)
+      : (metrikaStats?.total_visits || 0)) * channelVisitRatio
+  );
+  const totalUsers = Math.round((metrikaStats?.total_users || 0) * channelVisitRatio);
   const bounceRate = metrikaStats ? Number(metrikaStats.bounce_rate) : 0;
   const avgDuration = metrikaStats ? metrikaStats.avg_duration_seconds : 0;
   const pageDepth = metrikaStats ? Number(metrikaStats.page_depth) : 0;
 
-  const compTotalVisits = filteredCompData.reduce((s, d) => s + d.visits, 0);
+  const compTotalVisits = Math.round(filteredCompData.reduce((s, d) => s + d.visits, 0) * channelVisitRatio);
   const visitsChange = showComparison && compTotalVisits > 0
     ? Math.round(((totalVisits - compTotalVisits) / compTotalVisits) * 1000) / 10
     : 0;
