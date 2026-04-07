@@ -163,6 +163,9 @@ function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null; open: 
   const [editingField, setEditingField] = useState<string | null>(null);
   const [newSubtask, setNewSubtask] = useState("");
   const [showSubtaskInput, setShowSubtaskInput] = useState(false);
+  const [resultText, setResultText] = useState("");
+  const [resultUploading, setResultUploading] = useState(false);
+  const resultFileRef = useRef<HTMLInputElement>(null);
 
   // Init fields from task
   useEffect(() => {
