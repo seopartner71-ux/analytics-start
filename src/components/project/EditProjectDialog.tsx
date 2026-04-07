@@ -94,6 +94,10 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
     setObservers([]);
     setYandexOAuthStep("idle");
     setYandexCodeInput("");
+    setYandexCounters([]);
+    setYandexHosts([]);
+    setSelectedCounter(project.metrika_counter_id || "");
+    setSelectedHost(project.yandex_webmaster_host_id || "");
   }, [project, open]);
 
   // Init integration values
