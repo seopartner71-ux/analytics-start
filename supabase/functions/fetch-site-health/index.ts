@@ -7,11 +7,10 @@ const corsHeaders = {
 };
 
 const WM_BASE = "https://api.webmaster.yandex.net/v4";
-const GSC_BASE = "https://www.googleapis.com/webmasters/v3";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
@@ -24,18 +23,26 @@ Deno.serve(async (req) => {
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey, {
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    // User client for RLS-scoped reads
+    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
+    // Validate JWT
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
       return new Response(JSON.stringify({ error: "Not authenticated" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // Admin client for writes (bypasses RLS)
+    const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
     const body = await req.json();
     const { project_id } = body as { project_id: string };
@@ -47,21 +54,21 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get project info
-    const { data: project, error: projErr } = await supabase
+    // Validate user has access to this project via RLS
+    const { data: project, error: projErr } = await userClient
       .from("projects")
       .select("*")
       .eq("id", project_id)
       .single();
     if (projErr || !project) {
-      return new Response(JSON.stringify({ error: "Project not found" }), {
+      return new Response(JSON.stringify({ error: "Project not found or no access" }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Get integrations for this project
-    const { data: integrations } = await supabase
+    // Get integrations for this project (via user client for RLS)
+    const { data: integrations } = await userClient
       .from("integrations")
       .select("*")
       .eq("project_id", project_id)
@@ -83,28 +90,24 @@ Deno.serve(async (req) => {
           "Content-Type": "application/json",
         };
 
-        // Get user_id
         const userResp = await fetch(`${WM_BASE}/user/`, { headers: wmHeaders });
         const userData = await userResp.json();
         if (!userResp.ok) throw new Error(userData?.error_message || "WM auth failed");
         const wmUserId = userData.user_id;
         const encodedHost = encodeURIComponent(hostId);
 
-        // Fetch summary
         const summaryResp = await fetch(
           `${WM_BASE}/user/${wmUserId}/hosts/${encodedHost}/summary`,
           { headers: wmHeaders }
         );
         const summary = summaryResp.ok ? await summaryResp.json() : {};
 
-        // Fetch diagnostics for errors
         const diagResp = await fetch(
           `${WM_BASE}/user/${wmUserId}/hosts/${encodedHost}/diagnostics`,
           { headers: wmHeaders }
         );
         const diag = diagResp.ok ? await diagResp.json() : { problems: [] };
 
-        // Fetch indexing history (last 3 months)
         const threeMonthsAgo = new Date();
         threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
         const idxResp = await fetch(
@@ -113,7 +116,6 @@ Deno.serve(async (req) => {
         );
         const idxData = idxResp.ok ? await idxResp.json() : {};
 
-        // Calculate indexed pages from indexing history
         let indexedPages = 0;
         if (idxData?.indicators?.SEARCHABLE) {
           const searchable = idxData.indicators.SEARCHABLE;
@@ -122,7 +124,6 @@ Deno.serve(async (req) => {
           }
         }
 
-        // Save metrics to site_health (upsert pattern)
         const yandexMetrics = [
           { metric_name: "indexed_pages", metric_value: String(indexedPages) },
           { metric_name: "total_pages", metric_value: String(summary?.searchable_count || indexedPages) },
@@ -131,13 +132,12 @@ Deno.serve(async (req) => {
           { metric_name: "warnings", metric_value: String(diag?.problems?.filter((p: any) => p.state === "PRESENT" && p.severity === "WARNING")?.length || 0) },
         ];
 
-        // Delete old yandex metrics for this project and insert new ones
-        await supabase.from("site_health").delete()
+        await adminClient.from("site_health").delete()
           .eq("project_id", project_id)
           .eq("source", "yandex");
 
         for (const m of yandexMetrics) {
-          await supabase.from("site_health").insert({
+          await adminClient.from("site_health").insert({
             project_id,
             source: "yandex",
             metric_name: m.metric_name,
@@ -146,18 +146,16 @@ Deno.serve(async (req) => {
           });
         }
 
-        // Save diagnostics as site_errors
         const activeProblems = (diag?.problems || []).filter(
           (p: any) => p.state === "PRESENT"
         );
         if (activeProblems.length > 0) {
-          // Clear old yandex errors
-          await supabase.from("site_errors").delete()
+          await adminClient.from("site_errors").delete()
             .eq("project_id", project_id)
             .eq("source", "yandex");
 
           for (const problem of activeProblems) {
-            await supabase.from("site_errors").insert({
+            await adminClient.from("site_errors").insert({
               project_id,
               source: "yandex",
               error_type: problem.problem_id || problem.title || "Unknown",
@@ -182,9 +180,8 @@ Deno.serve(async (req) => {
     if (gscIntegration?.access_token && gscIntegration?.counter_id) {
       try {
         const accessToken = gscIntegration.access_token;
-        const siteUrl = gscIntegration.counter_id; // We store property URL in counter_id
+        const siteUrl = gscIntegration.counter_id;
 
-        // Fetch search analytics (last 28 days)
         const endDate = new Date();
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - 28);
@@ -213,7 +210,6 @@ Deno.serve(async (req) => {
 
         const analyticsData = await analyticsResp.json();
 
-        // Fetch totals (without dimensions)
         const totalsResp = await fetch(
           `https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(siteUrl)}/searchAnalytics/query`,
           {
@@ -240,7 +236,6 @@ Deno.serve(async (req) => {
           }
         }
 
-        // Build top queries
         const topQueries = (analyticsData?.rows || []).map((row: any) => ({
           query: row.keys?.[0] || "",
           clicks: row.clicks || 0,
@@ -248,24 +243,7 @@ Deno.serve(async (req) => {
           position: (row.position || 0).toFixed(1),
         }));
 
-        // Fetch crawl errors via URL Inspection API (or sitemaps as proxy)
-        // GSC v3 doesn't have a direct crawl errors endpoint, so we use sitemaps
-        const sitemapsResp = await fetch(
-          `https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(siteUrl)}/sitemaps`,
-          {
-            headers: { Authorization: `Bearer ${accessToken}` },
-          }
-        );
-        let sitemapErrors = 0;
-        if (sitemapsResp.ok) {
-          const sitemapsData = await sitemapsResp.json();
-          for (const sm of sitemapsData?.sitemap || []) {
-            sitemapErrors += sm.errors || 0;
-          }
-        }
-
-        // Delete old google metrics and insert new
-        await supabase.from("site_health").delete()
+        await adminClient.from("site_health").delete()
           .eq("project_id", project_id)
           .eq("source", "google");
 
@@ -276,11 +254,11 @@ Deno.serve(async (req) => {
           { metric_name: "avg_position", metric_value: avgPosition.toFixed(1) },
           { metric_name: "top_queries", metric_value: JSON.stringify(topQueries) },
           { metric_name: "indexed_pages", metric_value: "0" },
-          { metric_name: "warnings", metric_value: String(sitemapErrors) },
+          { metric_name: "warnings", metric_value: "0" },
         ];
 
         for (const m of googleMetrics) {
-          await supabase.from("site_health").insert({
+          await adminClient.from("site_health").insert({
             project_id,
             source: "google",
             metric_name: m.metric_name,
@@ -296,12 +274,12 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Update integrations last_sync
+    // Update integrations last_sync via admin client
     if (results.yandex === "ok" && wmIntegration) {
-      await supabase.from("integrations").update({ last_sync: now }).eq("id", wmIntegration.id);
+      await adminClient.from("integrations").update({ last_sync: now }).eq("id", wmIntegration.id);
     }
     if (results.google === "ok" && gscIntegration) {
-      await supabase.from("integrations").update({ last_sync: now }).eq("id", gscIntegration.id);
+      await adminClient.from("integrations").update({ last_sync: now }).eq("id", gscIntegration.id);
     }
 
     return new Response(JSON.stringify({ success: true, results }), {
