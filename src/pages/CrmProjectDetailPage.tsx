@@ -26,10 +26,8 @@ import type { Tables } from "@/integrations/supabase/types";
 import ProjectAnalyticsTab from "@/components/project/ProjectAnalyticsTab";
 import SiteHealthDetailTab from "@/components/project/SiteHealthDetailTab";
 import EditProjectDialog from "@/components/project/EditProjectDialog";
+import { TaskDetailSheet, CrmTask } from "@/components/project/TaskDetailSheet";
 
-type CrmTask = Tables<"crm_tasks"> & {
-  assignee?: Tables<"team_members"> | null;
-};
 type TaskComment = Tables<"task_comments"> & {
   author?: Tables<"team_members"> | null;
 };
