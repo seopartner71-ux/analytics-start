@@ -73,6 +73,33 @@ export type Database = {
           },
         ]
       }
+      chat_messages: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          user_email: string
+          user_id: string
+          user_name: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          user_email?: string
+          user_id: string
+          user_name?: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          user_email?: string
+          user_id?: string
+          user_name?: string
+        }
+        Relationships: []
+      }
       companies: {
         Row: {
           address: string | null
