@@ -151,7 +151,7 @@ Deno.serve(async (req) => {
           });
         }
 
-        const activeProblems = (diag?.problems || []).filter(
+        const activeProblems = diagProblems.filter(
           (p: any) => p.state === "PRESENT"
         );
         if (activeProblems.length > 0) {
