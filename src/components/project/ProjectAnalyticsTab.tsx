@@ -411,10 +411,23 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     return result;
   }, [dailyData, appliedRange]);
 
-  const filteredCompData = useMemo(
-    () => dailyData.filter(d => d.date >= appliedCompRange.from && d.date <= appliedCompRange.to),
-    [dailyData, appliedCompRange],
-  );
+  const filteredCompData = useMemo(() => {
+    const days = differenceInDays(appliedCompRange.to, appliedCompRange.from);
+    const dailyMap = new Map(dailyData.map(d => [format(d.date, "yyyy-MM-dd"), d]));
+    const result = [];
+    for (let i = 0; i <= days; i++) {
+      const date = new Date(appliedCompRange.from);
+      date.setDate(date.getDate() + i);
+      const key = format(date, "yyyy-MM-dd");
+      const existing = dailyMap.get(key);
+      result.push({
+        date,
+        dateStr: format(date, "dd.MM", { locale: ru }),
+        visits: existing?.visits || 0,
+      });
+    }
+    return result;
+  }, [dailyData, appliedCompRange]);
 
   // ── Channel-filtered ratio ──
   const channelVisitRatio = useMemo(() => {
