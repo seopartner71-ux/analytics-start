@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -10,9 +10,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   ArrowLeft, Plus, Send, Clock, CalendarDays, User, Tag, FileText,
   Upload, Download, Trash2, Loader2, Globe, Edit, XCircle, MessageSquare,
+  BarChart3,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +23,7 @@ import { toast } from "sonner";
 import { format, isPast, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
+import ProjectAnalyticsTab from "@/components/project/ProjectAnalyticsTab";
 
 type CrmTask = Tables<"crm_tasks"> & {
   assignee?: Tables<"team_members"> | null;
@@ -60,8 +63,10 @@ function AvatarCircle({ name, size = "sm" }: { name: string; size?: "sm" | "md" 
 export default function CrmProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, canEdit, isViewer } = useAuth();
   const queryClient = useQueryClient();
+  const defaultTab = searchParams.get("tab") === "analytics" ? "analytics" : "checklist";
 
   // Project
   const { data: project, isLoading: projectLoading } = useQuery({
@@ -319,6 +324,22 @@ export default function CrmProjectDetailPage() {
         </div>
       </div>
 
+      {/* Tab switcher */}
+      <Tabs defaultValue={defaultTab} className="w-full">
+        <TabsList className="mb-4">
+          <TabsTrigger value="checklist" className="gap-1.5 text-[13px]">
+            <FileText className="h-3.5 w-3.5" /> Задачи
+          </TabsTrigger>
+          <TabsTrigger value="analytics" className="gap-1.5 text-[13px]">
+            <BarChart3 className="h-3.5 w-3.5" /> Аналитика
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="analytics">
+          <ProjectAnalyticsTab projectId={id!} />
+        </TabsContent>
+
+        <TabsContent value="checklist">
       {/* Two-column layout */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
         {/* LEFT COLUMN (65%) */}
@@ -603,6 +624,8 @@ export default function CrmProjectDetailPage() {
           </Card>
         </div>
       </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
