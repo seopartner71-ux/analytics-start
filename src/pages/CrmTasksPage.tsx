@@ -23,11 +23,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 import { cn } from "@/lib/utils";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-import { toast } from "sonner";
-import type { Tables } from "@/integrations/supabase/types";
 
 type CrmTask = Tables<"crm_tasks"> & {
   creator?: Tables<"team_members"> | null;
