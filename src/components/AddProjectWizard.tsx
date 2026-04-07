@@ -492,8 +492,8 @@ export function AddProjectWizard({ onCreated }: AddProjectWizardProps) {
             </div>
           )}
 
-          {/* Step 3: Topvisor */}
-          {currentStep === 2 && (
+          {/* Step 4: Topvisor */}
+          {currentStep === 3 && (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
                 Введите данные от Topvisor для подключения позиций. Этот шаг можно пропустить.
