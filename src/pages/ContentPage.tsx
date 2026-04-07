@@ -11,8 +11,8 @@ const CONTENT_ITEMS = [
 
 const statusIcon = (s: string) => {
   switch (s) {
-    case "Опубликовано": return <CheckCircle2 className="h-4 w-4 text-emerald-500" />;
-    case "В работе": return <PenTool className="h-4 w-4 text-amber-500" />;
+    case "Опубликовано": return <CheckCircle2 className="h-4 w-4 text-success" />;
+    case "В работе": return <PenTool className="h-4 w-4 text-warning" />;
     default: return <Clock className="h-4 w-4 text-muted-foreground" />;
   }
 };
