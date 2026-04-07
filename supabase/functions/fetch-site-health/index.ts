@@ -134,7 +134,7 @@ Deno.serve(async (req) => {
           { metric_name: "total_pages", metric_value: String(summary?.searchable_count || indexedPages) },
           { metric_name: "sitemap_status", metric_value: summary?.sitemaps_cnt > 0 ? "ok" : "not_configured" },
           { metric_name: "last_crawl", metric_value: summary?.last_access || now },
-          { metric_name: "warnings", metric_value: String(diag?.problems?.filter((p: any) => p.state === "PRESENT" && p.severity === "WARNING")?.length || 0) },
+          { metric_name: "warnings", metric_value: String(diagProblems.filter((p: any) => p.state === "PRESENT" && p.severity === "WARNING")?.length || 0) },
         ];
 
         await adminClient.from("site_health").delete()
