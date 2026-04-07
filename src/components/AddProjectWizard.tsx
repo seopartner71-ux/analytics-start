@@ -100,6 +100,7 @@ export function AddProjectWizard({ onCreated }: AddProjectWizardProps) {
 
   // --- Step 1 validation ---
   const step1Valid = name.trim().length > 0 && url.trim().length > 0;
+  const step2Valid = seoSpecialistId.length > 0 && accountManagerId.length > 0 && observerId.length > 0;
 
   // --- Step 2: Yandex OAuth ---
   const getSession = async () => {
