@@ -156,15 +156,37 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     enabled: !!projectId,
   });
 
+  // ── Project config + fallback to integrations table ──
   const { data: project } = useQuery({
     queryKey: ["project-tv-config", projectId],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data: proj } = await supabase
         .from("projects")
         .select("topvisor_project_id, topvisor_api_key, topvisor_user_id, metrika_counter_id")
         .eq("id", projectId)
         .maybeSingle();
-      return data;
+
+      // If project-level fields are empty, fallback to integrations table
+      if (!proj?.topvisor_api_key || !proj?.topvisor_project_id) {
+        const { data: tvIntegration } = await supabase
+          .from("integrations")
+          .select("api_key, external_project_id, counter_id")
+          .eq("project_id", projectId)
+          .eq("service_name", "topvisor")
+          .eq("connected", true)
+          .maybeSingle();
+
+        if (tvIntegration?.api_key && tvIntegration?.external_project_id) {
+          return {
+            topvisor_api_key: tvIntegration.api_key,
+            topvisor_project_id: tvIntegration.external_project_id,
+            topvisor_user_id: tvIntegration.counter_id || proj?.topvisor_user_id,
+            metrika_counter_id: proj?.metrika_counter_id,
+          };
+        }
+      }
+
+      return proj;
     },
     enabled: !!projectId,
   });
