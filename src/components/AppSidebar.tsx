@@ -16,13 +16,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
-const mainNav = [
-  { title: "Дашборд", url: "/", icon: LayoutDashboard },
-  { title: "SEO Проекты", url: "/crm-projects", icon: FolderKanban },
-  { title: "Задачи", url: "/tasks", icon: ClipboardList },
-  { title: "Клиенты", url: "/companies", icon: Building2 },
-  { title: "Календарь", url: "/content", icon: CalendarDays },
-  { title: "Сотрудники", url: "/employees", icon: Users },
+const allNav = [
+  { title: "Дашборд", url: "/", icon: LayoutDashboard, minRole: "viewer" as const },
+  { title: "SEO Проекты", url: "/crm-projects", icon: FolderKanban, minRole: "viewer" as const },
+  { title: "Задачи", url: "/tasks", icon: ClipboardList, minRole: "manager" as const },
+  { title: "Клиенты", url: "/companies", icon: Building2, minRole: "admin" as const },
+  { title: "Календарь", url: "/content", icon: CalendarDays, minRole: "manager" as const },
+  { title: "Сотрудники", url: "/employees", icon: Users, minRole: "admin" as const },
 ];
 
 const analyticsNav = [
@@ -41,7 +41,10 @@ interface AppSidebarProps {
 export function AppSidebar({ activeTab, onTabChange, projectName, projectLogo }: AppSidebarProps) {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
-  const { user } = useAuth();
+  const { user, role, isAdmin, isManager } = useAuth();
+  const ROLE_LEVELS = { viewer: 0, manager: 1, admin: 2 } as const;
+  const userLevel = ROLE_LEVELS[role as keyof typeof ROLE_LEVELS] ?? 0;
+  const mainNav = allNav.filter(item => userLevel >= ROLE_LEVELS[item.minRole]);
   const { id: projectId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
