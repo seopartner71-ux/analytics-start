@@ -380,6 +380,52 @@ function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null; open: 
     }
   };
 
+  // Resume task
+  const resumeTask = () => {
+    updateField.mutate({
+      field: "stage", value: "В работе",
+      logMsg: `Задача возобновлена`,
+    });
+    supabase.from("crm_tasks").update({ stage_color: "#f59e0b", stage: "В работе", stage_progress: 50 } as any).eq("id", task!.id);
+    setEditStage("В работе");
+    toast.success("Задача возобновлена");
+  };
+
+  // Save result text/link
+  const saveResult = async () => {
+    if (!resultText.trim() || !task) return;
+    await supabase.from("task_comments").insert({
+      task_id: task.id, body: `📎 Результат: ${resultText}`, is_system: false,
+    });
+    await addSystemLog(`Добавлен результат работы`);
+    queryClient.invalidateQueries({ queryKey: ["task-comments", task.id] });
+    setResultText("");
+    toast.success("Результат сохранён");
+  };
+
+  // Upload result file
+  const handleResultUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0 || !task) return;
+    setResultUploading(true);
+    try {
+      const file = files[0];
+      const path = `task-results/${task.id}/${Date.now()}_${file.name}`;
+      const { error } = await supabase.storage.from("project-files").upload(path, file);
+      if (error) throw error;
+      const { data: { publicUrl } } = supabase.storage.from("project-files").getPublicUrl(path);
+      await supabase.from("task_comments").insert({
+        task_id: task.id, body: `📎 Файл: [${file.name}](${publicUrl})`, is_system: false,
+      });
+      await addSystemLog(`Прикреплён файл «${file.name}»`);
+      queryClient.invalidateQueries({ queryKey: ["task-comments", task.id] });
+      toast.success("Файл загружен");
+    } catch (e: any) {
+      toast.error(e.message || "Ошибка загрузки");
+    } finally {
+      setResultUploading(false);
+    }
+  };
+
   // Subtask operations
   const addSubtask = useMutation({
     mutationFn: async () => {
