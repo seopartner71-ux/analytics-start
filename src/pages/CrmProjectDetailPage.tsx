@@ -318,7 +318,7 @@ export default function CrmProjectDetailPage() {
               <span className="text-[13px] text-foreground">{managerName}</span>
             </div>
           )}
-          <Button variant="outline" size="sm" className="h-8 text-[13px] gap-1.5">
+          <Button variant="outline" size="sm" className="h-8 text-[13px] gap-1.5" onClick={() => setEditOpen(true)}>
             <Edit className="h-3.5 w-3.5" /> Редактировать
           </Button>
           <Button variant="outline" size="sm" className="h-8 text-[13px] gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/5">
