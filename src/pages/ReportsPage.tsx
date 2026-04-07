@@ -78,6 +78,7 @@ export default function ReportsPage() {
   const [clientEmail, setClientEmail] = useState("");
   const [sending, setSending] = useState(false);
   const [lastGeneratedFormat, setLastGeneratedFormat] = useState<string | null>(null);
+  const [comparisonMode, setComparisonMode] = useState<ComparisonMode>("previous");
 
   // Load projects
   const { data: projects = [] } = useQuery({
