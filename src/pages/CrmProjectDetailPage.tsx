@@ -534,8 +534,8 @@ export default function CrmProjectDetailPage() {
             <div className="flex items-start gap-3">
               <Tag className="h-4 w-4 text-muted-foreground mt-0.5" />
               <div className="flex-1">
-                <p className="text-[11px] text-muted-foreground uppercase tracking-wide mb-1">Этап воронки</p>
-                <Select value={project.privacy || "Новые заявки"} onValueChange={v => updateStage.mutate(v)}>
+                <p className="text-[11px] text-muted-foreground uppercase tracking-wide mb-1">Статус проекта</p>
+                <Select value={project.privacy || "В работе"} onValueChange={v => updateStage.mutate(v)}>
                   <SelectTrigger className="h-8 text-[13px]"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {STAGES.map(s => (
