@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Upload, ChevronRight, ChevronLeft, Check, Loader2, ExternalLink, CheckCircle2, AlertCircle } from "lucide-react";
+import { Plus, Upload, ChevronRight, ChevronLeft, Check, Loader2, ExternalLink, CheckCircle2, AlertCircle, Users } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 
 interface Counter { id: string; name: string; site: string; }
@@ -58,13 +59,29 @@ export function AddProjectWizard({ onCreated }: AddProjectWizardProps) {
   const [tvConnected, setTvConnected] = useState(false);
   const [tvError, setTvError] = useState("");
 
+  // Step 4: Team (required)
+  const [seoSpecialistId, setSeoSpecialistId] = useState("");
+  const [accountManagerId, setAccountManagerId] = useState("");
+  const [observerId, setObserverId] = useState("");
+
   // Saving
   const [saving, setSaving] = useState(false);
 
+  // Load team members
+  const { data: members = [] } = useQuery({
+    queryKey: ["team-members-wizard"],
+    queryFn: async () => {
+      const { data } = await supabase.from("team_members").select("id, full_name, role").order("full_name");
+      return data || [];
+    },
+    enabled: open,
+  });
+
   const steps = [
     { label: t("wizard.step1", "Основная информация") },
-    { label: t("wizard.step2", "Яндекс") },
-    { label: t("wizard.step3", "Topvisor") },
+    { label: t("wizard.step2", "Команда") },
+    { label: t("wizard.step3", "Яндекс") },
+    { label: t("wizard.step4", "Topvisor") },
   ];
 
   // Reset on close
@@ -76,12 +93,14 @@ export function AddProjectWizard({ onCreated }: AddProjectWizardProps) {
       setCounters([]); setSelectedCounter(""); setWmHosts([]); setSelectedHost(""); setWmError("");
       setTvUserId(""); setTvApiKey(""); setTvProjects([]); setSelectedTvProject("");
       setTvLoading(false); setTvConnected(false); setTvError("");
+      setSeoSpecialistId(""); setAccountManagerId(""); setObserverId("");
       setSaving(false);
     }
   }, [open]);
 
   // --- Step 1 validation ---
   const step1Valid = name.trim().length > 0 && url.trim().length > 0;
+  const step2Valid = seoSpecialistId.length > 0 && accountManagerId.length > 0 && observerId.length > 0;
 
   // --- Step 2: Yandex OAuth ---
   const getSession = async () => {
@@ -213,6 +232,8 @@ export function AddProjectWizard({ onCreated }: AddProjectWizardProps) {
         url: url.trim(),
         owner_id: user.id,
         logo_url: logoUrl,
+        seo_specialist_id: seoSpecialistId || null,
+        account_manager_id: accountManagerId || null,
       };
 
       if (selectedCounter) insertData.metrika_counter_id = selectedCounter;
@@ -276,8 +297,9 @@ export function AddProjectWizard({ onCreated }: AddProjectWizardProps) {
 
   const canProceed = (step: number) => {
     if (step === 0) return step1Valid;
-    if (step === 1) return true; // Yandex is optional
-    if (step === 2) return true; // Topvisor is optional
+    if (step === 1) return step2Valid; // Team is required
+    if (step === 2) return true; // Yandex is optional
+    if (step === 3) return true; // Topvisor is optional
     return true;
   };
 
@@ -343,8 +365,41 @@ export function AddProjectWizard({ onCreated }: AddProjectWizardProps) {
             </div>
           )}
 
-          {/* Step 2: Yandex */}
+          {/* Step 2: Team (required) */}
           {currentStep === 1 && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Назначьте ответственных. Все поля обязательны.
+              </p>
+              {[
+                { label: "SEO-специалист *", value: seoSpecialistId, setter: setSeoSpecialistId },
+                { label: "Аккаунт-менеджер *", value: accountManagerId, setter: setAccountManagerId },
+                { label: "Наблюдатель *", value: observerId, setter: setObserverId },
+              ].map(role => (
+                <div key={role.label} className="space-y-1.5">
+                  <Label className="text-sm">{role.label}</Label>
+                  <Select value={role.value} onValueChange={role.setter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Выбрать сотрудника..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {members.map(m => (
+                        <SelectItem key={m.id} value={m.id}>{m.full_name} ({m.role})</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ))}
+              {members.length === 0 && (
+                <div className="flex items-center gap-2 text-sm text-destructive">
+                  <AlertCircle className="h-4 w-4" /> Сначала добавьте сотрудников в раздел «Команда»
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Step 3: Yandex */}
+          {currentStep === 2 && (
             <div className="space-y-4">
               {yandexAuthStep === "idle" && (
                 <div className="flex flex-col items-center gap-4 py-4">
@@ -439,8 +494,8 @@ export function AddProjectWizard({ onCreated }: AddProjectWizardProps) {
             </div>
           )}
 
-          {/* Step 3: Topvisor */}
-          {currentStep === 2 && (
+          {/* Step 4: Topvisor */}
+          {currentStep === 3 && (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
                 Введите данные от Topvisor для подключения позиций. Этот шаг можно пропустить.
@@ -506,7 +561,7 @@ export function AddProjectWizard({ onCreated }: AddProjectWizardProps) {
                 Далее <ChevronRight className="h-4 w-4" />
               </Button>
             ) : (
-              <Button onClick={handleFinish} disabled={saving || !step1Valid} className="gap-1">
+              <Button onClick={handleFinish} disabled={saving || !step1Valid || !step2Valid} className="gap-1">
                 {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Check className="h-4 w-4 mr-1" />}
                 Создать проект
               </Button>
