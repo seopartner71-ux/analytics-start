@@ -6,11 +6,177 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   FileSearch, AlertTriangle, AlertCircle, Clock, RefreshCw, Loader2,
-  Globe, Search, CheckCircle2, XCircle,
+  Globe, Search, CheckCircle2, XCircle, Info, ChevronDown, ChevronUp,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+
+const ERROR_NAMES_RU: Record<string, string> = {
+  INSIGNIFICANT_CGI_PARAMETER: "Незначимые CGI-параметры",
+  ERROR_IN_ROBOTS_TXT: "Ошибки в robots.txt",
+  MAIN_PAGE_ERROR: "Ошибка главной страницы",
+  NO_SITEMAP_MODIFICATIONS: "Нет изменений в Sitemap",
+  CONNECT_FAILED: "Ошибка подключения",
+  MAIN_MIRROR_IS_NOT_HTTPS: "Главное зеркало не HTTPS",
+  FAVICON_ERROR: "Ошибка favicon",
+  NOT_IN_SPRAV: "Организация не в Яндекс.Справочнике",
+  FAVICON_PROBLEM: "Проблемы с favicon",
+  DNS_ERROR: "Ошибка DNS",
+  MAIN_PAGE_REDIRECTS: "Редиректы на главной",
+  DOCUMENTS_MISSING_DESCRIPTION: "Нет описания у страниц",
+  ERRORS_IN_SITEMAPS: "Ошибки в Sitemap",
+  NOT_MOBILE_FRIENDLY: "Не оптимизирован для мобильных",
+  URL_ALERT_5XX: "5xx ошибки на URL",
+  URL_ALERT_4XX: "4xx ошибки на URL",
+  DUPLICATE_CONTENT_ATTRS: "Дублированные content-атрибуты",
+  BIG_FAVICON_ABSENT: "Нет большого favicon",
+  NO_SITEMAPS: "Нет Sitemap",
+  DOCUMENTS_MISSING_TITLE: "Нет заголовка у страниц",
+  NO_REGIONS: "Не указан регион",
+  TOO_MANY_DOMAINS_ON_SEARCH: "Слишком много доменов в поиске",
+  SSL_CERTIFICATE_ERROR: "Ошибка SSL-сертификата",
+  DUPLICATE_PAGES: "Дублированные страницы",
+  DISALLOWED_IN_ROBOTS: "Закрыто в robots.txt",
+  NO_ROBOTS_TXT: "Нет robots.txt",
+  NO_METRIKA_COUNTER: "Нет счётчика Яндекс.Метрики",
+  SOFT_404: "Программный 404 (soft 404)",
+  THREATS: "Обнаружены угрозы безопасности",
+  NO_METRIKA_COUNTER_BINDING: "Не привязан счётчик Метрики",
+  NO_METRIKA_COUNTER_CRAWL_ENABLED: "Не включён обход Метрикой",
+  SLOW_AVG_RESPONSE_TIME: "Медленное время ответа",
+};
+
+const ERROR_DETAILS_RU: Record<string, { description: string; recommendation: string }> = {
+  INSIGNIFICANT_CGI_PARAMETER: {
+    description: "Яндекс обнаружил URL с незначимыми CGI-параметрами, которые создают дубли страниц в индексе.",
+    recommendation: "Настройте директиву Clean-param в robots.txt или используйте canonical-теги.",
+  },
+  ERROR_IN_ROBOTS_TXT: {
+    description: "В файле robots.txt найдены синтаксические ошибки, которые могут помешать корректному обходу сайта.",
+    recommendation: "Проверьте robots.txt через валидатор Яндекс.Вебмастера и исправьте ошибки.",
+  },
+  MAIN_PAGE_ERROR: {
+    description: "Главная страница сайта возвращает ошибку или недоступна для робота.",
+    recommendation: "Убедитесь, что главная страница отдаёт HTTP 200 и доступна без авторизации.",
+  },
+  NO_SITEMAP_MODIFICATIONS: {
+    description: "Sitemap не обновлялся длительное время, что снижает скорость индексации.",
+    recommendation: "Настройте автоматическую генерацию sitemap.xml с актуальными датами lastmod.",
+  },
+  CONNECT_FAILED: {
+    description: "Робот не может подключиться к серверу — сайт недоступен.",
+    recommendation: "Проверьте доступность сервера, настройки firewall и DNS.",
+  },
+  MAIN_MIRROR_IS_NOT_HTTPS: {
+    description: "Основное зеркало использует HTTP вместо HTTPS.",
+    recommendation: "Настройте SSL-сертификат и 301-редирект с HTTP на HTTPS.",
+  },
+  FAVICON_ERROR: {
+    description: "Favicon сайта недоступен или содержит ошибки.",
+    recommendation: "Разместите корректный favicon.ico в корне сайта.",
+  },
+  NOT_IN_SPRAV: {
+    description: "Организация не найдена в Яндекс.Справочнике.",
+    recommendation: "Зарегистрируйте организацию в Яндекс.Бизнесе и привяжите сайт.",
+  },
+  FAVICON_PROBLEM: {
+    description: "Проблемы с отображением favicon — формат или размер не соответствуют требованиям.",
+    recommendation: "Используйте favicon в формате ICO или PNG размером не менее 120×120 px.",
+  },
+  DNS_ERROR: {
+    description: "DNS-записи домена некорректны или DNS-серверы не отвечают.",
+    recommendation: "Проверьте настройки DNS у регистратора домена.",
+  },
+  MAIN_PAGE_REDIRECTS: {
+    description: "Главная страница выполняет редирект, что замедляет индексацию.",
+    recommendation: "Уберите цепочки редиректов с главной страницы.",
+  },
+  DOCUMENTS_MISSING_DESCRIPTION: {
+    description: "У части страниц отсутствует мета-тег description.",
+    recommendation: "Добавьте уникальные мета-описания (до 160 символов) для всех важных страниц.",
+  },
+  ERRORS_IN_SITEMAPS: {
+    description: "В Sitemap обнаружены ошибки: нерабочие ссылки или некорректный формат.",
+    recommendation: "Валидируйте sitemap.xml, уберите 404 URL.",
+  },
+  NOT_MOBILE_FRIENDLY: {
+    description: "Сайт не оптимизирован для мобильных устройств.",
+    recommendation: "Внедрите адаптивную вёрстку (responsive design).",
+  },
+  URL_ALERT_5XX: {
+    description: "Обнаружены URL с серверными ошибками 5xx.",
+    recommendation: "Проверьте логи сервера и устраните причины 500/502/503 ошибок.",
+  },
+  URL_ALERT_4XX: {
+    description: "Обнаружены URL с ошибками 4xx (страницы не найдены).",
+    recommendation: "Настройте 301-редиректы с удалённых страниц на актуальные.",
+  },
+  BIG_FAVICON_ABSENT: {
+    description: "Отсутствует большой favicon (touch-icon) для мобильных устройств.",
+    recommendation: "Добавьте apple-touch-icon размером 180×180 px.",
+  },
+  NO_SITEMAPS: {
+    description: "На сайте не обнаружен файл sitemap.xml.",
+    recommendation: "Создайте sitemap.xml и добавьте его в robots.txt.",
+  },
+  DOCUMENTS_MISSING_TITLE: {
+    description: "У части страниц отсутствует тег title.",
+    recommendation: "Добавьте уникальные title (до 70 символов) для каждой страницы.",
+  },
+  NO_REGIONS: {
+    description: "Для сайта не указан регион.",
+    recommendation: "Укажите регион в Яндекс.Вебмастере или привяжите организацию в Справочнике.",
+  },
+  SSL_CERTIFICATE_ERROR: {
+    description: "SSL-сертификат недействителен, просрочен или установлен некорректно.",
+    recommendation: "Обновите SSL-сертификат и проверьте цепочку.",
+  },
+  DUPLICATE_PAGES: {
+    description: "Обнаружены дублированные страницы.",
+    recommendation: "Используйте rel=canonical и настройте 301-редиректы.",
+  },
+  DISALLOWED_IN_ROBOTS: {
+    description: "Важные страницы заблокированы в robots.txt.",
+    recommendation: "Проверьте правила Disallow и разблокируйте нужные разделы.",
+  },
+  NO_ROBOTS_TXT: {
+    description: "Файл robots.txt отсутствует.",
+    recommendation: "Создайте robots.txt с корректными правилами.",
+  },
+  NO_METRIKA_COUNTER: {
+    description: "На сайте не установлен счётчик Яндекс.Метрики.",
+    recommendation: "Установите код Яндекс.Метрики на все страницы сайта.",
+  },
+  SOFT_404: {
+    description: "Обнаружены «мягкие 404» — страницы с кодом 200, но без контента.",
+    recommendation: "Настройте корректный HTTP-код 404 для несуществующих страниц.",
+  },
+  THREATS: {
+    description: "Обнаружены угрозы безопасности: вредоносный код или фишинг.",
+    recommendation: "Немедленно проверьте сайт на вирусы и удалите вредоносный код.",
+  },
+  NO_METRIKA_COUNTER_BINDING: {
+    description: "Счётчик Метрики не привязан к сайту в Вебмастере.",
+    recommendation: "Привяжите счётчик Яндекс.Метрики в настройках Вебмастера.",
+  },
+  NO_METRIKA_COUNTER_CRAWL_ENABLED: {
+    description: "Не включён обход сайта роботом Метрики.",
+    recommendation: "Включите «Разрешить обход роботом Метрики» в настройках счётчика.",
+  },
+  SLOW_AVG_RESPONSE_TIME: {
+    description: "Среднее время ответа сервера слишком высокое.",
+    recommendation: "Оптимизируйте серверную часть: кэширование, CDN, уменьшите время ответа до 200 мс.",
+  },
+  DUPLICATE_CONTENT_ATTRS: {
+    description: "Найдены страницы с дублированными content-атрибутами.",
+    recommendation: "Сделайте title и description уникальными для каждой страницы.",
+  },
+  TOO_MANY_DOMAINS_ON_SEARCH: {
+    description: "В поиске слишком много зеркал домена.",
+    recommendation: "Настройте главное зеркало и 301-редиректы.",
+  },
+};
 
 interface Props {
   projectId: string;
@@ -364,11 +530,11 @@ export default function SiteHealthDetailTab({ projectId }: Props) {
         </Card>
       </div>
 
-      {/* Errors table */}
+      {/* Errors table with descriptions */}
       <Card className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
         <div className="flex items-center gap-2 p-4 border-b border-border">
           <AlertCircle className="h-4 w-4 text-muted-foreground" />
-          <h3 className="text-sm font-semibold text-foreground">Все ошибки</h3>
+          <h3 className="text-sm font-semibold text-foreground">Замечания по сайту</h3>
           <Badge variant="secondary" className="text-[10px] h-5">{siteErrors.length}</Badge>
         </div>
         {siteErrors.length === 0 ? (
@@ -377,64 +543,69 @@ export default function SiteHealthDetailTab({ projectId }: Props) {
             <p className="text-[13px] text-muted-foreground">Ошибок не обнаружено</p>
           </div>
         ) : (
-          <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
-            <table className="w-full text-[13px]">
-              <thead className="sticky top-0 bg-card z-10">
-                <tr className="border-b border-border bg-muted/30">
-                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Тип ошибки</th>
-                  <th className="text-center px-4 py-2.5 font-medium text-muted-foreground w-24">Источник</th>
-                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">URL</th>
-                  <th className="text-center px-4 py-2.5 font-medium text-muted-foreground w-28">Дата</th>
-                  <th className="text-center px-4 py-2.5 font-medium text-muted-foreground w-32">Статус</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/40">
-                {siteErrors.map((err, i) => {
-                  const isNew = err.status === "Новая";
-                  return (
-                    <tr
-                      key={err.id}
-                      className={cn(
-                        "hover:bg-muted/30 transition-colors",
-                        isNew && "bg-destructive/5",
-                        !isNew && i % 2 === 1 && "bg-muted/10"
+          <div className="p-4 space-y-3 max-h-[600px] overflow-y-auto">
+            {siteErrors.map((err) => {
+              const isNew = err.status === "Новая";
+              const translatedName = ERROR_NAMES_RU[err.error_type] || err.error_type;
+              const details = ERROR_DETAILS_RU[err.error_type];
+              return (
+                <div
+                  key={err.id}
+                  className={cn(
+                    "rounded-lg border p-3 space-y-2 transition-colors",
+                    isNew ? "border-destructive/30 bg-destructive/5" : "border-border bg-muted/10"
+                  )}
+                >
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className={cn("h-4 w-4 mt-0.5 shrink-0", isNew ? "text-destructive" : "text-amber-500")} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground">{translatedName}</p>
+                      {err.url && err.url !== "—" && (
+                        <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{err.url}</p>
                       )}
-                    >
-                      <td className="px-4 py-2.5 text-foreground">{err.error_type}</td>
-                      <td className="px-4 py-2.5 text-center">
-                        <Badge
-                          variant="secondary"
-                          className={cn(
-                            "text-[10px]",
-                            err.source === "yandex" ? "bg-primary/10 text-primary" : "bg-[hsl(var(--chart-2))]/10 text-[hsl(var(--chart-2))]"
-                          )}
-                        >
-                          {err.source === "yandex" ? "Яндекс" : "Google"}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-2.5 text-muted-foreground truncate max-w-[250px]">{err.url || "—"}</td>
-                      <td className="px-4 py-2.5 text-center text-muted-foreground text-[12px]">
-                        {format(parseISO(err.detected_at), "dd.MM.yy")}
-                      </td>
-                      <td className="px-4 py-2.5 text-center">
-                        {isNew ? (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 text-[11px] text-destructive hover:text-foreground"
-                            onClick={() => markReviewed.mutate(err.id)}
-                          >
-                            Новая
-                          </Button>
-                        ) : (
-                          <span className="text-[11px] text-muted-foreground">Просмотрена</span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Badge
+                        variant="secondary"
+                        className={cn(
+                          "text-[10px]",
+                          err.source === "yandex" ? "bg-primary/10 text-primary" : "bg-[hsl(var(--chart-2))]/10 text-[hsl(var(--chart-2))]"
                         )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                      >
+                        {err.source === "yandex" ? "Яндекс" : "Google"}
+                      </Badge>
+                      <span className="text-[10px] text-muted-foreground">{format(parseISO(err.detected_at), "dd.MM.yy")}</span>
+                      {isNew ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 text-[10px] text-destructive hover:text-foreground px-2"
+                          onClick={() => markReviewed.mutate(err.id)}
+                        >
+                          Новая
+                        </Button>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground">✓</span>
+                      )}
+                    </div>
+                  </div>
+                  {details && (
+                    <div className="ml-7 space-y-1.5">
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        {details.description}
+                      </p>
+                      <div className="flex items-start gap-1.5 p-2 rounded-md bg-primary/5 border border-primary/10">
+                        <Info className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
+                        <p className="text-xs text-foreground/80 leading-relaxed">
+                          <span className="font-medium text-primary">Рекомендация:</span>{" "}
+                          {details.recommendation}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </Card>
