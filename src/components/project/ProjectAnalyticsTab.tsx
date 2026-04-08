@@ -472,7 +472,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     const rangeEnd = appliedRange.to > lastDataDate ? lastDataDate : appliedRange.to;
     const days = differenceInDays(rangeEnd, appliedRange.from);
     if (days < 0) return [];
-    const dailyMap = new Map(dailyData.map(d => [format(d.date, "yyyy-MM-dd"), d]));
+    const dailyMap = new Map(dailyData.map(d => [format(d.date, "yyyy-MM-dd"), d as { date: Date; dateStr: string; visits: number }]));
     const result = [];
     for (let i = 0; i <= days; i++) {
       const date = new Date(appliedRange.from);
@@ -494,7 +494,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     const rangeEnd = appliedCompRange.to > lastDataDate ? lastDataDate : appliedCompRange.to;
     const days = differenceInDays(rangeEnd, appliedCompRange.from);
     if (days < 0) return [];
-    const dailyMap = new Map(dailyData.map(d => [format(d.date, "yyyy-MM-dd"), d]));
+    const dailyMap = new Map(dailyData.map(d => [format(d.date, "yyyy-MM-dd"), d as { date: Date; dateStr: string; visits: number }]));
     const result = [];
     for (let i = 0; i <= days; i++) {
       const date = new Date(appliedCompRange.from);
