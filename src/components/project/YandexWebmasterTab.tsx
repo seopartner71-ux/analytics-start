@@ -211,6 +211,8 @@ interface Props { projectId: string; }
 export function YandexWebmasterTab({ projectId }: Props) {
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
+  const [filter, setFilter] = useState<"all" | "errors" | "fatal" | "critical">("all");
+  const [search, setSearch] = useState("");
   const [pdfLoading, setPdfLoading] = useState(false);
 
   const handleDownloadPdf = async () => {
