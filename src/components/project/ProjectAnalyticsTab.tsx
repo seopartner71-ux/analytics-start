@@ -872,7 +872,17 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
             <h3 className="text-sm font-semibold text-foreground">
               {channel === "all" ? "Все визиты" : CHANNEL_LABELS[channel]}
             </h3>
-            {showComparison && (
+            {channel === "all" && !showComparison && (
+              <div className="flex flex-wrap items-center gap-3 text-[10px]">
+                {ALL_CHANNELS.map(ch => (
+                  <span key={ch} className="flex items-center gap-1">
+                    <span className="w-2.5 h-2.5 rounded-sm" style={{ background: CHANNEL_COLORS[ch] }} />
+                    {CHANNEL_LABELS[ch]}
+                  </span>
+                ))}
+              </div>
+            )}
+            {channel !== "all" && showComparison && (
               <div className="flex items-center gap-3 text-[10px]">
                 <span className="flex items-center gap-1"><span className="w-2.5 h-0.5 rounded" style={{ background: CHANNEL_COLORS[channel] }} /> Период А</span>
                 <span className="flex items-center gap-1"><span className="w-2.5 h-0.5 bg-[hsl(var(--chart-3))] rounded" style={{ borderBottom: "1px dashed" }} /> Период Б</span>
@@ -886,6 +896,43 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
                 {hasMetrika ? "Нет данных за период" : "Подключите Яндекс.Метрику на вкладке «Интеграции»"}
               </p>
             </div>
+          ) : channel === "all" && !showComparison ? (
+            <ResponsiveContainer width="100%" height={260}>
+              <AreaChart data={trafficChart}>
+                <defs>
+                  {ALL_CHANNELS.map(ch => (
+                    <linearGradient key={ch} id={`grad-ch-${ch}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={CHANNEL_COLORS[ch]} stopOpacity={0.3} />
+                      <stop offset="95%" stopColor={CHANNEL_COLORS[ch]} stopOpacity={0} />
+                    </linearGradient>
+                  ))}
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="date" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+                <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: 8,
+                    fontSize: 12,
+                  }}
+                  formatter={(value: number, name: string) => [value.toLocaleString("ru-RU"), CHANNEL_LABELS[name as TrafficChannel] || name]}
+                />
+                {ALL_CHANNELS.map(ch => (
+                  <Area
+                    key={ch}
+                    type="monotone"
+                    dataKey={ch}
+                    stackId="channels"
+                    stroke={CHANNEL_COLORS[ch]}
+                    strokeWidth={1.5}
+                    fill={`url(#grad-ch-${ch})`}
+                    name={ch}
+                  />
+                ))}
+              </AreaChart>
+            </ResponsiveContainer>
           ) : (
             <ResponsiveContainer width="100%" height={260}>
               <AreaChart data={trafficChart}>
