@@ -66,6 +66,15 @@ const PIE_COLORS = [
   "hsl(var(--muted-foreground))",
 ];
 
+const CHANNEL_COLORS: Record<TrafficChannel, string> = {
+  all: "hsl(var(--primary))",
+  organic: "#8B5CF6",
+  direct: "#10B981",
+  referral: "#0EA5E9",
+  social: "#D946EF",
+  ad: "#F59E0B",
+};
+
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = Math.round(seconds % 60);
