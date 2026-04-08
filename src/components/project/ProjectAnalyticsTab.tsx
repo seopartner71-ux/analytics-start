@@ -343,30 +343,35 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     staleTime: 30 * 60_000,
   });
 
-  // Search traffic goals for chart
+  // Search/channel traffic goals for chart — reacts to channel filter and applied date range
+  const channelGoalsDateFrom = fmtDate(appliedRange.from, "yyyy-MM-dd");
+  const channelGoalsDateTo = fmtDate(appliedRange.to, "yyyy-MM-dd");
+  const channelTrafficSource = channel === "all" ? undefined : channel;
+
   const { data: searchGoalsData = [], isLoading: searchGoalsLoading } = useQuery({
-    queryKey: ["metrika-goals-search", projectId, dateFrom30, dateTo30],
+    queryKey: ["metrika-goals-channel", projectId, channelGoalsDateFrom, channelGoalsDateTo, channel],
     queryFn: async () => {
       if (!integration?.access_token || !integration?.counter_id) return [];
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return [];
+      const body: any = {
+        access_token: integration.access_token, counter_id: integration.counter_id,
+        date1: channelGoalsDateFrom, date2: channelGoalsDateTo,
+      };
+      if (channelTrafficSource) body.traffic_source = channelTrafficSource;
       const resp = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/yandex-metrika-auth?action=fetch-goals`,
         {
           method: "POST",
           headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            access_token: integration.access_token, counter_id: integration.counter_id,
-            date1: dateFrom30, date2: dateTo30,
-            traffic_source: "organic",
-          }),
+          body: JSON.stringify(body),
         }
       );
       const data = await resp.json();
       return (data.goals || []) as { id: number; name: string; reaches: number; conversionRate: number; change: number; daily?: number[] }[];
     },
     enabled: !!integration?.access_token && !!integration?.counter_id,
-    staleTime: 30 * 60_000,
+    staleTime: 5 * 60_000,
   });
 
   // Build chart data for search goals
@@ -374,7 +379,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     if (!searchGoalsData.length) return [];
     const maxLen = Math.max(...searchGoalsData.map(g => g.daily?.length || 0));
     const result = [];
-    const startDate = subDays(today, 30);
+    const startDate = appliedRange.from;
     for (let i = 0; i < maxLen; i++) {
       const dateObj = new Date(startDate);
       dateObj.setDate(dateObj.getDate() + i);
@@ -389,7 +394,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
       result.push(entry);
     }
     return result;
-  }, [searchGoalsData, today]);
+  }, [searchGoalsData, appliedRange]);
 
   // ── Fetch top organic search phrases from Metrika ──
   const { data: searchPhrasesRaw = [], isLoading: searchPhrasesLoading } = useQuery({
@@ -1070,7 +1075,9 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Target className="h-4 w-4 text-primary" />
-              <h3 className="text-sm font-semibold text-foreground">Конверсии по целям (поисковый трафик)</h3>
+              <h3 className="text-sm font-semibold text-foreground">
+                Конверсии по целям ({channel === "all" ? "весь трафик" : CHANNEL_LABELS[channel].toLowerCase()})
+              </h3>
             </div>
             {searchGoalsData.length > 0 && (
               <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
