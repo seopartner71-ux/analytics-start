@@ -1075,7 +1075,9 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Target className="h-4 w-4 text-primary" />
-              <h3 className="text-sm font-semibold text-foreground">Конверсии по целям (поисковый трафик)</h3>
+              <h3 className="text-sm font-semibold text-foreground">
+                Конверсии по целям ({channel === "all" ? "весь трафик" : CHANNEL_LABELS[channel].toLowerCase()})
+              </h3>
             </div>
             {searchGoalsData.length > 0 && (
               <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
