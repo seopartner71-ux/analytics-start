@@ -27,6 +27,7 @@ import ProjectAnalyticsTab from "@/components/project/ProjectAnalyticsTab";
 import SiteHealthDetailTab from "@/components/project/SiteHealthDetailTab";
 import EditProjectDialog from "@/components/project/EditProjectDialog";
 import { TaskDetailSheet, CrmTask } from "@/components/project/TaskDetailSheet";
+import { TechnicalAuditTab } from "@/components/project/TechnicalAuditTab";
 
 type TaskComment = Tables<"task_comments"> & {
   author?: Tables<"team_members"> | null;
