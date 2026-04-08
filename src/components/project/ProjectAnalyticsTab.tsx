@@ -429,13 +429,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
 
   const topSearchPhrases = useMemo(() => {
     const raw = Array.isArray(searchPhrasesRaw) ? searchPhrasesRaw : [];
-    return raw
-      .slice(0, 15)
-      .map((p: any) => ({
-        phrase: p.phrase,
-        visits: p.visits || 0,
-        bounceRate: p.bounceRate || 0,
-      }));
+    return raw.slice(0, 15);
   }, [searchPhrasesRaw]);
 
   const GOAL_COLORS = [
