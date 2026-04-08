@@ -333,7 +333,7 @@ export default function CrmProjectDetailPage() {
             <BarChart3 className="h-3.5 w-3.5" /> Аналитика
           </TabsTrigger>
           <TabsTrigger value="health" className="gap-1.5 text-[13px]">
-            <ShieldCheck className="h-3.5 w-3.5" /> Состояние сайта
+            <ShieldCheck className="h-3.5 w-3.5" /> Яндекс Вебмастер
           </TabsTrigger>
           <TabsTrigger value="audit" className="gap-1.5 text-[13px]">
             <ClipboardCheck className="h-3.5 w-3.5" /> Технический аудит
@@ -345,7 +345,7 @@ export default function CrmProjectDetailPage() {
         </TabsContent>
 
         <TabsContent value="health">
-          <SiteHealthDetailTab projectId={id!} />
+          <YandexWebmasterTab projectId={id!} />
         </TabsContent>
 
         <TabsContent value="audit">
