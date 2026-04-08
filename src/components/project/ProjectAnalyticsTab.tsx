@@ -391,6 +391,45 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     return result;
   }, [searchGoalsData, today]);
 
+  // ── Fetch top organic search phrases from Metrika ──
+  const { data: searchPhrasesRaw = [], isLoading: searchPhrasesLoading } = useQuery({
+    queryKey: ["metrika-search-phrases", projectId, dateFrom30, dateTo30],
+    queryFn: async () => {
+      if (!integration?.access_token || !integration?.counter_id) return [];
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return [];
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/yandex-metrika-auth?action=fetch-search-phrases`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            access_token: integration.access_token,
+            counter_id: integration.counter_id,
+            date1: dateFrom30,
+            date2: dateTo30,
+          }),
+        }
+      );
+      if (!resp.ok) return [];
+      const data = await resp.json();
+      return data.phrases || [];
+    },
+    enabled: !!integration?.access_token && !!integration?.counter_id,
+    staleTime: 30 * 60_000,
+  });
+
+  const topSearchPhrases = useMemo(() => {
+    return (searchPhrasesRaw as any[])
+      .filter((p: any) => p.phrase && p.phrase !== "(not set)")
+      .slice(0, 15)
+      .map((p: any) => ({
+        phrase: p.phrase,
+        visits: p.visits || 0,
+        bounceRate: p.bounceRate || 0,
+      }));
+  }, [searchPhrasesRaw]);
+
   const GOAL_COLORS = [
     "hsl(var(--chart-1))",
     "hsl(var(--chart-2))",
@@ -974,45 +1013,38 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
           )}
         </Card>
 
-        {/* Position distribution pie */}
+        {/* Top organic search queries */}
         <Card className="lg:col-span-2 bg-card rounded-lg shadow-sm border border-border p-5">
-          <h3 className="text-sm font-semibold text-foreground mb-4">Распределение позиций</h3>
-          {posDistribution.length === 0 ? (
+          <h3 className="text-sm font-semibold text-foreground mb-4">Топ поисковые запросы</h3>
+          {!integration?.access_token ? (
             <div className="py-16 text-center">
-              <Target className="h-10 w-10 mx-auto mb-2 text-muted-foreground/20" />
-              <p className="text-[13px] text-muted-foreground">
-                {hasTopvisor ? "Нет данных" : "Подключите Topvisor на вкладке «Интеграции»"}
-              </p>
+              <Search className="h-10 w-10 mx-auto mb-2 text-muted-foreground/20" />
+              <p className="text-[13px] text-muted-foreground">Подключите Яндекс.Метрику на вкладке «Интеграции»</p>
+            </div>
+          ) : searchPhrasesLoading ? (
+            <div className="py-16 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></div>
+          ) : topSearchPhrases.length === 0 ? (
+            <div className="py-16 text-center">
+              <Search className="h-10 w-10 mx-auto mb-2 text-muted-foreground/20" />
+              <p className="text-[13px] text-muted-foreground">Нет данных по поисковым запросам</p>
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height={260}>
-              <PieChart>
-                <Pie
-                  data={posDistribution}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={85}
-                  innerRadius={45}
-                  strokeWidth={2}
-                  stroke="hsl(var(--card))"
-                >
-                  {posDistribution.map((_, idx) => (
-                    <Cell key={idx} fill={PIE_COLORS[idx % PIE_COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: 8,
-                    fontSize: 12,
-                  }}
-                />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-              </PieChart>
-            </ResponsiveContainer>
+            <div className="space-y-2 max-h-[260px] overflow-y-auto pr-1">
+              {topSearchPhrases.map((phrase, idx) => (
+                <div key={idx} className="flex items-center justify-between gap-2 py-1.5 border-b border-border/50 last:border-0">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <span className="text-[10px] text-muted-foreground w-4 shrink-0">{idx + 1}</span>
+                    <span className="text-xs text-foreground truncate">{phrase.phrase}</span>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="text-xs font-medium tabular-nums">{phrase.visits.toLocaleString("ru-RU")}</span>
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                      {phrase.bounceRate.toFixed(0)}%
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </Card>
       </div>
