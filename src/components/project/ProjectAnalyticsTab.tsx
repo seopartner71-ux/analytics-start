@@ -383,18 +383,28 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
   // ── Daily traffic data ──
   const dailyData = useMemo(() => {
     if (!metrikaStats?.visits_by_day) return [];
-    const days = metrikaStats.visits_by_day as { day: string; visits: number }[];
+    const raw = metrikaStats.visits_by_day as any[];
     const dateFrom = parseISO(metrikaStats.date_from);
-    return days.map((d, i) => {
-      const date = new Date(dateFrom);
-      date.setDate(date.getDate() + i);
+    return raw.map((d, i) => {
+      // Support both { date, visits } and { day, visits } shapes
+      let date: Date;
+      if (d.date) {
+        date = new Date(d.date);
+      } else {
+        date = new Date(dateFrom);
+        date.setDate(date.getDate() + i);
+      }
       return { date, dateStr: format(date, "dd.MM", { locale: ru }), visits: d.visits || 0 };
     });
   }, [metrikaStats]);
 
-  // Filter daily data by applied range, padding missing days with zero
+  // Filter daily data by applied range — only show days that have real data
   const filteredData = useMemo(() => {
-    const days = differenceInDays(appliedRange.to, appliedRange.from);
+    if (dailyData.length === 0) return [];
+    const lastDataDate = dailyData[dailyData.length - 1].date;
+    const rangeEnd = appliedRange.to > lastDataDate ? lastDataDate : appliedRange.to;
+    const days = differenceInDays(rangeEnd, appliedRange.from);
+    if (days < 0) return [];
     const dailyMap = new Map(dailyData.map(d => [format(d.date, "yyyy-MM-dd"), d]));
     const result = [];
     for (let i = 0; i <= days; i++) {
@@ -412,7 +422,11 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
   }, [dailyData, appliedRange]);
 
   const filteredCompData = useMemo(() => {
-    const days = differenceInDays(appliedCompRange.to, appliedCompRange.from);
+    if (dailyData.length === 0) return [];
+    const lastDataDate = dailyData[dailyData.length - 1].date;
+    const rangeEnd = appliedCompRange.to > lastDataDate ? lastDataDate : appliedCompRange.to;
+    const days = differenceInDays(rangeEnd, appliedCompRange.from);
+    if (days < 0) return [];
     const dailyMap = new Map(dailyData.map(d => [format(d.date, "yyyy-MM-dd"), d]));
     const result = [];
     for (let i = 0; i <= days; i++) {
