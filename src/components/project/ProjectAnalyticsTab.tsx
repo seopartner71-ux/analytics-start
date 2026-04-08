@@ -422,7 +422,11 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
   }, [dailyData, appliedRange]);
 
   const filteredCompData = useMemo(() => {
-    const days = differenceInDays(appliedCompRange.to, appliedCompRange.from);
+    if (dailyData.length === 0) return [];
+    const lastDataDate = dailyData[dailyData.length - 1].date;
+    const rangeEnd = appliedCompRange.to > lastDataDate ? lastDataDate : appliedCompRange.to;
+    const days = differenceInDays(rangeEnd, appliedCompRange.from);
+    if (days < 0) return [];
     const dailyMap = new Map(dailyData.map(d => [format(d.date, "yyyy-MM-dd"), d]));
     const result = [];
     for (let i = 0; i <= days; i++) {
