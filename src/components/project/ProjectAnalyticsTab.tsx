@@ -283,6 +283,33 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
   const dateFrom30 = fmtDate(subDays(today, 30), "yyyy-MM-dd");
   const dateTo30 = fmtDate(today, "yyyy-MM-dd");
 
+  // ── Fetch LIVE traffic data from Metrika API ──
+  const { data: liveMetrikaData } = useQuery({
+    queryKey: ["metrika-live-stats", projectId, dateFrom30, dateTo30],
+    queryFn: async () => {
+      if (!integration?.access_token || !integration?.counter_id) return null;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return null;
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/yandex-metrika-auth?action=fetch-stats`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            access_token: integration.access_token,
+            counter_id: integration.counter_id,
+            date1: dateFrom30,
+            date2: dateTo30,
+          }),
+        }
+      );
+      if (!resp.ok) return null;
+      return resp.json();
+    },
+    enabled: !!integration?.access_token && !!integration?.counter_id,
+    staleTime: 5 * 60_000,
+  });
+
   const { data: goalsData = [] } = useQuery({
     queryKey: ["metrika-goals-ai", projectId, dateFrom30, dateTo30],
     queryFn: async () => {
