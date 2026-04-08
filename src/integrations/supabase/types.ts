@@ -38,6 +38,110 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_checks: {
+        Row: {
+          assigned_to: string | null
+          audit_date: string
+          check_name: string
+          check_number: string
+          check_type: string
+          comment: string | null
+          created_at: string
+          difficulty: string
+          external_url: string | null
+          id: string
+          importance: string
+          project_id: string
+          result: string
+          section: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          audit_date?: string
+          check_name: string
+          check_number: string
+          check_type?: string
+          comment?: string | null
+          created_at?: string
+          difficulty?: string
+          external_url?: string | null
+          id?: string
+          importance?: string
+          project_id: string
+          result?: string
+          section?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          audit_date?: string
+          check_name?: string
+          check_number?: string
+          check_type?: string
+          comment?: string | null
+          created_at?: string
+          difficulty?: string
+          external_url?: string | null
+          id?: string
+          importance?: string
+          project_id?: string
+          result?: string
+          section?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_checks_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_checks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_url_errors: {
+        Row: {
+          audit_check_id: string
+          created_at: string
+          error_detail: string | null
+          id: string
+          url: string
+        }
+        Insert: {
+          audit_check_id: string
+          created_at?: string
+          error_detail?: string | null
+          id?: string
+          url?: string
+        }
+        Update: {
+          audit_check_id?: string
+          created_at?: string
+          error_detail?: string | null
+          id?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_url_errors_audit_check_id_fkey"
+            columns: ["audit_check_id"]
+            isOneToOne: false
+            referencedRelation: "audit_checks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cached_reports: {
         Row: {
           generated_at: string
