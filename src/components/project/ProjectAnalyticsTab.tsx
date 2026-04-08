@@ -857,7 +857,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
             </h3>
             {showComparison && (
               <div className="flex items-center gap-3 text-[10px]">
-                <span className="flex items-center gap-1"><span className="w-2.5 h-0.5 bg-primary rounded" /> Период А</span>
+                <span className="flex items-center gap-1"><span className="w-2.5 h-0.5 rounded" style={{ background: CHANNEL_COLORS[channel] }} /> Период А</span>
                 <span className="flex items-center gap-1"><span className="w-2.5 h-0.5 bg-[hsl(var(--chart-3))] rounded" style={{ borderBottom: "1px dashed" }} /> Период Б</span>
               </div>
             )}
