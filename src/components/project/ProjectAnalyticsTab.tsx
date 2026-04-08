@@ -123,22 +123,57 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
   });
   const [channel, setChannel] = useState<TrafficChannel>("all");
 
-  // ── Data queries ──
-  const { data: metrikaStats, isLoading: metrikaLoading } = useQuery({
+  // ── Data queries — fetch ALL metrika snapshots and merge ──
+  const { data: allMetrikaStats = [], isLoading: metrikaLoading } = useQuery({
     queryKey: ["metrika-stats-analytics", projectId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("metrika_stats")
         .select("*")
         .eq("project_id", projectId)
-        .order("fetched_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .order("date_from", { ascending: true });
       if (error) throw error;
-      return data;
+      return data || [];
     },
     enabled: !!projectId,
   });
+
+  // Merge all snapshots into a single "latest" object with combined daily data
+  const metrikaStats = useMemo(() => {
+    if (allMetrikaStats.length === 0) return null;
+    // Use the most recent snapshot as the base for KPI values
+    const latest = allMetrikaStats[allMetrikaStats.length - 1];
+    // Merge all visits_by_day across snapshots using actual dates
+    const mergedDays = new Map<string, number>();
+    for (const snap of allMetrikaStats) {
+      const days = snap.visits_by_day as any[];
+      if (!Array.isArray(days)) continue;
+      const dateFrom = parseISO(snap.date_from);
+      days.forEach((d, i) => {
+        let dateKey: string;
+        if (d.date) {
+          dateKey = typeof d.date === "string" ? d.date : format(new Date(d.date), "yyyy-MM-dd");
+        } else {
+          const dt = new Date(dateFrom);
+          dt.setDate(dt.getDate() + (d.day ? d.day - 1 : i));
+          dateKey = format(dt, "yyyy-MM-dd");
+        }
+        // Later snapshots overwrite earlier ones for the same date
+        mergedDays.set(dateKey, d.visits || 0);
+      });
+    }
+    // Convert merged map to sorted array
+    const sortedDays = Array.from(mergedDays.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, visits]) => ({ date, visits }));
+
+    return {
+      ...latest,
+      visits_by_day: sortedDays,
+      date_from: sortedDays[0]?.date || latest.date_from,
+      date_to: sortedDays[sortedDays.length - 1]?.date || latest.date_to,
+    };
+  }, [allMetrikaStats]);
 
   const { data: metrikaHistory = [] } = useQuery({
     queryKey: ["metrika-history-analytics", projectId],
@@ -247,6 +282,33 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
 
   const dateFrom30 = fmtDate(subDays(today, 30), "yyyy-MM-dd");
   const dateTo30 = fmtDate(today, "yyyy-MM-dd");
+
+  // ── Fetch LIVE traffic data from Metrika API ──
+  const { data: liveMetrikaData } = useQuery({
+    queryKey: ["metrika-live-stats", projectId, dateFrom30, dateTo30],
+    queryFn: async () => {
+      if (!integration?.access_token || !integration?.counter_id) return null;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return null;
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/yandex-metrika-auth?action=fetch-stats`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            access_token: integration.access_token,
+            counter_id: integration.counter_id,
+            date1: dateFrom30,
+            date2: dateTo30,
+          }),
+        }
+      );
+      if (!resp.ok) return null;
+      return resp.json();
+    },
+    enabled: !!integration?.access_token && !!integration?.counter_id,
+    staleTime: 5 * 60_000,
+  });
 
   const { data: goalsData = [] } = useQuery({
     queryKey: ["metrika-goals-ai", projectId, dateFrom30, dateTo30],
@@ -380,23 +442,28 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     ].filter(d => d.value > 0);
   }, [keywords]);
 
-  // ── Daily traffic data ──
+  // ── Daily traffic data — prefer live API data, fallback to cached ──
   const dailyData = useMemo(() => {
+    // Try live Metrika API data first
+    if (liveMetrikaData?.timeSeries?.data?.[0]?.metrics?.[0]) {
+      const timeLabels = liveMetrikaData.timeSeries.time_intervals || [];
+      const visits = liveMetrikaData.timeSeries.data[0].metrics[0];
+      return visits.map((v: number, i: number) => {
+        const dateStr = timeLabels[i]?.[0];
+        const date = dateStr ? new Date(dateStr) : new Date();
+        return { date, dateStr: format(date, "dd.MM", { locale: ru }), visits: Math.round(v) };
+      });
+    }
+    // Fallback to merged cached data
     if (!metrikaStats?.visits_by_day) return [];
     const raw = metrikaStats.visits_by_day as any[];
-    const dateFrom = parseISO(metrikaStats.date_from);
-    return raw.map((d, i) => {
-      // Support both { date, visits } and { day, visits } shapes
-      let date: Date;
-      if (d.date) {
-        date = new Date(d.date);
-      } else {
-        date = new Date(dateFrom);
-        date.setDate(date.getDate() + i);
-      }
-      return { date, dateStr: format(date, "dd.MM", { locale: ru }), visits: d.visits || 0 };
-    });
-  }, [metrikaStats]);
+    return raw
+      .filter(d => d.date)
+      .map(d => {
+        const date = new Date(d.date);
+        return { date, dateStr: format(date, "dd.MM", { locale: ru }), visits: d.visits || 0 };
+      });
+  }, [liveMetrikaData, metrikaStats]);
 
   // Filter daily data by applied range — only show days that have real data
   const filteredData = useMemo(() => {
@@ -405,7 +472,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     const rangeEnd = appliedRange.to > lastDataDate ? lastDataDate : appliedRange.to;
     const days = differenceInDays(rangeEnd, appliedRange.from);
     if (days < 0) return [];
-    const dailyMap = new Map(dailyData.map(d => [format(d.date, "yyyy-MM-dd"), d]));
+    const dailyMap = new Map(dailyData.map(d => [format(d.date, "yyyy-MM-dd"), d as { date: Date; dateStr: string; visits: number }]));
     const result = [];
     for (let i = 0; i <= days; i++) {
       const date = new Date(appliedRange.from);
@@ -415,7 +482,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
       result.push({
         date,
         dateStr: format(date, "dd.MM", { locale: ru }),
-        visits: existing?.visits || 0,
+        visits: (existing as any)?.visits || 0,
       });
     }
     return result;
@@ -427,7 +494,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     const rangeEnd = appliedCompRange.to > lastDataDate ? lastDataDate : appliedCompRange.to;
     const days = differenceInDays(rangeEnd, appliedCompRange.from);
     if (days < 0) return [];
-    const dailyMap = new Map(dailyData.map(d => [format(d.date, "yyyy-MM-dd"), d]));
+    const dailyMap = new Map(dailyData.map(d => [format(d.date, "yyyy-MM-dd"), d as { date: Date; dateStr: string; visits: number }]));
     const result = [];
     for (let i = 0; i <= days; i++) {
       const date = new Date(appliedCompRange.from);
@@ -437,7 +504,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
       result.push({
         date,
         dateStr: format(date, "dd.MM", { locale: ru }),
-        visits: existing?.visits || 0,
+        visits: (existing as any)?.visits || 0,
       });
     }
     return result;
