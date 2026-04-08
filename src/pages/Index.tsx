@@ -9,7 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import {
   FolderKanban, TrendingUp, Key, AlertTriangle, Users,
-  ArrowUp, ArrowDown, Loader2, CheckCircle2,
+  ArrowUp, ArrowDown, Loader2, CheckCircle2, FileText, Calendar,
 } from "lucide-react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
