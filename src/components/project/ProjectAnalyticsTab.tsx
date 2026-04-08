@@ -1158,53 +1158,43 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
       <Card className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
         <div className="flex items-center gap-2 p-4 border-b border-border">
           <Search className="h-4 w-4 text-muted-foreground" />
-          <h3 className="text-sm font-semibold text-foreground">Ключевые слова (Topvisor)</h3>
-          <Badge variant="secondary" className="text-[10px] h-5">{keywords.length}</Badge>
+          <h3 className="text-sm font-semibold text-foreground">Топ поисковые запросы (Метрика)</h3>
+          <Badge variant="secondary" className="text-[10px] h-5">{topSearchPhrases.length}</Badge>
         </div>
-        {keywords.length === 0 ? (
+        {!integration?.access_token ? (
           <div className="py-16 text-center">
             <Search className="h-10 w-10 mx-auto mb-2 text-muted-foreground/20" />
-            <p className="text-[13px] text-muted-foreground">
-              {project?.topvisor_api_key
-                ? "Нет данных о позициях"
-                : "Подключите Topvisor на вкладке «Интеграции»"}
-            </p>
+            <p className="text-[13px] text-muted-foreground">Подключите Яндекс.Метрику на вкладке «Интеграции»</p>
+          </div>
+        ) : searchPhrasesLoading ? (
+          <div className="py-16 text-center">
+            <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
+          </div>
+        ) : topSearchPhrases.length === 0 ? (
+          <div className="py-16 text-center">
+            <Search className="h-10 w-10 mx-auto mb-2 text-muted-foreground/20" />
+            <p className="text-[13px] text-muted-foreground">Нет данных по поисковым запросам</p>
           </div>
         ) : (
           <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
             <table className="w-full text-[13px]">
               <thead className="sticky top-0 bg-card z-10">
                 <tr className="border-b border-border bg-muted/30">
-                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Ключевое слово</th>
-                  <th className="text-center px-4 py-2.5 font-medium text-muted-foreground w-24">Позиция</th>
-                  <th className="text-center px-4 py-2.5 font-medium text-muted-foreground w-28">Изменение</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Поисковый запрос</th>
+                  <th className="text-center px-4 py-2.5 font-medium text-muted-foreground w-24">Визиты</th>
+                  <th className="text-center px-4 py-2.5 font-medium text-muted-foreground w-28">Отказы</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/40">
-                {keywords.map((kw, i) => {
-                  const isPositive = kw.change > 0;
-                  const isNegative = kw.change < 0;
-                  return (
-                    <tr key={i} className={cn("hover:bg-muted/30 transition-colors", i % 2 === 1 && "bg-muted/10")}>
-                      <td className="px-4 py-2.5 text-foreground">{kw.keyword}</td>
-                      <td className="px-4 py-2.5 text-center font-medium text-foreground">{kw.position}</td>
-                      <td className="px-4 py-2.5 text-center">
-                        {kw.change !== 0 ? (
-                          <span className={cn(
-                            "inline-flex items-center gap-1 text-[12px] font-medium",
-                            isPositive && "text-[hsl(142,71%,45%)]",
-                            isNegative && "text-destructive"
-                          )}>
-                            {isPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                            {isPositive ? `+${kw.change}` : `${kw.change}`}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground text-[12px]">—</span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
+                {topSearchPhrases.map((phrase, i) => (
+                  <tr key={`${phrase.phrase}-${i}`} className={cn("hover:bg-muted/30 transition-colors", i % 2 === 1 && "bg-muted/10")}>
+                    <td className="px-4 py-2.5 text-foreground">{phrase.phrase}</td>
+                    <td className="px-4 py-2.5 text-center font-medium tabular-nums text-foreground">{phrase.visits.toLocaleString("ru-RU")}</td>
+                    <td className="px-4 py-2.5 text-center">
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0">{phrase.bounceRate.toFixed(0)}%</Badge>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
