@@ -211,8 +211,26 @@ interface Props { projectId: string; }
 export function YandexWebmasterTab({ projectId }: Props) {
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
-  const [filter, setFilter] = useState<"all" | "errors" | "fatal" | "critical">("all");
-  const [search, setSearch] = useState("");
+  const [pdfLoading, setPdfLoading] = useState(false);
+
+  const handleDownloadPdf = async () => {
+    setPdfLoading(true);
+    try {
+      await new Promise(r => setTimeout(r, 100));
+      generateWebmasterPdf(checks, {
+        domain,
+        date: format(new Date(), "dd.MM.yyyy"),
+        period: "1",
+        specialist: specialist?.full_name || project?.seo_specialist || "—",
+      });
+      toast.success("PDF отчёт скачан");
+    } catch (e: any) {
+      console.error(e);
+      toast.error("Ошибка генерации PDF");
+    } finally {
+      setPdfLoading(false);
+    }
+  };
 
   const { data: project } = useQuery({
     queryKey: ["project-wm-tab", projectId],
