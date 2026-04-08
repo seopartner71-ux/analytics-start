@@ -519,39 +519,56 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     return result;
   }, [dailyData, appliedCompRange]);
 
+  // ── Channel ratios for splitting ──
+  const channelRatios = useMemo(() => {
+    if (!metrikaStats?.traffic_sources) return {} as Record<string, number>;
+    const sources = metrikaStats.traffic_sources as { source: string; visits: number }[];
+    const totalAll = sources.reduce((s, src) => s + (src.visits || 0), 0);
+    if (totalAll === 0) return {} as Record<string, number>;
+    const ratios: Record<string, number> = { organic: 0, direct: 0, referral: 0, social: 0, ad: 0 };
+    for (const src of sources) {
+      const ch = SOURCE_TO_CHANNEL[src.source];
+      if (ch && ch !== "all") ratios[ch] = (ratios[ch] || 0) + (src.visits || 0);
+    }
+    for (const k of Object.keys(ratios)) ratios[k] = ratios[k] / totalAll;
+    return ratios;
+  }, [metrikaStats]);
+
   // ── Channel-filtered ratio ──
   const channelVisitRatio = useMemo(() => {
     if (channel === "all" || !metrikaStats?.traffic_sources) return 1;
-    const sources = metrikaStats.traffic_sources as { source: string; visits: number }[];
-    const totalAll = sources.reduce((s, src) => s + (src.visits || 0), 0);
-    if (totalAll === 0) return 1;
-    const channelVisits = sources
-      .filter(src => SOURCE_TO_CHANNEL[src.source] === channel)
-      .reduce((s, src) => s + (src.visits || 0), 0);
-    return channelVisits / totalAll;
-  }, [metrikaStats, channel]);
+    return channelRatios[channel] || 0;
+  }, [metrikaStats, channel, channelRatios]);
+
+  const ALL_CHANNELS = ["organic", "direct", "social", "referral", "ad"] as const;
 
   // Merged chart data for comparison (with channel filter applied)
   const trafficChart = useMemo(() => {
     const applyRatio = (v: number) => Math.round(v * channelVisitRatio);
+    const buildRow = (dateStr: string, visits: number) => {
+      if (channel === "all") {
+        const row: any = { date: dateStr };
+        for (const ch of ALL_CHANNELS) {
+          row[ch] = Math.round(visits * (channelRatios[ch] || 0));
+        }
+        return row;
+      }
+      return { date: dateStr, visits: applyRatio(visits) };
+    };
+
     if (!showComparison) {
-      if (filteredData.length > 0) return filteredData.map(d => ({ date: d.dateStr, visits: applyRatio(d.visits) }));
-      return metrikaHistory.map(h => ({
-        date: format(parseISO(h.date_from), "dd MMM", { locale: ru }),
-        visits: applyRatio(h.total_visits),
-      }));
+      if (filteredData.length > 0) return filteredData.map(d => buildRow(d.dateStr, d.visits));
+      return metrikaHistory.map(h => buildRow(format(parseISO(h.date_from), "dd MMM", { locale: ru }), h.total_visits));
     }
     const maxLen = Math.max(filteredData.length, filteredCompData.length);
     const result = [];
     for (let i = 0; i < maxLen; i++) {
-      result.push({
-        date: filteredData[i]?.dateStr || `${i + 1}`,
-        visits: applyRatio(filteredData[i]?.visits || 0),
-        previous: applyRatio(filteredCompData[i]?.visits || 0),
-      });
+      const row = buildRow(filteredData[i]?.dateStr || `${i + 1}`, filteredData[i]?.visits || 0);
+      row.previous = applyRatio(filteredCompData[i]?.visits || 0);
+      result.push(row);
     }
     return result;
-  }, [filteredData, filteredCompData, metrikaHistory, showComparison, channelVisitRatio]);
+  }, [filteredData, filteredCompData, metrikaHistory, showComparison, channelVisitRatio, channel, channelRatios]);
 
   const totalVisits = Math.round(
     (filteredData.length > 0
