@@ -225,6 +225,184 @@ const SEVERITY_ORDER: Record<string, number> = {
   FATAL: 0, CRITICAL: 1, POSSIBLE_PROBLEM: 2, RECOMMENDATION: 3,
 };
 
+const PROBLEM_DESCRIPTIONS_RU: Record<string, { description: string; recommendation: string }> = {
+  INSIGNIFICANT_CGI_PARAMETER: {
+    description: "Яндекс обнаружил URL с незначимыми CGI-параметрами, которые создают дубли страниц в индексе.",
+    recommendation: "Настройте директиву Clean-param в robots.txt или используйте canonical-теги для указания основного URL.",
+  },
+  ERROR_IN_ROBOTS_TXT: {
+    description: "В файле robots.txt найдены синтаксические ошибки, которые могут помешать корректному обходу сайта.",
+    recommendation: "Проверьте robots.txt через валидатор Яндекс.Вебмастера и исправьте синтаксические ошибки.",
+  },
+  MAIN_PAGE_ERROR: {
+    description: "Главная страница сайта возвращает ошибку или недоступна для робота.",
+    recommendation: "Убедитесь, что главная страница отдаёт HTTP 200 и доступна без авторизации.",
+  },
+  NO_SITEMAP_MODIFICATIONS: {
+    description: "Sitemap не обновлялся длительное время, что снижает скорость индексации новых страниц.",
+    recommendation: "Настройте автоматическую генерацию sitemap.xml с актуальными датами lastmod.",
+  },
+  CONNECT_FAILED: {
+    description: "Робот не может подключиться к серверу — сайт недоступен или блокирует запросы.",
+    recommendation: "Проверьте доступность сервера, настройки firewall и DNS. Убедитесь, что IP Яндекса не заблокированы.",
+  },
+  MAIN_MIRROR_IS_NOT_HTTPS: {
+    description: "Основное зеркало сайта использует HTTP вместо HTTPS, что негативно влияет на ранжирование.",
+    recommendation: "Настройте SSL-сертификат и 301-редирект с HTTP на HTTPS. Укажите HTTPS-версию как главное зеркало.",
+  },
+  FAVICON_ERROR: {
+    description: "Favicon сайта недоступен или содержит ошибки, что влияет на отображение в поиске.",
+    recommendation: "Разместите корректный favicon.ico в корне сайта и проверьте его доступность.",
+  },
+  NOT_IN_SPRAV: {
+    description: "Организация не найдена в Яндекс.Справочнике, что ограничивает видимость на картах и в поиске.",
+    recommendation: "Зарегистрируйте организацию в Яндекс.Бизнесе (business.yandex.ru) и привяжите сайт.",
+  },
+  FAVICON_PROBLEM: {
+    description: "Обнаружены проблемы с отображением favicon — формат или размер не соответствуют требованиям.",
+    recommendation: "Используйте favicon в формате ICO или PNG размером не менее 120×120 px.",
+  },
+  DNS_ERROR: {
+    description: "DNS-записи домена некорректны или DNS-серверы не отвечают.",
+    recommendation: "Проверьте настройки DNS у регистратора домена. Убедитесь в корректности A/AAAA и NS записей.",
+  },
+  MAIN_PAGE_REDIRECTS: {
+    description: "Главная страница выполняет редирект, что замедляет индексацию и может путать роботов.",
+    recommendation: "Уберите цепочки редиректов с главной страницы. Она должна отдавать HTTP 200 напрямую.",
+  },
+  DOCUMENTS_MISSING_DESCRIPTION: {
+    description: "У части страниц отсутствует мета-тег description, что ухудшает сниппеты в поиске.",
+    recommendation: "Добавьте уникальные мета-описания (до 160 символов) для всех важных страниц сайта.",
+  },
+  ERRORS_IN_SITEMAPS: {
+    description: "В Sitemap обнаружены ошибки: нерабочие ссылки, некорректный формат или невалидный XML.",
+    recommendation: "Валидируйте sitemap.xml, уберите 404 URL и убедитесь в корректности XML-структуры.",
+  },
+  NOT_MOBILE_FRIENDLY: {
+    description: "Сайт не оптимизирован для мобильных устройств, что снижает позиции в мобильной выдаче.",
+    recommendation: "Внедрите адаптивную вёрстку (responsive design) и проверьте через Mobile-Friendly Test.",
+  },
+  URL_ALERT_5XX: {
+    description: "Обнаружены URL с серверными ошибками 5xx, которые блокируют индексацию этих страниц.",
+    recommendation: "Проверьте логи сервера, устраните причины 500/502/503 ошибок и перезапросите обход.",
+  },
+  URL_ALERT_4XX: {
+    description: "Обнаружены URL с ошибками 4xx (страницы не найдены), ведущие к потере трафика.",
+    recommendation: "Настройте 301-редиректы с удалённых страниц на актуальные или верните контент.",
+  },
+  DUPLICATE_CONTENT_ATTRS: {
+    description: "Найдены страницы с дублированными content-атрибутами (title, description).",
+    recommendation: "Сделайте title и description уникальными для каждой страницы.",
+  },
+  BIG_FAVICON_ABSENT: {
+    description: "Отсутствует большой favicon (touch-icon), который используется в закладках и на мобильных.",
+    recommendation: "Добавьте apple-touch-icon размером 180×180 px и favicon размером 120×120 px.",
+  },
+  NO_SITEMAPS: {
+    description: "На сайте не обнаружен файл sitemap.xml, что замедляет индексацию новых страниц.",
+    recommendation: "Создайте sitemap.xml, добавьте его в robots.txt и отправьте через Вебмастер.",
+  },
+  DOCUMENTS_MISSING_TITLE: {
+    description: "У части страниц отсутствует тег title, что критически ухудшает ранжирование.",
+    recommendation: "Добавьте уникальные title (до 70 символов) с ключевыми словами для каждой страницы.",
+  },
+  NO_REGIONS: {
+    description: "Для сайта не указан регион, что ограничивает показ в региональной выдаче.",
+    recommendation: "Укажите регион сайта в Яндекс.Вебмастере или привяжите организацию в Справочнике.",
+  },
+  TOO_MANY_DOMAINS_ON_SEARCH: {
+    description: "В поиске присутствует слишком много зеркал домена, что размывает ранжирование.",
+    recommendation: "Настройте главное зеркало и 301-редиректы со всех остальных доменов.",
+  },
+  SSL_CERTIFICATE_ERROR: {
+    description: "SSL-сертификат сайта недействителен, просрочен или установлен некорректно.",
+    recommendation: "Обновите SSL-сертификат, проверьте цепочку и корректность установки через SSL-checker.",
+  },
+  DUPLICATE_PAGES: {
+    description: "Обнаружены дублированные страницы с одинаковым контентом по разным URL.",
+    recommendation: "Используйте rel=canonical для указания основной версии и настройте 301-редиректы.",
+  },
+  DISALLOWED_IN_ROBOTS: {
+    description: "Важные страницы заблокированы в robots.txt, что препятствует их индексации.",
+    recommendation: "Проверьте правила Disallow в robots.txt и разблокируйте нужные разделы.",
+  },
+  NO_ROBOTS_TXT: {
+    description: "Файл robots.txt отсутствует, что затрудняет управление индексацией.",
+    recommendation: "Создайте robots.txt с корректными правилами для роботов и ссылкой на sitemap.",
+  },
+  NO_METRIKA_COUNTER: {
+    description: "На сайте не установлен счётчик Яндекс.Метрики.",
+    recommendation: "Установите код Яндекс.Метрики на все страницы сайта для сбора аналитики.",
+  },
+  SOFT_404: {
+    description: "Обнаружены «мягкие 404» — страницы с кодом 200, но без полезного контента.",
+    recommendation: "Настройте корректный HTTP-код 404 для несуществующих страниц.",
+  },
+  THREATS: {
+    description: "Яндекс обнаружил угрозы безопасности: вредоносный код, фишинг или нежелательное ПО.",
+    recommendation: "Немедленно проверьте сайт на вирусы, удалите вредоносный код и запросите перепроверку.",
+  },
+  NO_METRIKA_COUNTER_BINDING: {
+    description: "Счётчик Метрики не привязан к сайту в Вебмастере.",
+    recommendation: "Привяжите счётчик Яндекс.Метрики к сайту в настройках Вебмастера.",
+  },
+  NO_METRIKA_COUNTER_CRAWL_ENABLED: {
+    description: "Не включён обход сайта роботом Метрики для расширенной аналитики.",
+    recommendation: "Включите опцию «Разрешить обход роботом Метрики» в настройках счётчика.",
+  },
+  SLOW_AVG_RESPONSE_TIME: {
+    description: "Среднее время ответа сервера слишком высокое, что ухудшает индексацию и UX.",
+    recommendation: "Оптимизируйте серверную часть: настройте кэширование, CDN и уменьшите время ответа до 200 мс.",
+  },
+};
+
+const PROBLEM_DESCRIPTIONS_EN: Record<string, { description: string; recommendation: string }> = {
+  INSIGNIFICANT_CGI_PARAMETER: {
+    description: "Yandex found URLs with insignificant CGI parameters creating duplicate pages.",
+    recommendation: "Configure Clean-param directive in robots.txt or use canonical tags.",
+  },
+  ERROR_IN_ROBOTS_TXT: {
+    description: "Syntax errors found in robots.txt that may prevent proper crawling.",
+    recommendation: "Validate robots.txt via Yandex Webmaster and fix syntax errors.",
+  },
+  MAIN_PAGE_ERROR: {
+    description: "The main page returns an error or is unavailable to the crawler.",
+    recommendation: "Ensure the main page returns HTTP 200 and is accessible without auth.",
+  },
+  CONNECT_FAILED: {
+    description: "The crawler cannot connect to the server — site is down or blocking requests.",
+    recommendation: "Check server availability, firewall settings and DNS configuration.",
+  },
+  MAIN_MIRROR_IS_NOT_HTTPS: {
+    description: "Main site mirror uses HTTP instead of HTTPS, negatively affecting ranking.",
+    recommendation: "Set up SSL certificate and 301 redirect from HTTP to HTTPS.",
+  },
+  NO_SITEMAPS: {
+    description: "No sitemap.xml found, slowing down indexation of new pages.",
+    recommendation: "Create sitemap.xml, add it to robots.txt and submit via Webmaster.",
+  },
+  DOCUMENTS_MISSING_TITLE: {
+    description: "Some pages are missing the title tag, critically affecting ranking.",
+    recommendation: "Add unique titles (up to 70 characters) with keywords for each page.",
+  },
+  DOCUMENTS_MISSING_DESCRIPTION: {
+    description: "Some pages are missing meta description, reducing snippet quality in search.",
+    recommendation: "Add unique meta descriptions (up to 160 characters) for all important pages.",
+  },
+  SSL_CERTIFICATE_ERROR: {
+    description: "SSL certificate is invalid, expired or incorrectly installed.",
+    recommendation: "Renew SSL certificate and verify the installation chain.",
+  },
+  THREATS: {
+    description: "Security threats detected: malware, phishing or unwanted software.",
+    recommendation: "Immediately scan the site for viruses, remove malicious code and request re-check.",
+  },
+  SLOW_AVG_RESPONSE_TIME: {
+    description: "Average server response time is too high, hurting indexation and UX.",
+    recommendation: "Optimize server-side: set up caching, CDN and reduce response time to under 200ms.",
+  },
+};
+
 const SEVERITY_COLORS = {
   FATAL: { border: "border-destructive/40", bg: "bg-destructive/8", text: "text-destructive", badge: "border-destructive/40 text-destructive bg-destructive/10" },
   CRITICAL: { border: "border-destructive/30", bg: "bg-destructive/5", text: "text-destructive", badge: "border-destructive/30 text-destructive bg-destructive/10" },
@@ -665,26 +843,45 @@ function SiteHealthDashboard({ projectId, accessToken, hostId }: {
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_200px] gap-4">
-              <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
+              <div className="space-y-3 max-h-[520px] overflow-y-auto pr-1">
                 {activeProblems.map((p) => {
                   const colors = SEVERITY_COLORS[p.severity as keyof typeof SEVERITY_COLORS] || SEVERITY_COLORS.RECOMMENDATION;
+                  const details = isRu
+                    ? PROBLEM_DESCRIPTIONS_RU[p.id]
+                    : (PROBLEM_DESCRIPTIONS_EN[p.id] || PROBLEM_DESCRIPTIONS_RU[p.id]);
                   return (
                     <div
                       key={p.id}
-                      className={cn("rounded-lg border px-4 py-3 flex items-start gap-3 transition-colors", colors.border, colors.bg)}
+                      className={cn("rounded-lg border px-4 py-3 space-y-2 transition-colors", colors.border, colors.bg)}
                     >
-                      <AlertCircle className={cn("h-4 w-4 mt-0.5 shrink-0", colors.text)} />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground">{p.name}</p>
-                        {p.lastUpdate && (
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            {isRu ? "Обнаружено" : "Detected"}: {format(new Date(p.lastUpdate), "dd.MM.yyyy")}
-                          </p>
-                        )}
+                      <div className="flex items-start gap-3">
+                        <AlertCircle className={cn("h-4 w-4 mt-0.5 shrink-0", colors.text)} />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground">{p.name}</p>
+                          {p.lastUpdate && (
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {isRu ? "Обнаружено" : "Detected"}: {format(new Date(p.lastUpdate), "dd.MM.yyyy")}
+                            </p>
+                          )}
+                        </div>
+                        <Badge variant="outline" className={cn("text-[10px] shrink-0", colors.badge)}>
+                          {isRu ? (SEVERITY_LABELS_RU[p.severity] || p.severity) : p.severity}
+                        </Badge>
                       </div>
-                      <Badge variant="outline" className={cn("text-[10px] shrink-0", colors.badge)}>
-                        {isRu ? (SEVERITY_LABELS_RU[p.severity] || p.severity) : p.severity}
-                      </Badge>
+                      {details && (
+                        <div className="ml-7 space-y-1.5">
+                          <p className="text-xs text-muted-foreground leading-relaxed">
+                            {details.description}
+                          </p>
+                          <div className="flex items-start gap-1.5 p-2 rounded-md bg-primary/5 border border-primary/10">
+                            <Info className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
+                            <p className="text-xs text-foreground/80 leading-relaxed">
+                              <span className="font-medium text-primary">{isRu ? "Рекомендация:" : "Fix:"}</span>{" "}
+                              {details.recommendation}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
