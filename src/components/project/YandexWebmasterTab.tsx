@@ -340,6 +340,12 @@ export function YandexWebmasterTab({ projectId }: Props) {
 
   const yIndexed = getMetric("indexed_pages");
   const yTotal = getMetric("total_pages");
+  const yExcluded = getMetric("excluded_pages");
+  const yQueries = getMetric("total_queries");
+  const yAvgPos = getMetric("avg_position");
+  const yAvgCtr = getMetric("avg_ctr");
+  const yExtLinks = getMetric("external_links");
+  const yRefDomains = getMetric("referring_domains");
 
   return (
     <div className="space-y-5">
@@ -452,33 +458,45 @@ export function YandexWebmasterTab({ projectId }: Props) {
 
       {/* DATA WIDGETS */}
       {healthMetrics.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Indexation */}
           <Card className="bg-[#252525] border-[#333] p-4">
             <h4 className="text-[13px] font-semibold text-zinc-200 mb-3">📊 Индексация</h4>
             <div className="space-y-2">
               <div className="flex justify-between text-[12px]"><span className="text-zinc-400">Страниц в индексе</span><span className="text-zinc-100 font-bold">{Number(yIndexed).toLocaleString("ru-RU")}</span></div>
               <div className="flex justify-between text-[12px]"><span className="text-zinc-400">Всего страниц</span><span className="text-zinc-100 font-bold">{Number(yTotal).toLocaleString("ru-RU")}</span></div>
+              <div className="flex justify-between text-[12px]"><span className="text-zinc-400">Исключено</span><span className="text-red-400 font-bold">{Number(yExcluded).toLocaleString("ru-RU")}</span></div>
               {Number(yTotal) > 0 && (
                 <Progress value={(Number(yIndexed) / Number(yTotal)) * 100} className="h-2 bg-[#333]" />
               )}
             </div>
           </Card>
 
-          {/* Errors summary */}
+          {/* Search queries */}
+          <Card className="bg-[#252525] border-[#333] p-4">
+            <h4 className="text-[13px] font-semibold text-zinc-200 mb-3">🔍 Поисковые запросы</h4>
+            <div className="space-y-2">
+              <div className="flex justify-between text-[12px]"><span className="text-zinc-400">Всего показов</span><span className="text-zinc-100 font-bold">{Number(yQueries).toLocaleString("ru-RU")}</span></div>
+              <div className="flex justify-between text-[12px]"><span className="text-zinc-400">Средний CTR</span><span className="text-cyan-400 font-bold">{Number(yAvgCtr).toFixed(2)}%</span></div>
+              <div className="flex justify-between text-[12px]"><span className="text-zinc-400">Средняя позиция</span><span className="text-zinc-100 font-bold">{Number(yAvgPos).toFixed(1)}</span></div>
+            </div>
+          </Card>
+
+          {/* External links */}
+          <Card className="bg-[#252525] border-[#333] p-4">
+            <h4 className="text-[13px] font-semibold text-zinc-200 mb-3">🔗 Внешние ссылки</h4>
+            <div className="space-y-2">
+              <div className="flex justify-between text-[12px]"><span className="text-zinc-400">Внешних ссылок</span><span className="text-zinc-100 font-bold">{Number(yExtLinks).toLocaleString("ru-RU")}</span></div>
+              <div className="flex justify-between text-[12px]"><span className="text-zinc-400">Ссылающихся доменов</span><span className="text-zinc-100 font-bold">{Number(yRefDomains).toLocaleString("ru-RU")}</span></div>
+            </div>
+          </Card>
+
+          {/* Замечания + Sitemap */}
           <Card className="bg-[#252525] border-[#333] p-4">
             <h4 className="text-[13px] font-semibold text-zinc-200 mb-3">⚠️ Замечания</h4>
             <div className="space-y-2">
               <div className="flex justify-between text-[12px]"><span className="text-zinc-400">Активных проблем</span><span className="text-red-400 font-bold">{siteErrors.filter(e => e.status === "Новая").length}</span></div>
-              <div className="flex justify-between text-[12px]"><span className="text-zinc-400">Просмотрено</span><span className="text-zinc-300 font-bold">{siteErrors.filter(e => e.status === "Просмотрена").length}</span></div>
               <div className="flex justify-between text-[12px]"><span className="text-zinc-400">Всего из Вебмастера</span><span className="text-zinc-100 font-bold">{siteErrors.length}</span></div>
-            </div>
-          </Card>
-
-          {/* Sitemap */}
-          <Card className="bg-[#252525] border-[#333] p-4">
-            <h4 className="text-[13px] font-semibold text-zinc-200 mb-3">🗺️ Sitemap и Robots</h4>
-            <div className="space-y-2">
               <div className="flex justify-between text-[12px]">
                 <span className="text-zinc-400">Sitemap</span>
                 <span className={cn("font-bold", getMetric("sitemap_status") === "ok" ? "text-emerald-400" : "text-zinc-500")}>{getMetric("sitemap_status") === "ok" ? "✅ Подключен" : "Не настроен"}</span>
