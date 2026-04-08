@@ -843,26 +843,45 @@ function SiteHealthDashboard({ projectId, accessToken, hostId }: {
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_200px] gap-4">
-              <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
+              <div className="space-y-3 max-h-[520px] overflow-y-auto pr-1">
                 {activeProblems.map((p) => {
                   const colors = SEVERITY_COLORS[p.severity as keyof typeof SEVERITY_COLORS] || SEVERITY_COLORS.RECOMMENDATION;
+                  const details = isRu
+                    ? PROBLEM_DESCRIPTIONS_RU[p.id]
+                    : (PROBLEM_DESCRIPTIONS_EN[p.id] || PROBLEM_DESCRIPTIONS_RU[p.id]);
                   return (
                     <div
                       key={p.id}
-                      className={cn("rounded-lg border px-4 py-3 flex items-start gap-3 transition-colors", colors.border, colors.bg)}
+                      className={cn("rounded-lg border px-4 py-3 space-y-2 transition-colors", colors.border, colors.bg)}
                     >
-                      <AlertCircle className={cn("h-4 w-4 mt-0.5 shrink-0", colors.text)} />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground">{p.name}</p>
-                        {p.lastUpdate && (
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            {isRu ? "Обнаружено" : "Detected"}: {format(new Date(p.lastUpdate), "dd.MM.yyyy")}
-                          </p>
-                        )}
+                      <div className="flex items-start gap-3">
+                        <AlertCircle className={cn("h-4 w-4 mt-0.5 shrink-0", colors.text)} />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground">{p.name}</p>
+                          {p.lastUpdate && (
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {isRu ? "Обнаружено" : "Detected"}: {format(new Date(p.lastUpdate), "dd.MM.yyyy")}
+                            </p>
+                          )}
+                        </div>
+                        <Badge variant="outline" className={cn("text-[10px] shrink-0", colors.badge)}>
+                          {isRu ? (SEVERITY_LABELS_RU[p.severity] || p.severity) : p.severity}
+                        </Badge>
                       </div>
-                      <Badge variant="outline" className={cn("text-[10px] shrink-0", colors.badge)}>
-                        {isRu ? (SEVERITY_LABELS_RU[p.severity] || p.severity) : p.severity}
-                      </Badge>
+                      {details && (
+                        <div className="ml-7 space-y-1.5">
+                          <p className="text-xs text-muted-foreground leading-relaxed">
+                            {details.description}
+                          </p>
+                          <div className="flex items-start gap-1.5 p-2 rounded-md bg-primary/5 border border-primary/10">
+                            <Info className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
+                            <p className="text-xs text-foreground/80 leading-relaxed">
+                              <span className="font-medium text-primary">{isRu ? "Рекомендация:" : "Fix:"}</span>{" "}
+                              {details.recommendation}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
