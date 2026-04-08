@@ -485,7 +485,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     return rows
       .filter((row: any) => row?.name)
       .map((row: any) => {
-        const positionsObj = row.positions || row.position || {};
+        const positionsObj = row.positionsData || row.positions || row.position || {};
         let latestPos: number | null = null;
         let prevPos: number | null = null;
 
