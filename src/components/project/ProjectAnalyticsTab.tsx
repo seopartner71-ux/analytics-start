@@ -66,6 +66,15 @@ const PIE_COLORS = [
   "hsl(var(--muted-foreground))",
 ];
 
+const CHANNEL_COLORS: Record<TrafficChannel, string> = {
+  all: "hsl(var(--primary))",
+  organic: "#8B5CF6",
+  direct: "#10B981",
+  referral: "#0EA5E9",
+  social: "#D946EF",
+  ad: "#F59E0B",
+};
+
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = Math.round(seconds % 60);
@@ -848,7 +857,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
             </h3>
             {showComparison && (
               <div className="flex items-center gap-3 text-[10px]">
-                <span className="flex items-center gap-1"><span className="w-2.5 h-0.5 bg-primary rounded" /> Период А</span>
+                <span className="flex items-center gap-1"><span className="w-2.5 h-0.5 rounded" style={{ background: CHANNEL_COLORS[channel] }} /> Период А</span>
                 <span className="flex items-center gap-1"><span className="w-2.5 h-0.5 bg-[hsl(var(--chart-3))] rounded" style={{ borderBottom: "1px dashed" }} /> Период Б</span>
               </div>
             )}
@@ -865,8 +874,8 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
               <AreaChart data={trafficChart}>
                 <defs>
                   <linearGradient id="trafficGradA" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                    <stop offset="5%" stopColor={CHANNEL_COLORS[channel]} stopOpacity={0.25} />
+                    <stop offset="95%" stopColor={CHANNEL_COLORS[channel]} stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="trafficGradB" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="hsl(var(--chart-3))" stopOpacity={0.15} />
@@ -880,7 +889,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
                 <Area
                   type="monotone"
                   dataKey="visits"
-                  stroke="hsl(var(--primary))"
+                  stroke={CHANNEL_COLORS[channel]}
                   strokeWidth={2}
                   fill="url(#trafficGradA)"
                   name="Визиты"
