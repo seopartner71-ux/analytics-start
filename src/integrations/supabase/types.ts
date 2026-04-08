@@ -1130,6 +1130,122 @@ export type Database = {
           },
         ]
       }
+      yandex_webmaster_checks: {
+        Row: {
+          api_field: string | null
+          assigned_to: string | null
+          check_name: string
+          check_number: string
+          created_at: string
+          error_details_json: Json | null
+          id: string
+          project_id: string
+          section: string
+          status: string
+          synced_at: string
+          task_status: string
+          task_text: string | null
+          updated_at: string
+        }
+        Insert: {
+          api_field?: string | null
+          assigned_to?: string | null
+          check_name: string
+          check_number: string
+          created_at?: string
+          error_details_json?: Json | null
+          id?: string
+          project_id: string
+          section?: string
+          status?: string
+          synced_at?: string
+          task_status?: string
+          task_text?: string | null
+          updated_at?: string
+        }
+        Update: {
+          api_field?: string | null
+          assigned_to?: string | null
+          check_name?: string
+          check_number?: string
+          created_at?: string
+          error_details_json?: Json | null
+          id?: string
+          project_id?: string
+          section?: string
+          status?: string
+          synced_at?: string
+          task_status?: string
+          task_text?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "yandex_webmaster_checks_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "yandex_webmaster_checks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      yandex_webmaster_snapshots: {
+        Row: {
+          avg_ctr: number
+          avg_position: number
+          created_at: string
+          excluded_pages: number
+          external_links: number
+          id: string
+          indexed_pages: number
+          project_id: string
+          referring_domains: number
+          snapshot_date: string
+          total_queries: number
+        }
+        Insert: {
+          avg_ctr?: number
+          avg_position?: number
+          created_at?: string
+          excluded_pages?: number
+          external_links?: number
+          id?: string
+          indexed_pages?: number
+          project_id: string
+          referring_domains?: number
+          snapshot_date?: string
+          total_queries?: number
+        }
+        Update: {
+          avg_ctr?: number
+          avg_position?: number
+          created_at?: string
+          excluded_pages?: number
+          external_links?: number
+          id?: string
+          indexed_pages?: number
+          project_id?: string
+          referring_domains?: number
+          snapshot_date?: string
+          total_queries?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "yandex_webmaster_snapshots_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
