@@ -415,13 +415,26 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
       const json = await resp.json();
       // phrases is the raw Metrika API response: { data: [{ dimensions: [{name},...], metrics: [visits, users, bounceRate, ...] }] }
       const rawPhrases = json.phrases?.data || [];
-      return rawPhrases.map((row: any) => ({
-        phrase: row.dimensions?.[1]?.name || row.dimensions?.[0]?.name || "",
-        engine: row.dimensions?.[0]?.name || "",
-        visits: row.metrics?.[0] || 0,
-        users: row.metrics?.[1] || 0,
-        bounceRate: row.metrics?.[2] || 0,
-      })).filter((p: any) => p.phrase && p.phrase !== "(not set)");
+      // Aggregate by phrase (dimension[1]), skip rows where phrase is empty
+      const phraseMap = new Map<string, { visits: number; users: number; bounceRateSum: number; count: number }>();
+      for (const row of rawPhrases) {
+        const phrase = row.dimensions?.[1]?.name || "";
+        if (!phrase || phrase === "(not set)") continue;
+        const existing = phraseMap.get(phrase) || { visits: 0, users: 0, bounceRateSum: 0, count: 0 };
+        existing.visits += row.metrics?.[0] || 0;
+        existing.users += row.metrics?.[1] || 0;
+        existing.bounceRateSum += row.metrics?.[2] || 0;
+        existing.count += 1;
+        phraseMap.set(phrase, existing);
+      }
+      return Array.from(phraseMap.entries())
+        .map(([phrase, d]) => ({
+          phrase,
+          visits: Math.round(d.visits),
+          users: Math.round(d.users),
+          bounceRate: d.count > 0 ? Math.round(d.bounceRateSum / d.count * 10) / 10 : 0,
+        }))
+        .sort((a, b) => b.visits - a.visits);
     },
     enabled: !!integration?.access_token && !!integration?.counter_id,
     staleTime: 30 * 60_000,
