@@ -874,8 +874,8 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
               <AreaChart data={trafficChart}>
                 <defs>
                   <linearGradient id="trafficGradA" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                    <stop offset="5%" stopColor={CHANNEL_COLORS[channel]} stopOpacity={0.25} />
+                    <stop offset="95%" stopColor={CHANNEL_COLORS[channel]} stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="trafficGradB" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="hsl(var(--chart-3))" stopOpacity={0.15} />
@@ -889,7 +889,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
                 <Area
                   type="monotone"
                   dataKey="visits"
-                  stroke="hsl(var(--primary))"
+                  stroke={CHANNEL_COLORS[channel]}
                   strokeWidth={2}
                   fill="url(#trafficGradA)"
                   name="Визиты"
