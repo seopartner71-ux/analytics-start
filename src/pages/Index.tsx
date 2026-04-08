@@ -9,7 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import {
   FolderKanban, TrendingUp, Key, AlertTriangle, Users,
-  ArrowUp, ArrowDown, Loader2, CheckCircle2,
+  ArrowUp, ArrowDown, Loader2, CheckCircle2, FileText, Calendar,
 } from "lucide-react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -34,7 +34,7 @@ const Index = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
-        .select("id, name, url, privacy, efficiency, created_at, seo_specialist_id, account_manager_id")
+        .select("id, name, url, privacy, efficiency, created_at, deadline, seo_specialist_id, account_manager_id")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
@@ -194,6 +194,33 @@ const Index = () => {
     }
     return Object.values(projectOverdue);
   }, [overdueTasks, projects, members]);
+
+  // ─── Upcoming reports (projects with deadline) ───
+  const upcomingReports = useMemo(() => {
+    const now = new Date();
+    return projects
+      .filter(p => p.deadline)
+      .map(p => {
+        const deadlineDate = parseISO(p.deadline!);
+        const diffMs = deadlineDate.getTime() - now.getTime();
+        const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+        const seo = members.find(m => m.id === p.seo_specialist_id);
+        const am = members.find(m => m.id === p.account_manager_id);
+        return {
+          id: p.id,
+          name: p.name,
+          url: p.url || "—",
+          deadline: p.deadline!,
+          diffDays,
+          isOverdue: diffDays < 0,
+          manager: am?.full_name || seo?.full_name || "—",
+          stage: p.privacy || "В работе",
+          stageColor: STAGE_COLORS[p.privacy || ""] || "#9E9E9E",
+        };
+      })
+      .sort((a, b) => parseISO(a.deadline).getTime() - parseISO(b.deadline).getTime())
+      .slice(0, 10);
+  }, [projects, members]);
 
   const isLoading = loadingProjects || loadingTasks;
 
@@ -443,6 +470,74 @@ const Index = () => {
                 <tr>
                   <td colSpan={6} className="text-center py-8 text-[13px] text-muted-foreground">
                     Нет просроченных проектов 🎉
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+      {/* Upcoming reports table */}
+      <Card className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
+        <div className="flex items-center gap-3 p-4 border-b border-border">
+          <FileText className="h-4 w-4 text-primary" />
+          <h3 className="text-sm font-semibold text-foreground">Ближайшие отчёты по проектам</h3>
+          <Badge variant="secondary" className="text-[11px] h-5 px-2">{upcomingReports.length}</Badge>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="crm-table">
+            <thead>
+              <tr>
+                <th>Проект</th>
+                <th>Домен</th>
+                <th>Дата отчёта</th>
+                <th>Осталось дней</th>
+                <th>Ответственный</th>
+                <th>Этап</th>
+                <th>Действие</th>
+              </tr>
+            </thead>
+            <tbody>
+              {upcomingReports.length > 0 ? upcomingReports.map((row) => (
+                <tr key={row.id} className={row.isOverdue ? "bg-destructive/[0.03] hover:bg-destructive/[0.06]" : "hover:bg-muted/40"}>
+                  <td className="text-[13px] text-foreground font-medium">{row.name}</td>
+                  <td className="text-[13px] text-muted-foreground">{row.url}</td>
+                  <td className="text-[13px] font-medium">
+                    <span className={row.isOverdue ? "text-destructive" : "text-foreground"}>
+                      {format(parseISO(row.deadline), "dd.MM.yyyy")}
+                    </span>
+                  </td>
+                  <td>
+                    <Badge
+                      variant={row.isOverdue ? "destructive" : row.diffDays <= 3 ? "outline" : "secondary"}
+                      className={cn(
+                        "text-[11px] h-5 px-2",
+                        !row.isOverdue && row.diffDays <= 3 && "border-warning text-warning"
+                      )}
+                    >
+                      {row.isOverdue ? `просрочен ${Math.abs(row.diffDays)} дн.` : `${row.diffDays} дн.`}
+                    </Badge>
+                  </td>
+                  <td className="text-[13px] text-muted-foreground">{row.manager}</td>
+                  <td>
+                    <span
+                      className="px-2 py-0.5 text-[11px] rounded-full font-medium"
+                      style={{ background: `${row.stageColor}20`, color: row.stageColor }}
+                    >
+                      {row.stage}
+                    </span>
+                  </td>
+                  <td>
+                    <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1" onClick={() => navigate(`/reports?project=${row.id}`)}>
+                      <Calendar className="h-3 w-3" />
+                      Отчёт
+                    </Button>
+                  </td>
+                </tr>
+              )) : (
+                <tr>
+                  <td colSpan={7} className="text-center py-8 text-[13px] text-muted-foreground">
+                    Нет проектов с установленной отчётной датой
                   </td>
                 </tr>
               )}
