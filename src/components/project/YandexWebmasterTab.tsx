@@ -340,6 +340,12 @@ export function YandexWebmasterTab({ projectId }: Props) {
 
   const yIndexed = getMetric("indexed_pages");
   const yTotal = getMetric("total_pages");
+  const yExcluded = getMetric("excluded_pages");
+  const yQueries = getMetric("total_queries");
+  const yAvgPos = getMetric("avg_position");
+  const yAvgCtr = getMetric("avg_ctr");
+  const yExtLinks = getMetric("external_links");
+  const yRefDomains = getMetric("referring_domains");
 
   return (
     <div className="space-y-5">
