@@ -477,6 +477,74 @@ const Index = () => {
           </table>
         </div>
       </Card>
+      {/* Upcoming reports table */}
+      <Card className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
+        <div className="flex items-center gap-3 p-4 border-b border-border">
+          <FileText className="h-4 w-4 text-primary" />
+          <h3 className="text-sm font-semibold text-foreground">Ближайшие отчёты по проектам</h3>
+          <Badge variant="secondary" className="text-[11px] h-5 px-2">{upcomingReports.length}</Badge>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="crm-table">
+            <thead>
+              <tr>
+                <th>Проект</th>
+                <th>Домен</th>
+                <th>Дата отчёта</th>
+                <th>Осталось дней</th>
+                <th>Ответственный</th>
+                <th>Этап</th>
+                <th>Действие</th>
+              </tr>
+            </thead>
+            <tbody>
+              {upcomingReports.length > 0 ? upcomingReports.map((row) => (
+                <tr key={row.id} className={row.isOverdue ? "bg-destructive/[0.03] hover:bg-destructive/[0.06]" : "hover:bg-muted/40"}>
+                  <td className="text-[13px] text-foreground font-medium">{row.name}</td>
+                  <td className="text-[13px] text-muted-foreground">{row.url}</td>
+                  <td className="text-[13px] font-medium">
+                    <span className={row.isOverdue ? "text-destructive" : "text-foreground"}>
+                      {format(parseISO(row.deadline), "dd.MM.yyyy")}
+                    </span>
+                  </td>
+                  <td>
+                    <Badge
+                      variant={row.isOverdue ? "destructive" : row.diffDays <= 3 ? "outline" : "secondary"}
+                      className={cn(
+                        "text-[11px] h-5 px-2",
+                        !row.isOverdue && row.diffDays <= 3 && "border-warning text-warning"
+                      )}
+                    >
+                      {row.isOverdue ? `просрочен ${Math.abs(row.diffDays)} дн.` : `${row.diffDays} дн.`}
+                    </Badge>
+                  </td>
+                  <td className="text-[13px] text-muted-foreground">{row.manager}</td>
+                  <td>
+                    <span
+                      className="px-2 py-0.5 text-[11px] rounded-full font-medium"
+                      style={{ background: `${row.stageColor}20`, color: row.stageColor }}
+                    >
+                      {row.stage}
+                    </span>
+                  </td>
+                  <td>
+                    <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1" onClick={() => navigate(`/reports?project=${row.id}`)}>
+                      <Calendar className="h-3 w-3" />
+                      Отчёт
+                    </Button>
+                  </td>
+                </tr>
+              )) : (
+                <tr>
+                  <td colSpan={7} className="text-center py-8 text-[13px] text-muted-foreground">
+                    Нет проектов с установленной отчётной датой
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </Card>
     </div>
   );
 };
