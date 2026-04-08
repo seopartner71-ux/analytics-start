@@ -195,6 +195,33 @@ const Index = () => {
     return Object.values(projectOverdue);
   }, [overdueTasks, projects, members]);
 
+  // ─── Upcoming reports (projects with deadline) ───
+  const upcomingReports = useMemo(() => {
+    const now = new Date();
+    return projects
+      .filter(p => p.deadline)
+      .map(p => {
+        const deadlineDate = parseISO(p.deadline!);
+        const diffMs = deadlineDate.getTime() - now.getTime();
+        const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+        const seo = members.find(m => m.id === p.seo_specialist_id);
+        const am = members.find(m => m.id === p.account_manager_id);
+        return {
+          id: p.id,
+          name: p.name,
+          url: p.url || "—",
+          deadline: p.deadline!,
+          diffDays,
+          isOverdue: diffDays < 0,
+          manager: am?.full_name || seo?.full_name || "—",
+          stage: p.privacy || "В работе",
+          stageColor: STAGE_COLORS[p.privacy || ""] || "#9E9E9E",
+        };
+      })
+      .sort((a, b) => parseISO(a.deadline).getTime() - parseISO(b.deadline).getTime())
+      .slice(0, 10);
+  }, [projects, members]);
+
   const isLoading = loadingProjects || loadingTasks;
 
   if (isLoading) {
