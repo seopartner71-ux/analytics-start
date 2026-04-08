@@ -496,6 +496,8 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
       .sort((a: any, b: any) => a.position - b.position);
   }, [topvisorData]);
 
+  const topProjectPositions = useMemo(() => keywords.slice(0, 15), [keywords]);
+
   // ── Position distribution ──
   const posDistribution = useMemo(() => {
     const top3 = keywords.filter(k => k.position <= 3).length;
@@ -1165,40 +1167,49 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
       <Card className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
         <div className="flex items-center gap-2 p-4 border-b border-border">
           <Search className="h-4 w-4 text-muted-foreground" />
-          <h3 className="text-sm font-semibold text-foreground">Топ поисковые запросы (Метрика)</h3>
-          <Badge variant="secondary" className="text-[10px] h-5">{topSearchPhrases.length}</Badge>
+          <h3 className="text-sm font-semibold text-foreground">ТОП позиции проекта</h3>
+          <Badge variant="secondary" className="text-[10px] h-5">{topProjectPositions.length}</Badge>
         </div>
-        {!integration?.access_token ? (
+        {!project?.topvisor_api_key || !project?.topvisor_project_id ? (
           <div className="py-16 text-center">
             <Search className="h-10 w-10 mx-auto mb-2 text-muted-foreground/20" />
-            <p className="text-[13px] text-muted-foreground">Подключите Яндекс.Метрику на вкладке «Интеграции»</p>
+            <p className="text-[13px] text-muted-foreground">Подключите Topvisor на вкладке «Интеграции»</p>
           </div>
-        ) : searchPhrasesLoading ? (
+        ) : tvLoading ? (
           <div className="py-16 text-center">
             <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
           </div>
-        ) : topSearchPhrases.length === 0 ? (
+        ) : topProjectPositions.length === 0 ? (
           <div className="py-16 text-center">
             <Search className="h-10 w-10 mx-auto mb-2 text-muted-foreground/20" />
-            <p className="text-[13px] text-muted-foreground">Нет данных по поисковым запросам</p>
+            <p className="text-[13px] text-muted-foreground">Нет данных по позициям проекта</p>
           </div>
         ) : (
           <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
             <table className="w-full text-[13px]">
               <thead className="sticky top-0 bg-card z-10">
                 <tr className="border-b border-border bg-muted/30">
-                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Поисковый запрос</th>
-                  <th className="text-center px-4 py-2.5 font-medium text-muted-foreground w-24">Визиты</th>
-                  <th className="text-center px-4 py-2.5 font-medium text-muted-foreground w-28">Отказы</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Запрос</th>
+                  <th className="text-center px-4 py-2.5 font-medium text-muted-foreground w-24">Позиция</th>
+                  <th className="text-center px-4 py-2.5 font-medium text-muted-foreground w-28">Изменение</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/40">
-                {topSearchPhrases.map((phrase, i) => (
-                  <tr key={`${phrase.phrase}-${i}`} className={cn("hover:bg-muted/30 transition-colors", i % 2 === 1 && "bg-muted/10")}>
-                    <td className="px-4 py-2.5 text-foreground">{phrase.phrase}</td>
-                    <td className="px-4 py-2.5 text-center font-medium tabular-nums text-foreground">{phrase.visits.toLocaleString("ru-RU")}</td>
+                {topProjectPositions.map((item, i) => (
+                  <tr key={`${item.keyword}-${i}`} className={cn("hover:bg-muted/30 transition-colors", i % 2 === 1 && "bg-muted/10")}>
+                    <td className="px-4 py-2.5 text-foreground">{item.keyword}</td>
+                    <td className="px-4 py-2.5 text-center font-medium tabular-nums text-foreground">{item.position}</td>
                     <td className="px-4 py-2.5 text-center">
-                      <Badge variant="outline" className="text-[10px] px-1.5 py-0">{phrase.bounceRate.toFixed(0)}%</Badge>
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "text-[10px] px-1.5 py-0 tabular-nums",
+                          item.change > 0 && "text-emerald-500",
+                          item.change < 0 && "text-red-500"
+                        )}
+                      >
+                        {item.change > 0 ? "+" : ""}{item.change}
+                      </Badge>
                     </td>
                   </tr>
                 ))}
