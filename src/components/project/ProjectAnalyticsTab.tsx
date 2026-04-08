@@ -476,58 +476,63 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     "hsl(var(--chart-5))",
   ];
 
-  // ── Keywords parsing ──
-  const keywords = useMemo(() => {
-    if (!topvisorData?.result) return [];
+  // ── Keywords parsing (with per-date positions for table) ──
+  const { keywords, keywordDates } = useMemo(() => {
+    if (!topvisorData?.result) return { keywords: [], keywordDates: [] as string[] };
     const result = topvisorData.result;
     const rows = Array.isArray(result) ? result : result?.keywords || [];
+    const allDatesSet = new Set<string>();
 
-    return rows
+    const parsed = rows
       .filter((row: any) => row?.name)
       .map((row: any) => {
         const positionsObj = row.positionsData || row.positions || row.position || {};
-        
-        // positionsData keys can be "date:projectId:regionIndex" → { position: "N" }
-        // or nested region → { date1: val, date2: val }
         const entries = Object.entries(positionsObj);
-        
-        // Collect all position values with their date keys
-        const positionsByDate: { date: string; pos: number }[] = [];
-        
+        const datePositions: Record<string, number> = {};
+
         for (const [key, val] of entries) {
           if (typeof val === "object" && val !== null && !Array.isArray(val)) {
             const valObj = val as Record<string, any>;
-            // Check if it's a flat { position: "N" } object (positionsData format)
             if ("position" in valObj) {
-              const datePart = key.split(":")[0]; // extract date from "date:projectId:region"
+              const datePart = key.split(":")[0];
               const posVal = Number(valObj.position);
-              if (posVal > 0) positionsByDate.push({ date: datePart, pos: posVal });
+              if (posVal > 0) {
+                datePositions[datePart] = posVal;
+                allDatesSet.add(datePart);
+              }
             } else {
-              // Nested format: regionKey → { date1: val, date2: val }
               for (const [dateKey, dateVal] of Object.entries(valObj)) {
                 const posVal = typeof dateVal === "object" ? Number((dateVal as any)?.position) : Number(dateVal);
-                if (posVal > 0) positionsByDate.push({ date: dateKey, pos: posVal });
+                if (posVal > 0) {
+                  datePositions[dateKey] = posVal;
+                  allDatesSet.add(dateKey);
+                }
               }
             }
           }
         }
-        
-        // Sort by date to get latest and previous
-        positionsByDate.sort((a, b) => a.date.localeCompare(b.date));
-        
-        const latestPos = positionsByDate.length > 0 ? positionsByDate[positionsByDate.length - 1].pos : null;
-        const prevPos = positionsByDate.length > 1 ? positionsByDate[positionsByDate.length - 2].pos : null;
-        const pos = latestPos && latestPos > 0 ? latestPos : null;
-        const prev = prevPos && prevPos > 0 ? prevPos : null;
-        const change = pos && prev ? prev - pos : 0;
 
-        return { keyword: row.name as string, position: pos || 0, change };
+        const sortedDates = Object.keys(datePositions).sort();
+        const latestPos = sortedDates.length > 0 ? datePositions[sortedDates[sortedDates.length - 1]] : 0;
+        const prevPos = sortedDates.length > 1 ? datePositions[sortedDates[sortedDates.length - 2]] : null;
+        const change = latestPos > 0 && prevPos && prevPos > 0 ? prevPos - latestPos : 0;
+
+        return {
+          keyword: row.name as string,
+          position: latestPos,
+          change,
+          frequency: row.target?.split?.(",")?.[0] || "--",
+          datePositions,
+        };
       })
       .filter((k: any) => k.position > 0)
       .sort((a: any, b: any) => a.position - b.position);
+
+    const keywordDates = Array.from(allDatesSet).sort().reverse(); // newest first
+    return { keywords: parsed, keywordDates };
   }, [topvisorData]);
 
-  const topProjectPositions = useMemo(() => keywords.slice(0, 15), [keywords]);
+  const topProjectPositions = useMemo(() => keywords.slice(0, 50), [keywords]);
 
   // ── Position distribution ──
   const posDistribution = useMemo(() => {
@@ -1198,8 +1203,8 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
       <Card className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
         <div className="flex items-center gap-2 p-4 border-b border-border">
           <Search className="h-4 w-4 text-muted-foreground" />
-          <h3 className="text-sm font-semibold text-foreground">ТОП позиции проекта</h3>
-          <Badge variant="secondary" className="text-[10px] h-5">{topProjectPositions.length}</Badge>
+          <h3 className="text-sm font-semibold text-foreground">Запросы</h3>
+          <Badge variant="secondary" className="text-[10px] h-5">{keywords.length}</Badge>
         </div>
         {!project?.topvisor_api_key || !project?.topvisor_project_id ? (
           <div className="py-16 text-center">
@@ -1216,34 +1221,60 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
             <p className="text-[13px] text-muted-foreground">Нет данных по позициям проекта</p>
           </div>
         ) : (
-          <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
+          <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
             <table className="w-full text-[13px]">
               <thead className="sticky top-0 bg-card z-10">
                 <tr className="border-b border-border bg-muted/30">
-                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Запрос</th>
-                  <th className="text-center px-4 py-2.5 font-medium text-muted-foreground w-24">Позиция</th>
-                  <th className="text-center px-4 py-2.5 font-medium text-muted-foreground w-28">Изменение</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground w-8">#</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Запросы ({keywords.length})</th>
+                  <th className="text-center px-3 py-2.5 font-medium text-muted-foreground w-20">Частота</th>
+                  {keywordDates.slice(0, 5).map(date => (
+                    <th key={date} className="text-center px-3 py-2.5 font-medium text-muted-foreground w-24 whitespace-nowrap">
+                      {format(new Date(date), "dd.MM.yyyy")}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/40">
-                {topProjectPositions.map((item, i) => (
-                  <tr key={`${item.keyword}-${i}`} className={cn("hover:bg-muted/30 transition-colors", i % 2 === 1 && "bg-muted/10")}>
-                    <td className="px-4 py-2.5 text-foreground">{item.keyword}</td>
-                    <td className="px-4 py-2.5 text-center font-medium tabular-nums text-foreground">{item.position}</td>
-                    <td className="px-4 py-2.5 text-center">
-                      <Badge
-                        variant="outline"
-                        className={cn(
-                          "text-[10px] px-1.5 py-0 tabular-nums",
-                          item.change > 0 && "text-emerald-500",
-                          item.change < 0 && "text-red-500"
-                        )}
-                      >
-                        {item.change > 0 ? "+" : ""}{item.change}
-                      </Badge>
-                    </td>
-                  </tr>
-                ))}
+                {topProjectPositions.map((item, i) => {
+                  const dates = keywordDates.slice(0, 5);
+                  return (
+                    <tr key={`${item.keyword}-${i}`} className={cn("hover:bg-muted/30 transition-colors", i % 2 === 1 && "bg-muted/10")}>
+                      <td className="px-4 py-2 text-muted-foreground text-[11px]">{i + 1}</td>
+                      <td className="px-4 py-2 text-foreground">{item.keyword}</td>
+                      <td className="px-3 py-2 text-center text-muted-foreground tabular-nums">{item.frequency}</td>
+                      {dates.map((date, di) => {
+                        const pos = item.datePositions[date];
+                        const prevDate = dates[di + 1];
+                        const prevPos = prevDate ? item.datePositions[prevDate] : undefined;
+                        let bgClass = "";
+                        if (pos) {
+                          if (pos <= 3) bgClass = "bg-emerald-500/20 text-emerald-400";
+                          else if (pos <= 10) bgClass = "bg-emerald-500/10 text-emerald-300";
+                          else if (pos <= 30) bgClass = "bg-amber-500/10 text-amber-400";
+                          else bgClass = "bg-red-500/10 text-red-400";
+                        }
+                        const delta = pos && prevPos ? prevPos - pos : null;
+                        return (
+                          <td key={date} className={cn("px-3 py-2 text-center tabular-nums", bgClass)}>
+                            {pos ? (
+                              <div className="flex items-center justify-center gap-1">
+                                <span className="font-semibold">{pos}</span>
+                                {delta !== null && delta !== 0 && (
+                                  <span className={cn("text-[10px]", delta > 0 ? "text-emerald-500" : "text-red-500")}>
+                                    {delta > 0 ? `↑${delta}` : `↓${Math.abs(delta)}`}
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground/40">—</span>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
