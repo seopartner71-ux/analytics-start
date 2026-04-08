@@ -420,8 +420,8 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
   });
 
   const topSearchPhrases = useMemo(() => {
-    return (searchPhrasesRaw as any[])
-      .filter((p: any) => p.phrase && p.phrase !== "(not set)")
+    const raw = Array.isArray(searchPhrasesRaw) ? searchPhrasesRaw : [];
+    return raw
       .slice(0, 15)
       .map((p: any) => ({
         phrase: p.phrase,
