@@ -123,22 +123,57 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
   });
   const [channel, setChannel] = useState<TrafficChannel>("all");
 
-  // ── Data queries ──
-  const { data: metrikaStats, isLoading: metrikaLoading } = useQuery({
+  // ── Data queries — fetch ALL metrika snapshots and merge ──
+  const { data: allMetrikaStats = [], isLoading: metrikaLoading } = useQuery({
     queryKey: ["metrika-stats-analytics", projectId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("metrika_stats")
         .select("*")
         .eq("project_id", projectId)
-        .order("fetched_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .order("date_from", { ascending: true });
       if (error) throw error;
-      return data;
+      return data || [];
     },
     enabled: !!projectId,
   });
+
+  // Merge all snapshots into a single "latest" object with combined daily data
+  const metrikaStats = useMemo(() => {
+    if (allMetrikaStats.length === 0) return null;
+    // Use the most recent snapshot as the base for KPI values
+    const latest = allMetrikaStats[allMetrikaStats.length - 1];
+    // Merge all visits_by_day across snapshots using actual dates
+    const mergedDays = new Map<string, number>();
+    for (const snap of allMetrikaStats) {
+      const days = snap.visits_by_day as any[];
+      if (!Array.isArray(days)) continue;
+      const dateFrom = parseISO(snap.date_from);
+      days.forEach((d, i) => {
+        let dateKey: string;
+        if (d.date) {
+          dateKey = typeof d.date === "string" ? d.date : format(new Date(d.date), "yyyy-MM-dd");
+        } else {
+          const dt = new Date(dateFrom);
+          dt.setDate(dt.getDate() + (d.day ? d.day - 1 : i));
+          dateKey = format(dt, "yyyy-MM-dd");
+        }
+        // Later snapshots overwrite earlier ones for the same date
+        mergedDays.set(dateKey, d.visits || 0);
+      });
+    }
+    // Convert merged map to sorted array
+    const sortedDays = Array.from(mergedDays.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, visits]) => ({ date, visits }));
+
+    return {
+      ...latest,
+      visits_by_day: sortedDays,
+      date_from: sortedDays[0]?.date || latest.date_from,
+      date_to: sortedDays[sortedDays.length - 1]?.date || latest.date_to,
+    };
+  }, [allMetrikaStats]);
 
   const { data: metrikaHistory = [] } = useQuery({
     queryKey: ["metrika-history-analytics", projectId],
