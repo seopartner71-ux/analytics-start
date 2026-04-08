@@ -482,7 +482,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
       result.push({
         date,
         dateStr: format(date, "dd.MM", { locale: ru }),
-        visits: existing?.visits || 0,
+        visits: (existing as any)?.visits || 0,
       });
     }
     return result;
@@ -504,7 +504,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
       result.push({
         date,
         dateStr: format(date, "dd.MM", { locale: ru }),
-        visits: existing?.visits || 0,
+        visits: (existing as any)?.visits || 0,
       });
     }
     return result;
