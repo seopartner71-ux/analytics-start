@@ -7,12 +7,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronRight, Download, ExternalLink, RefreshCw, Loader2, Search } from "lucide-react";
+import { ChevronDown, ChevronRight, Download, ExternalLink, RefreshCw, Loader2, Search, FileDown, FileText, Link2 } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
+import { generateWebmasterPdf } from "@/lib/webmaster-pdf";
 
 /* ─── types ─── */
 type CheckStatus = "ok" | "error" | "not_checked";
