@@ -486,24 +486,37 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
       .filter((row: any) => row?.name)
       .map((row: any) => {
         const positionsObj = row.positionsData || row.positions || row.position || {};
-        let latestPos: number | null = null;
-        let prevPos: number | null = null;
-
-        for (const regionKey of Object.keys(positionsObj)) {
-          const regionData = positionsObj[regionKey];
-          if (typeof regionData === "object" && regionData !== null) {
-            const dates = Object.keys(regionData).sort();
-            if (dates.length >= 1) {
-              const lastVal = regionData[dates[dates.length - 1]];
-              latestPos = typeof lastVal === "object" ? Number(lastVal?.position) : Number(lastVal);
-            }
-            if (dates.length >= 2) {
-              const prevVal = regionData[dates[dates.length - 2]];
-              prevPos = typeof prevVal === "object" ? Number(prevVal?.position) : Number(prevVal);
+        
+        // positionsData keys can be "date:projectId:regionIndex" → { position: "N" }
+        // or nested region → { date1: val, date2: val }
+        const entries = Object.entries(positionsObj);
+        
+        // Collect all position values with their date keys
+        const positionsByDate: { date: string; pos: number }[] = [];
+        
+        for (const [key, val] of entries) {
+          if (typeof val === "object" && val !== null && !Array.isArray(val)) {
+            const valObj = val as Record<string, any>;
+            // Check if it's a flat { position: "N" } object (positionsData format)
+            if ("position" in valObj) {
+              const datePart = key.split(":")[0]; // extract date from "date:projectId:region"
+              const posVal = Number(valObj.position);
+              if (posVal > 0) positionsByDate.push({ date: datePart, pos: posVal });
+            } else {
+              // Nested format: regionKey → { date1: val, date2: val }
+              for (const [dateKey, dateVal] of Object.entries(valObj)) {
+                const posVal = typeof dateVal === "object" ? Number((dateVal as any)?.position) : Number(dateVal);
+                if (posVal > 0) positionsByDate.push({ date: dateKey, pos: posVal });
+              }
             }
           }
         }
-
+        
+        // Sort by date to get latest and previous
+        positionsByDate.sort((a, b) => a.date.localeCompare(b.date));
+        
+        const latestPos = positionsByDate.length > 0 ? positionsByDate[positionsByDate.length - 1].pos : null;
+        const prevPos = positionsByDate.length > 1 ? positionsByDate[positionsByDate.length - 2].pos : null;
         const pos = latestPos && latestPos > 0 ? latestPos : null;
         const prev = prevPos && prevPos > 0 ? prevPos : null;
         const change = pos && prev ? prev - pos : 0;
