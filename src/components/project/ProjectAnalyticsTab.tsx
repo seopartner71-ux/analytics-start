@@ -412,8 +412,16 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
         }
       );
       if (!resp.ok) return [];
-      const data = await resp.json();
-      return data.phrases || [];
+      const json = await resp.json();
+      // phrases is the raw Metrika API response: { data: [{ dimensions: [{name},...], metrics: [visits, users, bounceRate, ...] }] }
+      const rawPhrases = json.phrases?.data || [];
+      return rawPhrases.map((row: any) => ({
+        phrase: row.dimensions?.[1]?.name || row.dimensions?.[0]?.name || "",
+        engine: row.dimensions?.[0]?.name || "",
+        visits: row.metrics?.[0] || 0,
+        users: row.metrics?.[1] || 0,
+        bounceRate: row.metrics?.[2] || 0,
+      })).filter((p: any) => p.phrase && p.phrase !== "(not set)");
     },
     enabled: !!integration?.access_token && !!integration?.counter_id,
     staleTime: 30 * 60_000,
@@ -421,13 +429,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
 
   const topSearchPhrases = useMemo(() => {
     const raw = Array.isArray(searchPhrasesRaw) ? searchPhrasesRaw : [];
-    return raw
-      .slice(0, 15)
-      .map((p: any) => ({
-        phrase: p.phrase,
-        visits: p.visits || 0,
-        bounceRate: p.bounceRate || 0,
-      }));
+    return raw.slice(0, 15);
   }, [searchPhrasesRaw]);
 
   const GOAL_COLORS = [
