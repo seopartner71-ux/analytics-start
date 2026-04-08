@@ -343,30 +343,35 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     staleTime: 30 * 60_000,
   });
 
-  // Search traffic goals for chart
+  // Search/channel traffic goals for chart — reacts to channel filter and applied date range
+  const channelGoalsDateFrom = fmtDate(appliedRange.from, "yyyy-MM-dd");
+  const channelGoalsDateTo = fmtDate(appliedRange.to, "yyyy-MM-dd");
+  const channelTrafficSource = channel === "all" ? undefined : channel;
+
   const { data: searchGoalsData = [], isLoading: searchGoalsLoading } = useQuery({
-    queryKey: ["metrika-goals-search", projectId, dateFrom30, dateTo30],
+    queryKey: ["metrika-goals-channel", projectId, channelGoalsDateFrom, channelGoalsDateTo, channel],
     queryFn: async () => {
       if (!integration?.access_token || !integration?.counter_id) return [];
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return [];
+      const body: any = {
+        access_token: integration.access_token, counter_id: integration.counter_id,
+        date1: channelGoalsDateFrom, date2: channelGoalsDateTo,
+      };
+      if (channelTrafficSource) body.traffic_source = channelTrafficSource;
       const resp = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/yandex-metrika-auth?action=fetch-goals`,
         {
           method: "POST",
           headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            access_token: integration.access_token, counter_id: integration.counter_id,
-            date1: dateFrom30, date2: dateTo30,
-            traffic_source: "organic",
-          }),
+          body: JSON.stringify(body),
         }
       );
       const data = await resp.json();
       return (data.goals || []) as { id: number; name: string; reaches: number; conversionRate: number; change: number; daily?: number[] }[];
     },
     enabled: !!integration?.access_token && !!integration?.counter_id,
-    staleTime: 30 * 60_000,
+    staleTime: 5 * 60_000,
   });
 
   // Build chart data for search goals
