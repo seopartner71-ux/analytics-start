@@ -14,7 +14,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   ArrowLeft, Plus, Send, Clock, CalendarDays, User, Tag, FileText,
   Upload, Download, Trash2, Loader2, Globe, Edit, XCircle, MessageSquare,
-  BarChart3, ShieldCheck,
+  BarChart3, ShieldCheck, ClipboardCheck,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,6 +27,7 @@ import ProjectAnalyticsTab from "@/components/project/ProjectAnalyticsTab";
 import SiteHealthDetailTab from "@/components/project/SiteHealthDetailTab";
 import EditProjectDialog from "@/components/project/EditProjectDialog";
 import { TaskDetailSheet, CrmTask } from "@/components/project/TaskDetailSheet";
+import { TechnicalAuditTab } from "@/components/project/TechnicalAuditTab";
 
 type TaskComment = Tables<"task_comments"> & {
   author?: Tables<"team_members"> | null;
@@ -333,6 +334,9 @@ export default function CrmProjectDetailPage() {
           <TabsTrigger value="health" className="gap-1.5 text-[13px]">
             <ShieldCheck className="h-3.5 w-3.5" /> Состояние сайта
           </TabsTrigger>
+          <TabsTrigger value="audit" className="gap-1.5 text-[13px]">
+            <ClipboardCheck className="h-3.5 w-3.5" /> Технический аудит
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="analytics">
@@ -341,6 +345,10 @@ export default function CrmProjectDetailPage() {
 
         <TabsContent value="health">
           <SiteHealthDetailTab projectId={id!} />
+        </TabsContent>
+
+        <TabsContent value="audit">
+          <TechnicalAuditTab projectId={id!} />
         </TabsContent>
 
         <TabsContent value="checklist">
