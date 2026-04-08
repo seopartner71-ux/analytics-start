@@ -236,15 +236,28 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
   });
 
   const { data: topvisorData, isLoading: tvLoading } = useQuery({
-    queryKey: ["tv-positions-analytics", projectId, project?.topvisor_project_id],
+    queryKey: ["tv-positions-analytics", projectId, project?.topvisor_project_id, project?.topvisor_api_key],
     queryFn: async () => {
-      if (!project?.topvisor_api_key || !project?.topvisor_project_id) return null;
+      if (!project?.topvisor_api_key || !project?.topvisor_project_id) {
+        console.warn("[Topvisor] Missing config:", { 
+          api_key: !!project?.topvisor_api_key, 
+          project_id: project?.topvisor_project_id,
+          user_id: project?.topvisor_user_id 
+        });
+        return null;
+      }
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return null;
 
       const now = new Date();
       const date2 = format(now, "yyyy-MM-dd");
       const date1 = format(subMonths(now, 1), "yyyy-MM-dd");
+
+      console.log("[Topvisor] Fetching positions:", { 
+        project_id: project.topvisor_project_id, 
+        user_id: project.topvisor_user_id, 
+        dates: [date1, date2] 
+      });
 
       const r = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/topvisor-api`,
@@ -269,8 +282,13 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
           }),
         }
       );
-      if (!r.ok) return null;
-      return r.json();
+      const data = await r.json();
+      if (!r.ok) {
+        console.error("[Topvisor] API error:", r.status, data);
+        return null;
+      }
+      console.log("[Topvisor] Got data, keywords count:", data?.result?.keywords?.length || (Array.isArray(data?.result) ? data.result.length : 0));
+      return data;
     },
     enabled: !!project?.topvisor_api_key && !!project?.topvisor_project_id,
     staleTime: 10 * 60_000,
