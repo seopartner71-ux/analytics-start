@@ -519,39 +519,56 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     return result;
   }, [dailyData, appliedCompRange]);
 
+  // ── Channel ratios for splitting ──
+  const channelRatios = useMemo(() => {
+    if (!metrikaStats?.traffic_sources) return {} as Record<string, number>;
+    const sources = metrikaStats.traffic_sources as { source: string; visits: number }[];
+    const totalAll = sources.reduce((s, src) => s + (src.visits || 0), 0);
+    if (totalAll === 0) return {} as Record<string, number>;
+    const ratios: Record<string, number> = { organic: 0, direct: 0, referral: 0, social: 0, ad: 0 };
+    for (const src of sources) {
+      const ch = SOURCE_TO_CHANNEL[src.source];
+      if (ch && ch !== "all") ratios[ch] = (ratios[ch] || 0) + (src.visits || 0);
+    }
+    for (const k of Object.keys(ratios)) ratios[k] = ratios[k] / totalAll;
+    return ratios;
+  }, [metrikaStats]);
+
   // ── Channel-filtered ratio ──
   const channelVisitRatio = useMemo(() => {
     if (channel === "all" || !metrikaStats?.traffic_sources) return 1;
-    const sources = metrikaStats.traffic_sources as { source: string; visits: number }[];
-    const totalAll = sources.reduce((s, src) => s + (src.visits || 0), 0);
-    if (totalAll === 0) return 1;
-    const channelVisits = sources
-      .filter(src => SOURCE_TO_CHANNEL[src.source] === channel)
-      .reduce((s, src) => s + (src.visits || 0), 0);
-    return channelVisits / totalAll;
-  }, [metrikaStats, channel]);
+    return channelRatios[channel] || 0;
+  }, [metrikaStats, channel, channelRatios]);
+
+  const ALL_CHANNELS = ["organic", "direct", "social", "referral", "ad"] as const;
 
   // Merged chart data for comparison (with channel filter applied)
   const trafficChart = useMemo(() => {
     const applyRatio = (v: number) => Math.round(v * channelVisitRatio);
+    const buildRow = (dateStr: string, visits: number) => {
+      if (channel === "all") {
+        const row: any = { date: dateStr };
+        for (const ch of ALL_CHANNELS) {
+          row[ch] = Math.round(visits * (channelRatios[ch] || 0));
+        }
+        return row;
+      }
+      return { date: dateStr, visits: applyRatio(visits) };
+    };
+
     if (!showComparison) {
-      if (filteredData.length > 0) return filteredData.map(d => ({ date: d.dateStr, visits: applyRatio(d.visits) }));
-      return metrikaHistory.map(h => ({
-        date: format(parseISO(h.date_from), "dd MMM", { locale: ru }),
-        visits: applyRatio(h.total_visits),
-      }));
+      if (filteredData.length > 0) return filteredData.map(d => buildRow(d.dateStr, d.visits));
+      return metrikaHistory.map(h => buildRow(format(parseISO(h.date_from), "dd MMM", { locale: ru }), h.total_visits));
     }
     const maxLen = Math.max(filteredData.length, filteredCompData.length);
     const result = [];
     for (let i = 0; i < maxLen; i++) {
-      result.push({
-        date: filteredData[i]?.dateStr || `${i + 1}`,
-        visits: applyRatio(filteredData[i]?.visits || 0),
-        previous: applyRatio(filteredCompData[i]?.visits || 0),
-      });
+      const row = buildRow(filteredData[i]?.dateStr || `${i + 1}`, filteredData[i]?.visits || 0);
+      row.previous = applyRatio(filteredCompData[i]?.visits || 0);
+      result.push(row);
     }
     return result;
-  }, [filteredData, filteredCompData, metrikaHistory, showComparison, channelVisitRatio]);
+  }, [filteredData, filteredCompData, metrikaHistory, showComparison, channelVisitRatio, channel, channelRatios]);
 
   const totalVisits = Math.round(
     (filteredData.length > 0
@@ -855,7 +872,17 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
             <h3 className="text-sm font-semibold text-foreground">
               {channel === "all" ? "Все визиты" : CHANNEL_LABELS[channel]}
             </h3>
-            {showComparison && (
+            {channel === "all" && !showComparison && (
+              <div className="flex flex-wrap items-center gap-3 text-[10px]">
+                {ALL_CHANNELS.map(ch => (
+                  <span key={ch} className="flex items-center gap-1">
+                    <span className="w-2.5 h-2.5 rounded-sm" style={{ background: CHANNEL_COLORS[ch] }} />
+                    {CHANNEL_LABELS[ch]}
+                  </span>
+                ))}
+              </div>
+            )}
+            {channel !== "all" && showComparison && (
               <div className="flex items-center gap-3 text-[10px]">
                 <span className="flex items-center gap-1"><span className="w-2.5 h-0.5 rounded" style={{ background: CHANNEL_COLORS[channel] }} /> Период А</span>
                 <span className="flex items-center gap-1"><span className="w-2.5 h-0.5 bg-[hsl(var(--chart-3))] rounded" style={{ borderBottom: "1px dashed" }} /> Период Б</span>
@@ -869,6 +896,43 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
                 {hasMetrika ? "Нет данных за период" : "Подключите Яндекс.Метрику на вкладке «Интеграции»"}
               </p>
             </div>
+          ) : channel === "all" && !showComparison ? (
+            <ResponsiveContainer width="100%" height={260}>
+              <AreaChart data={trafficChart}>
+                <defs>
+                  {ALL_CHANNELS.map(ch => (
+                    <linearGradient key={ch} id={`grad-ch-${ch}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={CHANNEL_COLORS[ch]} stopOpacity={0.3} />
+                      <stop offset="95%" stopColor={CHANNEL_COLORS[ch]} stopOpacity={0} />
+                    </linearGradient>
+                  ))}
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="date" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+                <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: 8,
+                    fontSize: 12,
+                  }}
+                  formatter={(value: number, name: string) => [value.toLocaleString("ru-RU"), CHANNEL_LABELS[name as TrafficChannel] || name]}
+                />
+                {ALL_CHANNELS.map(ch => (
+                  <Area
+                    key={ch}
+                    type="monotone"
+                    dataKey={ch}
+                    stackId="channels"
+                    stroke={CHANNEL_COLORS[ch]}
+                    strokeWidth={1.5}
+                    fill={`url(#grad-ch-${ch})`}
+                    name={ch}
+                  />
+                ))}
+              </AreaChart>
+            </ResponsiveContainer>
           ) : (
             <ResponsiveContainer width="100%" height={260}>
               <AreaChart data={trafficChart}>
