@@ -476,58 +476,63 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     "hsl(var(--chart-5))",
   ];
 
-  // ── Keywords parsing ──
-  const keywords = useMemo(() => {
-    if (!topvisorData?.result) return [];
+  // ── Keywords parsing (with per-date positions for table) ──
+  const { keywords, keywordDates } = useMemo(() => {
+    if (!topvisorData?.result) return { keywords: [], keywordDates: [] as string[] };
     const result = topvisorData.result;
     const rows = Array.isArray(result) ? result : result?.keywords || [];
+    const allDatesSet = new Set<string>();
 
-    return rows
+    const parsed = rows
       .filter((row: any) => row?.name)
       .map((row: any) => {
         const positionsObj = row.positionsData || row.positions || row.position || {};
-        
-        // positionsData keys can be "date:projectId:regionIndex" → { position: "N" }
-        // or nested region → { date1: val, date2: val }
         const entries = Object.entries(positionsObj);
-        
-        // Collect all position values with their date keys
-        const positionsByDate: { date: string; pos: number }[] = [];
-        
+        const datePositions: Record<string, number> = {};
+
         for (const [key, val] of entries) {
           if (typeof val === "object" && val !== null && !Array.isArray(val)) {
             const valObj = val as Record<string, any>;
-            // Check if it's a flat { position: "N" } object (positionsData format)
             if ("position" in valObj) {
-              const datePart = key.split(":")[0]; // extract date from "date:projectId:region"
+              const datePart = key.split(":")[0];
               const posVal = Number(valObj.position);
-              if (posVal > 0) positionsByDate.push({ date: datePart, pos: posVal });
+              if (posVal > 0) {
+                datePositions[datePart] = posVal;
+                allDatesSet.add(datePart);
+              }
             } else {
-              // Nested format: regionKey → { date1: val, date2: val }
               for (const [dateKey, dateVal] of Object.entries(valObj)) {
                 const posVal = typeof dateVal === "object" ? Number((dateVal as any)?.position) : Number(dateVal);
-                if (posVal > 0) positionsByDate.push({ date: dateKey, pos: posVal });
+                if (posVal > 0) {
+                  datePositions[dateKey] = posVal;
+                  allDatesSet.add(dateKey);
+                }
               }
             }
           }
         }
-        
-        // Sort by date to get latest and previous
-        positionsByDate.sort((a, b) => a.date.localeCompare(b.date));
-        
-        const latestPos = positionsByDate.length > 0 ? positionsByDate[positionsByDate.length - 1].pos : null;
-        const prevPos = positionsByDate.length > 1 ? positionsByDate[positionsByDate.length - 2].pos : null;
-        const pos = latestPos && latestPos > 0 ? latestPos : null;
-        const prev = prevPos && prevPos > 0 ? prevPos : null;
-        const change = pos && prev ? prev - pos : 0;
 
-        return { keyword: row.name as string, position: pos || 0, change };
+        const sortedDates = Object.keys(datePositions).sort();
+        const latestPos = sortedDates.length > 0 ? datePositions[sortedDates[sortedDates.length - 1]] : 0;
+        const prevPos = sortedDates.length > 1 ? datePositions[sortedDates[sortedDates.length - 2]] : null;
+        const change = latestPos > 0 && prevPos && prevPos > 0 ? prevPos - latestPos : 0;
+
+        return {
+          keyword: row.name as string,
+          position: latestPos,
+          change,
+          frequency: row.target?.split?.(",")?.[0] || "--",
+          datePositions,
+        };
       })
       .filter((k: any) => k.position > 0)
       .sort((a: any, b: any) => a.position - b.position);
+
+    const keywordDates = Array.from(allDatesSet).sort().reverse(); // newest first
+    return { keywords: parsed, keywordDates };
   }, [topvisorData]);
 
-  const topProjectPositions = useMemo(() => keywords.slice(0, 15), [keywords]);
+  const topProjectPositions = useMemo(() => keywords.slice(0, 50), [keywords]);
 
   // ── Position distribution ──
   const posDistribution = useMemo(() => {
