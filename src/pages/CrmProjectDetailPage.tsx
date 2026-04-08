@@ -334,6 +334,9 @@ export default function CrmProjectDetailPage() {
           <TabsTrigger value="health" className="gap-1.5 text-[13px]">
             <ShieldCheck className="h-3.5 w-3.5" /> Состояние сайта
           </TabsTrigger>
+          <TabsTrigger value="audit" className="gap-1.5 text-[13px]">
+            <ClipboardCheck className="h-3.5 w-3.5" /> Технический аудит
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="analytics">
