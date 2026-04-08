@@ -7,12 +7,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronRight, Download, ExternalLink, RefreshCw, Loader2, Search } from "lucide-react";
+import { ChevronDown, ChevronRight, Download, ExternalLink, RefreshCw, Loader2, Search, FileDown, FileText, Link2 } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
+import { generateWebmasterPdf } from "@/lib/webmaster-pdf";
 
 /* ─── types ─── */
 type CheckStatus = "ok" | "error" | "not_checked";
@@ -211,6 +213,26 @@ export function YandexWebmasterTab({ projectId }: Props) {
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<"all" | "errors" | "fatal" | "critical">("all");
   const [search, setSearch] = useState("");
+  const [pdfLoading, setPdfLoading] = useState(false);
+
+  const handleDownloadPdf = async () => {
+    setPdfLoading(true);
+    try {
+      await new Promise(r => setTimeout(r, 100));
+      generateWebmasterPdf(checks, {
+        domain,
+        date: format(new Date(), "dd.MM.yyyy"),
+        period: "1",
+        specialist: specialist?.full_name || project?.seo_specialist || "—",
+      });
+      toast.success("PDF отчёт скачан");
+    } catch (e: any) {
+      console.error(e);
+      toast.error("Ошибка генерации PDF");
+    } finally {
+      setPdfLoading(false);
+    }
+  };
 
   const { data: project } = useQuery({
     queryKey: ["project-wm-tab", projectId],
@@ -334,9 +356,21 @@ export function YandexWebmasterTab({ projectId }: Props) {
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             {lastUpdate && <span className="text-[11px] text-zinc-500">Последнее обновление: {format(lastUpdate, "dd.MM.yyyy 'в' HH:mm")}</span>}
-            <Button variant="outline" size="sm" className="gap-1.5 text-[12px] border-[#444] text-zinc-300 hover:bg-[#333]">
-              <Download className="h-3.5 w-3.5" /> Скачать PDF отчёт
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1.5 text-[12px] border-[#444] text-zinc-300 hover:bg-[#333]">
+                  {pdfLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileDown className="h-3.5 w-3.5" />}
+                  Скачать отчёт
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleDownloadPdf} disabled={pdfLoading} className="gap-2 text-xs">
+                  <FileText className="h-3.5 w-3.5" />
+                  📄 PDF — скачать файл
+                  {pdfLoading && <Loader2 className="h-3 w-3 animate-spin ml-auto" />}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button size="sm" className="gap-1.5 text-[12px] bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white border-0" onClick={handleRefresh} disabled={refreshing}>
               <RefreshCw className={cn("h-3.5 w-3.5", refreshing && "animate-spin")} /> {refreshing ? "Обновление..." : "🔄 Обновить данные"}
             </Button>
