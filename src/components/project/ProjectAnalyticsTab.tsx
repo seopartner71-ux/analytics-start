@@ -236,15 +236,28 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
   });
 
   const { data: topvisorData, isLoading: tvLoading } = useQuery({
-    queryKey: ["tv-positions-analytics", projectId, project?.topvisor_project_id],
+    queryKey: ["tv-positions-analytics", projectId, project?.topvisor_project_id, project?.topvisor_api_key],
     queryFn: async () => {
-      if (!project?.topvisor_api_key || !project?.topvisor_project_id) return null;
+      if (!project?.topvisor_api_key || !project?.topvisor_project_id) {
+        console.warn("[Topvisor] Missing config:", { 
+          api_key: !!project?.topvisor_api_key, 
+          project_id: project?.topvisor_project_id,
+          user_id: project?.topvisor_user_id 
+        });
+        return null;
+      }
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return null;
 
       const now = new Date();
       const date2 = format(now, "yyyy-MM-dd");
       const date1 = format(subMonths(now, 1), "yyyy-MM-dd");
+
+      console.log("[Topvisor] Fetching positions:", { 
+        project_id: project.topvisor_project_id, 
+        user_id: project.topvisor_user_id, 
+        dates: [date1, date2] 
+      });
 
       const r = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/topvisor-api`,
@@ -269,8 +282,13 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
           }),
         }
       );
-      if (!r.ok) return null;
-      return r.json();
+      const data = await r.json();
+      if (!r.ok) {
+        console.error("[Topvisor] API error:", r.status, data);
+        return null;
+      }
+      console.log("[Topvisor] Got data, keywords count:", data?.result?.keywords?.length || (Array.isArray(data?.result) ? data.result.length : 0));
+      return data;
     },
     enabled: !!project?.topvisor_api_key && !!project?.topvisor_project_id,
     staleTime: 10 * 60_000,
@@ -467,25 +485,38 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     return rows
       .filter((row: any) => row?.name)
       .map((row: any) => {
-        const positionsObj = row.positions || row.position || {};
-        let latestPos: number | null = null;
-        let prevPos: number | null = null;
-
-        for (const regionKey of Object.keys(positionsObj)) {
-          const regionData = positionsObj[regionKey];
-          if (typeof regionData === "object" && regionData !== null) {
-            const dates = Object.keys(regionData).sort();
-            if (dates.length >= 1) {
-              const lastVal = regionData[dates[dates.length - 1]];
-              latestPos = typeof lastVal === "object" ? Number(lastVal?.position) : Number(lastVal);
-            }
-            if (dates.length >= 2) {
-              const prevVal = regionData[dates[dates.length - 2]];
-              prevPos = typeof prevVal === "object" ? Number(prevVal?.position) : Number(prevVal);
+        const positionsObj = row.positionsData || row.positions || row.position || {};
+        
+        // positionsData keys can be "date:projectId:regionIndex" → { position: "N" }
+        // or nested region → { date1: val, date2: val }
+        const entries = Object.entries(positionsObj);
+        
+        // Collect all position values with their date keys
+        const positionsByDate: { date: string; pos: number }[] = [];
+        
+        for (const [key, val] of entries) {
+          if (typeof val === "object" && val !== null && !Array.isArray(val)) {
+            const valObj = val as Record<string, any>;
+            // Check if it's a flat { position: "N" } object (positionsData format)
+            if ("position" in valObj) {
+              const datePart = key.split(":")[0]; // extract date from "date:projectId:region"
+              const posVal = Number(valObj.position);
+              if (posVal > 0) positionsByDate.push({ date: datePart, pos: posVal });
+            } else {
+              // Nested format: regionKey → { date1: val, date2: val }
+              for (const [dateKey, dateVal] of Object.entries(valObj)) {
+                const posVal = typeof dateVal === "object" ? Number((dateVal as any)?.position) : Number(dateVal);
+                if (posVal > 0) positionsByDate.push({ date: dateKey, pos: posVal });
+              }
             }
           }
         }
-
+        
+        // Sort by date to get latest and previous
+        positionsByDate.sort((a, b) => a.date.localeCompare(b.date));
+        
+        const latestPos = positionsByDate.length > 0 ? positionsByDate[positionsByDate.length - 1].pos : null;
+        const prevPos = positionsByDate.length > 1 ? positionsByDate[positionsByDate.length - 2].pos : null;
         const pos = latestPos && latestPos > 0 ? latestPos : null;
         const prev = prevPos && prevPos > 0 ? prevPos : null;
         const change = pos && prev ? prev - pos : 0;
