@@ -379,7 +379,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     if (!searchGoalsData.length) return [];
     const maxLen = Math.max(...searchGoalsData.map(g => g.daily?.length || 0));
     const result = [];
-    const startDate = subDays(today, 30);
+    const startDate = appliedRange.from;
     for (let i = 0; i < maxLen; i++) {
       const dateObj = new Date(startDate);
       dateObj.setDate(dateObj.getDate() + i);
@@ -394,7 +394,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
       result.push(entry);
     }
     return result;
-  }, [searchGoalsData, today]);
+  }, [searchGoalsData, appliedRange]);
 
   // ── Fetch top organic search phrases from Metrika ──
   const { data: searchPhrasesRaw = [], isLoading: searchPhrasesLoading } = useQuery({
