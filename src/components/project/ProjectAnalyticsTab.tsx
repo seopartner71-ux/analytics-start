@@ -442,8 +442,19 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     ].filter(d => d.value > 0);
   }, [keywords]);
 
-  // ── Daily traffic data (from merged snapshots) ──
+  // ── Daily traffic data — prefer live API data, fallback to cached ──
   const dailyData = useMemo(() => {
+    // Try live Metrika API data first
+    if (liveMetrikaData?.timeSeries?.data?.[0]?.metrics?.[0]) {
+      const timeLabels = liveMetrikaData.timeSeries.time_intervals || [];
+      const visits = liveMetrikaData.timeSeries.data[0].metrics[0];
+      return visits.map((v: number, i: number) => {
+        const dateStr = timeLabels[i]?.[0];
+        const date = dateStr ? new Date(dateStr) : new Date();
+        return { date, dateStr: format(date, "dd.MM", { locale: ru }), visits: Math.round(v) };
+      });
+    }
+    // Fallback to merged cached data
     if (!metrikaStats?.visits_by_day) return [];
     const raw = metrikaStats.visits_by_day as any[];
     return raw
@@ -452,7 +463,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
         const date = new Date(d.date);
         return { date, dateStr: format(date, "dd.MM", { locale: ru }), visits: d.visits || 0 };
       });
-  }, [metrikaStats]);
+  }, [liveMetrikaData, metrikaStats]);
 
   // Filter daily data by applied range — only show days that have real data
   const filteredData = useMemo(() => {
