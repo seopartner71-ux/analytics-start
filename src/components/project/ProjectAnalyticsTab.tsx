@@ -415,22 +415,16 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     ].filter(d => d.value > 0);
   }, [keywords]);
 
-  // ── Daily traffic data ──
+  // ── Daily traffic data (from merged snapshots) ──
   const dailyData = useMemo(() => {
     if (!metrikaStats?.visits_by_day) return [];
     const raw = metrikaStats.visits_by_day as any[];
-    const dateFrom = parseISO(metrikaStats.date_from);
-    return raw.map((d, i) => {
-      // Support both { date, visits } and { day, visits } shapes
-      let date: Date;
-      if (d.date) {
-        date = new Date(d.date);
-      } else {
-        date = new Date(dateFrom);
-        date.setDate(date.getDate() + i);
-      }
-      return { date, dateStr: format(date, "dd.MM", { locale: ru }), visits: d.visits || 0 };
-    });
+    return raw
+      .filter(d => d.date)
+      .map(d => {
+        const date = new Date(d.date);
+        return { date, dateStr: format(date, "dd.MM", { locale: ru }), visits: d.visits || 0 };
+      });
   }, [metrikaStats]);
 
   // Filter daily data by applied range — only show days that have real data
