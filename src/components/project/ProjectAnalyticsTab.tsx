@@ -253,10 +253,10 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
       const date2 = format(now, "yyyy-MM-dd");
       const date1 = format(subMonths(now, 1), "yyyy-MM-dd");
 
-      console.log("[Topvisor] Fetching positions:", { 
+      console.log("[Topvisor] Fetching rankings history:", { 
         project_id: project.topvisor_project_id, 
         user_id: project.topvisor_user_id, 
-        dates: [date1, date2] 
+        date_from: date1, date_to: date2 
       });
 
       const r = await fetch(
@@ -269,15 +269,14 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
             apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
           body: JSON.stringify({
-            action: "get-positions",
+            action: "get-rankings-history",
             api_key: project.topvisor_api_key,
             user_id: project.topvisor_user_id,
-            project_id: project.topvisor_project_id,
             payload: {
               project_id: project.topvisor_project_id,
-              dates: [date1, date2],
+              date_from: date1,
+              date_to: date2,
               show_headers: 1,
-              positions_fields: ["position"],
             },
           }),
         }
