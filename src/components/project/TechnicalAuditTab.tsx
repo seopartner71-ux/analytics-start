@@ -190,7 +190,7 @@ function SectionBlock({ title, checks, domain, banner, onResultChange, onComment
   onResultChange: (id: string, r: Result) => void;
   onCommentChange: (id: string, c: string) => void;
 }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const errCount = checks.filter(c => c.result === "error").length;
 
   return (

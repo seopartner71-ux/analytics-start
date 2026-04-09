@@ -171,7 +171,7 @@ function CheckRowWm({ check, sectionType }: { check: WmCheck; sectionType: Secti
 }
 
 function SectionWm({ section, checks }: { section: SectionType; checks: WmCheck[] }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const meta = SECTION_META[section];
   const errCount = checks.filter(c => c.status === "error").length;
 
