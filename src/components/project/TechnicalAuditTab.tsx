@@ -21,6 +21,8 @@ const SECTIONS: SectionDef[] = [
   {
     id: "technical",
     title: "Технические ошибки",
+    description: "HTTPS, robots.txt, sitemap, скорость ответа сервера",
+    icon: ShieldAlert,
     types: ["technical"],
     checks: [
       { code: "no_https", label: "Сайт не использует HTTPS", severity: "critical" },
@@ -45,6 +47,8 @@ const SECTIONS: SectionDef[] = [
   {
     id: "links",
     title: "Ссылки и контент",
+    description: "Внутренние и внешние ссылки, редиректы, битые URL",
+    icon: Link2,
     types: ["links"],
     checks: [
       { code: "broken_link", label: "Битые внутренние ссылки", severity: "critical" },
@@ -56,6 +60,8 @@ const SECTIONS: SectionDef[] = [
   {
     id: "onpage",
     title: "Ошибки парсера",
+    description: "Title, description, H1, изображения и контент страниц",
+    icon: FileSearch,
     types: ["onpage", "media"],
     checks: [
       { code: "missing_h1", label: "Страницы без H1", severity: "critical" },
@@ -77,6 +83,25 @@ const SECTIONS: SectionDef[] = [
     ],
   },
 ];
+
+// Коды, для которых при раскрытии показываем дополнительный текст из details (title/description/h1)
+const TEXT_DETAIL_CODES = new Set([
+  "title_too_long", "title_too_short", "title_equals_h1", "duplicate_title", "multiple_title",
+  "description_too_long", "duplicate_description", "multiple_description",
+  "duplicate_h1", "multiple_h1",
+]);
+
+// Какое поле details содержит сам текст для конкретного кода
+function getDetailText(code: string, details: any): { text: string; len?: number } | null {
+  if (!details || typeof details !== "object") return null;
+  const candidates = ["title", "description", "h1", "text", "value", "content"];
+  for (const k of candidates) {
+    if (typeof details[k] === "string" && details[k]) {
+      return { text: details[k], len: typeof details.length === "number" ? details.length : details[k].length };
+    }
+  }
+  return null;
+}
 
 const SEV_CLS: Record<string, string> = {
   critical: "bg-red-500/20 text-red-400 border-red-500/30",
