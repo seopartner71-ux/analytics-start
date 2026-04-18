@@ -405,7 +405,7 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
 
                   {/* Deadline */}
                   <div className="flex items-center gap-4 px-4 py-3.5">
-                    <CalendarDays className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <CalendarDays className={cn("h-4 w-4 shrink-0", DEADLINE_STYLES[deadlineStatus].text)} />
                     <span className="text-xs text-muted-foreground w-24 shrink-0">Крайний срок</span>
                     {canEditFields ? (
                       <div className="flex items-center gap-2">
@@ -415,11 +415,20 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                         )}
                       </div>
                     ) : deadlineDate ? (
-                      <span className={cn("text-sm", isOverdue ? "text-destructive font-medium" : "text-foreground")}>
+                      <span className={cn("text-sm font-medium", DEADLINE_STYLES[deadlineStatus].text)}>
                         {deadlineDate.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })}
                       </span>
                     ) : <span className="text-sm text-muted-foreground">Не задан</span>}
-                    {isOverdue && <Badge variant="destructive" className="text-[10px] h-5 gap-1"><AlertTriangle className="h-3 w-3" /> Просрочено {overduePeriod}</Badge>}
+                    {deadlineStatus === "overdue" && (
+                      <Badge variant="destructive" className="text-[10px] h-5 gap-1">
+                        <AlertTriangle className="h-3 w-3" /> Просрочено {overduePeriod}
+                      </Badge>
+                    )}
+                    {deadlineStatus === "soon" && (
+                      <Badge className={cn("text-[10px] h-5 gap-1 border-0", DEADLINE_STYLES.soon.bg, DEADLINE_STYLES.soon.text)}>
+                        <Clock className="h-3 w-3" /> Скоро
+                      </Badge>
+                    )}
                   </div>
 
                   {/* Status */}
@@ -469,6 +478,15 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                       <Plus className="h-3 w-3" /> Добавить
                     </Button>
                   </div>
+                  {subtasks.length > 0 && (
+                    <div className="space-y-1.5">
+                      <Progress value={subtasksProgress} className="h-1.5" />
+                      <div className="flex justify-between text-[10px] text-muted-foreground">
+                        <span>{subtasksProgress}% выполнено</span>
+                        <span>{completedSubs}/{subtasks.length} шагов</span>
+                      </div>
+                    </div>
+                  )}
                   <div className="space-y-1">
                     {subtasks.map((s: any) => (
                       <div key={s.id} className="flex items-center gap-2.5 py-1.5 px-1 rounded-lg hover:bg-muted/30 transition-colors">
@@ -511,20 +529,35 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
             </div>
 
             {/* Sticky bottom action bar */}
-            <div className="border-t border-border/60 bg-card px-5 py-3 flex items-center gap-3 shrink-0 flex-wrap">
-              <Button size="sm" className="gap-1.5 shadow-sm bg-primary hover:bg-primary/90" onClick={startTask} disabled={editStage === "В работе" || editStage === "Завершена"}>
-                <Play className="h-3.5 w-3.5" /> Начать
-              </Button>
-              <Button variant="outline" size="sm" className="gap-1.5" onClick={completeTask} disabled={editStage === "Завершена"}>
-                <CheckCircle2 className="h-3.5 w-3.5" /> Завершить
-              </Button>
-              {editStage === "Завершена" && (
+            <div className="border-t border-border/60 bg-card px-5 py-3 flex items-center gap-2 shrink-0 flex-wrap">
+              {(editStage === "Новые" || editStage === "Возвращена") && (
+                <Button size="sm" className="gap-1.5 shadow-sm bg-primary hover:bg-primary/90" onClick={startTask}>
+                  <Play className="h-3.5 w-3.5" /> Начать
+                </Button>
+              )}
+              {(editStage === "В работе" || editStage === "Возвращена") && (
+                <Button size="sm" className="gap-1.5 shadow-sm" onClick={sendForReview}>
+                  <Eye className="h-3.5 w-3.5" /> На проверку
+                </Button>
+              )}
+              {editStage === "На проверке" && (
+                <>
+                  <Button size="sm" className="gap-1.5 shadow-sm bg-emerald-600 hover:bg-emerald-700 text-white" onClick={acceptTask}>
+                    <ThumbsUp className="h-3.5 w-3.5" /> Принять
+                  </Button>
+                  <Button size="sm" variant="outline" className="gap-1.5 border-destructive/30 text-destructive hover:bg-destructive/5" onClick={returnTask}>
+                    <ThumbsDown className="h-3.5 w-3.5" /> Вернуть
+                  </Button>
+                </>
+              )}
+              {(editStage === "Принята" || editStage === "Завершена") && (
                 <Button variant="outline" size="sm" className="gap-1.5 border-primary/30 text-primary hover:bg-primary/5" onClick={resumeTask}>
                   <RotateCcw className="h-3.5 w-3.5" /> Возобновить
                 </Button>
               )}
-              <Button variant="ghost" size="sm" className="text-muted-foreground ml-auto">•••</Button>
-              <span className="text-xs text-muted-foreground cursor-pointer hover:text-foreground transition-colors">Оценить задачу</span>
+              <Badge className="ml-auto text-[10px]" style={{ backgroundColor: `${task.stage_color || '#3b82f6'}20`, color: task.stage_color || '#3b82f6' }}>
+                {editStage || task.stage}
+              </Badge>
             </div>
           </div>
 
