@@ -338,6 +338,10 @@ function AuditSection({
             const sevKey = has ? r.severity : "ok";
             const SevIcon = SEV_ICON[sevKey];
             const showText = TEXT_DETAIL_CODES.has(r.code);
+            const isDuplicateCode = r.code === "duplicate_title" || r.code === "duplicate_h1" || r.code === "duplicate_description";
+            const duplicateValue = isDuplicateCode && has
+              ? (items.find((it) => it.details && typeof it.details === "object" && (it.details as any).duplicate_value)?.details as any)?.duplicate_value
+              : null;
 
             return (
               <div key={r.code} className={cn(SEV_LEFT_BORDER[sevKey])}>
@@ -351,35 +355,42 @@ function AuditSection({
                   )}
                 >
                   <SevIcon className={cn("h-4 w-4 shrink-0", SEV_ICON_COLOR[sevKey])} />
-                  <span className={cn("flex-1 flex items-center gap-1.5 text-[13px] min-w-0", has ? "text-zinc-200" : "text-zinc-400")}>
-                    <span className="truncate">{r.label}</span>
-                    {CHECK_INFO[r.code] && (
-                      <TooltipProvider delayDuration={150}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span
-                              role="button"
-                              tabIndex={0}
-                              onClick={(e) => e.stopPropagation()}
-                              className="inline-flex shrink-0 text-zinc-500 hover:text-zinc-300 transition-colors cursor-help"
-                            >
-                              <HelpCircle className="h-3.5 w-3.5" />
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" className="max-w-[320px] text-[12px] leading-relaxed">
-                            <div className="space-y-1.5">
-                              <div className="font-semibold text-zinc-900">{r.label}</div>
-                              <div className="text-zinc-700">{CHECK_INFO[r.code].description}</div>
-                              <div className="pt-1 border-t border-zinc-200">
-                                <span className="text-zinc-500">Важность: </span>
-                                <span className={cn("font-semibold", IMPORTANCE_CLS[CHECK_INFO[r.code].importance])}>
-                                  {CHECK_INFO[r.code].importance}
-                                </span>
+                  <span className={cn("flex-1 min-w-0", has ? "text-zinc-200" : "text-zinc-400")}>
+                    <span className="flex items-center gap-1.5 text-[13px] min-w-0">
+                      <span className="truncate">{r.label}</span>
+                      {CHECK_INFO[r.code] && (
+                        <TooltipProvider delayDuration={150}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span
+                                role="button"
+                                tabIndex={0}
+                                onClick={(e) => e.stopPropagation()}
+                                className="inline-flex shrink-0 text-zinc-500 hover:text-zinc-300 transition-colors cursor-help"
+                              >
+                                <HelpCircle className="h-3.5 w-3.5" />
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-[320px] text-[12px] leading-relaxed">
+                              <div className="space-y-1.5">
+                                <div className="font-semibold text-zinc-900">{r.label}</div>
+                                <div className="text-zinc-700">{CHECK_INFO[r.code].description}</div>
+                                <div className="pt-1 border-t border-zinc-200">
+                                  <span className="text-zinc-500">Важность: </span>
+                                  <span className={cn("font-semibold", IMPORTANCE_CLS[CHECK_INFO[r.code].importance])}>
+                                    {CHECK_INFO[r.code].importance}
+                                  </span>
+                                </div>
                               </div>
-                            </div>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+                    </span>
+                    {duplicateValue && (
+                      <span className="block text-[11px] italic text-zinc-500 truncate mt-0.5">
+                        {String(duplicateValue)}
+                      </span>
                     )}
                   </span>
                   {has ? (
