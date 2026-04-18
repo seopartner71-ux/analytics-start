@@ -1,7 +1,7 @@
 import {
   BarChart3, LayoutDashboard, FolderKanban, ClipboardList,
   Building2, CalendarDays, Users, ChevronLeft, Settings, Plug,
-  TrendingUp, ListOrdered, FileText, Link2, MessageSquare, Wallet, UserCheck, Briefcase, Clock, Activity, Trophy,
+  TrendingUp, ListOrdered, FileText, Link2, MessageSquare, Wallet, UserCheck, Briefcase, Clock, Activity, Trophy, Scale,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useQuery } from "@tanstack/react-query";
@@ -25,6 +25,7 @@ const allNav = [
   { title: "Тайм-трекинг", url: "/time-tracking", icon: Clock, minRole: "viewer" as const },
   { title: "Загрузка команды", url: "/workload", icon: Activity, minRole: "manager" as const },
   { title: "KPI сотрудников", url: "/kpi", icon: Trophy, minRole: "manager" as const },
+  { title: "План-факт", url: "/plan-fact", icon: Scale, minRole: "manager" as const },
   { title: "Клиенты", url: "/companies", icon: Building2, minRole: "admin" as const },
   { title: "Календарь", url: "/content", icon: CalendarDays, minRole: "manager" as const },
   { title: "Сотрудники", url: "/employees", icon: Users, minRole: "admin" as const },

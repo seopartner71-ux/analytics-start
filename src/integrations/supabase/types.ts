@@ -1276,11 +1276,14 @@ export type Database = {
           description: string | null
           efficiency: number | null
           gsc_site_url: string | null
+          hourly_rate: number
           id: string
           logo_url: string | null
           metrika_counter_id: string | null
+          monthly_budget: number
           name: string
           owner_id: string
+          planned_hours: number
           privacy: string | null
           seo_specialist: string | null
           seo_specialist_id: string | null
@@ -1303,11 +1306,14 @@ export type Database = {
           description?: string | null
           efficiency?: number | null
           gsc_site_url?: string | null
+          hourly_rate?: number
           id?: string
           logo_url?: string | null
           metrika_counter_id?: string | null
+          monthly_budget?: number
           name: string
           owner_id: string
+          planned_hours?: number
           privacy?: string | null
           seo_specialist?: string | null
           seo_specialist_id?: string | null
@@ -1330,11 +1336,14 @@ export type Database = {
           description?: string | null
           efficiency?: number | null
           gsc_site_url?: string | null
+          hourly_rate?: number
           id?: string
           logo_url?: string | null
           metrika_counter_id?: string | null
+          monthly_budget?: number
           name?: string
           owner_id?: string
+          planned_hours?: number
           privacy?: string | null
           seo_specialist?: string | null
           seo_specialist_id?: string | null
@@ -1870,11 +1879,14 @@ export type Database = {
           description: string | null
           efficiency: number | null
           gsc_site_url: string | null
+          hourly_rate: number
           id: string
           logo_url: string | null
           metrika_counter_id: string | null
+          monthly_budget: number
           name: string
           owner_id: string
+          planned_hours: number
           privacy: string | null
           seo_specialist: string | null
           seo_specialist_id: string | null
