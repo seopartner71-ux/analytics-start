@@ -383,6 +383,217 @@ export type Database = {
           },
         ]
       }
+      finance_clients: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          owner_id: string
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          owner_id: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          owner_id?: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      finance_expenses: {
+        Row: {
+          amount: number
+          category: string
+          comment: string | null
+          created_at: string
+          expense_date: string
+          id: string
+          owner_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          category?: string
+          comment?: string | null
+          created_at?: string
+          expense_date?: string
+          id?: string
+          owner_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          comment?: string | null
+          created_at?: string
+          expense_date?: string
+          id?: string
+          owner_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      finance_invoices: {
+        Row: {
+          amount: number
+          client_id: string | null
+          client_name: string
+          created_at: string
+          due_at: string | null
+          id: string
+          invoice_number: string
+          issued_at: string
+          owner_id: string
+          services: Json
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          client_id?: string | null
+          client_name?: string
+          created_at?: string
+          due_at?: string | null
+          id?: string
+          invoice_number: string
+          issued_at?: string
+          owner_id: string
+          services?: Json
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          client_id?: string | null
+          client_name?: string
+          created_at?: string
+          due_at?: string | null
+          id?: string
+          invoice_number?: string
+          issued_at?: string
+          owner_id?: string
+          services?: Json
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_invoices_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "finance_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_payments: {
+        Row: {
+          client_id: string | null
+          client_name: string
+          comment: string | null
+          contract_amount: number
+          created_at: string
+          id: string
+          next_payment_date: string | null
+          owner_id: string
+          paid_amount: number
+          recurrence: string
+          service: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          client_id?: string | null
+          client_name?: string
+          comment?: string | null
+          contract_amount?: number
+          created_at?: string
+          id?: string
+          next_payment_date?: string | null
+          owner_id: string
+          paid_amount?: number
+          recurrence?: string
+          service?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string | null
+          client_name?: string
+          comment?: string | null
+          contract_amount?: number
+          created_at?: string
+          id?: string
+          next_payment_date?: string | null
+          owner_id?: string
+          paid_amount?: number
+          recurrence?: string
+          service?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_payments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "finance_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_taxes: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          owner_id: string
+          paid_at: string | null
+          quarter: number
+          status: string
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          id?: string
+          owner_id: string
+          paid_at?: string | null
+          quarter: number
+          status?: string
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          owner_id?: string
+          paid_at?: string | null
+          quarter?: number
+          status?: string
+          updated_at?: string
+          year?: number
+        }
+        Relationships: []
+      }
       integrations: {
         Row: {
           access_token: string | null
