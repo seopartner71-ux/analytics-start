@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, startOfMonth, endOfMonth, addDays, addMonths, isSameDay, isWithinInterval, parseISO } from "date-fns";
 import { ru } from "date-fns/locale";
 import {
-  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
+  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, ComposedChart,
   XAxis, YAxis, Tooltip as RTooltip, ResponsiveContainer, Legend, CartesianGrid,
 } from "recharts";
 import * as XLSX from "xlsx";
