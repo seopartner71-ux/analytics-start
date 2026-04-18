@@ -501,6 +501,12 @@ export function PageSpeedBlock({ siteUrl }: { siteUrl?: string | null }) {
         </Button>
       </div>
 
+      {checkedAt && hasResults && (
+        <div className="text-[11px] text-muted-foreground -mt-2">
+          Последняя проверка: {formatCheckedAt(checkedAt)} · данные сохранены до следующей проверки
+        </div>
+      )}
+
       {error && !hasResults && (
         <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-300">
           {error}
