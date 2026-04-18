@@ -393,7 +393,8 @@ export default function CrmTasksPage() {
               <tbody>
                 <AnimatePresence>
                   {filtered.map((t, idx) => {
-                    const isOverdue = t.deadline ? new Date(t.deadline) < new Date() && t.stage !== "Завершена" : false;
+                    const dlStatus = getDeadlineStatus(t.deadline, t.stage);
+                    const dlStyle = DEADLINE_STYLES[dlStatus];
                     const diffD = t.deadline ? Math.abs(Math.ceil((new Date(t.deadline).getTime() - Date.now()) / 86400000)) : 0;
 
                     return (
@@ -422,17 +423,23 @@ export default function CrmTasksPage() {
                         <td>
                           {t.deadline ? (
                             <div className="flex items-center gap-1.5">
-                              {isOverdue && <AlertCircle className="h-4 w-4 text-destructive shrink-0" />}
-                              <span className="text-sm text-muted-foreground">
+                              {dlStatus === "overdue" && <AlertCircle className={cn("h-4 w-4 shrink-0", dlStyle.text)} />}
+                              {dlStatus === "soon" && <Clock className={cn("h-4 w-4 shrink-0", dlStyle.text)} />}
+                              <span className={cn("text-sm font-medium", dlStyle.text)}>
                                 {new Date(t.deadline).toLocaleDateString("ru-RU", { day: "numeric", month: "long" })}
                               </span>
                             </div>
                           ) : <span className="text-sm text-muted-foreground">—</span>}
                         </td>
                         <td>
-                          {isOverdue && (
-                            <Badge className="text-[10px] bg-destructive/10 text-destructive border-0 hover:bg-destructive/10 font-medium">
-                              – {Math.ceil(diffD / 30)} мес.
+                          {dlStatus === "overdue" && (
+                            <Badge className={cn("text-[10px] border-0 font-medium", dlStyle.bg, dlStyle.text)}>
+                              – {diffD >= 30 ? `${Math.ceil(diffD / 30)} мес.` : `${diffD} дн.`}
+                            </Badge>
+                          )}
+                          {dlStatus === "soon" && (
+                            <Badge className={cn("text-[10px] border-0 font-medium", dlStyle.bg, dlStyle.text)}>
+                              {diffD} дн.
                             </Badge>
                           )}
                         </td>
