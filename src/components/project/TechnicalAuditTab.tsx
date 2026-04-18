@@ -35,6 +35,10 @@ const CHECK_INFO: Record<string, CheckInfo> = {
   cyclic_link: { importance: "Средняя", description: "Страница содержит ссылку на саму себя. Циклические ссылки путают пользователей и тратят краулинговый бюджет поисковых роботов." },
   ssl_expiring_soon: { importance: "Критическая", description: "SSL сертификат истекает в ближайшее время. После истечения сайт будет помечен браузером как небезопасный и выпадет из поиска." },
   ssl_error: { importance: "Критическая", description: "Ошибка SSL сертификата. Браузеры блокируют доступ к сайту с некорректным сертификатом — пользователи и поисковые роботы не смогут открыть страницы." },
+  deep_page: { importance: "Средняя", description: "Страница находится слишком глубоко в структуре сайта (более 4 кликов от главной). Глубокие страницы хуже индексируются и получают меньше веса." },
+  orphan_page: { importance: "Высокая", description: "Orphan-страница — на неё нет внутренних ссылок с других страниц сайта. Поисковые роботы могут её не найти, а пользователи не смогут до неё дойти по навигации." },
+  hreflang_no_default: { importance: "Средняя", description: "Hreflang-разметка без x-default. Тег x-default указывает версию страницы по умолчанию для пользователей из стран, не указанных в hreflang." },
+  hreflang_duplicate: { importance: "Средняя", description: "Дублирующиеся hreflang-теги для одного языка/региона. Поисковики могут проигнорировать всю hreflang-разметку при наличии дублей." },
   // Ссылки и контент
   http_link: { importance: "Высокая", description: "Внутренние ссылки с HTTP. Если сайт работает на HTTPS но внутренние ссылки ведут на HTTP — это создаёт лишние редиректы, замедляет загрузку и теряет ссылочный вес." },
   redirect_301: { importance: "Средняя", description: "Внутренние ссылки ведут на 301 редирект. Замените их на конечные URL чтобы не терять ссылочный вес и ускорить переходы." },
@@ -57,6 +61,9 @@ const CHECK_INFO: Record<string, CheckInfo> = {
   missing_alt: { importance: "Средняя", description: "Картинки без атрибута alt. Alt-текст помогает поисковикам понять содержание изображения. Также важен для доступности сайта для людей с нарушениями зрения." },
   heavy_image: { importance: "Средняя", description: "Тяжёлые изображения (>200kb). Большие картинки замедляют загрузку страниц и ухудшают Core Web Vitals. Используйте сжатие и форматы WebP/AVIF." },
   empty_page: { importance: "Средняя", description: "Страницы с малым количеством контента. Страницы с менее 50 словами считаются пустыми. Поисковики расценивают их как малополезные и занижают в выдаче." },
+  missing_h2: { importance: "Средняя", description: "Страницы без заголовка H2. H2 структурируют контент и помогают поисковикам понять разделы страницы. Без подзаголовков страница хуже воспринимается и пользователями, и роботами." },
+  heading_hierarchy: { importance: "Средняя", description: "Нарушена иерархия заголовков (например, H3 идёт сразу после H1, минуя H2). Корректная иерархия H1→H2→H3 важна для SEO и доступности сайта." },
+  page_too_large: { importance: "Средняя", description: "Большой размер HTML-страницы (более 200kb). Тяжёлые страницы дольше загружаются, ухудшают Core Web Vitals и расходуют краулинговый бюджет." },
   // Аналитика
   no_yandex_metrika: { importance: "Высокая", description: "Яндекс Метрика не найдена. Без счётчика невозможно отслеживать трафик, поведение пользователей и конверсии." },
   no_google_analytics: { importance: "Высокая", description: "Google Analytics не найден. Необходим для отслеживания трафика из Google и анализа поведения пользователей." },
@@ -116,6 +123,10 @@ const SECTIONS: SectionDef[] = [
       { code: "no_gzip", label: "Нет сжатия gzip/brotli", severity: "warning" },
       { code: "nofollow_meta", label: "Все ссылки закрыты nofollow", severity: "warning" },
       { code: "canonical_mismatch", label: "Canonical не совпадает с URL", severity: "info" },
+      { code: "deep_page", label: "Страница слишком глубоко вложена", severity: "warning" },
+      { code: "orphan_page", label: "Orphan страница — нет входящих ссылок", severity: "warning" },
+      { code: "hreflang_no_default", label: "Hreflang без x-default", severity: "info" },
+      { code: "hreflang_duplicate", label: "Дублирующиеся hreflang теги", severity: "warning" },
     ],
   },
   {
@@ -154,6 +165,9 @@ const SECTIONS: SectionDef[] = [
       { code: "missing_alt", label: "Картинки без alt", severity: "warning" },
       { code: "heavy_image", label: "Тяжёлые изображения (>200kb)", severity: "warning" },
       { code: "empty_page", label: "Пустые страницы (<50 слов)", severity: "warning" },
+      { code: "missing_h2", label: "Страницы без заголовка H2", severity: "warning" },
+      { code: "heading_hierarchy", label: "Нарушена иерархия заголовков", severity: "warning" },
+      { code: "page_too_large", label: "Большой размер страницы (>200kb)", severity: "warning" },
     ],
   },
   {
