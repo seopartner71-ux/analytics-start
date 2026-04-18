@@ -409,6 +409,7 @@ export function PageSpeedBlock({ siteUrl }: { siteUrl?: string | null }) {
   const [checkedAt, setCheckedAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Strategy>("mobile");
+  const [open, setOpen] = useState(false);
 
   const url = siteUrl?.trim();
 
