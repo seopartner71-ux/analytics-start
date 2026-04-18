@@ -465,7 +465,7 @@ function PaymentsTab({ payments, clients, ownerId, onChange }: { payments: Payme
                 }}>
                   <SelectTrigger className="bg-[#1a1a1a] border-[#333]"><SelectValue placeholder="Выбрать клиента" /></SelectTrigger>
                   <SelectContent>
-                    {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                    {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}{c.source === "crm" ? " · CRM" : ""}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </Field>
