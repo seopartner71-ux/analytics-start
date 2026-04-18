@@ -280,6 +280,50 @@ export function TechnicalAuditTab({ projectId }: Props) {
   const allChecks = [...s1, ...s2, ...s3];
   const errorChecks = allChecks.filter(c => c.result === "error");
 
+  // Restore latest job for this project on mount
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("crawl_jobs")
+        .select("*")
+        .eq("project_id", projectId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (data) {
+        setJobId(data.id);
+        setScanStatus(data.status as any);
+        setScanProgress(data.progress ?? 0);
+        if (data.status !== "idle") setShowSfPanel(true);
+      }
+    })();
+  }, [projectId]);
+
+  // Stats for the current job
+  const { data: jobStats } = useQuery({
+    queryKey: ["crawl-stats", jobId],
+    enabled: !!jobId && scanStatus === "done",
+    queryFn: async () => {
+      const { data } = await supabase.from("crawl_stats").select("*").eq("job_id", jobId!).maybeSingle();
+      return data;
+    },
+  });
+
+  // Issues for the current job (joined with page url)
+  const { data: jobIssues = [] } = useQuery({
+    queryKey: ["crawl-issues", jobId],
+    enabled: !!jobId && scanStatus === "done",
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("crawl_issues")
+        .select("id, type, severity, code, message, page_id, crawl_pages(url)")
+        .eq("job_id", jobId!);
+      return (data ?? []) as any[];
+    },
+  });
+
+  const effectiveStats: any = stats ?? jobStats;
+
   const handleStartScan = async () => {
     setShowSfPanel(true);
     setScanProgress(0);
