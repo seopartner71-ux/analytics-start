@@ -9,7 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import {
   FolderKanban, TrendingUp, Key, AlertTriangle, Users,
-  ArrowUp, ArrowDown, Loader2, CheckCircle2, FileText, Calendar,
+  ArrowUp, ArrowDown, Loader2, CheckCircle2, FileText, Calendar, Sparkles,
 } from "lucide-react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -234,11 +234,33 @@ const Index = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-foreground">Дашборд</h1>
-          <p className="text-[13px] text-muted-foreground mt-0.5">Сводка по SEO-отделу</p>
+      {/* Premium Header */}
+      <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-card via-card to-accent/5 p-6 sm:p-8">
+        <div className="absolute -top-20 -right-20 h-64 w-64 rounded-full bg-accent/10 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+        <div className="relative flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+          <div>
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-accent/10 border border-accent/20 mb-3">
+              <Sparkles className="h-3 w-3 text-accent" />
+              <span className="text-[10px] font-semibold text-accent uppercase tracking-wider">Сводка отдела</span>
+            </div>
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
+              Добро пожаловать{user?.user_metadata?.full_name ? `, ${user.user_metadata.full_name.split(" ")[0]}` : ""}
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1.5">
+              {format(new Date(), "EEEE, d MMMM yyyy", { locale: ruLocale })} · {projects.length} проектов · {tasks.length} задач
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => navigate("/crm-projects")} className="gap-1.5">
+              <FolderKanban className="h-3.5 w-3.5" />
+              Все проекты
+            </Button>
+            <Button size="sm" onClick={() => navigate("/tasks")} className="gap-1.5 bg-accent text-accent-foreground hover:bg-accent/90">
+              <Calendar className="h-3.5 w-3.5" />
+              Задачи
+            </Button>
+          </div>
         </div>
       </div>
 
