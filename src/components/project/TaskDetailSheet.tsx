@@ -11,7 +11,7 @@ import {
   Send, MessageSquare, User, CalendarDays, Hourglass, FolderOpen,
   Paperclip, Copy, Video, UserPlus, Search as SearchIcon, Edit3, Play,
   CheckCircle2, RotateCcw, Link, FileText, Upload, Loader2, Plus,
-  Clock, AlertTriangle,
+  Clock, AlertTriangle, Eye, ThumbsUp, ThumbsDown,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -19,6 +19,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Progress } from "@/components/ui/progress";
+import { getDeadlineStatus, DEADLINE_STYLES, STAGE_COLORS, STAGE_PROGRESS } from "@/lib/task-helpers";
 import type { Tables } from "@/integrations/supabase/types";
 
 export type CrmTask = Tables<"crm_tasks"> & {
@@ -193,38 +195,72 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
     setEditStage("В работе");
   };
 
-  const completeTask = async () => {
+  const sendForReview = async () => {
     if (!task) return;
     const hasAttachment = comments.some(c => !c.is_system);
     if (!hasAttachment) {
-      toast.warning("Для завершения задачи необходимо прикрепить файл или ссылку как результат работы.", { duration: 4000 });
+      toast.warning("Прикрепите файл или ссылку как результат работы перед отправкой на проверку.", { duration: 4000 });
       return;
     }
     const projectId = editProjectId || task.project_id;
     let managerName = "";
     if (projectId) {
-      const { data: fullProj } = await supabase.from("projects").select("account_manager_id, owner_id, name").eq("id", projectId).single();
+      const { data: fullProj } = await supabase.from("projects").select("account_manager_id, name").eq("id", projectId).single();
       if (fullProj?.account_manager_id) {
-        const { data: tm } = await supabase.from("team_members").select("owner_id, full_name").eq("id", fullProj.account_manager_id).single();
-        if (tm) {
-          managerName = tm.full_name;
-          await supabase.from("notifications").insert({ user_id: tm.owner_id, project_id: projectId, title: `Задача завершена: ${task.title}`, body: `Исполнитель завершил задачу. Требуется проверка.` });
-        }
-      } else {
-        toast.info("У проекта не назначен аккаунт-менеджер. Задача завершена без передачи на проверку.", { duration: 4000 });
+        const { data: tm } = await supabase.from("team_members").select("full_name").eq("id", fullProj.account_manager_id).single();
+        if (tm) managerName = tm.full_name;
       }
-    } else {
-      toast.info("Задача не привязана к проекту. Завершена без передачи на проверку.", { duration: 4000 });
     }
-    updateField.mutate({ field: "stage", value: "Завершена", logMsg: managerName ? `Задача завершена и передана на проверку → ${managerName}` : `Задача завершена` });
-    await supabase.from("crm_tasks").update({ stage_color: "#10b981", stage: "Завершена", stage_progress: 100 } as any).eq("id", task.id);
-    setEditStage("Завершена");
-    if (managerName) toast.success(`Задача завершена. Передана на проверку → ${managerName}`);
+    await supabase.from("crm_tasks").update({
+      stage: "На проверке",
+      stage_color: STAGE_COLORS["На проверке"],
+      stage_progress: STAGE_PROGRESS["На проверке"],
+    } as any).eq("id", task.id);
+    await addSystemLog(managerName ? `Отправлено на проверку → ${managerName}` : `Отправлено на проверку`);
+    queryClient.invalidateQueries({ queryKey: ["crm-tasks"] });
+    queryClient.invalidateQueries({ queryKey: ["project-tasks"] });
+    setEditStage("На проверке");
+    toast.success(managerName ? `Задача передана на проверку → ${managerName}` : "Задача передана на проверку");
+  };
+
+  const acceptTask = async () => {
+    if (!task) return;
+    await supabase.from("crm_tasks").update({
+      stage: "Принята",
+      stage_color: STAGE_COLORS["Принята"],
+      stage_progress: 100,
+    } as any).eq("id", task.id);
+    await addSystemLog(`Аккаунт принял задачу ✓`);
+    queryClient.invalidateQueries({ queryKey: ["crm-tasks"] });
+    queryClient.invalidateQueries({ queryKey: ["project-tasks"] });
+    setEditStage("Принята");
+    toast.success("Задача принята");
+  };
+
+  const returnTask = async () => {
+    if (!task) return;
+    const reason = window.prompt("Причина возврата (комментарий для исполнителя):");
+    if (!reason || !reason.trim()) return;
+    await supabase.from("crm_tasks").update({
+      stage: "Возвращена",
+      stage_color: STAGE_COLORS["Возвращена"],
+      stage_progress: STAGE_PROGRESS["Возвращена"],
+    } as any).eq("id", task.id);
+    await supabase.from("task_comments").insert({
+      task_id: task.id,
+      body: `↩️ Возврат на доработку: ${reason}`,
+      is_system: false,
+    });
+    await addSystemLog(`Возвращена на доработку`);
+    queryClient.invalidateQueries({ queryKey: ["crm-tasks"] });
+    queryClient.invalidateQueries({ queryKey: ["project-tasks"] });
+    setEditStage("Возвращена");
+    toast.success("Задача возвращена исполнителю");
   };
 
   const resumeTask = () => {
     updateField.mutate({ field: "stage", value: "В работе", logMsg: `Задача возобновлена` });
-    supabase.from("crm_tasks").update({ stage_color: "#f59e0b", stage: "В работе", stage_progress: 50 } as any).eq("id", task!.id);
+    supabase.from("crm_tasks").update({ stage_color: STAGE_COLORS["В работе"], stage: "В работе", stage_progress: 50 } as any).eq("id", task!.id);
     setEditStage("В работе");
     toast.success("Задача возобновлена");
   };
@@ -283,11 +319,13 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
   if (!task) return null;
 
   const deadlineDate = task.deadline ? new Date(task.deadline) : null;
-  const isOverdue = deadlineDate ? deadlineDate < new Date() && task.stage !== "Завершена" : false;
+  const deadlineStatus = getDeadlineStatus(task.deadline, editStage || task.stage);
+  const isOverdue = deadlineStatus === "overdue";
   const diffDays = deadlineDate ? Math.abs(Math.ceil((deadlineDate.getTime() - Date.now()) / 86400000)) : 0;
   const overduePeriod = diffDays >= 30 ? `${Math.floor(diffDays / 30)} мес.` : `${diffDays} дн.`;
   const taskIdShort = task.id.slice(0, 4).toUpperCase();
   const completedSubs = subtasks.filter((s: any) => s.is_done).length;
+  const subtasksProgress = subtasks.length > 0 ? Math.round((completedSubs / subtasks.length) * 100) : 0;
 
   const copyId = () => {
     navigator.clipboard.writeText(task.id);
@@ -369,7 +407,7 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
 
                   {/* Deadline */}
                   <div className="flex items-center gap-4 px-4 py-3.5">
-                    <CalendarDays className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <CalendarDays className={cn("h-4 w-4 shrink-0", DEADLINE_STYLES[deadlineStatus].text)} />
                     <span className="text-xs text-muted-foreground w-24 shrink-0">Крайний срок</span>
                     {canEditFields ? (
                       <div className="flex items-center gap-2">
@@ -379,11 +417,20 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                         )}
                       </div>
                     ) : deadlineDate ? (
-                      <span className={cn("text-sm", isOverdue ? "text-destructive font-medium" : "text-foreground")}>
+                      <span className={cn("text-sm font-medium", DEADLINE_STYLES[deadlineStatus].text)}>
                         {deadlineDate.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })}
                       </span>
                     ) : <span className="text-sm text-muted-foreground">Не задан</span>}
-                    {isOverdue && <Badge variant="destructive" className="text-[10px] h-5 gap-1"><AlertTriangle className="h-3 w-3" /> Просрочено {overduePeriod}</Badge>}
+                    {deadlineStatus === "overdue" && (
+                      <Badge variant="destructive" className="text-[10px] h-5 gap-1">
+                        <AlertTriangle className="h-3 w-3" /> Просрочено {overduePeriod}
+                      </Badge>
+                    )}
+                    {deadlineStatus === "soon" && (
+                      <Badge className={cn("text-[10px] h-5 gap-1 border-0", DEADLINE_STYLES.soon.bg, DEADLINE_STYLES.soon.text)}>
+                        <Clock className="h-3 w-3" /> Скоро
+                      </Badge>
+                    )}
                   </div>
 
                   {/* Status */}
@@ -433,6 +480,15 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                       <Plus className="h-3 w-3" /> Добавить
                     </Button>
                   </div>
+                  {subtasks.length > 0 && (
+                    <div className="space-y-1.5">
+                      <Progress value={subtasksProgress} className="h-1.5" />
+                      <div className="flex justify-between text-[10px] text-muted-foreground">
+                        <span>{subtasksProgress}% выполнено</span>
+                        <span>{completedSubs}/{subtasks.length} шагов</span>
+                      </div>
+                    </div>
+                  )}
                   <div className="space-y-1">
                     {subtasks.map((s: any) => (
                       <div key={s.id} className="flex items-center gap-2.5 py-1.5 px-1 rounded-lg hover:bg-muted/30 transition-colors">
@@ -475,20 +531,35 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
             </div>
 
             {/* Sticky bottom action bar */}
-            <div className="border-t border-border/60 bg-card px-5 py-3 flex items-center gap-3 shrink-0 flex-wrap">
-              <Button size="sm" className="gap-1.5 shadow-sm bg-primary hover:bg-primary/90" onClick={startTask} disabled={editStage === "В работе" || editStage === "Завершена"}>
-                <Play className="h-3.5 w-3.5" /> Начать
-              </Button>
-              <Button variant="outline" size="sm" className="gap-1.5" onClick={completeTask} disabled={editStage === "Завершена"}>
-                <CheckCircle2 className="h-3.5 w-3.5" /> Завершить
-              </Button>
-              {editStage === "Завершена" && (
+            <div className="border-t border-border/60 bg-card px-5 py-3 flex items-center gap-2 shrink-0 flex-wrap">
+              {(editStage === "Новые" || editStage === "Возвращена") && (
+                <Button size="sm" className="gap-1.5 shadow-sm bg-primary hover:bg-primary/90" onClick={startTask}>
+                  <Play className="h-3.5 w-3.5" /> Начать
+                </Button>
+              )}
+              {(editStage === "В работе" || editStage === "Возвращена") && (
+                <Button size="sm" className="gap-1.5 shadow-sm" onClick={sendForReview}>
+                  <Eye className="h-3.5 w-3.5" /> На проверку
+                </Button>
+              )}
+              {editStage === "На проверке" && (
+                <>
+                  <Button size="sm" className="gap-1.5 shadow-sm bg-emerald-600 hover:bg-emerald-700 text-white" onClick={acceptTask}>
+                    <ThumbsUp className="h-3.5 w-3.5" /> Принять
+                  </Button>
+                  <Button size="sm" variant="outline" className="gap-1.5 border-destructive/30 text-destructive hover:bg-destructive/5" onClick={returnTask}>
+                    <ThumbsDown className="h-3.5 w-3.5" /> Вернуть
+                  </Button>
+                </>
+              )}
+              {(editStage === "Принята" || editStage === "Завершена") && (
                 <Button variant="outline" size="sm" className="gap-1.5 border-primary/30 text-primary hover:bg-primary/5" onClick={resumeTask}>
                   <RotateCcw className="h-3.5 w-3.5" /> Возобновить
                 </Button>
               )}
-              <Button variant="ghost" size="sm" className="text-muted-foreground ml-auto">•••</Button>
-              <span className="text-xs text-muted-foreground cursor-pointer hover:text-foreground transition-colors">Оценить задачу</span>
+              <Badge className="ml-auto text-[10px]" style={{ backgroundColor: `${task.stage_color || '#3b82f6'}20`, color: task.stage_color || '#3b82f6' }}>
+                {editStage || task.stage}
+              </Badge>
             </div>
           </div>
 

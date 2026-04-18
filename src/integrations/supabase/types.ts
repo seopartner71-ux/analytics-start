@@ -1726,6 +1726,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      notify_overdue_tasks: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "viewer" | "manager"
