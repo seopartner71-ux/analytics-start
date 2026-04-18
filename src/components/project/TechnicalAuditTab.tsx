@@ -83,7 +83,7 @@ const IMPORTANCE_CLS: Record<string, string> = {
   "Средняя": "text-yellow-400",
   "Низкая": "text-blue-400",
 };
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 
