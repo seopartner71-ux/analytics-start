@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -364,13 +364,70 @@ function ResultPanel({ data }: { data: PageSpeedMetrics }) {
   );
 }
 
+const CACHE_PREFIX = "pagespeed_cache_v1:";
+
+type CachedResults = { results: Results; checkedAt: string };
+
+function loadCache(url: string): CachedResults | null {
+  try {
+    const raw = localStorage.getItem(CACHE_PREFIX + url);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as CachedResults;
+    if (!parsed?.results) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function saveCache(url: string, results: Results) {
+  try {
+    const payload: CachedResults = { results, checkedAt: new Date().toISOString() };
+    localStorage.setItem(CACHE_PREFIX + url, JSON.stringify(payload));
+  } catch {
+    // ignore quota errors
+  }
+}
+
+function formatCheckedAt(iso: string): string {
+  try {
+    return new Date(iso).toLocaleString("ru-RU", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return iso;
+  }
+}
+
 export function PageSpeedBlock({ siteUrl }: { siteUrl?: string | null }) {
   const [loading, setLoading] = useState<"both" | null>(null);
   const [results, setResults] = useState<Results>({});
+  const [checkedAt, setCheckedAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Strategy>("mobile");
 
   const url = siteUrl?.trim();
+
+  // Загружаем кэш при изменении URL
+  useEffect(() => {
+    if (!url) {
+      setResults({});
+      setCheckedAt(null);
+      return;
+    }
+    const cached = loadCache(url);
+    if (cached) {
+      setResults(cached.results);
+      setCheckedAt(cached.checkedAt);
+    } else {
+      setResults({});
+      setCheckedAt(null);
+    }
+  }, [url]);
 
   const handleCheck = async () => {
     if (!url) {
@@ -393,7 +450,10 @@ export function PageSpeedBlock({ siteUrl }: { siteUrl?: string | null }) {
         setError(msg);
         toast.error("Не удалось получить данные PageSpeed");
       } else {
-        toast.success("Данные PageSpeed получены");
+        const now = new Date().toISOString();
+        setCheckedAt(now);
+        saveCache(url, next);
+        toast.success("Данные PageSpeed получены и сохранены");
       }
     } catch (e: any) {
       setError(e?.message ?? "Ошибка запроса");
@@ -440,6 +500,12 @@ export function PageSpeedBlock({ siteUrl }: { siteUrl?: string | null }) {
           )}
         </Button>
       </div>
+
+      {checkedAt && hasResults && (
+        <div className="text-[11px] text-muted-foreground -mt-2">
+          Последняя проверка: {formatCheckedAt(checkedAt)} · данные сохранены до следующей проверки
+        </div>
+      )}
 
       {error && !hasResults && (
         <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-300">
