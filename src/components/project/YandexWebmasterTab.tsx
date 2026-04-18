@@ -384,13 +384,6 @@ export function YandexWebmasterTab({ projectId }: Props) {
         </div>
       </Card>
 
-      {/* LEGEND */}
-      <div className="flex flex-wrap gap-2">
-        {(["fatal", "critical", "possible", "recommendation"] as const).map(s => {
-          const m = SECTION_META[s];
-          return <span key={s} className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-medium" style={{ backgroundColor: `${m.color}15`, color: m.color, borderColor: `${m.color}30` }}>{m.emoji} {m.label} — {m.info.split(".")[0].toLowerCase()}</span>;
-        })}
-      </div>
 
       {/* SUMMARY CARDS — единый стиль с «Аналитикой» */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
