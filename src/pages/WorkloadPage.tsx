@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { PageHeader } from "@/components/PageHeader";
 import { Users, AlertTriangle, CheckCircle2, Clock } from "lucide-react";
 import { getDeadlineStatus } from "@/lib/task-helpers";
 
@@ -107,8 +106,7 @@ export default function WorkloadPage() {
   }, [workload]);
 
   return (
-    <div className="space-y-6 p-4 sm:p-6">
-      <PageHeader />
+    <div className="space-y-6">
       <div>
         <h2 className="text-xl font-semibold">Загрузка команды</h2>
         <p className="text-sm text-muted-foreground mt-1">Активные задачи, дедлайны на неделю и индикатор перегрузки</p>
