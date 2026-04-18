@@ -28,6 +28,7 @@ import SiteHealthDetailTab from "@/components/project/SiteHealthDetailTab";
 import EditProjectDialog from "@/components/project/EditProjectDialog";
 import { TaskDetailSheet, CrmTask } from "@/components/project/TaskDetailSheet";
 import { TechnicalAuditTab } from "@/components/project/TechnicalAuditTab";
+import { MobileFriendlyTab } from "@/components/project/MobileFriendlyTab";
 import { YandexWebmasterTab } from "@/components/project/YandexWebmasterTab";
 import { GscAnalysisTab } from "@/components/project/GscAnalysisTab";
 
@@ -342,6 +343,9 @@ export default function CrmProjectDetailPage() {
           <TabsTrigger value="audit" className="gap-1.5 text-[13px]">
             <ClipboardCheck className="h-3.5 w-3.5" /> Технический аудит
           </TabsTrigger>
+          <TabsTrigger value="mobile" className="gap-1.5 text-[13px]">
+            <Smartphone className="h-3.5 w-3.5" /> Адаптивность
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="analytics">
@@ -358,6 +362,10 @@ export default function CrmProjectDetailPage() {
 
         <TabsContent value="audit">
           <TechnicalAuditTab projectId={id!} />
+        </TabsContent>
+
+        <TabsContent value="mobile">
+          <MobileFriendlyTab projectId={id!} />
         </TabsContent>
 
         <TabsContent value="checklist">
