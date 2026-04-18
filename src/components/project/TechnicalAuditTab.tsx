@@ -15,7 +15,7 @@ interface Props { projectId: string; }
 
 // ============ КАТАЛОГ ПРОВЕРОК ============
 type CheckDef = { code: string; label: string; severity: "critical" | "warning" | "info" };
-type SectionDef = { id: string; title: string; types: string[]; checks: CheckDef[] };
+type SectionDef = { id: string; title: string; types: string[]; checks: CheckDef[]; icon: any; description: string };
 
 const SECTIONS: SectionDef[] = [
   {
