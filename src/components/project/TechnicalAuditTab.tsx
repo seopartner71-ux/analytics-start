@@ -702,7 +702,7 @@ function BentoSections({
   return (
     <div className="space-y-5">
       {/* Bento-сетка */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
         {sectionStats.map(({ section, problemCount, critical, warning, info, score, status, passed, totalChecks }) => {
           const Icon = section.icon;
           const isActive = section.id === activeId;
@@ -712,71 +712,44 @@ function BentoSections({
               type="button"
               onClick={() => setActiveId(section.id)}
               className={cn(
-                "group relative overflow-hidden rounded-xl border bg-card p-4 text-left transition-all",
-                "hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20",
+                "group relative overflow-hidden rounded-lg border bg-card p-2.5 text-left transition-all",
+                "hover:-translate-y-0.5 hover:shadow-md hover:shadow-black/20",
                 isActive ? cn("ring-2 border-transparent", STATUS_RING[status]) : "border-border hover:border-border/80"
               )}
             >
-              {/* Градиентный фон по статусу */}
               <div className={cn("absolute inset-0 bg-gradient-to-br opacity-80 pointer-events-none", STATUS_GRADIENT[status])} />
-              {/* Декоративный круг */}
-              <div className={cn("absolute -right-8 -top-8 h-24 w-24 rounded-full blur-2xl opacity-50 pointer-events-none", STATUS_PROGRESS[status])} />
 
-              <div className="relative space-y-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div className={cn("h-9 w-9 rounded-lg flex items-center justify-center shrink-0", STATUS_BG_ICON[status])}>
-                    <Icon className="h-5 w-5" />
+              <div className="relative space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <div className={cn("h-7 w-7 rounded-md flex items-center justify-center shrink-0", STATUS_BG_ICON[status])}>
+                    <Icon className="h-3.5 w-3.5" />
                   </div>
-                  <div className="text-right">
-                    <div className={cn("text-[22px] font-bold leading-none tabular-nums", STATUS_TEXT[status])}>
+                  <div className="text-right leading-none">
+                    <div className={cn("text-base font-bold tabular-nums", STATUS_TEXT[status])}>
                       {problemCount}
                     </div>
-                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">
-                      {problemCount === 0 ? "Ошибок нет" : "проблем"}
+                    <div className="text-[9px] text-muted-foreground uppercase tracking-wider mt-0.5">
+                      {problemCount === 0 ? "ОК" : "проблем"}
                     </div>
                   </div>
                 </div>
 
-                <div className="space-y-1">
-                  <h3 className="text-[13px] font-semibold text-foreground leading-tight line-clamp-2 min-h-[34px]">
-                    {section.title}
-                  </h3>
-                </div>
+                <h3 className="text-[11.5px] font-semibold text-foreground leading-tight line-clamp-2 min-h-[28px]">
+                  {section.title}
+                </h3>
 
-                {/* Прогресс-бар по % здоровья */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                    <span>{passed}/{totalChecks} OK</span>
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-[9px] text-muted-foreground">
+                    <span className="tabular-nums">{passed}/{totalChecks}</span>
                     <span className={cn("font-semibold tabular-nums", STATUS_TEXT[status])}>{score}%</span>
                   </div>
-                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                  <div className="h-1 rounded-full bg-muted overflow-hidden">
                     <div
                       className={cn("h-full transition-all", STATUS_PROGRESS[status])}
                       style={{ width: `${score}%` }}
                     />
                   </div>
                 </div>
-
-                {/* Severity-точки */}
-                {problemCount > 0 && (
-                  <div className="flex items-center gap-1.5 pt-1">
-                    {critical > 0 && (
-                      <span className="inline-flex items-center gap-1 text-[10px] text-red-400">
-                        <span className="h-1.5 w-1.5 rounded-full bg-red-500" />{critical}
-                      </span>
-                    )}
-                    {warning > 0 && (
-                      <span className="inline-flex items-center gap-1 text-[10px] text-yellow-400">
-                        <span className="h-1.5 w-1.5 rounded-full bg-yellow-500" />{warning}
-                      </span>
-                    )}
-                    {info > 0 && (
-                      <span className="inline-flex items-center gap-1 text-[10px] text-blue-400">
-                        <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />{info}
-                      </span>
-                    )}
-                  </div>
-                )}
               </div>
             </button>
           );
