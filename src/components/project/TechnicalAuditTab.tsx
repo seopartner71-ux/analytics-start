@@ -640,8 +640,8 @@ function BentoSections({
   const visibleSections = sections.filter((s) => s.id !== "speed");
   const [activeId, setActiveId] = useState<string>(visibleSections[0]?.id ?? "");
 
-  // Считаем статистику по каждой секции
-  const sectionStats = sections.map((s) => {
+  // Считаем статистику по каждой видимой секции
+  const sectionStats = visibleSections.map((s) => {
     const codes = new Set(s.checks.map((c) => c.code));
     const own = (issues ?? []).filter((i) => s.types.includes(i.type) || codes.has(i.code));
     const groups = new Map<string, { severity: string; count: number }>();
@@ -697,7 +697,7 @@ function BentoSections({
     info: "bg-blue-500",
   };
 
-  const active = sections.find((s) => s.id === activeId) ?? sections[0];
+  const active = visibleSections.find((s) => s.id === activeId) ?? visibleSections[0];
 
   return (
     <div className="space-y-5">
