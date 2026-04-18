@@ -245,7 +245,7 @@ const Index = () => {
               <span className="text-[10px] font-semibold text-accent uppercase tracking-wider">Сводка отдела</span>
             </div>
             <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
-              Добро пожаловать{user?.user_metadata?.full_name ? `, ${user.user_metadata.full_name.split(" ")[0]}` : ""}
+              Добро пожаловать{profile?.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""}
             </h1>
             <p className="text-sm text-muted-foreground mt-1.5">
               {format(new Date(), "EEEE, d MMMM yyyy", { locale: ruLocale })} · {projects.length} проектов · {tasks.length} задач
