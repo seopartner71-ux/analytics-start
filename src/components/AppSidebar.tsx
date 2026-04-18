@@ -1,7 +1,7 @@
 import {
   BarChart3, LayoutDashboard, FolderKanban, ClipboardList,
   Building2, CalendarDays, Users, ChevronLeft, Settings, Plug,
-  TrendingUp, ListOrdered, FileText, Link2, MessageSquare, Wallet, UserCheck,
+  TrendingUp, ListOrdered, FileText, Link2, MessageSquare, Wallet, UserCheck, Briefcase,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useQuery } from "@tanstack/react-query";
@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 
 const allNav = [
   { title: "Дашборд", url: "/", icon: LayoutDashboard, minRole: "viewer" as const },
+  { title: "Дашборд директора", url: "/director", icon: Briefcase, minRole: "admin" as const },
   { title: "SEO Проекты", url: "/crm-projects", icon: FolderKanban, minRole: "viewer" as const },
   { title: "Задачи", url: "/tasks", icon: ClipboardList, minRole: "manager" as const },
   { title: "Мои задачи", url: "/my-tasks", icon: UserCheck, minRole: "viewer" as const },

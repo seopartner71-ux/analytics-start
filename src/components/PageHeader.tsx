@@ -24,6 +24,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/crm-projects": "SEO Проекты",
   "/tasks": "Задачи",
   "/my-tasks": "Мои задачи",
+  "/director": "Дашборд директора",
   "/employees": "Сотрудники",
   "/content": "Календарь",
   "/links": "Ссылки",
