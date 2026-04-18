@@ -139,21 +139,41 @@ export default function PlanFactPage() {
             Сравнение запланированных и фактических часов, выявление убыточных клиентов
           </p>
         </div>
-        <Select value={String(monthOffset)} onValueChange={(v) => setMonthOffset(Number(v))}>
-          <SelectTrigger className="w-56 h-9 text-[13px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {Array.from({ length: 6 }).map((_, i) => {
-              const d = subMonths(new Date(), i);
-              return (
-                <SelectItem key={i} value={String(i)}>
-                  {format(d, "LLLL yyyy", { locale: ru })}
-                </SelectItem>
-              );
-            })}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9 gap-1.5 text-[12px]"
+            onClick={runOverrunCheck}
+            disabled={checking}
+          >
+            {checking ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <BellRing className="h-3.5 w-3.5" />}
+            Проверить превышения
+          </Button>
+          <Select value={String(monthOffset)} onValueChange={(v) => setMonthOffset(Number(v))}>
+            <SelectTrigger className="w-56 h-9 text-[13px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {Array.from({ length: 6 }).map((_, i) => {
+                const d = subMonths(new Date(), i);
+                return (
+                  <SelectItem key={i} value={String(i)}>
+                    {format(d, "LLLL yyyy", { locale: ru })}
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground flex items-start gap-2">
+        <BellRing className="h-3.5 w-3.5 mt-0.5 shrink-0 text-primary" />
+        <span>
+          Автоматическая проверка выполняется ежедневно в 12:00 МСК. При использовании более 90% — предупреждение,
+          более 110% — критический алерт. Уведомления отправляются владельцу проекта.
+        </span>
       </div>
 
       {/* KPI cards */}
