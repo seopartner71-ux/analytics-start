@@ -335,8 +335,10 @@ export function TechnicalAuditTab({ projectId }: Props) {
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             {scanStatus === "idle" && <Badge className="bg-zinc-700 text-zinc-400">Ожидает запуска</Badge>}
-            {scanStatus === "scanning" && <Badge className="bg-yellow-500/20 text-yellow-400 animate-pulse">Сканирование...</Badge>}
+            {scanStatus === "pending" && <Badge className="bg-blue-500/20 text-blue-400">В очереди</Badge>}
+            {scanStatus === "running" && <Badge className="bg-yellow-500/20 text-yellow-400 animate-pulse">Сканирование...</Badge>}
             {scanStatus === "done" && <Badge className="bg-emerald-500/20 text-emerald-400">Готов</Badge>}
+            {scanStatus === "error" && <Badge className="bg-red-500/20 text-red-400">Ошибка</Badge>}
             <Button variant="outline" size="sm" className="gap-1.5 text-[12px] border-[#444] text-zinc-300 hover:bg-[#333]">
               <Download className="h-3.5 w-3.5" /> Скачать PDF отчёт
             </Button>
