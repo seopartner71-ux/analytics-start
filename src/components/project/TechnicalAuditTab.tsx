@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { ChevronDown, ChevronRight, Download, ExternalLink, ShieldAlert, Link2, FileSearch, CheckCircle2, AlertTriangle, Info, AlertCircle, HelpCircle } from "lucide-react";
+import { ChevronDown, ChevronRight, Download, ExternalLink, ShieldAlert, Link2, FileSearch, CheckCircle2, AlertTriangle, Info, AlertCircle, HelpCircle, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -83,7 +83,7 @@ const IMPORTANCE_CLS: Record<string, string> = {
   "Средняя": "text-yellow-400",
   "Низкая": "text-blue-400",
 };
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 
@@ -768,6 +768,38 @@ export function TechnicalAuditTab({ projectId }: Props) {
   const [stats, setStats] = useState<any>(null);
   const [showSfPanel, setShowSfPanel] = useState(false);
   const channelRef = useRef<any>(null);
+  const queryClient = useQueryClient();
+  const [resetting, setResetting] = useState(false);
+
+  const handleResetAll = async () => {
+    if (!confirm("Удалить все данные сканирования по этому проекту? Действие необратимо.")) return;
+    setResetting(true);
+    try {
+      const { data: jobs } = await supabase
+        .from("crawl_jobs")
+        .select("id")
+        .eq("project_id", projectId);
+      const jobIds = (jobs ?? []).map((j: any) => j.id);
+      if (jobIds.length > 0) {
+        await supabase.from("crawl_issues").delete().in("job_id", jobIds);
+        await supabase.from("crawl_pages").delete().in("job_id", jobIds);
+        await supabase.from("crawl_stats").delete().in("job_id", jobIds);
+        await supabase.from("crawl_jobs").delete().in("id", jobIds);
+      }
+      setJobId(null);
+      setStats(null);
+      setScanStatus("idle");
+      setScanProgress(0);
+      setShowSfPanel(false);
+      await queryClient.invalidateQueries({ queryKey: ["crawl-stats"] });
+      await queryClient.invalidateQueries({ queryKey: ["crawl-issues-all"] });
+      toast.success("Все данные сканирования удалены");
+    } catch (e: any) {
+      toast.error("Не удалось сбросить данные: " + (e?.message ?? ""));
+    } finally {
+      setResetting(false);
+    }
+  };
 
   const { data: project } = useQuery({
     queryKey: ["project-detail-audit", projectId],
@@ -892,6 +924,18 @@ export function TechnicalAuditTab({ projectId }: Props) {
             <Button variant="outline" size="sm" className="gap-1.5 text-[12px] border-border text-foreground/90 hover:bg-muted/60">
               <Download className="h-3.5 w-3.5" /> Скачать PDF отчёт
             </Button>
+            {(jobId || scanStatus !== "idle") && (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={resetting}
+                onClick={handleResetAll}
+                className="gap-1.5 text-[12px] border-red-500/40 text-red-400 hover:bg-red-500/10 hover:text-red-300"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                {resetting ? "Сброс..." : "Сбросить данные"}
+              </Button>
+            )}
             <Button size="sm" className="gap-1.5 text-[12px] bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-foreground border-0" onClick={handleStartScan}>
               🔍 Запустить аудит
             </Button>
@@ -903,7 +947,7 @@ export function TechnicalAuditTab({ projectId }: Props) {
       {showSfPanel && (
         <Card className="bg-card border-border p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-[13px] font-semibold text-foreground">🤖 Python краулер — Сканирование</span>
+            <span className="text-[13px] font-semibold text-foreground">Сканирование</span>
             <Button variant="ghost" size="sm" className="text-muted-foreground text-[11px]" onClick={() => setShowSfPanel(false)}>Скрыть</Button>
           </div>
           <div className="flex items-center gap-3">
