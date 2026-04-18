@@ -413,6 +413,61 @@ function AuditSection({
                   <div className="px-4 py-3 pl-11 space-y-2 bg-[#181818]">
                     {items.length === 0 ? (
                       <div className="text-[11px] text-zinc-500">URL не переданы краулером</div>
+                    ) : isDuplicateCode ? (
+                      (() => {
+                        const groups = new Map<string, string[]>();
+                        for (const it of items) {
+                          const dv = (it.details as any)?.duplicate_value;
+                          if (!dv || !it.url) continue;
+                          const key = String(dv);
+                          if (!groups.has(key)) groups.set(key, []);
+                          const arr = groups.get(key)!;
+                          if (!arr.includes(it.url)) arr.push(it.url);
+                        }
+                        const entries = Array.from(groups.entries()).sort((a, b) => b[1].length - a[1].length);
+                        if (entries.length === 0) {
+                          return <div className="text-[11px] text-zinc-500">Значения дублей не переданы краулером</div>;
+                        }
+                        return (
+                          <>
+                            {entries.slice(0, 50).map(([value, urls], gi) => (
+                              <div key={gi} className="rounded border border-[#262626] bg-[#0f0f0f] overflow-hidden">
+                                <div className="flex items-center justify-between gap-2 px-3 py-2 bg-[#141414] border-b border-[#262626]">
+                                  <div className="min-w-0 flex-1">
+                                    <div className="text-[10px] text-zinc-500 uppercase tracking-wide mb-0.5">
+                                      Дубль · {value.length} симв.
+                                    </div>
+                                    <div className="text-[12px] text-zinc-300 break-words">{value}</div>
+                                  </div>
+                                  <Badge className="bg-zinc-700/70 text-zinc-300 text-[11px] shrink-0 border-0">
+                                    {urls.length} {pageWord(urls.length)}
+                                  </Badge>
+                                </div>
+                                <div className="px-3 py-2 space-y-1">
+                                  {urls.slice(0, 100).map((u, ui) => (
+                                    <a
+                                      key={ui}
+                                      href={u}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex items-center gap-1.5 text-[12px] text-blue-400 hover:text-blue-300 hover:underline font-mono"
+                                    >
+                                      <ExternalLink className="h-3 w-3 shrink-0" />
+                                      <span className="truncate">{u}</span>
+                                    </a>
+                                  ))}
+                                  {urls.length > 100 && (
+                                    <div className="text-[11px] text-zinc-500">…и ещё {urls.length - 100}</div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                            {entries.length > 50 && (
+                              <div className="text-[11px] text-zinc-500 pt-1">…и ещё {entries.length - 50} групп дублей</div>
+                            )}
+                          </>
+                        );
+                      })()
                     ) : (
                       items.slice(0, 100).map((it, i) => {
                         const detail = showText ? getDetailText(r.code, it.details) : null;
@@ -443,7 +498,7 @@ function AuditSection({
                         );
                       })
                     )}
-                    {items.length > 100 && (
+                    {!isDuplicateCode && items.length > 100 && (
                       <div className="text-[11px] text-zinc-500 pt-1">…и ещё {items.length - 100} записей</div>
                     )}
                   </div>
