@@ -269,6 +269,199 @@ export type Database = {
           },
         ]
       }
+      crawl_issues: {
+        Row: {
+          code: string
+          created_at: string
+          details: Json | null
+          id: string
+          job_id: string
+          message: string | null
+          page_id: string | null
+          severity: string
+          type: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          job_id: string
+          message?: string | null
+          page_id?: string | null
+          severity?: string
+          type: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          job_id?: string
+          message?: string | null
+          page_id?: string | null
+          severity?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crawl_issues_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "crawl_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crawl_issues_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "crawl_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crawl_jobs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          progress: number
+          project_id: string
+          started_at: string | null
+          status: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          progress?: number
+          project_id: string
+          started_at?: string | null
+          status?: string
+          url: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          progress?: number
+          project_id?: string
+          started_at?: string | null
+          status?: string
+          url?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      crawl_pages: {
+        Row: {
+          canonical: string | null
+          created_at: string
+          depth: number | null
+          description: string | null
+          h1: string | null
+          id: string
+          is_indexed: boolean | null
+          job_id: string
+          load_time_ms: number | null
+          status_code: number | null
+          title: string | null
+          url: string
+          word_count: number | null
+        }
+        Insert: {
+          canonical?: string | null
+          created_at?: string
+          depth?: number | null
+          description?: string | null
+          h1?: string | null
+          id?: string
+          is_indexed?: boolean | null
+          job_id: string
+          load_time_ms?: number | null
+          status_code?: number | null
+          title?: string | null
+          url: string
+          word_count?: number | null
+        }
+        Update: {
+          canonical?: string | null
+          created_at?: string
+          depth?: number | null
+          description?: string | null
+          h1?: string | null
+          id?: string
+          is_indexed?: boolean | null
+          job_id?: string
+          load_time_ms?: number | null
+          status_code?: number | null
+          title?: string | null
+          url?: string
+          word_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crawl_pages_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "crawl_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crawl_stats: {
+        Row: {
+          avg_load_time_ms: number
+          created_at: string
+          critical_count: number
+          id: string
+          info_count: number
+          job_id: string
+          score: number
+          total_issues: number
+          total_pages: number
+          warning_count: number
+        }
+        Insert: {
+          avg_load_time_ms?: number
+          created_at?: string
+          critical_count?: number
+          id?: string
+          info_count?: number
+          job_id: string
+          score?: number
+          total_issues?: number
+          total_pages?: number
+          warning_count?: number
+        }
+        Update: {
+          avg_load_time_ms?: number
+          created_at?: string
+          critical_count?: number
+          id?: string
+          info_count?: number
+          job_id?: string
+          score?: number
+          total_issues?: number
+          total_pages?: number
+          warning_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crawl_stats_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: true
+            referencedRelation: "crawl_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_tasks: {
         Row: {
           assignee_id: string | null

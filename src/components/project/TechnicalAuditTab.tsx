@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -231,8 +232,11 @@ export function TechnicalAuditTab({ projectId }: Props) {
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<"table" | "cards">("table");
   const [showSfPanel, setShowSfPanel] = useState(false);
-  const [scanStatus, setScanStatus] = useState<"idle" | "scanning" | "done">("idle");
+  const [scanStatus, setScanStatus] = useState<"idle" | "pending" | "running" | "done" | "error">("idle");
   const [scanProgress, setScanProgress] = useState(0);
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [stats, setStats] = useState<any>(null);
+  const channelRef = useRef<any>(null);
 
   const { data: project } = useQuery({
     queryKey: ["project-detail-audit", projectId],
@@ -276,17 +280,46 @@ export function TechnicalAuditTab({ projectId }: Props) {
   const allChecks = [...s1, ...s2, ...s3];
   const errorChecks = allChecks.filter(c => c.result === "error");
 
-  const handleStartScan = () => {
+  const handleStartScan = async () => {
     setShowSfPanel(true);
-    setScanStatus("scanning");
     setScanProgress(0);
-    const interval = setInterval(() => {
-      setScanProgress(prev => {
-        if (prev >= 100) { clearInterval(interval); setScanStatus("done"); return 100; }
-        return prev + Math.random() * 8;
-      });
-    }, 500);
+    setStats(null);
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) { toast.error("Войдите в систему"); return; }
+    const targetUrl = project?.url || (domain ? `https://${domain}` : "");
+    if (!targetUrl) { toast.error("У проекта не указан URL"); return; }
+
+    const { data: job, error } = await supabase
+      .from("crawl_jobs")
+      .insert({ project_id: projectId, user_id: userData.user.id, url: targetUrl, status: "pending", progress: 0 })
+      .select()
+      .single();
+    if (error || !job) { toast.error("Не удалось создать задание: " + (error?.message ?? "")); return; }
+    setJobId(job.id);
+    setScanStatus("pending");
+    toast.success("Задание создано — ожидает запуска краулера");
   };
+
+  // Realtime: subscribe to job status / progress and final stats
+  useEffect(() => {
+    if (!jobId) return;
+    const ch = supabase
+      .channel(`crawl-job-${jobId}`)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "crawl_jobs", filter: `id=eq.${jobId}` }, (payload: any) => {
+        const row = payload.new;
+        setScanStatus(row.status);
+        setScanProgress(row.progress ?? 0);
+        if (row.status === "done") toast.success("Аудит завершён");
+        if (row.status === "error") toast.error("Ошибка аудита: " + (row.error_message ?? ""));
+      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "crawl_stats", filter: `job_id=eq.${jobId}` }, (payload: any) => {
+        setStats(payload.new);
+      })
+      .subscribe();
+    channelRef.current = ch;
+    return () => { supabase.removeChannel(ch); };
+  }, [jobId]);
+
 
   return (
     <div className="space-y-5">
@@ -302,8 +335,10 @@ export function TechnicalAuditTab({ projectId }: Props) {
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             {scanStatus === "idle" && <Badge className="bg-zinc-700 text-zinc-400">Ожидает запуска</Badge>}
-            {scanStatus === "scanning" && <Badge className="bg-yellow-500/20 text-yellow-400 animate-pulse">Сканирование...</Badge>}
+            {scanStatus === "pending" && <Badge className="bg-blue-500/20 text-blue-400">В очереди</Badge>}
+            {scanStatus === "running" && <Badge className="bg-yellow-500/20 text-yellow-400 animate-pulse">Сканирование...</Badge>}
             {scanStatus === "done" && <Badge className="bg-emerald-500/20 text-emerald-400">Готов</Badge>}
+            {scanStatus === "error" && <Badge className="bg-red-500/20 text-red-400">Ошибка</Badge>}
             <Button variant="outline" size="sm" className="gap-1.5 text-[12px] border-[#444] text-zinc-300 hover:bg-[#333]">
               <Download className="h-3.5 w-3.5" /> Скачать PDF отчёт
             </Button>
@@ -326,11 +361,20 @@ export function TechnicalAuditTab({ projectId }: Props) {
           </div>
           <div className="space-y-1">
             <div className="flex items-center justify-between text-[11px] text-zinc-400">
-              <span>{scanStatus === "scanning" ? "Краулинг страниц..." : scanStatus === "done" ? "Сканирование завершено" : ""}</span>
+              <span>{scanStatus === "running" ? "Краулинг страниц..." : scanStatus === "pending" ? "В очереди..." : scanStatus === "done" ? "Сканирование завершено" : scanStatus === "error" ? "Произошла ошибка" : ""}</span>
               <span>{Math.round(scanProgress)}%</span>
             </div>
             <Progress value={Math.min(scanProgress, 100)} className="h-2 bg-[#333]" />
           </div>
+          {stats && scanStatus === "done" && (
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-2 pt-2 border-t border-[#333]">
+              <div className="rounded bg-[#1e1e1e] p-2"><div className="text-[10px] text-zinc-500">Страниц</div><div className="text-[14px] font-semibold text-zinc-100">{stats.total_pages}</div></div>
+              <div className="rounded bg-[#1e1e1e] p-2"><div className="text-[10px] text-zinc-500">Ошибок</div><div className="text-[14px] font-semibold text-zinc-100">{stats.total_issues}</div></div>
+              <div className="rounded bg-[#1e1e1e] p-2"><div className="text-[10px] text-zinc-500">Критичных</div><div className="text-[14px] font-semibold text-red-400">{stats.critical_count}</div></div>
+              <div className="rounded bg-[#1e1e1e] p-2"><div className="text-[10px] text-zinc-500">Предупр.</div><div className="text-[14px] font-semibold text-yellow-400">{stats.warning_count}</div></div>
+              <div className="rounded bg-[#1e1e1e] p-2"><div className="text-[10px] text-zinc-500">Балл</div><div className="text-[14px] font-semibold text-emerald-400">{stats.score}/100</div></div>
+            </div>
+          )}
         </Card>
       )}
 
