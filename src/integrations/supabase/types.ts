@@ -1565,6 +1565,63 @@ export type Database = {
           },
         ]
       }
+      task_time_entries: {
+        Row: {
+          comment: string | null
+          created_at: string
+          duration_minutes: number
+          ended_at: string | null
+          entry_date: string
+          id: string
+          project_id: string | null
+          started_at: string
+          task_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          duration_minutes?: number
+          ended_at?: string | null
+          entry_date?: string
+          id?: string
+          project_id?: string | null
+          started_at?: string
+          task_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          duration_minutes?: number
+          ended_at?: string | null
+          entry_date?: string
+          id?: string
+          project_id?: string | null
+          started_at?: string
+          task_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_time_entries_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_time_entries_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "crm_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_members: {
         Row: {
           created_at: string
