@@ -17,7 +17,7 @@ import {
   formatDeadline,
 } from "@/lib/task-helpers";
 import { Calendar, FolderKanban, Search, AlertTriangle, Clock, CheckCircle2 } from "lucide-react";
-import { TaskDetailSheet } from "@/components/project/TaskDetailSheet";
+import { TaskDetailSheet, CrmTask } from "@/components/project/TaskDetailSheet";
 
 type TaskRow = {
   id: string;
@@ -40,7 +40,7 @@ export default function MyTasksPage() {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<"active" | "all" | "done">("active");
   const [search, setSearch] = useState("");
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [selectedTask, setSelectedTask] = useState<CrmTask | null>(null);
 
   // Получаем team_member id текущего пользователя (для assignee)
   const { data: myTeamMemberIds = [] } = useQuery({
@@ -125,7 +125,7 @@ export default function MyTasksPage() {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Мои задачи" subtitle="Все задачи назначенные вам или созданные вами" />
+      <PageHeader breadcrumbs="Мои задачи" />
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -220,7 +220,7 @@ export default function MyTasksPage() {
                     <Card
                       key={t.id}
                       className="p-3 cursor-pointer hover:border-primary/40 transition-colors"
-                      onClick={() => setSelectedTaskId(t.id)}
+                      onClick={() => setSelectedTask(t as unknown as CrmTask)}
                     >
                       <div className="flex items-start gap-3">
                         <div className="flex-1 min-w-0">
@@ -274,14 +274,14 @@ export default function MyTasksPage() {
         </div>
       )}
 
-      {selectedTaskId && (
-        <TaskDetailSheet
-          taskId={selectedTaskId}
-          open={!!selectedTaskId}
-          onOpenChange={(o) => !o && setSelectedTaskId(null)}
-          onUpdated={() => refetch()}
-        />
-      )}
+      <TaskDetailSheet
+        task={selectedTask}
+        open={!!selectedTask}
+        onClose={() => {
+          setSelectedTask(null);
+          refetch();
+        }}
+      />
     </div>
   );
 }
