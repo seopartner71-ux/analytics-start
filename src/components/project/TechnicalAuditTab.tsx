@@ -773,19 +773,9 @@ export function TechnicalAuditTab({ projectId }: Props) {
         </Card>
       )}
 
-      {/* 3 раздела с проверками */}
+      {/* Bento-плитки разделов + раскрываемые детали */}
       {scanStatus === "done" && (
-        <div className="space-y-3">
-          {SECTIONS.map((s, idx) => (
-            <AuditSection
-              key={s.id}
-              section={s}
-              issues={jobIssues}
-              baseUrl={project?.url}
-              defaultOpen={idx === 0}
-            />
-          ))}
-        </div>
+        <BentoSections sections={SECTIONS} issues={jobIssues} baseUrl={project?.url} />
       )}
 
       {scanStatus !== "done" && !showSfPanel && (
