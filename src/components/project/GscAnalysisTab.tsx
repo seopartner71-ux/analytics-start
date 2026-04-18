@@ -39,16 +39,17 @@ export function GscAnalysisTab({ projectId }: Props) {
     }
   })();
 
+  // KPI плитки в едином стиле «Аналитики» — семантические токены, без hex
   const kpis = [
-    { label: "Клики", icon: MousePointerClick, color: "text-blue-400", bg: "bg-blue-500/15" },
-    { label: "Показы", icon: Eye, color: "text-purple-400", bg: "bg-purple-500/15" },
-    { label: "Средний CTR", icon: Percent, color: "text-emerald-400", bg: "bg-emerald-500/15" },
-    { label: "Средняя позиция", icon: ArrowUpDown, color: "text-yellow-400", bg: "bg-yellow-500/15" },
-  ];
+    { label: "Клики", icon: MousePointerClick, tone: "primary" },
+    { label: "Показы", icon: Eye, tone: "chart-2" },
+    { label: "Средний CTR", icon: Percent, tone: "chart-3" },
+    { label: "Средняя позиция", icon: ArrowUpDown, tone: "chart-4" },
+  ] as const;
 
   return (
     <div className="space-y-5">
-      {/* HEADER (тот же стиль, что и в Webmaster/Audit) */}
+      {/* HEADER — единый стиль с другими вкладками */}
       <Card className="bg-card border-border p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-1.5">
@@ -60,31 +61,30 @@ export function GscAnalysisTab({ projectId }: Props) {
             </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <Badge className="bg-muted text-muted-foreground">Не подключено</Badge>
-            <Button
-              size="sm"
-              disabled
-              className="gap-1.5 text-[12px] bg-gradient-to-r from-purple-600 to-indigo-600 text-foreground border-0 opacity-70 cursor-not-allowed"
-            >
+            <Badge variant="secondary" className="text-[11px]">Не подключено</Badge>
+            <Button size="sm" disabled className="gap-1.5 text-[12px]">
               <Plug className="h-3.5 w-3.5" /> Подключить Google Search Console
             </Button>
           </div>
         </div>
       </Card>
 
-      {/* KPI placeholder */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {/* KPI — формат Аналитики */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {kpis.map((k) => {
           const Icon = k.icon;
+          const isPrimary = k.tone === "primary";
+          const bgCls = isPrimary ? "bg-primary/10" : `bg-[hsl(var(--${k.tone}))]/10`;
+          const textCls = isPrimary ? "text-primary" : `text-[hsl(var(--${k.tone}))]`;
           return (
-            <Card key={k.label} className="bg-card border-border p-4">
+            <Card key={k.label} className="bg-card rounded-lg shadow-sm border border-border p-4">
               <div className="flex items-center gap-3">
-                <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${k.bg}`}>
-                  <Icon className={`h-5 w-5 ${k.color}`} />
+                <div className={`h-9 w-9 rounded-lg ${bgCls} flex items-center justify-center`}>
+                  <Icon className={`h-4 w-4 ${textCls}`} />
                 </div>
-                <div className="min-w-0">
-                  <div className="text-[10px] text-muted-foreground uppercase tracking-wider">{k.label}</div>
-                  <div className="text-[20px] font-bold text-foreground tabular-nums">—</div>
+                <div>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{k.label}</p>
+                  <p className="text-xl font-bold text-foreground tabular-nums">—</p>
                 </div>
               </div>
             </Card>
@@ -97,7 +97,7 @@ export function GscAnalysisTab({ projectId }: Props) {
         <Card className="bg-card border-border p-4">
           <div className="flex items-center gap-2 mb-3">
             <Search className="h-4 w-4 text-muted-foreground" />
-            <h3 className="text-[14px] font-semibold text-foreground">Топ поисковые запросы</h3>
+            <h3 className="text-sm font-semibold text-foreground">Топ поисковые запросы</h3>
           </div>
           <div className="rounded-lg border border-dashed border-border bg-muted/20 p-8 text-center">
             <p className="text-[13px] text-muted-foreground">
@@ -109,7 +109,7 @@ export function GscAnalysisTab({ projectId }: Props) {
         <Card className="bg-card border-border p-4">
           <div className="flex items-center gap-2 mb-3">
             <Link2 className="h-4 w-4 text-muted-foreground" />
-            <h3 className="text-[14px] font-semibold text-foreground">Топ страницы</h3>
+            <h3 className="text-sm font-semibold text-foreground">Топ страницы</h3>
           </div>
           <div className="rounded-lg border border-dashed border-border bg-muted/20 p-8 text-center">
             <p className="text-[13px] text-muted-foreground">
@@ -123,7 +123,7 @@ export function GscAnalysisTab({ projectId }: Props) {
       <Card className="bg-card border-border p-4">
         <div className="flex items-center gap-2 mb-3">
           <BarChart3 className="h-4 w-4 text-muted-foreground" />
-          <h3 className="text-[14px] font-semibold text-foreground">Динамика трафика из Google</h3>
+          <h3 className="text-sm font-semibold text-foreground">Динамика трафика из Google</h3>
         </div>
         <div className="rounded-lg border border-dashed border-border bg-muted/20 p-12 text-center">
           <p className="text-[13px] text-muted-foreground">График кликов и показов появится после подключения GSC</p>
