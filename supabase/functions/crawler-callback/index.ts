@@ -226,6 +226,43 @@ async function analyzePage(pageUrl: string, html: string): Promise<DetectedIssue
     }
   }
 
+  // 2.1 Структура заголовков и размер HTML
+  if (html) {
+    const sizeBytes = new TextEncoder().encode(html).length;
+    if (sizeBytes > 200 * 1024) {
+      issues.push({
+        type: "onpage",
+        code: "page_too_large",
+        severity: "warning",
+        message: `Размер HTML страницы ${(sizeBytes / 1024).toFixed(1)} KB (>200 KB)`,
+        details: { size_bytes: sizeBytes, size_kb: Math.round(sizeBytes / 1024) },
+      });
+    }
+
+    const headings = extractHeadings(html);
+    const h2Count = headings.filter((h) => h.level === 2).length;
+    if (h2Count === 0) {
+      issues.push({
+        type: "onpage",
+        code: "missing_h2",
+        severity: "warning",
+        message: "На странице нет заголовков H2",
+        details: { headings_count: headings.length },
+      });
+    }
+
+    const hierarchyJumps = detectHeadingHierarchyIssues(headings);
+    if (hierarchyJumps.length > 0) {
+      issues.push({
+        type: "onpage",
+        code: "heading_hierarchy",
+        severity: "warning",
+        message: `Нарушена иерархия заголовков: ${hierarchyJumps.length} перескоков уровней`,
+        details: { jumps: hierarchyJumps.slice(0, 10), count: hierarchyJumps.length },
+      });
+    }
+  }
+
   // 3. Аналитика — счётчики Я.Метрики и GA
   if (html) {
     const analytics = detectAnalytics(html);
@@ -494,4 +531,46 @@ function detectStructuredData(html: string): {
   const twitterCard = has(/<meta\b[^>]*name\s*=\s*["']twitter:card["'][^>]*content\s*=\s*["'][^"']+["']/i);
 
   return { jsonLdBlocks, invalidJsonLd, og, twitterCard };
+}
+
+// ============ Заголовки H1-H6 ============
+type Heading = { level: number; text: string };
+
+function extractHeadings(html: string): Heading[] {
+  const result: Heading[] = [];
+  const re = /<h([1-6])\b[^>]*>([\s\S]*?)<\/h\1>/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(html)) !== null) {
+    const level = parseInt(m[1], 10);
+    const text = m[2]
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 200);
+    result.push({ level, text });
+  }
+  return result;
+}
+
+function detectHeadingHierarchyIssues(
+  headings: Heading[]
+): Array<{ from: number; to: number; text: string }> {
+  const jumps: Array<{ from: number; to: number; text: string }> = [];
+  if (headings.length === 0) return jumps;
+
+  // Иерархия нарушена, если уровень увеличивается более чем на 1.
+  // Например: H1 → H3 (перескок через H2).
+  let prevLevel = 0;
+  for (const h of headings) {
+    // Первый встретившийся заголовок задаёт стартовый уровень
+    if (prevLevel === 0) {
+      prevLevel = h.level;
+      continue;
+    }
+    if (h.level > prevLevel + 1) {
+      jumps.push({ from: prevLevel, to: h.level, text: h.text });
+    }
+    prevLevel = h.level;
+  }
+  return jumps;
 }
