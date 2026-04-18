@@ -495,6 +495,38 @@ export function TechnicalAuditTab({ projectId }: Props) {
     return () => { supabase.removeChannel(ch); };
   }, [jobId]);
 
+  // Auto-apply crawl_issues (type='technical') to Section 1 checks
+  useEffect(() => {
+    if (scanStatus !== "done") return;
+
+    const origin = (() => {
+      try { return project?.url ? new URL(project.url.startsWith("http") ? project.url : `https://${project.url}`).origin : null; } catch { return null; }
+    })();
+
+    // Group technical issues by code → list of URLs
+    const byCode = new Map<string, string[]>();
+    for (const i of jobIssues) {
+      if (i.type !== "technical") continue;
+      const code = i.code;
+      if (!code) continue;
+      let url = extractUrl(i);
+      if (url && url.startsWith("/") && origin) url = origin + url;
+      const arr = byCode.get(code) ?? [];
+      if (url) arr.push(url);
+      byCode.set(code, arr);
+    }
+
+    setS1(prev => prev.map(c => {
+      if (!c.code) return c;
+      if (byCode.has(c.code)) {
+        const urls = byCode.get(c.code) ?? [];
+        return { ...c, result: "error" as Result, urls };
+      }
+      // Auto-check passed: no issues with this code
+      return { ...c, result: "ok" as Result, urls: [] };
+    }));
+  }, [jobIssues, scanStatus, project?.url]);
+
 
   return (
     <div className="space-y-5">
