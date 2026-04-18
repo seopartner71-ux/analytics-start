@@ -226,7 +226,105 @@ async function analyzePage(pageUrl: string, html: string): Promise<DetectedIssue
     }
   }
 
-  // 3. SSL — проверка сертификата для HTTPS
+  // 3. Аналитика — счётчики Я.Метрики и GA
+  if (html) {
+    const analytics = detectAnalytics(html);
+    // Яндекс Метрика
+    if (analytics.metrikaIds.length === 0) {
+      issues.push({
+        type: "analytics",
+        code: "no_yandex_metrika",
+        severity: "warning",
+        message: "Счётчик Яндекс Метрики не найден на странице",
+      });
+    } else if (analytics.metrikaIds.length > 1) {
+      issues.push({
+        type: "analytics",
+        code: "duplicate_metrika",
+        severity: "warning",
+        message: `Найдено ${analytics.metrikaIds.length} счётчиков Яндекс Метрики`,
+        details: { counter_ids: analytics.metrikaIds },
+      });
+    }
+    // Google Analytics
+    if (analytics.gaIds.length === 0) {
+      issues.push({
+        type: "analytics",
+        code: "no_google_analytics",
+        severity: "warning",
+        message: "Google Analytics не найден на странице",
+      });
+    } else if (analytics.gaIds.length > 1) {
+      issues.push({
+        type: "analytics",
+        code: "duplicate_ga",
+        severity: "warning",
+        message: `Найдено ${analytics.gaIds.length} счётчиков Google Analytics`,
+        details: { measurement_ids: analytics.gaIds },
+      });
+    }
+  }
+
+  // 4. Структурированные данные: Schema.org JSON-LD, Open Graph, Twitter Card
+  if (html) {
+    const structured = detectStructuredData(html);
+
+    // Schema.org JSON-LD
+    if (structured.jsonLdBlocks === 0) {
+      issues.push({
+        type: "structured",
+        code: "no_schema_jsonld",
+        severity: "info",
+        message: "На странице нет Schema.org JSON-LD разметки",
+      });
+    } else if (structured.invalidJsonLd.length > 0) {
+      issues.push({
+        type: "structured",
+        code: "invalid_schema_jsonld",
+        severity: "warning",
+        message: `Найдено ${structured.invalidJsonLd.length} некорректных JSON-LD блоков`,
+        details: { errors: structured.invalidJsonLd.slice(0, 5) },
+      });
+    }
+
+    // Open Graph
+    if (!structured.og.title) {
+      issues.push({
+        type: "structured",
+        code: "no_og_title",
+        severity: "warning",
+        message: "Отсутствует мета-тег og:title",
+      });
+    }
+    if (!structured.og.description) {
+      issues.push({
+        type: "structured",
+        code: "no_og_description",
+        severity: "warning",
+        message: "Отсутствует мета-тег og:description",
+      });
+    }
+    if (!structured.og.image) {
+      issues.push({
+        type: "structured",
+        code: "no_og_image",
+        severity: "warning",
+        message: "Отсутствует мета-тег og:image",
+      });
+    }
+
+    // Twitter Card
+    if (!structured.twitterCard) {
+      issues.push({
+        type: "structured",
+        code: "no_twitter_card",
+        severity: "info",
+        message: "Отсутствует мета-тег twitter:card",
+      });
+    }
+  }
+
+  // 5. SSL — проверка сертификата для HTTPS
   if (parsed.protocol === "https:") {
     const sslCheck = await checkSSL(parsed.hostname);
     if (sslCheck) {
