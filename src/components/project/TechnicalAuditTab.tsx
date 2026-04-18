@@ -32,6 +32,7 @@ interface AuditCheck {
   comment: string;
   status: string;
   urls?: string[];
+  code?: string;
 }
 
 const SECTION_1: (Omit<AuditCheck, "id" | "result" | "comment" | "status" | "urls"> & { code?: string })[] = [
