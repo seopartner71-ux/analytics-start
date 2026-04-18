@@ -32,7 +32,7 @@ import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
 /* ────────── Types ────────── */
-type Client = { id: string; name: string; email: string | null; phone: string | null; notes: string | null };
+type Client = { id: string; name: string; email: string | null; phone: string | null; notes: string | null; source?: "finance" | "crm" };
 type Payment = {
   id: string; client_id: string | null; client_name: string; service: string;
   contract_amount: number; paid_amount: number; next_payment_date: string | null;
@@ -87,15 +87,48 @@ export default function Finance() {
   const monthStart = startOfMonth(today);
   const monthEnd = endOfMonth(today);
 
-  const { data: clients = [] } = useQuery({
+  const { data: financeClients = [] } = useQuery({
     queryKey: ["finance_clients"],
     queryFn: async (): Promise<Client[]> => {
       const { data, error } = await supabase.from("finance_clients").select("*").order("name");
       if (error) throw error;
-      return data as Client[];
+      return (data as any[]).map(c => ({ ...c, source: "finance" as const }));
     },
     enabled: !!ownerId,
   });
+
+  const { data: crmClients = [] } = useQuery({
+    queryKey: ["finance_crm_clients"],
+    queryFn: async (): Promise<Client[]> => {
+      const { data, error } = await supabase
+        .from("companies")
+        .select("id, name, email, phone, description")
+        .eq("type", "client")
+        .order("name");
+      if (error) throw error;
+      return (data as any[]).map(c => ({
+        id: `crm:${c.id}`,
+        name: c.name,
+        email: c.email,
+        phone: c.phone,
+        notes: c.description,
+        source: "crm" as const,
+      }));
+    },
+    enabled: !!ownerId,
+  });
+
+  const clients = useMemo<Client[]>(() => {
+    const seen = new Set<string>();
+    const merged: Client[] = [];
+    for (const c of [...financeClients, ...crmClients]) {
+      const key = c.name.trim().toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      merged.push(c);
+    }
+    return merged.sort((a, b) => a.name.localeCompare(b.name, "ru"));
+  }, [financeClients, crmClients]);
 
   const { data: payments = [] } = useQuery({
     queryKey: ["finance_payments"],
@@ -374,7 +407,7 @@ function PaymentsTab({ payments, clients, ownerId, onChange }: { payments: Payme
     if (!editing) return;
     const payload = {
       owner_id: ownerId,
-      client_id: editing.client_id || null,
+      client_id: editing.client_id && !String(editing.client_id).startsWith("crm:") ? editing.client_id : null,
       client_name: editing.client_name || "",
       service: editing.service || "",
       contract_amount: Number(editing.contract_amount || 0),
@@ -432,7 +465,7 @@ function PaymentsTab({ payments, clients, ownerId, onChange }: { payments: Payme
                 }}>
                   <SelectTrigger className="bg-[#1a1a1a] border-[#333]"><SelectValue placeholder="Выбрать клиента" /></SelectTrigger>
                   <SelectContent>
-                    {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                    {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}{c.source === "crm" ? " · CRM" : ""}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </Field>
@@ -528,7 +561,7 @@ function InvoicesTab({ invoices, clients, ownerId, onChange }: { invoices: Invoi
     const payload = {
       owner_id: ownerId,
       invoice_number: editing.invoice_number || nextNumber,
-      client_id: editing.client_id || null,
+      client_id: editing.client_id && !String(editing.client_id).startsWith("crm:") ? editing.client_id : null,
       client_name: editing.client_name || "",
       services: editing.services || [],
       amount: Number(editing.amount || 0),
@@ -576,7 +609,7 @@ function InvoicesTab({ invoices, clients, ownerId, onChange }: { invoices: Invoi
                   setEditing(p => ({ ...p, client_id: v, client_name: c?.name || "" }));
                 }}>
                   <SelectTrigger className="bg-[#1a1a1a] border-[#333]"><SelectValue placeholder="Клиент" /></SelectTrigger>
-                  <SelectContent>{clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                  <SelectContent>{clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}{c.source === "crm" ? " · CRM" : ""}</SelectItem>)}</SelectContent>
                 </Select>
               </Field>
               <Field label="Имя клиента"><Input className="bg-[#1a1a1a] border-[#333]" value={editing?.client_name || ""} onChange={e => setEditing(p => ({ ...p, client_name: e.target.value }))} /></Field>
