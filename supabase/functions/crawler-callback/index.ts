@@ -226,6 +226,43 @@ async function analyzePage(pageUrl: string, html: string): Promise<DetectedIssue
     }
   }
 
+  // 2.1 Структура заголовков и размер HTML
+  if (html) {
+    const sizeBytes = new TextEncoder().encode(html).length;
+    if (sizeBytes > 200 * 1024) {
+      issues.push({
+        type: "onpage",
+        code: "page_too_large",
+        severity: "warning",
+        message: `Размер HTML страницы ${(sizeBytes / 1024).toFixed(1)} KB (>200 KB)`,
+        details: { size_bytes: sizeBytes, size_kb: Math.round(sizeBytes / 1024) },
+      });
+    }
+
+    const headings = extractHeadings(html);
+    const h2Count = headings.filter((h) => h.level === 2).length;
+    if (h2Count === 0) {
+      issues.push({
+        type: "onpage",
+        code: "missing_h2",
+        severity: "warning",
+        message: "На странице нет заголовков H2",
+        details: { headings_count: headings.length },
+      });
+    }
+
+    const hierarchyJumps = detectHeadingHierarchyIssues(headings);
+    if (hierarchyJumps.length > 0) {
+      issues.push({
+        type: "onpage",
+        code: "heading_hierarchy",
+        severity: "warning",
+        message: `Нарушена иерархия заголовков: ${hierarchyJumps.length} перескоков уровней`,
+        details: { jumps: hierarchyJumps.slice(0, 10), count: hierarchyJumps.length },
+      });
+    }
+  }
+
   // 3. Аналитика — счётчики Я.Метрики и GA
   if (html) {
     const analytics = detectAnalytics(html);
