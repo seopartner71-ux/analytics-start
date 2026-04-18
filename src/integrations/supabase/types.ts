@@ -787,6 +787,141 @@ export type Database = {
         }
         Relationships: []
       }
+      gsc_daily_stats: {
+        Row: {
+          clicks: number
+          ctr: number
+          fetched_at: string
+          id: string
+          impressions: number
+          position: number
+          project_id: string
+          stat_date: string
+        }
+        Insert: {
+          clicks?: number
+          ctr?: number
+          fetched_at?: string
+          id?: string
+          impressions?: number
+          position?: number
+          project_id: string
+          stat_date: string
+        }
+        Update: {
+          clicks?: number
+          ctr?: number
+          fetched_at?: string
+          id?: string
+          impressions?: number
+          position?: number
+          project_id?: string
+          stat_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gsc_daily_stats_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gsc_pages: {
+        Row: {
+          clicks: number
+          ctr: number
+          date_from: string
+          date_to: string
+          fetched_at: string
+          id: string
+          impressions: number
+          page_url: string
+          position: number
+          project_id: string
+        }
+        Insert: {
+          clicks?: number
+          ctr?: number
+          date_from: string
+          date_to: string
+          fetched_at?: string
+          id?: string
+          impressions?: number
+          page_url: string
+          position?: number
+          project_id: string
+        }
+        Update: {
+          clicks?: number
+          ctr?: number
+          date_from?: string
+          date_to?: string
+          fetched_at?: string
+          id?: string
+          impressions?: number
+          page_url?: string
+          position?: number
+          project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gsc_pages_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gsc_queries: {
+        Row: {
+          clicks: number
+          ctr: number
+          date_from: string
+          date_to: string
+          fetched_at: string
+          id: string
+          impressions: number
+          position: number
+          project_id: string
+          query: string
+        }
+        Insert: {
+          clicks?: number
+          ctr?: number
+          date_from: string
+          date_to: string
+          fetched_at?: string
+          id?: string
+          impressions?: number
+          position?: number
+          project_id: string
+          query: string
+        }
+        Update: {
+          clicks?: number
+          ctr?: number
+          date_from?: string
+          date_to?: string
+          fetched_at?: string
+          id?: string
+          impressions?: number
+          position?: number
+          project_id?: string
+          query?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gsc_queries_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integrations: {
         Row: {
           access_token: string | null
@@ -1140,6 +1275,7 @@ export type Database = {
           deadline: string | null
           description: string | null
           efficiency: number | null
+          gsc_site_url: string | null
           id: string
           logo_url: string | null
           metrika_counter_id: string | null
@@ -1166,6 +1302,7 @@ export type Database = {
           deadline?: string | null
           description?: string | null
           efficiency?: number | null
+          gsc_site_url?: string | null
           id?: string
           logo_url?: string | null
           metrika_counter_id?: string | null
@@ -1192,6 +1329,7 @@ export type Database = {
           deadline?: string | null
           description?: string | null
           efficiency?: number | null
+          gsc_site_url?: string | null
           id?: string
           logo_url?: string | null
           metrika_counter_id?: string | null
@@ -1674,6 +1812,7 @@ export type Database = {
           deadline: string | null
           description: string | null
           efficiency: number | null
+          gsc_site_url: string | null
           id: string
           logo_url: string | null
           metrika_counter_id: string | null
