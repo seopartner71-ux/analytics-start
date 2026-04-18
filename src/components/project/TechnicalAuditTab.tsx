@@ -34,11 +34,12 @@ interface AuditCheck {
   urls?: string[];
 }
 
-const SECTION_1: Omit<AuditCheck, "id" | "result" | "comment" | "status" | "urls">[] = [
+const SECTION_1: (Omit<AuditCheck, "id" | "result" | "comment" | "status" | "urls"> & { code?: string })[] = [
   { number: "1.1", name: "Главное зеркало", section: "technical", importance: "high", difficulty: "low", type: "auto" },
-  { number: "1.2", name: "Протокол HTTPS", section: "technical", importance: "medium", difficulty: "high", type: "external", externalUrl: "https://www.ssllabs.com/ssltest/analyze.html?d={domain}" },
-  { number: "1.3", name: "XML-карта сайта", section: "technical", importance: "high", difficulty: "low", type: "auto" },
-  { number: "1.4", name: "Файл Robots.txt", section: "technical", importance: "high", difficulty: "low", type: "external", externalUrl: "https://{domain}/robots.txt" },
+  { number: "1.2", name: "Нет HTTPS", section: "technical", importance: "high", difficulty: "high", type: "auto", code: "no_https" },
+  { number: "1.3", name: "Нет sitemap.xml", section: "technical", importance: "high", difficulty: "low", type: "auto", code: "no_sitemap" },
+  { number: "1.4", name: "Нет robots.txt", section: "technical", importance: "high", difficulty: "low", type: "auto", code: "no_robots_txt" },
+  { number: "1.4.1", name: "robots.txt блокирует сайт", section: "technical", importance: "high", difficulty: "low", type: "auto", code: "robots_blocks_all" },
   { number: "1.5", name: "Аптайм сервера", section: "technical", importance: "high", difficulty: "medium", type: "external", externalUrl: "https://uptimerobot.com" },
   { number: "1.6", name: "Ошибки валидации", section: "technical", importance: "medium", difficulty: "medium", type: "external", externalUrl: "https://validator.w3.org/nu/?doc=https://{domain}" },
   { number: "1.7", name: "Проверка аффилированности", section: "technical", importance: "high", difficulty: "medium", type: "manual" },
@@ -47,14 +48,17 @@ const SECTION_1: Omit<AuditCheck, "id" | "result" | "comment" | "status" | "urls
   { number: "1.10", name: "Корректность URL адресов", section: "technical", importance: "high", difficulty: "low", type: "auto" },
   { number: "1.11", name: "Заголовки Last Modified", section: "technical", importance: "medium", difficulty: "low", type: "external", externalUrl: "https://last-modified.com/ru/check.html?url={domain}" },
   { number: "1.12", name: "Циклические ссылки", section: "technical", importance: "medium", difficulty: "low", type: "auto" },
-  { number: "1.13", name: "Ссылки в сквозных элементах", section: "technical", importance: "high", difficulty: "low", type: "manual" },
+  { number: "1.13", name: "Длинная цепочка редиректов", section: "technical", importance: "medium", difficulty: "low", type: "auto", code: "redirect_chain" },
   { number: "1.14", name: "Мусорные и пустые страницы", section: "technical", importance: "high", difficulty: "low", type: "auto" },
   { number: "1.15", name: "Полные дубли страниц", section: "technical", importance: "high", difficulty: "medium", type: "auto" },
-  { number: "1.16", name: "Элемент canonical", section: "technical", importance: "high", difficulty: "medium", type: "auto" },
+  { number: "1.16", name: "Отсутствует canonical", section: "technical", importance: "medium", difficulty: "medium", type: "auto", code: "missing_canonical" },
+  { number: "1.16.1", name: "Canonical не совпадает с URL", section: "technical", importance: "medium", difficulty: "medium", type: "auto", code: "canonical_mismatch" },
   { number: "1.17", name: "Индексация JS, CSS, изображений", section: "technical", importance: "high", difficulty: "low", type: "auto" },
-  { number: "1.18", name: "Элемент meta robots", section: "technical", importance: "medium", difficulty: "low", type: "auto" },
+  { number: "1.18", name: "Страница закрыта от индексации (noindex)", section: "technical", importance: "high", difficulty: "low", type: "auto", code: "noindex_meta" },
+  { number: "1.18.1", name: "Все ссылки закрыты nofollow", section: "technical", importance: "medium", difficulty: "low", type: "auto", code: "nofollow_meta" },
   { number: "1.19", name: "Редиректы со слешем и без", section: "technical", importance: "medium", difficulty: "low", type: "auto" },
-  { number: "1.20", name: "Код ответа несуществующих страниц", section: "technical", importance: "medium", difficulty: "medium", type: "auto" },
+  { number: "1.20", name: "Медленный ответ сервера (TTFB)", section: "technical", importance: "high", difficulty: "medium", type: "auto", code: "slow_ttfb" },
+  { number: "1.20.1", name: "Нет сжатия gzip", section: "technical", importance: "medium", difficulty: "low", type: "auto", code: "no_gzip" },
   { number: "1.21", name: "Оформление страницы 404", section: "technical", importance: "medium", difficulty: "medium", type: "manual" },
 ];
 
