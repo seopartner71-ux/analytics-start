@@ -280,17 +280,46 @@ export function TechnicalAuditTab({ projectId }: Props) {
   const allChecks = [...s1, ...s2, ...s3];
   const errorChecks = allChecks.filter(c => c.result === "error");
 
-  const handleStartScan = () => {
+  const handleStartScan = async () => {
     setShowSfPanel(true);
-    setScanStatus("scanning");
     setScanProgress(0);
-    const interval = setInterval(() => {
-      setScanProgress(prev => {
-        if (prev >= 100) { clearInterval(interval); setScanStatus("done"); return 100; }
-        return prev + Math.random() * 8;
-      });
-    }, 500);
+    setStats(null);
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) { toast.error("Войдите в систему"); return; }
+    const targetUrl = project?.url || (domain ? `https://${domain}` : "");
+    if (!targetUrl) { toast.error("У проекта не указан URL"); return; }
+
+    const { data: job, error } = await supabase
+      .from("crawl_jobs")
+      .insert({ project_id: projectId, user_id: userData.user.id, url: targetUrl, status: "pending", progress: 0 })
+      .select()
+      .single();
+    if (error || !job) { toast.error("Не удалось создать задание: " + (error?.message ?? "")); return; }
+    setJobId(job.id);
+    setScanStatus("pending");
+    toast.success("Задание создано — ожидает запуска краулера");
   };
+
+  // Realtime: subscribe to job status / progress and final stats
+  useEffect(() => {
+    if (!jobId) return;
+    const ch = supabase
+      .channel(`crawl-job-${jobId}`)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "crawl_jobs", filter: `id=eq.${jobId}` }, (payload: any) => {
+        const row = payload.new;
+        setScanStatus(row.status);
+        setScanProgress(row.progress ?? 0);
+        if (row.status === "done") toast.success("Аудит завершён");
+        if (row.status === "error") toast.error("Ошибка аудита: " + (row.error_message ?? ""));
+      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "crawl_stats", filter: `job_id=eq.${jobId}` }, (payload: any) => {
+        setStats(payload.new);
+      })
+      .subscribe();
+    channelRef.current = ch;
+    return () => { supabase.removeChannel(ch); };
+  }, [jobId]);
+
 
   return (
     <div className="space-y-5">
