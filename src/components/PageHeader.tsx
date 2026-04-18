@@ -30,6 +30,8 @@ const PAGE_TITLES: Record<string, string> = {
   "/links": "Ссылки",
   "/team": "Команда",
   "/admin": "Администрирование",
+  "/time-tracking": "Тайм-трекинг",
+  "/workload": "Загрузка команды",
 };
 
 interface PageHeaderProps {
