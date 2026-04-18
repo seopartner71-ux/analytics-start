@@ -622,7 +622,7 @@ export function TechnicalAuditTab({ projectId }: Props) {
             <div className="rounded-lg bg-[#1e1e1e] p-3"><div className="text-[10px] text-zinc-500 uppercase">Средний TTFB</div><div className="text-[18px] font-bold text-zinc-100">{effectiveStats.avg_load_time_ms} мс</div></div>
             <div className="rounded-lg bg-[#1e1e1e] p-3"><div className="text-[10px] text-zinc-500 uppercase">Оценка сайта</div><div className="text-[18px] font-bold text-emerald-400">{effectiveStats.score}/100</div></div>
           </div>
-          <IssuesGrouped issues={jobIssues} baseUrl={project?.url} />
+          <IssuesGrouped issues={jobIssues} baseUrl={project?.url} statsFallback={effectiveStats ? { critical_count: effectiveStats.critical_count ?? 0, warning_count: effectiveStats.warning_count ?? 0, info_count: effectiveStats.info_count ?? 0, total_issues: effectiveStats.total_issues ?? 0 } : null} />
 
         </Card>
       )}
