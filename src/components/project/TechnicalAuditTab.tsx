@@ -338,6 +338,10 @@ function AuditSection({
             const sevKey = has ? r.severity : "ok";
             const SevIcon = SEV_ICON[sevKey];
             const showText = TEXT_DETAIL_CODES.has(r.code);
+            const isDuplicateCode = r.code === "duplicate_title" || r.code === "duplicate_h1" || r.code === "duplicate_description";
+            const duplicateValue = isDuplicateCode && has
+              ? (items.find((it) => it.details && typeof it.details === "object" && (it.details as any).duplicate_value)?.details as any)?.duplicate_value
+              : null;
 
             return (
               <div key={r.code} className={cn(SEV_LEFT_BORDER[sevKey])}>
