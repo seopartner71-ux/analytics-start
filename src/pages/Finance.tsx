@@ -609,7 +609,7 @@ function InvoicesTab({ invoices, clients, ownerId, onChange }: { invoices: Invoi
                   setEditing(p => ({ ...p, client_id: v, client_name: c?.name || "" }));
                 }}>
                   <SelectTrigger className="bg-[#1a1a1a] border-[#333]"><SelectValue placeholder="Клиент" /></SelectTrigger>
-                  <SelectContent>{clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                  <SelectContent>{clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}{c.source === "crm" ? " · CRM" : ""}</SelectItem>)}</SelectContent>
                 </Select>
               </Field>
               <Field label="Имя клиента"><Input className="bg-[#1a1a1a] border-[#333]" value={editing?.client_name || ""} onChange={e => setEditing(p => ({ ...p, client_name: e.target.value }))} /></Field>
