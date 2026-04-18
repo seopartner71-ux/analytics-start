@@ -416,7 +416,7 @@ export function TechnicalAuditTab({ projectId }: Props) {
     queryFn: async () => {
       const { data } = await supabase
         .from("crawl_issues")
-        .select("id, type, severity, code, message, page_id, crawl_pages(url)")
+        .select("id, type, severity, code, message, page_id, details, crawl_pages(url)")
         .eq("job_id", jobId!);
       return (data ?? []) as any[];
     },
