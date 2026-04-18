@@ -431,56 +431,8 @@ export function TechnicalAuditTab({ projectId }: Props) {
             <div className="rounded-lg bg-[#1e1e1e] p-3"><div className="text-[10px] text-zinc-500 uppercase">Средний TTFB</div><div className="text-[18px] font-bold text-zinc-100">{effectiveStats.avg_load_time_ms} мс</div></div>
             <div className="rounded-lg bg-[#1e1e1e] p-3"><div className="text-[10px] text-zinc-500 uppercase">Оценка сайта</div><div className="text-[18px] font-bold text-emerald-400">{effectiveStats.score}/100</div></div>
           </div>
-          {(() => {
-            const TYPE_TITLES: Record<string, string> = {
-              technical: "Технические ошибки",
-              onpage: "Контент и On-Page",
-              media: "Медиа",
-              links: "Ссылки",
-            };
-            const SEV_CLS: Record<string, string> = {
-              critical: "bg-red-500/20 text-red-400 border-red-500/30",
-              warning: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-              info: "bg-blue-500/20 text-blue-400 border-blue-500/30",
-            };
-            const grouped: Record<string, any[]> = {};
-            for (const i of jobIssues) {
-              const t = i.type || "technical";
-              (grouped[t] ||= []).push(i);
-            }
-            const order = ["technical", "onpage", "media", "links"];
-            const keys = [...order.filter(k => grouped[k]), ...Object.keys(grouped).filter(k => !order.includes(k))];
-            if (keys.length === 0) return <div className="text-[12px] text-zinc-500">Проблем не обнаружено</div>;
-            return (
-              <div className="space-y-3">
-                {keys.map(type => (
-                  <div key={type} className="rounded-lg border border-[#333] bg-[#1e1e1e]">
-                    <div className="flex items-center gap-2 px-3 py-2 border-b border-[#333]">
-                      <span className="text-[13px] font-semibold text-zinc-200">{TYPE_TITLES[type] ?? type}</span>
-                      <Badge className="bg-zinc-700 text-zinc-300 text-[10px]">{grouped[type].length}</Badge>
-                    </div>
-                    <div className="divide-y divide-[#2a2a2a]">
-                      {grouped[type].map((i: any) => (
-                        <div key={i.id} className="flex items-start gap-3 px-3 py-2">
-                          <span className={cn("inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium shrink-0", SEV_CLS[i.severity] ?? SEV_CLS.info)}>
-                            {i.severity}
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <div className="text-[12px] text-zinc-200 break-words">{i.message || i.code}</div>
-                            {i.crawl_pages?.url && (
-                              <a href={i.crawl_pages.url} target="_blank" rel="noopener noreferrer" className="text-[11px] text-cyan-400 hover:underline font-mono break-all">
-                                {i.crawl_pages.url}
-                              </a>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            );
-          })()}
+          <IssuesGrouped issues={jobIssues} />
+
         </Card>
       )}
 
