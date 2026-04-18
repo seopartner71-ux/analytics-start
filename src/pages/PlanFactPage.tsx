@@ -4,11 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { TrendingDown, TrendingUp, AlertTriangle, Wallet, Clock, Target, DollarSign } from "lucide-react";
+import { TrendingDown, TrendingUp, AlertTriangle, Wallet, Clock, Target, DollarSign, BellRing, Loader2 } from "lucide-react";
 import { startOfMonth, endOfMonth, format, subMonths } from "date-fns";
 import { ru } from "date-fns/locale";
+import { toast } from "sonner";
 
 interface ProjectRow {
   id: string;
@@ -25,10 +27,29 @@ interface TimeEntry {
 
 export default function PlanFactPage() {
   const [monthOffset, setMonthOffset] = useState(0);
+  const [checking, setChecking] = useState(false);
 
   const targetMonth = useMemo(() => subMonths(new Date(), monthOffset), [monthOffset]);
   const monthStart = useMemo(() => startOfMonth(targetMonth), [targetMonth]);
   const monthEnd = useMemo(() => endOfMonth(targetMonth), [targetMonth]);
+
+  const runOverrunCheck = async () => {
+    setChecking(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("check-plan-overruns");
+      if (error) throw error;
+      const created = (data as { created?: number })?.created ?? 0;
+      toast.success(
+        created > 0
+          ? `Создано уведомлений: ${created}`
+          : "Превышений не найдено — все проекты в норме"
+      );
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Не удалось проверить");
+    } finally {
+      setChecking(false);
+    }
+  };
 
   const { data: projects = [] } = useQuery<ProjectRow[]>({
     queryKey: ["plan-fact-projects"],
@@ -118,21 +139,41 @@ export default function PlanFactPage() {
             Сравнение запланированных и фактических часов, выявление убыточных клиентов
           </p>
         </div>
-        <Select value={String(monthOffset)} onValueChange={(v) => setMonthOffset(Number(v))}>
-          <SelectTrigger className="w-56 h-9 text-[13px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {Array.from({ length: 6 }).map((_, i) => {
-              const d = subMonths(new Date(), i);
-              return (
-                <SelectItem key={i} value={String(i)}>
-                  {format(d, "LLLL yyyy", { locale: ru })}
-                </SelectItem>
-              );
-            })}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9 gap-1.5 text-[12px]"
+            onClick={runOverrunCheck}
+            disabled={checking}
+          >
+            {checking ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <BellRing className="h-3.5 w-3.5" />}
+            Проверить превышения
+          </Button>
+          <Select value={String(monthOffset)} onValueChange={(v) => setMonthOffset(Number(v))}>
+            <SelectTrigger className="w-56 h-9 text-[13px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {Array.from({ length: 6 }).map((_, i) => {
+                const d = subMonths(new Date(), i);
+                return (
+                  <SelectItem key={i} value={String(i)}>
+                    {format(d, "LLLL yyyy", { locale: ru })}
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground flex items-start gap-2">
+        <BellRing className="h-3.5 w-3.5 mt-0.5 shrink-0 text-primary" />
+        <span>
+          Автоматическая проверка выполняется ежедневно в 12:00 МСК. При использовании более 90% — предупреждение,
+          более 110% — критический алерт. Уведомления отправляются владельцу проекта.
+        </span>
       </div>
 
       {/* KPI cards */}

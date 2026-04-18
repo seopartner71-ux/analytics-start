@@ -1,1 +1,4 @@
 project_id = "iigedewmxyqigivsqwqz"
+
+[functions.check-plan-overruns]
+verify_jwt = false
