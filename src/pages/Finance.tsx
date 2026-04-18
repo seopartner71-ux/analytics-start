@@ -30,6 +30,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import BanksTab from "@/components/finance/BanksTab";
 
 /* ────────── Types ────────── */
 type Client = { id: string; name: string; email: string | null; phone: string | null; notes: string | null; source?: "finance" | "crm" };
@@ -307,6 +308,7 @@ export default function Finance() {
           <TabsTrigger value="expenses">Расходы</TabsTrigger>
           <TabsTrigger value="calendar">Платёжный календарь</TabsTrigger>
           <TabsTrigger value="taxes">Налоги</TabsTrigger>
+          <TabsTrigger value="banks">Банки</TabsTrigger>
         </TabsList>
 
         <TabsContent value="payments" className="mt-4">
@@ -323,6 +325,9 @@ export default function Finance() {
         </TabsContent>
         <TabsContent value="taxes" className="mt-4">
           <TaxesTab taxes={taxes} invoices={invoices} ownerId={ownerId} onChange={refreshAll} />
+        </TabsContent>
+        <TabsContent value="banks" className="mt-4">
+          <BanksTab ownerId={ownerId} />
         </TabsContent>
       </Tabs>
 

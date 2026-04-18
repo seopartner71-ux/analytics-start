@@ -142,6 +142,186 @@ export type Database = {
           },
         ]
       }
+      bank_accounts: {
+        Row: {
+          account_number: string
+          balance: number
+          bank_name: string
+          bik: string | null
+          created_at: string
+          currency: string
+          id: string
+          integration_id: string
+          is_active: boolean
+          last_sync_at: string | null
+          meta: Json
+          owner_id: string
+          updated_at: string
+        }
+        Insert: {
+          account_number: string
+          balance?: number
+          bank_name?: string
+          bik?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          integration_id: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          meta?: Json
+          owner_id: string
+          updated_at?: string
+        }
+        Update: {
+          account_number?: string
+          balance?: number
+          bank_name?: string
+          bik?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          integration_id?: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          meta?: Json
+          owner_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_accounts_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "bank_integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bank_integrations: {
+        Row: {
+          access_token: string | null
+          created_at: string
+          display_name: string
+          error_message: string | null
+          expires_at: string | null
+          id: string
+          last_sync_at: string | null
+          meta: Json
+          owner_id: string
+          provider: string
+          refresh_token: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          access_token?: string | null
+          created_at?: string
+          display_name?: string
+          error_message?: string | null
+          expires_at?: string | null
+          id?: string
+          last_sync_at?: string | null
+          meta?: Json
+          owner_id: string
+          provider: string
+          refresh_token?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string | null
+          created_at?: string
+          display_name?: string
+          error_message?: string | null
+          expires_at?: string | null
+          id?: string
+          last_sync_at?: string | null
+          meta?: Json
+          owner_id?: string
+          provider?: string
+          refresh_token?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      bank_transactions: {
+        Row: {
+          account_id: string
+          amount: number
+          category: string
+          counterparty: string
+          counterparty_inn: string | null
+          created_at: string
+          direction: string
+          external_id: string | null
+          id: string
+          linked_expense_id: string | null
+          linked_invoice_id: string | null
+          operation_date: string
+          owner_id: string
+          purpose: string
+          raw_data: Json
+        }
+        Insert: {
+          account_id: string
+          amount: number
+          category?: string
+          counterparty?: string
+          counterparty_inn?: string | null
+          created_at?: string
+          direction: string
+          external_id?: string | null
+          id?: string
+          linked_expense_id?: string | null
+          linked_invoice_id?: string | null
+          operation_date: string
+          owner_id: string
+          purpose?: string
+          raw_data?: Json
+        }
+        Update: {
+          account_id?: string
+          amount?: number
+          category?: string
+          counterparty?: string
+          counterparty_inn?: string | null
+          created_at?: string
+          direction?: string
+          external_id?: string | null
+          id?: string
+          linked_expense_id?: string | null
+          linked_invoice_id?: string | null
+          operation_date?: string
+          owner_id?: string
+          purpose?: string
+          raw_data?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_transactions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_transactions_linked_expense_id_fkey"
+            columns: ["linked_expense_id"]
+            isOneToOne: false
+            referencedRelation: "finance_expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_transactions_linked_invoice_id_fkey"
+            columns: ["linked_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "finance_invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cached_reports: {
         Row: {
           generated_at: string
