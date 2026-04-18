@@ -12,7 +12,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Settings2, Globe, CalendarDays, Link2, Wifi, WifiOff,
   Users, Save, X, BarChart3, Search, Eye, UserPlus,
-  CheckCircle2, AlertCircle, ExternalLink, Loader2,
+  CheckCircle2, AlertCircle, ExternalLink, Loader2, Clock, DollarSign, Wallet,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -47,6 +47,9 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
   const [accountManagerId, setAccountManagerId] = useState("");
   const [coExecutors, setCoExecutors] = useState<string[]>([]);
   const [observers, setObservers] = useState<string[]>([]);
+  const [plannedHours, setPlannedHours] = useState("");
+  const [hourlyRate, setHourlyRate] = useState("");
+  const [monthlyBudget, setMonthlyBudget] = useState("");
 
   // Integration fields
   const [integrationValues, setIntegrationValues] = useState<Record<string, Record<string, string>>>({});
@@ -98,6 +101,9 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
     setYandexHosts([]);
     setSelectedCounter(project.metrika_counter_id || "");
     setSelectedHost(project.yandex_webmaster_host_id || "");
+    setPlannedHours(project.planned_hours ? String(project.planned_hours) : "");
+    setHourlyRate(project.hourly_rate ? String(project.hourly_rate) : "");
+    setMonthlyBudget(project.monthly_budget ? String(project.monthly_budget) : "");
   }, [project, open]);
 
   // Init integration values
@@ -126,6 +132,9 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
         deadline: deadline || null,
         seo_specialist_id: seoSpecialistId || null,
         account_manager_id: accountManagerId || null,
+        planned_hours: Number(plannedHours) || 0,
+        hourly_rate: Number(hourlyRate) || 0,
+        monthly_budget: Number(monthlyBudget) || 0,
       };
       // Save selected counter/host to project
       if (selectedCounter) projectUpdate.metrika_counter_id = selectedCounter;
@@ -346,9 +355,60 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
                 <Input type="date" value={periodTo} onChange={e => setPeriodTo(e.target.value)} className="h-9 text-[13px] flex-1" />
               </div>
             </div>
-          </TabsContent>
 
-          {/* Integrations Tab */}
+            <Separator />
+
+            <div className="space-y-2">
+              <Label className="text-[12px] text-muted-foreground flex items-center gap-1.5">
+                <Wallet className="h-3 w-3" /> План-факт по проекту (за месяц)
+              </Label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                    <Clock className="h-3 w-3" /> Часов по договору
+                  </Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={plannedHours}
+                    onChange={(e) => setPlannedHours(e.target.value)}
+                    placeholder="40"
+                    className="h-9 text-[13px]"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                    <DollarSign className="h-3 w-3" /> Ставка в час, ₽
+                  </Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="100"
+                    value={hourlyRate}
+                    onChange={(e) => setHourlyRate(e.target.value)}
+                    placeholder="2000"
+                    className="h-9 text-[13px]"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                    <Wallet className="h-3 w-3" /> Бюджет договора, ₽
+                  </Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="1000"
+                    value={monthlyBudget}
+                    onChange={(e) => setMonthlyBudget(e.target.value)}
+                    placeholder="80000"
+                    className="h-9 text-[13px]"
+                  />
+                </div>
+              </div>
+              <p className="text-[10px] text-muted-foreground">Используется на странице План-факт для контроля прибыльности.</p>
+            </div>
+          </TabsContent>
           <TabsContent value="integrations" className="px-6 py-5 space-y-4 mt-0">
             {/* Yandex OAuth Block */}
             <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
