@@ -916,12 +916,12 @@ export function TechnicalAuditTab({ projectId }: Props) {
             </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            {scanStatus === "idle" && <Badge className="bg-muted text-muted-foreground">Ожидает запуска</Badge>}
-            {scanStatus === "pending" && <Badge className="bg-blue-500/20 text-blue-400">В очереди</Badge>}
-            {scanStatus === "running" && <Badge className="bg-yellow-500/20 text-yellow-400 animate-pulse">Сканирование...</Badge>}
-            {scanStatus === "done" && <Badge className="bg-emerald-500/20 text-emerald-400">Готов</Badge>}
-            {scanStatus === "error" && <Badge className="bg-red-500/20 text-red-400">Ошибка</Badge>}
-            <Button variant="outline" size="sm" className="gap-1.5 text-[12px] border-border text-foreground/90 hover:bg-muted/60">
+            {scanStatus === "idle" && <Badge variant="secondary" className="text-[11px]">Ожидает запуска</Badge>}
+            {scanStatus === "pending" && <Badge className="bg-[hsl(var(--chart-2))]/15 text-[hsl(var(--chart-2))] hover:bg-[hsl(var(--chart-2))]/15 text-[11px]">В очереди</Badge>}
+            {scanStatus === "running" && <Badge className="bg-[hsl(var(--chart-4))]/15 text-[hsl(var(--chart-4))] hover:bg-[hsl(var(--chart-4))]/15 animate-pulse text-[11px]">Сканирование...</Badge>}
+            {scanStatus === "done" && <Badge className="bg-[hsl(var(--chart-3))]/15 text-[hsl(var(--chart-3))] hover:bg-[hsl(var(--chart-3))]/15 text-[11px]">Готов</Badge>}
+            {scanStatus === "error" && <Badge variant="destructive" className="text-[11px]">Ошибка</Badge>}
+            <Button variant="outline" size="sm" className="gap-1.5 text-[12px]">
               <Download className="h-3.5 w-3.5" /> Скачать PDF отчёт
             </Button>
             {(jobId || scanStatus !== "idle") && (
@@ -930,14 +930,14 @@ export function TechnicalAuditTab({ projectId }: Props) {
                 size="sm"
                 disabled={resetting}
                 onClick={handleResetAll}
-                className="gap-1.5 text-[12px] border-red-500/40 text-red-400 hover:bg-red-500/10 hover:text-red-300"
+                className="gap-1.5 text-[12px] border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
               >
                 <Trash2 className="h-3.5 w-3.5" />
                 {resetting ? "Сброс..." : "Сбросить данные"}
               </Button>
             )}
-            <Button size="sm" className="gap-1.5 text-[12px] bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-foreground border-0" onClick={handleStartScan}>
-              🔍 Запустить аудит
+            <Button size="sm" className="gap-1.5 text-[12px]" onClick={handleStartScan}>
+              Запустить аудит
             </Button>
           </div>
         </div>
@@ -972,18 +972,36 @@ export function TechnicalAuditTab({ projectId }: Props) {
         </Card>
       )}
 
-      {/* Карточки статистики */}
+      {/* KPI результатов — единый стиль с «Аналитикой» */}
       {scanStatus === "done" && effectiveStats && (
-        <Card className="bg-card border-border p-4 space-y-2">
-          <div className="text-[13px] font-semibold text-foreground">Результаты сканирования</div>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            <div className="rounded-lg bg-muted/40 p-3"><div className="text-[10px] text-muted-foreground uppercase">Всего страниц</div><div className="text-[18px] font-bold text-foreground">{effectiveStats.total_pages}</div></div>
-            <div className="rounded-lg bg-muted/40 p-3"><div className="text-[10px] text-muted-foreground uppercase">Критических</div><div className="text-[18px] font-bold text-red-400">{effectiveStats.critical_count}</div></div>
-            <div className="rounded-lg bg-muted/40 p-3"><div className="text-[10px] text-muted-foreground uppercase">Предупреждений</div><div className="text-[18px] font-bold text-yellow-400">{effectiveStats.warning_count}</div></div>
-            <div className="rounded-lg bg-muted/40 p-3"><div className="text-[10px] text-muted-foreground uppercase">Средний TTFB</div><div className="text-[18px] font-bold text-foreground">{effectiveStats.avg_load_time_ms} мс</div></div>
-            <div className="rounded-lg bg-muted/40 p-3"><div className="text-[10px] text-muted-foreground uppercase">Оценка сайта</div><div className="text-[18px] font-bold text-emerald-400">{effectiveStats.score}/100</div></div>
-          </div>
-        </Card>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          {([
+            { label: "Всего страниц", value: effectiveStats.total_pages, icon: FileSearch, tone: "primary" },
+            { label: "Критических", value: effectiveStats.critical_count, icon: AlertCircle, tone: "destructive" },
+            { label: "Предупреждений", value: effectiveStats.warning_count, icon: AlertTriangle, tone: "chart-4" },
+            { label: "Средний TTFB", value: `${effectiveStats.avg_load_time_ms} мс`, icon: Info, tone: "chart-2" },
+            { label: "Оценка сайта", value: `${effectiveStats.score}/100`, icon: CheckCircle2, tone: "chart-3" },
+          ] as const).map((k) => {
+            const Icon = k.icon;
+            const isPrimary = k.tone === "primary";
+            const isDestructive = k.tone === "destructive";
+            const bgCls = isPrimary ? "bg-primary/10" : isDestructive ? "bg-destructive/10" : `bg-[hsl(var(--${k.tone}))]/10`;
+            const textCls = isPrimary ? "text-primary" : isDestructive ? "text-destructive" : `text-[hsl(var(--${k.tone}))]`;
+            return (
+              <Card key={k.label} className="bg-card rounded-lg shadow-sm border border-border p-4">
+                <div className="flex items-center gap-3">
+                  <div className={`h-9 w-9 rounded-lg ${bgCls} flex items-center justify-center`}>
+                    <Icon className={`h-4 w-4 ${textCls}`} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide truncate">{k.label}</p>
+                    <p className="text-xl font-bold text-foreground tabular-nums">{k.value}</p>
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
+        </div>
       )}
 
       {/* Bento-плитки разделов + раскрываемые детали */}
