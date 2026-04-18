@@ -14,7 +14,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   ArrowLeft, Plus, Send, Clock, CalendarDays, User, Tag, FileText,
   Upload, Download, Trash2, Loader2, Globe, Edit, XCircle, MessageSquare,
-  BarChart3, ShieldCheck, ClipboardCheck,
+  BarChart3, ShieldCheck, ClipboardCheck, Search,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,6 +29,7 @@ import EditProjectDialog from "@/components/project/EditProjectDialog";
 import { TaskDetailSheet, CrmTask } from "@/components/project/TaskDetailSheet";
 import { TechnicalAuditTab } from "@/components/project/TechnicalAuditTab";
 import { YandexWebmasterTab } from "@/components/project/YandexWebmasterTab";
+import { GscAnalysisTab } from "@/components/project/GscAnalysisTab";
 
 type TaskComment = Tables<"task_comments"> & {
   author?: Tables<"team_members"> | null;
@@ -335,6 +336,9 @@ export default function CrmProjectDetailPage() {
           <TabsTrigger value="health" className="gap-1.5 text-[13px]">
             <ShieldCheck className="h-3.5 w-3.5" /> Яндекс Вебмастер
           </TabsTrigger>
+          <TabsTrigger value="gsc" className="gap-1.5 text-[13px]">
+            <Search className="h-3.5 w-3.5" /> Анализ GSC
+          </TabsTrigger>
           <TabsTrigger value="audit" className="gap-1.5 text-[13px]">
             <ClipboardCheck className="h-3.5 w-3.5" /> Технический аудит
           </TabsTrigger>
@@ -346,6 +350,10 @@ export default function CrmProjectDetailPage() {
 
         <TabsContent value="health">
           <YandexWebmasterTab projectId={id!} />
+        </TabsContent>
+
+        <TabsContent value="gsc">
+          <GscAnalysisTab projectId={id!} />
         </TabsContent>
 
         <TabsContent value="audit">
