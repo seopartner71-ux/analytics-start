@@ -195,38 +195,72 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
     setEditStage("В работе");
   };
 
-  const completeTask = async () => {
+  const sendForReview = async () => {
     if (!task) return;
     const hasAttachment = comments.some(c => !c.is_system);
     if (!hasAttachment) {
-      toast.warning("Для завершения задачи необходимо прикрепить файл или ссылку как результат работы.", { duration: 4000 });
+      toast.warning("Прикрепите файл или ссылку как результат работы перед отправкой на проверку.", { duration: 4000 });
       return;
     }
     const projectId = editProjectId || task.project_id;
     let managerName = "";
     if (projectId) {
-      const { data: fullProj } = await supabase.from("projects").select("account_manager_id, owner_id, name").eq("id", projectId).single();
+      const { data: fullProj } = await supabase.from("projects").select("account_manager_id, name").eq("id", projectId).single();
       if (fullProj?.account_manager_id) {
-        const { data: tm } = await supabase.from("team_members").select("owner_id, full_name").eq("id", fullProj.account_manager_id).single();
-        if (tm) {
-          managerName = tm.full_name;
-          await supabase.from("notifications").insert({ user_id: tm.owner_id, project_id: projectId, title: `Задача завершена: ${task.title}`, body: `Исполнитель завершил задачу. Требуется проверка.` });
-        }
-      } else {
-        toast.info("У проекта не назначен аккаунт-менеджер. Задача завершена без передачи на проверку.", { duration: 4000 });
+        const { data: tm } = await supabase.from("team_members").select("full_name").eq("id", fullProj.account_manager_id).single();
+        if (tm) managerName = tm.full_name;
       }
-    } else {
-      toast.info("Задача не привязана к проекту. Завершена без передачи на проверку.", { duration: 4000 });
     }
-    updateField.mutate({ field: "stage", value: "Завершена", logMsg: managerName ? `Задача завершена и передана на проверку → ${managerName}` : `Задача завершена` });
-    await supabase.from("crm_tasks").update({ stage_color: "#10b981", stage: "Завершена", stage_progress: 100 } as any).eq("id", task.id);
-    setEditStage("Завершена");
-    if (managerName) toast.success(`Задача завершена. Передана на проверку → ${managerName}`);
+    await supabase.from("crm_tasks").update({
+      stage: "На проверке",
+      stage_color: STAGE_COLORS["На проверке"],
+      stage_progress: STAGE_PROGRESS["На проверке"],
+    } as any).eq("id", task.id);
+    await addSystemLog(managerName ? `Отправлено на проверку → ${managerName}` : `Отправлено на проверку`);
+    queryClient.invalidateQueries({ queryKey: ["crm-tasks"] });
+    queryClient.invalidateQueries({ queryKey: ["project-tasks"] });
+    setEditStage("На проверке");
+    toast.success(managerName ? `Задача передана на проверку → ${managerName}` : "Задача передана на проверку");
+  };
+
+  const acceptTask = async () => {
+    if (!task) return;
+    await supabase.from("crm_tasks").update({
+      stage: "Принята",
+      stage_color: STAGE_COLORS["Принята"],
+      stage_progress: 100,
+    } as any).eq("id", task.id);
+    await addSystemLog(`Аккаунт принял задачу ✓`);
+    queryClient.invalidateQueries({ queryKey: ["crm-tasks"] });
+    queryClient.invalidateQueries({ queryKey: ["project-tasks"] });
+    setEditStage("Принята");
+    toast.success("Задача принята");
+  };
+
+  const returnTask = async () => {
+    if (!task) return;
+    const reason = window.prompt("Причина возврата (комментарий для исполнителя):");
+    if (!reason || !reason.trim()) return;
+    await supabase.from("crm_tasks").update({
+      stage: "Возвращена",
+      stage_color: STAGE_COLORS["Возвращена"],
+      stage_progress: STAGE_PROGRESS["Возвращена"],
+    } as any).eq("id", task.id);
+    await supabase.from("task_comments").insert({
+      task_id: task.id,
+      body: `↩️ Возврат на доработку: ${reason}`,
+      is_system: false,
+    });
+    await addSystemLog(`Возвращена на доработку`);
+    queryClient.invalidateQueries({ queryKey: ["crm-tasks"] });
+    queryClient.invalidateQueries({ queryKey: ["project-tasks"] });
+    setEditStage("Возвращена");
+    toast.success("Задача возвращена исполнителю");
   };
 
   const resumeTask = () => {
     updateField.mutate({ field: "stage", value: "В работе", logMsg: `Задача возобновлена` });
-    supabase.from("crm_tasks").update({ stage_color: "#f59e0b", stage: "В работе", stage_progress: 50 } as any).eq("id", task!.id);
+    supabase.from("crm_tasks").update({ stage_color: STAGE_COLORS["В работе"], stage: "В работе", stage_progress: 50 } as any).eq("id", task!.id);
     setEditStage("В работе");
     toast.success("Задача возобновлена");
   };
