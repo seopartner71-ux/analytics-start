@@ -125,7 +125,7 @@ export default function MyTasksPage() {
 
   return (
     <div className="space-y-4">
-      <PageHeader breadcrumbs="Мои задачи" />
+      <PageHeader />
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
