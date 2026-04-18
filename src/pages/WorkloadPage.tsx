@@ -108,10 +108,11 @@ export default function WorkloadPage() {
 
   return (
     <div className="space-y-6 p-4 sm:p-6">
-      <PageHeader
-        title="Загрузка команды"
-        description="Активные задачи, дедлайны на неделю и индикатор перегрузки"
-      />
+      <PageHeader />
+      <div>
+        <h2 className="text-xl font-semibold">Загрузка команды</h2>
+        <p className="text-sm text-muted-foreground mt-1">Активные задачи, дедлайны на неделю и индикатор перегрузки</p>
+      </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <Card>
