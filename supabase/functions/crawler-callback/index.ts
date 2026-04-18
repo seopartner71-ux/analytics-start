@@ -110,6 +110,41 @@ Deno.serve(async (req) => {
       return json({ ok: true, inserted: rows.length });
     }
 
+    // analyze_page — детектит mixed_content, cyclic_link, ssl_expiring_soon / ssl_error
+    // body: { action, job_id, page_url, html?: string, page_id?: string }
+    if (action === "analyze_page") {
+      const pageUrl = body.page_url as string;
+      const html = (body.html as string) || "";
+      if (!pageUrl) return json({ error: "page_url is required" }, 400);
+
+      let pageId: string | null = body.page_id ?? null;
+      if (!pageId) {
+        const { data: pageRow } = await supabase
+          .from("crawl_pages")
+          .select("id")
+          .eq("job_id", job_id)
+          .eq("url", pageUrl)
+          .maybeSingle();
+        pageId = pageRow?.id ?? null;
+      }
+
+      const issues = await analyzePage(pageUrl, html);
+      if (issues.length === 0) return json({ ok: true, inserted: 0 });
+
+      const rows = issues.map((i) => ({
+        job_id,
+        page_id: pageId,
+        type: i.type,
+        code: i.code,
+        severity: i.severity,
+        message: i.message,
+        details: i.details ?? {},
+      }));
+      const { error } = await supabase.from("crawl_issues").insert(rows);
+      if (error) throw error;
+      return json({ ok: true, inserted: rows.length, codes: issues.map((i) => i.code) });
+    }
+
     if (action === "save_stats") {
       const s = body.stats || {};
       const row = {
