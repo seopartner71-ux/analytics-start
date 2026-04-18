@@ -26,7 +26,7 @@ const STAGE_COLORS: Record<string, string> = {
 
 const Index = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
 
   // ─── Projects ───
   const { data: projects = [], isLoading: loadingProjects } = useQuery({
