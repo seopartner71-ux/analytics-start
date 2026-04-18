@@ -123,6 +123,10 @@ const SECTIONS: SectionDef[] = [
       { code: "no_gzip", label: "Нет сжатия gzip/brotli", severity: "warning" },
       { code: "nofollow_meta", label: "Все ссылки закрыты nofollow", severity: "warning" },
       { code: "canonical_mismatch", label: "Canonical не совпадает с URL", severity: "info" },
+      { code: "deep_page", label: "Страница слишком глубоко вложена", severity: "warning" },
+      { code: "orphan_page", label: "Orphan страница — нет входящих ссылок", severity: "warning" },
+      { code: "hreflang_no_default", label: "Hreflang без x-default", severity: "info" },
+      { code: "hreflang_duplicate", label: "Дублирующиеся hreflang теги", severity: "warning" },
     ],
   },
   {
