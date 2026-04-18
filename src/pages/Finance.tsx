@@ -87,15 +87,48 @@ export default function Finance() {
   const monthStart = startOfMonth(today);
   const monthEnd = endOfMonth(today);
 
-  const { data: clients = [] } = useQuery({
+  const { data: financeClients = [] } = useQuery({
     queryKey: ["finance_clients"],
     queryFn: async (): Promise<Client[]> => {
       const { data, error } = await supabase.from("finance_clients").select("*").order("name");
       if (error) throw error;
-      return data as Client[];
+      return (data as any[]).map(c => ({ ...c, source: "finance" as const }));
     },
     enabled: !!ownerId,
   });
+
+  const { data: crmClients = [] } = useQuery({
+    queryKey: ["finance_crm_clients"],
+    queryFn: async (): Promise<Client[]> => {
+      const { data, error } = await supabase
+        .from("companies")
+        .select("id, name, email, phone, description")
+        .eq("type", "client")
+        .order("name");
+      if (error) throw error;
+      return (data as any[]).map(c => ({
+        id: `crm:${c.id}`,
+        name: c.name,
+        email: c.email,
+        phone: c.phone,
+        notes: c.description,
+        source: "crm" as const,
+      }));
+    },
+    enabled: !!ownerId,
+  });
+
+  const clients = useMemo<Client[]>(() => {
+    const seen = new Set<string>();
+    const merged: Client[] = [];
+    for (const c of [...financeClients, ...crmClients]) {
+      const key = c.name.trim().toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      merged.push(c);
+    }
+    return merged.sort((a, b) => a.name.localeCompare(b.name, "ru"));
+  }, [financeClients, crmClients]);
 
   const { data: payments = [] } = useQuery({
     queryKey: ["finance_payments"],
