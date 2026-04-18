@@ -29,6 +29,7 @@ import EditProjectDialog from "@/components/project/EditProjectDialog";
 import { TaskDetailSheet, CrmTask } from "@/components/project/TaskDetailSheet";
 import { TechnicalAuditTab } from "@/components/project/TechnicalAuditTab";
 import { YandexWebmasterTab } from "@/components/project/YandexWebmasterTab";
+import { GscAnalysisTab } from "@/components/project/GscAnalysisTab";
 
 type TaskComment = Tables<"task_comments"> & {
   author?: Tables<"team_members"> | null;
