@@ -551,7 +551,7 @@ function AuditSection({
                       items.slice(0, 100).map((it, i) => {
                         const detail = showText ? getDetailText(r.code, it.details) : null;
                         return (
-                          <div key={i} className="space-y-1 border-b border-[#222] last:border-0 pb-2 last:pb-0">
+                          <div key={i} className="space-y-1 border-b border-border last:border-0 pb-2 last:pb-0">
                             {it.url ? (
                               <a
                                 href={it.url}
@@ -720,7 +720,7 @@ export function TechnicalAuditTab({ projectId }: Props) {
             {scanStatus === "running" && <Badge className="bg-yellow-500/20 text-yellow-400 animate-pulse">Сканирование...</Badge>}
             {scanStatus === "done" && <Badge className="bg-emerald-500/20 text-emerald-400">Готов</Badge>}
             {scanStatus === "error" && <Badge className="bg-red-500/20 text-red-400">Ошибка</Badge>}
-            <Button variant="outline" size="sm" className="gap-1.5 text-[12px] border-[#444] text-foreground/90 hover:bg-[#333]">
+            <Button variant="outline" size="sm" className="gap-1.5 text-[12px] border-border text-foreground/90 hover:bg-muted/60">
               <Download className="h-3.5 w-3.5" /> Скачать PDF отчёт
             </Button>
             <Button size="sm" className="gap-1.5 text-[12px] bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-foreground border-0" onClick={handleStartScan}>
@@ -738,7 +738,7 @@ export function TechnicalAuditTab({ projectId }: Props) {
             <Button variant="ghost" size="sm" className="text-muted-foreground text-[11px]" onClick={() => setShowSfPanel(false)}>Скрыть</Button>
           </div>
           <div className="flex items-center gap-3">
-            <Input value={domain !== "—" ? `https://${domain}` : ""} readOnly className="bg-[#1e1e1e] border-border text-foreground/90 text-[12px] max-w-xs" />
+            <Input value={domain !== "—" ? `https://${domain}` : ""} readOnly className="bg-muted/40 border-border text-foreground/90 text-[12px] max-w-xs" />
             <span className="text-[11px] text-muted-foreground">Время сканирования: 5–15 минут для сайтов до 500 страниц</span>
           </div>
           {(scanStatus === "pending" || scanStatus === "running") && (
@@ -750,7 +750,7 @@ export function TechnicalAuditTab({ projectId }: Props) {
                 </span>
                 <span>{Math.round(scanProgress)}%</span>
               </div>
-              <Progress value={Math.min(scanProgress, 100)} className="h-2 bg-[#333]" />
+              <Progress value={Math.min(scanProgress, 100)} className="h-2 bg-muted" />
             </div>
           )}
           {scanStatus === "error" && (
@@ -764,11 +764,11 @@ export function TechnicalAuditTab({ projectId }: Props) {
         <Card className="bg-card border-border p-4 space-y-2">
           <div className="text-[13px] font-semibold text-foreground">Результаты сканирования</div>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            <div className="rounded-lg bg-[#1e1e1e] p-3"><div className="text-[10px] text-muted-foreground uppercase">Всего страниц</div><div className="text-[18px] font-bold text-foreground">{effectiveStats.total_pages}</div></div>
-            <div className="rounded-lg bg-[#1e1e1e] p-3"><div className="text-[10px] text-muted-foreground uppercase">Критических</div><div className="text-[18px] font-bold text-red-400">{effectiveStats.critical_count}</div></div>
-            <div className="rounded-lg bg-[#1e1e1e] p-3"><div className="text-[10px] text-muted-foreground uppercase">Предупреждений</div><div className="text-[18px] font-bold text-yellow-400">{effectiveStats.warning_count}</div></div>
-            <div className="rounded-lg bg-[#1e1e1e] p-3"><div className="text-[10px] text-muted-foreground uppercase">Средний TTFB</div><div className="text-[18px] font-bold text-foreground">{effectiveStats.avg_load_time_ms} мс</div></div>
-            <div className="rounded-lg bg-[#1e1e1e] p-3"><div className="text-[10px] text-muted-foreground uppercase">Оценка сайта</div><div className="text-[18px] font-bold text-emerald-400">{effectiveStats.score}/100</div></div>
+            <div className="rounded-lg bg-muted/40 p-3"><div className="text-[10px] text-muted-foreground uppercase">Всего страниц</div><div className="text-[18px] font-bold text-foreground">{effectiveStats.total_pages}</div></div>
+            <div className="rounded-lg bg-muted/40 p-3"><div className="text-[10px] text-muted-foreground uppercase">Критических</div><div className="text-[18px] font-bold text-red-400">{effectiveStats.critical_count}</div></div>
+            <div className="rounded-lg bg-muted/40 p-3"><div className="text-[10px] text-muted-foreground uppercase">Предупреждений</div><div className="text-[18px] font-bold text-yellow-400">{effectiveStats.warning_count}</div></div>
+            <div className="rounded-lg bg-muted/40 p-3"><div className="text-[10px] text-muted-foreground uppercase">Средний TTFB</div><div className="text-[18px] font-bold text-foreground">{effectiveStats.avg_load_time_ms} мс</div></div>
+            <div className="rounded-lg bg-muted/40 p-3"><div className="text-[10px] text-muted-foreground uppercase">Оценка сайта</div><div className="text-[18px] font-bold text-emerald-400">{effectiveStats.score}/100</div></div>
           </div>
         </Card>
       )}

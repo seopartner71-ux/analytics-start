@@ -364,7 +364,7 @@ export function YandexWebmasterTab({ projectId }: Props) {
             {lastUpdate && <span className="text-[11px] text-muted-foreground">Последнее обновление: {format(lastUpdate, "dd.MM.yyyy 'в' HH:mm")}</span>}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-1.5 text-[12px] border-[#444] text-foreground/90 hover:bg-[#333]">
+                <Button variant="outline" size="sm" className="gap-1.5 text-[12px] border-border text-foreground/90 hover:bg-muted/60">
                   {pdfLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileDown className="h-3.5 w-3.5" />}
                   Скачать отчёт
                 </Button>
@@ -424,14 +424,14 @@ export function YandexWebmasterTab({ projectId }: Props) {
       <div className="flex flex-wrap items-center gap-2">
         {([["all", "Все"], ["errors", "Только ошибки"], ["fatal", "Фатальные"], ["critical", "Критичные"]] as const).map(([val, label]) => (
           <Button key={val} variant={filter === val ? "default" : "outline"} size="sm"
-            className={cn("text-[11px] h-7", filter === val ? "bg-purple-600 hover:bg-purple-700 text-foreground border-0" : "border-[#444] text-muted-foreground hover:bg-[#333]")}
+            className={cn("text-[11px] h-7", filter === val ? "bg-purple-600 hover:bg-purple-700 text-foreground border-0" : "border-border text-muted-foreground hover:bg-muted/60")}
             onClick={() => setFilter(val)}>
             {label}
           </Button>
         ))}
         <div className="relative ml-auto">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input placeholder="Поиск по проверке..." value={search} onChange={e => setSearch(e.target.value)} className="pl-8 bg-[#1e1e1e] border-border text-foreground/90 text-[12px] h-7 w-[240px]" />
+          <Input placeholder="Поиск по проверке..." value={search} onChange={e => setSearch(e.target.value)} className="pl-8 bg-muted/40 border-border text-foreground/90 text-[12px] h-7 w-[240px]" />
         </div>
       </div>
 
@@ -467,7 +467,7 @@ export function YandexWebmasterTab({ projectId }: Props) {
               <div className="flex justify-between text-[12px]"><span className="text-muted-foreground">Всего страниц</span><span className="text-foreground font-bold">{Number(yTotal).toLocaleString("ru-RU")}</span></div>
               <div className="flex justify-between text-[12px]"><span className="text-muted-foreground">Исключено</span><span className="text-red-400 font-bold">{Number(yExcluded).toLocaleString("ru-RU")}</span></div>
               {Number(yTotal) > 0 && (
-                <Progress value={(Number(yIndexed) / Number(yTotal)) * 100} className="h-2 bg-[#333]" />
+                <Progress value={(Number(yIndexed) / Number(yTotal)) * 100} className="h-2 bg-muted" />
               )}
             </div>
           </Card>
@@ -527,10 +527,10 @@ export function YandexWebmasterTab({ projectId }: Props) {
                     <span className="text-[12px] font-mono text-muted-foreground">{c.number}</span>
                     <span className="text-[13px] font-medium text-foreground">{c.name}</span>
                   </div>
-                  <Textarea placeholder="Задание для специалиста / разработчика..." className="bg-[#1e1e1e] border-border text-foreground/90 text-[12px] min-h-[60px]" />
+                  <Textarea placeholder="Задание для специалиста / разработчика..." className="bg-muted/40 border-border text-foreground/90 text-[12px] min-h-[60px]" />
                   <div className="flex items-center gap-2">
                     <Select defaultValue="new">
-                      <SelectTrigger className="h-7 w-[130px] text-[11px] bg-[#1e1e1e] border-border text-foreground/90"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="h-7 w-[130px] text-[11px] bg-muted/40 border-border text-foreground/90"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="new">Новая</SelectItem>
                         <SelectItem value="inprogress">В работе</SelectItem>

@@ -256,7 +256,7 @@ export default function Finance() {
   if (!ownerId) return null;
 
   return (
-    <div className="min-h-screen bg-[#1a1a1a] text-foreground p-6 space-y-6">
+    <div className="min-h-screen bg-muted/40 text-foreground p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -435,14 +435,14 @@ function PaymentsTab({ payments, clients, ownerId, onChange }: { payments: Payme
       <CardHeader className="flex-row items-center justify-between">
         <div className="flex gap-2">
           <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="w-40 bg-[#1a1a1a] border-border"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-40 bg-muted/40 border-border"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Все статусы</SelectItem>
               {["paid", "partial", "unpaid", "overdue"].map(s => <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={filterClient} onValueChange={setFilterClient}>
-            <SelectTrigger className="w-48 bg-[#1a1a1a] border-border"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-48 bg-muted/40 border-border"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Все клиенты</SelectItem>
               {Array.from(new Set(payments.map(p => p.client_name).filter(Boolean))).map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
@@ -463,32 +463,32 @@ function PaymentsTab({ payments, clients, ownerId, onChange }: { payments: Payme
                   const c = clients.find(x => x.id === v);
                   setEditing(p => ({ ...p, client_id: v, client_name: c?.name || "" }));
                 }}>
-                  <SelectTrigger className="bg-[#1a1a1a] border-border"><SelectValue placeholder="Выбрать клиента" /></SelectTrigger>
+                  <SelectTrigger className="bg-muted/40 border-border"><SelectValue placeholder="Выбрать клиента" /></SelectTrigger>
                   <SelectContent>
                     {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}{c.source === "crm" ? " · CRM" : ""}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </Field>
               <Field label="Или имя клиента вручную">
-                <Input className="bg-[#1a1a1a] border-border" value={editing?.client_name || ""} onChange={e => setEditing(p => ({ ...p, client_name: e.target.value }))} />
+                <Input className="bg-muted/40 border-border" value={editing?.client_name || ""} onChange={e => setEditing(p => ({ ...p, client_name: e.target.value }))} />
               </Field>
-              <Field label="Услуга"><Input className="bg-[#1a1a1a] border-border" value={editing?.service || ""} onChange={e => setEditing(p => ({ ...p, service: e.target.value }))} /></Field>
+              <Field label="Услуга"><Input className="bg-muted/40 border-border" value={editing?.service || ""} onChange={e => setEditing(p => ({ ...p, service: e.target.value }))} /></Field>
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Сумма договора"><Input type="number" className="bg-[#1a1a1a] border-border" value={editing?.contract_amount || ""} onChange={e => setEditing(p => ({ ...p, contract_amount: Number(e.target.value) }))} /></Field>
-                <Field label="Оплачено"><Input type="number" className="bg-[#1a1a1a] border-border" value={editing?.paid_amount || ""} onChange={e => setEditing(p => ({ ...p, paid_amount: Number(e.target.value) }))} /></Field>
+                <Field label="Сумма договора"><Input type="number" className="bg-muted/40 border-border" value={editing?.contract_amount || ""} onChange={e => setEditing(p => ({ ...p, contract_amount: Number(e.target.value) }))} /></Field>
+                <Field label="Оплачено"><Input type="number" className="bg-muted/40 border-border" value={editing?.paid_amount || ""} onChange={e => setEditing(p => ({ ...p, paid_amount: Number(e.target.value) }))} /></Field>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Следующий платёж"><Input type="date" className="bg-[#1a1a1a] border-border" value={editing?.next_payment_date || ""} onChange={e => setEditing(p => ({ ...p, next_payment_date: e.target.value }))} /></Field>
+                <Field label="Следующий платёж"><Input type="date" className="bg-muted/40 border-border" value={editing?.next_payment_date || ""} onChange={e => setEditing(p => ({ ...p, next_payment_date: e.target.value }))} /></Field>
                 <Field label="Статус">
                   <Select value={editing?.status || "unpaid"} onValueChange={v => setEditing(p => ({ ...p, status: v }))}>
-                    <SelectTrigger className="bg-[#1a1a1a] border-border"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="bg-muted/40 border-border"><SelectValue /></SelectTrigger>
                     <SelectContent>{["paid", "partial", "unpaid", "overdue"].map(s => <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>)}</SelectContent>
                   </Select>
                 </Field>
               </div>
               <Field label="Повтор">
                 <Select value={editing?.recurrence || "once"} onValueChange={v => setEditing(p => ({ ...p, recurrence: v }))}>
-                  <SelectTrigger className="bg-[#1a1a1a] border-border"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="bg-muted/40 border-border"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="once">Разово</SelectItem>
                     <SelectItem value="weekly">Еженедельно</SelectItem>
@@ -496,7 +496,7 @@ function PaymentsTab({ payments, clients, ownerId, onChange }: { payments: Payme
                   </SelectContent>
                 </Select>
               </Field>
-              <Field label="Комментарий"><Textarea className="bg-[#1a1a1a] border-border" value={editing?.comment || ""} onChange={e => setEditing(p => ({ ...p, comment: e.target.value }))} /></Field>
+              <Field label="Комментарий"><Textarea className="bg-muted/40 border-border" value={editing?.comment || ""} onChange={e => setEditing(p => ({ ...p, comment: e.target.value }))} /></Field>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setOpen(false)}>Отмена</Button>
@@ -602,25 +602,25 @@ function InvoicesTab({ invoices, clients, ownerId, onChange }: { invoices: Invoi
           <DialogContent className="bg-card border-border text-foreground">
             <DialogHeader><DialogTitle>{editing?.id ? "Редактировать" : "Новый"} счёт</DialogTitle></DialogHeader>
             <div className="grid gap-3">
-              <Field label="Номер"><Input className="bg-[#1a1a1a] border-border" value={editing?.invoice_number || ""} onChange={e => setEditing(p => ({ ...p, invoice_number: e.target.value }))} /></Field>
+              <Field label="Номер"><Input className="bg-muted/40 border-border" value={editing?.invoice_number || ""} onChange={e => setEditing(p => ({ ...p, invoice_number: e.target.value }))} /></Field>
               <Field label="Клиент">
                 <Select value={editing?.client_id || ""} onValueChange={v => {
                   const c = clients.find(x => x.id === v);
                   setEditing(p => ({ ...p, client_id: v, client_name: c?.name || "" }));
                 }}>
-                  <SelectTrigger className="bg-[#1a1a1a] border-border"><SelectValue placeholder="Клиент" /></SelectTrigger>
+                  <SelectTrigger className="bg-muted/40 border-border"><SelectValue placeholder="Клиент" /></SelectTrigger>
                   <SelectContent>{clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}{c.source === "crm" ? " · CRM" : ""}</SelectItem>)}</SelectContent>
                 </Select>
               </Field>
-              <Field label="Имя клиента"><Input className="bg-[#1a1a1a] border-border" value={editing?.client_name || ""} onChange={e => setEditing(p => ({ ...p, client_name: e.target.value }))} /></Field>
-              <Field label="Сумма"><Input type="number" className="bg-[#1a1a1a] border-border" value={editing?.amount || ""} onChange={e => setEditing(p => ({ ...p, amount: Number(e.target.value) }))} /></Field>
+              <Field label="Имя клиента"><Input className="bg-muted/40 border-border" value={editing?.client_name || ""} onChange={e => setEditing(p => ({ ...p, client_name: e.target.value }))} /></Field>
+              <Field label="Сумма"><Input type="number" className="bg-muted/40 border-border" value={editing?.amount || ""} onChange={e => setEditing(p => ({ ...p, amount: Number(e.target.value) }))} /></Field>
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Выставлен"><Input type="date" className="bg-[#1a1a1a] border-border" value={editing?.issued_at || ""} onChange={e => setEditing(p => ({ ...p, issued_at: e.target.value }))} /></Field>
-                <Field label="Срок оплаты"><Input type="date" className="bg-[#1a1a1a] border-border" value={editing?.due_at || ""} onChange={e => setEditing(p => ({ ...p, due_at: e.target.value }))} /></Field>
+                <Field label="Выставлен"><Input type="date" className="bg-muted/40 border-border" value={editing?.issued_at || ""} onChange={e => setEditing(p => ({ ...p, issued_at: e.target.value }))} /></Field>
+                <Field label="Срок оплаты"><Input type="date" className="bg-muted/40 border-border" value={editing?.due_at || ""} onChange={e => setEditing(p => ({ ...p, due_at: e.target.value }))} /></Field>
               </div>
               <Field label="Статус">
                 <Select value={editing?.status || "draft"} onValueChange={v => setEditing(p => ({ ...p, status: v }))}>
-                  <SelectTrigger className="bg-[#1a1a1a] border-border"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="bg-muted/40 border-border"><SelectValue /></SelectTrigger>
                   <SelectContent>{["draft", "sent", "paid", "overdue"].map(s => <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>)}</SelectContent>
                 </Select>
               </Field>
@@ -713,13 +713,13 @@ function ExpensesTab({ expenses, ownerId, onChange }: { expenses: Expense[]; own
             <div className="grid gap-3">
               <Field label="Категория">
                 <Select value={editing?.category || "other"} onValueChange={v => setEditing(p => ({ ...p, category: v }))}>
-                  <SelectTrigger className="bg-[#1a1a1a] border-border"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="bg-muted/40 border-border"><SelectValue /></SelectTrigger>
                   <SelectContent>{Object.entries(EXPENSE_CATS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}</SelectContent>
                 </Select>
               </Field>
-              <Field label="Сумма"><Input type="number" className="bg-[#1a1a1a] border-border" value={editing?.amount || ""} onChange={e => setEditing(p => ({ ...p, amount: Number(e.target.value) }))} /></Field>
-              <Field label="Дата"><Input type="date" className="bg-[#1a1a1a] border-border" value={editing?.expense_date || ""} onChange={e => setEditing(p => ({ ...p, expense_date: e.target.value }))} /></Field>
-              <Field label="Комментарий"><Textarea className="bg-[#1a1a1a] border-border" value={editing?.comment || ""} onChange={e => setEditing(p => ({ ...p, comment: e.target.value }))} /></Field>
+              <Field label="Сумма"><Input type="number" className="bg-muted/40 border-border" value={editing?.amount || ""} onChange={e => setEditing(p => ({ ...p, amount: Number(e.target.value) }))} /></Field>
+              <Field label="Дата"><Input type="date" className="bg-muted/40 border-border" value={editing?.expense_date || ""} onChange={e => setEditing(p => ({ ...p, expense_date: e.target.value }))} /></Field>
+              <Field label="Комментарий"><Textarea className="bg-muted/40 border-border" value={editing?.comment || ""} onChange={e => setEditing(p => ({ ...p, comment: e.target.value }))} /></Field>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setOpen(false)}>Отмена</Button>
@@ -820,7 +820,7 @@ function PaymentCalendar({ payments, invoices, clients, ownerId, onChange }: { p
               return (
                 <div key={i} className={cn(
                   "min-h-[80px] border border-border rounded p-1 text-xs",
-                  isToday ? "bg-amber-500/5 border-amber-500/30" : "bg-[#1a1a1a]"
+                  isToday ? "bg-amber-500/5 border-amber-500/30" : "bg-muted/40"
                 )}>
                   <div className={cn("text-right mb-1 font-medium", isToday && "text-amber-400")}>{d.getDate()}</div>
                   <div className="space-y-0.5">
@@ -907,7 +907,7 @@ function TaxesTab({ taxes, invoices, ownerId, onChange }: { taxes: Tax[]; invoic
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
           {quarters.map(({ q, income, tax, deadline, status, existing, daysUntil }) => (
             <Card key={q} className={cn(
-              "bg-[#1a1a1a] border-border",
+              "bg-muted/40 border-border",
               status === "paid" && "border-emerald-500/40",
               status === "pending" && daysUntil <= 7 && daysUntil > 0 && "border-amber-500/60",
               daysUntil < 0 && status !== "paid" && "border-red-500/60"
