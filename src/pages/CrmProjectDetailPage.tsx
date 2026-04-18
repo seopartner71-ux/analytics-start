@@ -14,7 +14,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   ArrowLeft, Plus, Send, Clock, CalendarDays, User, Tag, FileText,
   Upload, Download, Trash2, Loader2, Globe, Edit, XCircle, MessageSquare,
-  BarChart3, ShieldCheck, ClipboardCheck, Search,
+  BarChart3, ShieldCheck, ClipboardCheck, Search, Smartphone,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,6 +28,7 @@ import SiteHealthDetailTab from "@/components/project/SiteHealthDetailTab";
 import EditProjectDialog from "@/components/project/EditProjectDialog";
 import { TaskDetailSheet, CrmTask } from "@/components/project/TaskDetailSheet";
 import { TechnicalAuditTab } from "@/components/project/TechnicalAuditTab";
+import { MobileFriendlyTab } from "@/components/project/MobileFriendlyTab";
 import { YandexWebmasterTab } from "@/components/project/YandexWebmasterTab";
 import { GscAnalysisTab } from "@/components/project/GscAnalysisTab";
 
@@ -342,6 +343,9 @@ export default function CrmProjectDetailPage() {
           <TabsTrigger value="audit" className="gap-1.5 text-[13px]">
             <ClipboardCheck className="h-3.5 w-3.5" /> Технический аудит
           </TabsTrigger>
+          <TabsTrigger value="mobile" className="gap-1.5 text-[13px]">
+            <Smartphone className="h-3.5 w-3.5" /> Адаптивность
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="analytics">
@@ -358,6 +362,10 @@ export default function CrmProjectDetailPage() {
 
         <TabsContent value="audit">
           <TechnicalAuditTab projectId={id!} />
+        </TabsContent>
+
+        <TabsContent value="mobile">
+          <MobileFriendlyTab projectId={id!} />
         </TabsContent>
 
         <TabsContent value="checklist">
