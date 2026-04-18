@@ -636,7 +636,9 @@ function BentoSections({
   issues: any[];
   baseUrl?: string | null;
 }) {
-  const [activeId, setActiveId] = useState<string>(sections[0]?.id ?? "");
+  // Скрываем секцию "speed" из сетки — для скорости есть отдельный блок PageSpeed Insights ниже
+  const visibleSections = sections.filter((s) => s.id !== "speed");
+  const [activeId, setActiveId] = useState<string>(visibleSections[0]?.id ?? "");
 
   // Считаем статистику по каждой секции
   const sectionStats = sections.map((s) => {
