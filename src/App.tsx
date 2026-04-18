@@ -19,6 +19,7 @@ import AdminPanel from "./pages/AdminPanel";
 import CompaniesPage from "./pages/CompaniesPage";
 import EmployeesPage from "./pages/EmployeesPage";
 import CrmTasksPage from "./pages/CrmTasksPage";
+import MyTasksPage from "./pages/MyTasksPage";
 import CrmProjectsPage from "./pages/CrmProjectsPage";
 import CrmProjectDetailPage from "./pages/CrmProjectDetailPage";
 import ContentPage from "./pages/ContentPage";
@@ -49,6 +50,7 @@ const App = () => (
                 <Route path="/companies" element={<ProtectedRoute><CrmLayout><CompaniesPage /></CrmLayout></ProtectedRoute>} />
                 <Route path="/employees" element={<ProtectedRoute><CrmLayout><EmployeesPage /></CrmLayout></ProtectedRoute>} />
                 <Route path="/tasks" element={<ProtectedRoute><CrmLayout><CrmTasksPage /></CrmLayout></ProtectedRoute>} />
+                <Route path="/my-tasks" element={<ProtectedRoute><CrmLayout><MyTasksPage /></CrmLayout></ProtectedRoute>} />
                 <Route path="/crm-projects" element={<ProtectedRoute><CrmLayout><CrmProjectsPage /></CrmLayout></ProtectedRoute>} />
                 <Route path="/crm-projects/:id" element={<ProtectedRoute><CrmLayout><CrmProjectDetailPage /></CrmLayout></ProtectedRoute>} />
                 <Route path="/content" element={<ProtectedRoute><CrmLayout><ContentPage /></CrmLayout></ProtectedRoute>} />
