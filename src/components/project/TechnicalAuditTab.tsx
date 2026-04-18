@@ -328,7 +328,16 @@ function AuditSection({
   }
 
   const catalogCodes = new Set(section.checks.map((c) => c.code));
-  const extraCodes = Array.from(groupMap.keys()).filter((c) => !catalogCodes.has(c));
+  // Коды, принадлежащие другим секциям каталога — исключаем из "extras",
+  // чтобы избежать дублей и отображения raw-кода вместо русского label.
+  const ownedByOtherSection = new Set<string>();
+  for (const s of SECTIONS) {
+    if (s.id === section.id) continue;
+    for (const c of s.checks) ownedByOtherSection.add(c.code);
+  }
+  const extraCodes = Array.from(groupMap.keys()).filter(
+    (c) => !catalogCodes.has(c) && !ownedByOtherSection.has(c),
+  );
   const rows = [
     ...section.checks.map((c) => ({
       code: c.code,
