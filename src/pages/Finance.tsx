@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, startOfMonth, endOfMonth, addDays, addMonths, isSameDay, isWithinInterval, parseISO } from "date-fns";
 import { ru } from "date-fns/locale";
 import {
-  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
+  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, ComposedChart,
   XAxis, YAxis, Tooltip as RTooltip, ResponsiveContainer, Legend, CartesianGrid,
 } from "recharts";
 import * as XLSX from "xlsx";
@@ -206,6 +206,29 @@ export default function Finance() {
     return monthlyChart.map(r => { acc += r.Доход - r.Расход; return { month: r.month, Прибыль: acc }; });
   }, [monthlyChart]);
 
+  /* Динамика выручки и прибыли — последние 6 месяцев */
+  const revenueProfit6m = useMemo(() => {
+    const months6 = Array.from({ length: 6 }, (_, i) => addMonths(startOfMonth(today), -5 + i));
+    return months6.map(m => {
+      const ms = startOfMonth(m), me = endOfMonth(m);
+      const revenue = invoices
+        .filter(i => i.status === "paid" && isWithinInterval(parseISO(i.issued_at), { start: ms, end: me }))
+        .reduce((s, i) => s + Number(i.amount), 0)
+        + payments
+          .filter(p => p.next_payment_date && isWithinInterval(parseISO(p.next_payment_date), { start: ms, end: me }))
+          .reduce((s, p) => s + Number(p.paid_amount || 0), 0);
+      const exp = expenses
+        .filter(e => isWithinInterval(parseISO(e.expense_date), { start: ms, end: me }))
+        .reduce((s, e) => s + Number(e.amount), 0);
+      return {
+        month: format(m, "LLL yy", { locale: ru }),
+        Выручка: revenue,
+        Прибыль: revenue - exp,
+      };
+    });
+  }, [today, invoices, payments, expenses]);
+
+
   const expenseByCat = useMemo(() => {
     const map: Record<string, number> = {};
     expenses.forEach(e => { map[e.category] = (map[e.category] || 0) + Number(e.amount); });
@@ -302,6 +325,31 @@ export default function Finance() {
           <TaxesTab taxes={taxes} invoices={invoices} ownerId={ownerId} onChange={refreshAll} />
         </TabsContent>
       </Tabs>
+
+
+      {/* Динамика выручки и прибыли за 6 месяцев */}
+      <ChartCard title="Динамика выручки и прибыли · последние 6 месяцев">
+        <ResponsiveContainer width="100%" height={300}>
+          <ComposedChart data={revenueProfit6m}>
+            <defs>
+              <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#10b981" stopOpacity={0.85} />
+                <stop offset="95%" stopColor="#10b981" stopOpacity={0.35} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+            <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" />
+            <YAxis stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => `${(v / 1000).toFixed(0)}к`} />
+            <RTooltip
+              contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}
+              formatter={(v) => new Intl.NumberFormat("ru-RU", { style: "currency", currency: "RUB", maximumFractionDigits: 0 }).format(Number(v))}
+            />
+            <Legend />
+            <Bar dataKey="Выручка" fill="url(#revGrad)" radius={[6, 6, 0, 0]} barSize={38} />
+            <Line type="monotone" dataKey="Прибыль" stroke="#FFB800" strokeWidth={3} dot={{ r: 4, fill: "#FFB800" }} activeDot={{ r: 6 }} />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </ChartCard>
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
