@@ -286,6 +286,16 @@ export default function CrmTasksPage() {
             <AlertCircle className="h-3 w-3" />{overdueCount} Просрочены
           </Badge>
         )}
+        {reviewCount > 0 && (
+          <Badge className="text-[10px] h-5 gap-1 bg-purple-500/10 text-purple-600 dark:text-purple-400 border-0 hover:bg-purple-500/10">
+            <Eye className="h-3 w-3" />{reviewCount} На проверке
+          </Badge>
+        )}
+        {returnedCount > 0 && (
+          <Badge className="text-[10px] h-5 gap-1 bg-destructive/10 text-destructive border-0 hover:bg-destructive/10">
+            <RotateCcw className="h-3 w-3" />{returnedCount} Возвращены
+          </Badge>
+        )}
         <Badge variant="secondary" className="text-[10px] h-5 ml-1">Все: {tasks.length}</Badge>
       </div>
 
@@ -326,9 +336,11 @@ export default function CrmTasksPage() {
             <SelectItem value="all">Все статусы</SelectItem>
             <SelectItem value="new">Новые</SelectItem>
             <SelectItem value="in_progress">В работе</SelectItem>
-            <SelectItem value="waiting">Ждёт выполнения</SelectItem>
+            <SelectItem value="review">На проверке</SelectItem>
+            <SelectItem value="returned">Возвращены</SelectItem>
             <SelectItem value="overdue">Просрочены</SelectItem>
-            <SelectItem value="done">Завершена</SelectItem>
+            <SelectItem value="soon">Скоро дедлайн</SelectItem>
+            <SelectItem value="accepted">Принятые/Завершённые</SelectItem>
           </SelectContent>
         </Select>
 
