@@ -1655,6 +1655,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_next_crawl_job: {
+        Args: never
+        Returns: {
+          id: string
+          project_id: string
+          url: string
+        }[]
+      }
       get_shared_project: {
         Args: { p_share_token: string }
         Returns: {
