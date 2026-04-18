@@ -11,7 +11,7 @@ import {
   Send, MessageSquare, User, CalendarDays, Hourglass, FolderOpen,
   Paperclip, Copy, Video, UserPlus, Search as SearchIcon, Edit3, Play,
   CheckCircle2, RotateCcw, Link, FileText, Upload, Loader2, Plus,
-  Clock, AlertTriangle,
+  Clock, AlertTriangle, Eye, ThumbsUp, ThumbsDown,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -19,6 +19,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Progress } from "@/components/ui/progress";
+import { getDeadlineStatus, DEADLINE_STYLES, STAGE_COLORS, STAGE_PROGRESS } from "@/lib/task-helpers";
 import type { Tables } from "@/integrations/supabase/types";
 
 export type CrmTask = Tables<"crm_tasks"> & {
