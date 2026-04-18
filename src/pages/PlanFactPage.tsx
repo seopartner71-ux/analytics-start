@@ -27,10 +27,29 @@ interface TimeEntry {
 
 export default function PlanFactPage() {
   const [monthOffset, setMonthOffset] = useState(0);
+  const [checking, setChecking] = useState(false);
 
   const targetMonth = useMemo(() => subMonths(new Date(), monthOffset), [monthOffset]);
   const monthStart = useMemo(() => startOfMonth(targetMonth), [targetMonth]);
   const monthEnd = useMemo(() => endOfMonth(targetMonth), [targetMonth]);
+
+  const runOverrunCheck = async () => {
+    setChecking(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("check-plan-overruns");
+      if (error) throw error;
+      const created = (data as { created?: number })?.created ?? 0;
+      toast.success(
+        created > 0
+          ? `Создано уведомлений: ${created}`
+          : "Превышений не найдено — все проекты в норме"
+      );
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Не удалось проверить");
+    } finally {
+      setChecking(false);
+    }
+  };
 
   const { data: projects = [] } = useQuery<ProjectRow[]>({
     queryKey: ["plan-fact-projects"],
