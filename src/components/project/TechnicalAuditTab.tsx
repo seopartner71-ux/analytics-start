@@ -256,32 +256,60 @@ const SEV_CLS: Record<string, string> = {
 
 const SEV_ORDER: Record<string, number> = { critical: 0, warning: 1, info: 2 };
 
-function IssuesGrouped({ issues }: { issues: any[] }) {
+function extractUrl(issue: any): string | null {
+  const fromPage = issue?.crawl_pages?.url;
+  if (fromPage) return fromPage;
+  const d = issue?.details;
+  if (d && typeof d === "object") {
+    if (typeof d.url === "string" && d.url) return d.url;
+    if (typeof d.page_url === "string" && d.page_url) return d.page_url;
+  }
+  const msg: string | undefined = issue?.message;
+  if (msg) {
+    const m = msg.match(/(https?:\/\/\S+)/);
+    if (m) return m[1];
+    const idx = msg.lastIndexOf(": ");
+    if (idx !== -1) {
+      const tail = msg.slice(idx + 2).trim();
+      if (tail.startsWith("/") || tail.startsWith("http")) return tail;
+    }
+  }
+  return null;
+}
+
+function IssuesGrouped({ issues, baseUrl }: { issues: any[]; baseUrl?: string | null }) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   if (!issues || issues.length === 0) {
     return <div className="text-[12px] text-zinc-500">Проблем не обнаружено</div>;
   }
 
-  // Group by code
-  const map = new Map<string, { code: string; severity: string; message: string; urls: Set<string> }>();
+  const origin = (() => {
+    try { return baseUrl ? new URL(baseUrl.startsWith("http") ? baseUrl : `https://${baseUrl}`).origin : null; } catch { return null; }
+  })();
+
+  // Group by code; count = number of issue rows (each row = one occurrence)
+  const map = new Map<string, { code: string; severity: string; message: string; urls: string[]; total: number }>();
   for (const i of issues) {
     const code = i.code || "UNKNOWN";
     let g = map.get(code);
     if (!g) {
-      g = { code, severity: i.severity || "info", message: i.message || "", urls: new Set() };
+      g = { code, severity: i.severity || "info", message: i.message || "", urls: [], total: 0 };
       map.set(code, g);
     }
-    const url = i.crawl_pages?.url;
-    if (url) g.urls.add(url);
-    // Prefer worst severity
+    g.total += 1;
+    let url = extractUrl(i);
+    if (url) {
+      if (url.startsWith("/") && origin) url = origin + url;
+      g.urls.push(url);
+    }
     if ((SEV_ORDER[i.severity] ?? 9) < (SEV_ORDER[g.severity] ?? 9)) g.severity = i.severity;
   }
 
   const groups = Array.from(map.values()).sort((a, b) => {
     const s = (SEV_ORDER[a.severity] ?? 9) - (SEV_ORDER[b.severity] ?? 9);
     if (s !== 0) return s;
-    return b.urls.size - a.urls.size;
+    return b.total - a.total;
   });
 
   return (
@@ -289,7 +317,7 @@ function IssuesGrouped({ issues }: { issues: any[] }) {
       {groups.map((g) => {
         const isOpen = !!expanded[g.code];
         const label = ISSUE_CODE_LABELS[g.code] ?? g.message ?? g.code;
-        const count = g.urls.size;
+        const count = g.total;
         return (
           <div key={g.code}>
             <button
@@ -304,19 +332,18 @@ function IssuesGrouped({ issues }: { issues: any[] }) {
               <span className="flex-1 text-[13px] text-zinc-200 truncate">{label}</span>
               <Badge className="bg-zinc-700 text-zinc-300 text-[11px] shrink-0">{count} {count === 1 ? "страница" : count < 5 ? "страницы" : "страниц"}</Badge>
             </button>
-            {isOpen && count > 0 && (
+            {isOpen && (
               <div className="px-3 pb-3 pl-10 space-y-1">
-                {Array.from(g.urls).map((url) => (
-                  <a
-                    key={url}
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block text-[12px] text-cyan-400 hover:underline font-mono break-all"
-                  >
-                    {url}
-                  </a>
-                ))}
+                {g.urls.length === 0 ? (
+                  <div className="text-[12px] text-zinc-500">URL не указаны краулером</div>
+                ) : (
+                  g.urls.map((url, idx) => (
+                    <a key={`${url}-${idx}`} href={url} target="_blank" rel="noopener noreferrer"
+                      className="block text-[12px] text-cyan-400 hover:underline font-mono break-all">
+                      {url}
+                    </a>
+                  ))
+                )}
               </div>
             )}
           </div>
