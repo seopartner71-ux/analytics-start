@@ -336,6 +336,9 @@ export default function CrmProjectDetailPage() {
           <TabsTrigger value="health" className="gap-1.5 text-[13px]">
             <ShieldCheck className="h-3.5 w-3.5" /> Яндекс Вебмастер
           </TabsTrigger>
+          <TabsTrigger value="gsc" className="gap-1.5 text-[13px]">
+            <Search className="h-3.5 w-3.5" /> Анализ GSC
+          </TabsTrigger>
           <TabsTrigger value="audit" className="gap-1.5 text-[13px]">
             <ClipboardCheck className="h-3.5 w-3.5" /> Технический аудит
           </TabsTrigger>
@@ -347,6 +350,10 @@ export default function CrmProjectDetailPage() {
 
         <TabsContent value="health">
           <YandexWebmasterTab projectId={id!} />
+        </TabsContent>
+
+        <TabsContent value="gsc">
+          <GscAnalysisTab projectId={id!} />
         </TabsContent>
 
         <TabsContent value="audit">
