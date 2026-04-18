@@ -5,8 +5,60 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { ChevronDown, ChevronRight, Download, ExternalLink, ShieldAlert, Link2, FileSearch, CheckCircle2, AlertTriangle, Info, AlertCircle } from "lucide-react";
+import { ChevronDown, ChevronRight, Download, ExternalLink, ShieldAlert, Link2, FileSearch, CheckCircle2, AlertTriangle, Info, AlertCircle, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+// ============ Описания проверок (для tooltip) ============
+type CheckInfo = { description: string; importance: "Критическая" | "Высокая" | "Средняя" | "Низкая" };
+const CHECK_INFO: Record<string, CheckInfo> = {
+  // Технические
+  no_https: { importance: "Высокая", description: "Сайт не использует HTTPS. HTTPS защищает данные пользователей и является фактором ранжирования в Google и Яндекс. Сайты без HTTPS помечаются браузером как небезопасные." },
+  no_http_to_https_redirect: { importance: "Средняя", description: "HTTP не перенаправляет на HTTPS. Пользователи и роботы могут попасть на незащищённую версию сайта. Настройте 301 редирект с HTTP на HTTPS." },
+  redirect_chain: { importance: "Средняя", description: "Длинная цепочка редиректов. Цепочки редиректов замедляют загрузку страниц и теряют ссылочный вес. Рекомендуется прямой редирект в 1 шаг." },
+  no_robots_txt: { importance: "Высокая", description: "Нет файла robots.txt. Файл robots.txt управляет индексацией сайта поисковыми роботами. Без него роботы могут индексировать служебные страницы." },
+  robots_blocks_all: { importance: "Критическая", description: "robots.txt блокирует весь сайт. Директива Disallow: / запрещает индексацию всего сайта. Поисковые роботы не смогут проиндексировать ни одну страницу." },
+  no_sitemap: { importance: "Высокая", description: "Нет файла sitemap.xml. XML-карта сайта помогает поисковым системам быстрее находить и индексировать все страницы сайта." },
+  sitemap_invalid: { importance: "Средняя", description: "Некорректный sitemap.xml. Ошибки в карте сайта мешают поисковым роботам корректно обходить страницы." },
+  missing_canonical: { importance: "Высокая", description: "Отсутствует тег canonical. Canonical указывает поисковикам основную версию страницы и помогает избежать проблем с дублями контента." },
+  canonical_mismatch: { importance: "Средняя", description: "Canonical не совпадает с URL страницы. Если canonical указывает на другой URL — поисковик будет индексировать тот URL, а не текущую страницу." },
+  slow_ttfb: { importance: "Высокая", description: "Медленный ответ сервера. TTFB более 3 секунд негативно влияет на поведенческие факторы и ранжирование. Google использует скорость загрузки как фактор ранжирования." },
+  medium_ttfb: { importance: "Средняя", description: "Замедленный ответ сервера (>1.5 сек). Высокий TTFB ухудшает Core Web Vitals и пользовательский опыт." },
+  no_gzip: { importance: "Средняя", description: "Нет сжатия gzip/brotli. Сжатие уменьшает размер страниц в 3-10 раз и ускоряет загрузку для пользователей." },
+  noindex_meta: { importance: "Критическая", description: "Страница закрыта от индексации. Тег noindex запрещает поисковикам индексировать страницу. Убедитесь что важные страницы не закрыты случайно." },
+  nofollow_meta: { importance: "Средняя", description: "Все ссылки на странице закрыты nofollow. Поисковые роботы не передают вес по таким ссылкам и могут не обойти внутренние страницы." },
+  status_404: { importance: "Высокая", description: "Страницы с ошибкой 404. Битые ссылки ухудшают пользовательский опыт и расходуют краулинговый бюджет поисковых роботов." },
+  status_500: { importance: "Высокая", description: "Страницы с ошибкой 500. Ошибка сервера означает что страница недоступна. Роботы исключат такие страницы из индекса если ошибка не исправлена в течение суток." },
+  crawl_error: { importance: "Высокая", description: "Ошибка при сканировании страницы. Краулер не смог получить корректный ответ — проверьте доступность и стабильность сервера." },
+  // Ссылки и контент
+  http_link: { importance: "Высокая", description: "Внутренние ссылки с HTTP. Если сайт работает на HTTPS но внутренние ссылки ведут на HTTP — это создаёт лишние редиректы, замедляет загрузку и теряет ссылочный вес." },
+  redirect_301: { importance: "Средняя", description: "Внутренние ссылки ведут на 301 редирект. Замените их на конечные URL чтобы не терять ссылочный вес и ускорить переходы." },
+  external_link: { importance: "Средняя", description: "Исходящие внешние ссылки. Внешние ссылки с коммерческих страниц могут уводить пользователей. Используйте rel=nofollow для ссылок на сторонние ресурсы." },
+  broken_link: { importance: "Высокая", description: "Битые внутренние ссылки. Ссылки ведущие на несуществующие страницы ухудшают пользовательский опыт и расходуют краулинговый бюджет." },
+  // Парсер
+  missing_h1: { importance: "Высокая", description: "Страницы без заголовка H1. H1 — главный заголовок страницы. Без него поисковики хуже понимают тематику страницы и её ключевые слова." },
+  multiple_h1: { importance: "Высокая", description: "Несколько H1 на странице. На каждой странице должен быть только один H1. Несколько H1 путают поисковых роботов при определении главной темы страницы." },
+  duplicate_h1: { importance: "Высокая", description: "Дубли страниц по H1. Одинаковые заголовки H1 на разных страницах снижают уникальность и мешают поисковикам определить какая страница важнее." },
+  missing_title: { importance: "Высокая", description: "Страницы без тега title. Title — один из главных факторов SEO. Отображается в результатах поиска как кликабельный заголовок. Без него поисковик сам придумает заголовок." },
+  multiple_title: { importance: "Средняя", description: "Несколько тегов title на странице. Поисковики возьмут первый, остальные будут проигнорированы — это признак ошибки в шаблоне." },
+  duplicate_title: { importance: "Высокая", description: "Дубли страниц по title. Одинаковые title на разных страницах снижают релевантность и CTR в поисковой выдаче." },
+  title_too_long: { importance: "Средняя", description: "Title слишком длинный. Title длиннее 70 символов обрезается в результатах поиска. Оптимальная длина 50-70 символов." },
+  title_too_short: { importance: "Средняя", description: "Title слишком короткий. Title короче 30 символов не использует весь потенциал для ключевых слов и менее информативен для пользователей." },
+  title_equals_h1: { importance: "Средняя", description: "Title дублирует H1. Когда title и H1 одинаковы — упускается возможность использовать разные ключевые слова. Рекомендуется делать их похожими но не идентичными." },
+  missing_description: { importance: "Высокая", description: "Страницы без meta description. Description влияет на CTR в поисковой выдаче. Без него поисковик сам выберет текст для сниппета — часто неудачно." },
+  multiple_description: { importance: "Средняя", description: "Несколько meta description на странице. Поисковик возьмёт первый, остальные проигнорируются — это ошибка шаблона." },
+  duplicate_description: { importance: "Высокая", description: "Дубли страниц по description. Одинаковые описания на разных страницах снижают уникальность и CTR." },
+  description_too_long: { importance: "Средняя", description: "Description слишком длинный. Description длиннее 160 символов обрезается в результатах поиска. Оптимальная длина 120-160 символов." },
+  missing_alt: { importance: "Средняя", description: "Картинки без атрибута alt. Alt-текст помогает поисковикам понять содержание изображения. Также важен для доступности сайта для людей с нарушениями зрения." },
+  heavy_image: { importance: "Средняя", description: "Тяжёлые изображения (>200kb). Большие картинки замедляют загрузку страниц и ухудшают Core Web Vitals. Используйте сжатие и форматы WebP/AVIF." },
+  empty_page: { importance: "Средняя", description: "Страницы с малым количеством контента. Страницы с менее 50 словами считаются пустыми. Поисковики расценивают их как малополезные и занижают в выдаче." },
+};
+const IMPORTANCE_CLS: Record<string, string> = {
+  "Критическая": "text-red-400",
+  "Высокая": "text-orange-400",
+  "Средняя": "text-yellow-400",
+  "Низкая": "text-blue-400",
+};
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
