@@ -282,10 +282,37 @@ function extractUrl(issue: any): string | null {
   return null;
 }
 
-function IssuesGrouped({ issues, baseUrl }: { issues: any[]; baseUrl?: string | null }) {
+function IssuesGrouped({ issues, baseUrl, statsFallback }: { issues: any[]; baseUrl?: string | null; statsFallback?: { critical_count: number; warning_count: number; info_count: number; total_issues: number } | null }) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   if (!issues || issues.length === 0) {
+    const s = statsFallback;
+    if (s && s.total_issues > 0) {
+      return (
+        <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/5 p-3 space-y-2">
+          <div className="text-[12px] text-yellow-300 font-medium">
+            Краулер нашёл {s.total_issues} проблем, но детализация ещё не передана
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <div className="rounded-md bg-[#1e1e1e] p-2">
+              <div className="text-[10px] text-zinc-500 uppercase">Критических</div>
+              <div className="text-[16px] font-bold text-red-400">{s.critical_count}</div>
+            </div>
+            <div className="rounded-md bg-[#1e1e1e] p-2">
+              <div className="text-[10px] text-zinc-500 uppercase">Предупреждений</div>
+              <div className="text-[16px] font-bold text-yellow-400">{s.warning_count}</div>
+            </div>
+            <div className="rounded-md bg-[#1e1e1e] p-2">
+              <div className="text-[10px] text-zinc-500 uppercase">Информационных</div>
+              <div className="text-[16px] font-bold text-blue-400">{s.info_count}</div>
+            </div>
+          </div>
+          <div className="text-[11px] text-zinc-500 leading-relaxed">
+            Список конкретных страниц и проверок появится здесь после обновления Python-краулера — нужно, чтобы он отправлял каждую проблему через <code className="px-1 rounded bg-[#1e1e1e] text-zinc-300">action: "add_issues"</code> с полем <code className="px-1 rounded bg-[#1e1e1e] text-zinc-300">details.url</code>.
+          </div>
+        </div>
+      );
+    }
     return <div className="text-[12px] text-zinc-500">Проблем не обнаружено</div>;
   }
 
@@ -595,7 +622,7 @@ export function TechnicalAuditTab({ projectId }: Props) {
             <div className="rounded-lg bg-[#1e1e1e] p-3"><div className="text-[10px] text-zinc-500 uppercase">Средний TTFB</div><div className="text-[18px] font-bold text-zinc-100">{effectiveStats.avg_load_time_ms} мс</div></div>
             <div className="rounded-lg bg-[#1e1e1e] p-3"><div className="text-[10px] text-zinc-500 uppercase">Оценка сайта</div><div className="text-[18px] font-bold text-emerald-400">{effectiveStats.score}/100</div></div>
           </div>
-          <IssuesGrouped issues={jobIssues} baseUrl={project?.url} />
+          <IssuesGrouped issues={jobIssues} baseUrl={project?.url} statsFallback={effectiveStats ? { critical_count: effectiveStats.critical_count ?? 0, warning_count: effectiveStats.warning_count ?? 0, info_count: effectiveStats.info_count ?? 0, total_issues: effectiveStats.total_issues ?? 0 } : null} />
 
         </Card>
       )}
