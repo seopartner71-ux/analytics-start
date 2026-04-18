@@ -226,7 +226,105 @@ async function analyzePage(pageUrl: string, html: string): Promise<DetectedIssue
     }
   }
 
-  // 3. SSL — проверка сертификата для HTTPS
+  // 3. Аналитика — счётчики Я.Метрики и GA
+  if (html) {
+    const analytics = detectAnalytics(html);
+    // Яндекс Метрика
+    if (analytics.metrikaIds.length === 0) {
+      issues.push({
+        type: "analytics",
+        code: "no_yandex_metrika",
+        severity: "warning",
+        message: "Счётчик Яндекс Метрики не найден на странице",
+      });
+    } else if (analytics.metrikaIds.length > 1) {
+      issues.push({
+        type: "analytics",
+        code: "duplicate_metrika",
+        severity: "warning",
+        message: `Найдено ${analytics.metrikaIds.length} счётчиков Яндекс Метрики`,
+        details: { counter_ids: analytics.metrikaIds },
+      });
+    }
+    // Google Analytics
+    if (analytics.gaIds.length === 0) {
+      issues.push({
+        type: "analytics",
+        code: "no_google_analytics",
+        severity: "warning",
+        message: "Google Analytics не найден на странице",
+      });
+    } else if (analytics.gaIds.length > 1) {
+      issues.push({
+        type: "analytics",
+        code: "duplicate_ga",
+        severity: "warning",
+        message: `Найдено ${analytics.gaIds.length} счётчиков Google Analytics`,
+        details: { measurement_ids: analytics.gaIds },
+      });
+    }
+  }
+
+  // 4. Структурированные данные: Schema.org JSON-LD, Open Graph, Twitter Card
+  if (html) {
+    const structured = detectStructuredData(html);
+
+    // Schema.org JSON-LD
+    if (structured.jsonLdBlocks === 0) {
+      issues.push({
+        type: "structured",
+        code: "no_schema_jsonld",
+        severity: "info",
+        message: "На странице нет Schema.org JSON-LD разметки",
+      });
+    } else if (structured.invalidJsonLd.length > 0) {
+      issues.push({
+        type: "structured",
+        code: "invalid_schema_jsonld",
+        severity: "warning",
+        message: `Найдено ${structured.invalidJsonLd.length} некорректных JSON-LD блоков`,
+        details: { errors: structured.invalidJsonLd.slice(0, 5) },
+      });
+    }
+
+    // Open Graph
+    if (!structured.og.title) {
+      issues.push({
+        type: "structured",
+        code: "no_og_title",
+        severity: "warning",
+        message: "Отсутствует мета-тег og:title",
+      });
+    }
+    if (!structured.og.description) {
+      issues.push({
+        type: "structured",
+        code: "no_og_description",
+        severity: "warning",
+        message: "Отсутствует мета-тег og:description",
+      });
+    }
+    if (!structured.og.image) {
+      issues.push({
+        type: "structured",
+        code: "no_og_image",
+        severity: "warning",
+        message: "Отсутствует мета-тег og:image",
+      });
+    }
+
+    // Twitter Card
+    if (!structured.twitterCard) {
+      issues.push({
+        type: "structured",
+        code: "no_twitter_card",
+        severity: "info",
+        message: "Отсутствует мета-тег twitter:card",
+      });
+    }
+  }
+
+  // 5. SSL — проверка сертификата для HTTPS
   if (parsed.protocol === "https:") {
     const sslCheck = await checkSSL(parsed.hostname);
     if (sslCheck) {
@@ -329,4 +427,71 @@ async function checkSSL(
     console.warn("SSL check failed:", e instanceof Error ? e.message : e);
     return null;
   }
+}
+
+function detectAnalytics(html: string): { metrikaIds: string[]; gaIds: string[] } {
+  const metrikaIds = new Set<string>();
+  const gaIds = new Set<string>();
+  let m: RegExpExecArray | null;
+
+  // Yandex Metrika: ym(XXXXXXXX, ...)
+  const ymCalls = /\bym\s*\(\s*(\d{6,12})\s*,/gi;
+  while ((m = ymCalls.exec(html)) !== null) metrikaIds.add(m[1]);
+
+  // new Ya.Metrika({ id: XXXXXX })
+  const yaMetrikaObj = /Ya\.Metrika2?\s*\(\s*\{[^}]*\bid\s*:\s*["']?(\d{6,12})["']?/gi;
+  while ((m = yaMetrikaObj.exec(html)) !== null) metrikaIds.add(m[1]);
+
+  // Пиксель mc.yandex.ru/watch/XXXXXX
+  const ymPixel = /mc\.yandex\.(?:ru|com)\/watch\/(\d{6,12})/gi;
+  while ((m = ymPixel.exec(html)) !== null) metrikaIds.add(m[1]);
+
+  // GA4: gtag('config','G-XXXX')
+  const ga4 = /gtag\s*\(\s*['"]config['"]\s*,\s*['"](G-[A-Z0-9]+)['"]/gi;
+  while ((m = ga4.exec(html)) !== null) gaIds.add(m[1]);
+
+  // UA legacy
+  const ua = /['"](UA-\d{4,10}-\d{1,4})['"]/gi;
+  while ((m = ua.exec(html)) !== null) gaIds.add(m[1]);
+
+  // googletagmanager.com/gtag/js?id=...
+  const gtmSrc = /googletagmanager\.com\/gtag\/js\?id=(G-[A-Z0-9]+|UA-\d{4,10}-\d{1,4})/gi;
+  while ((m = gtmSrc.exec(html)) !== null) gaIds.add(m[1]);
+
+  return { metrikaIds: [...metrikaIds], gaIds: [...gaIds] };
+}
+
+function detectStructuredData(html: string): {
+  jsonLdBlocks: number;
+  invalidJsonLd: string[];
+  og: { title: boolean; description: boolean; image: boolean };
+  twitterCard: boolean;
+} {
+  const jsonLdRe = /<script\b[^>]*type\s*=\s*["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+  let jsonLdBlocks = 0;
+  const invalidJsonLd: string[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = jsonLdRe.exec(html)) !== null) {
+    jsonLdBlocks++;
+    const raw = m[1].trim();
+    if (!raw) {
+      invalidJsonLd.push("Пустой блок JSON-LD");
+      continue;
+    }
+    try {
+      JSON.parse(raw);
+    } catch (e) {
+      invalidJsonLd.push(e instanceof Error ? e.message.slice(0, 200) : "Parse error");
+    }
+  }
+
+  const has = (re: RegExp) => re.test(html);
+  const og = {
+    title: has(/<meta\b[^>]*property\s*=\s*["']og:title["'][^>]*content\s*=\s*["'][^"']+["']/i),
+    description: has(/<meta\b[^>]*property\s*=\s*["']og:description["'][^>]*content\s*=\s*["'][^"']+["']/i),
+    image: has(/<meta\b[^>]*property\s*=\s*["']og:image["'][^>]*content\s*=\s*["'][^"']+["']/i),
+  };
+  const twitterCard = has(/<meta\b[^>]*name\s*=\s*["']twitter:card["'][^>]*content\s*=\s*["'][^"']+["']/i);
+
+  return { jsonLdBlocks, invalidJsonLd, og, twitterCard };
 }
