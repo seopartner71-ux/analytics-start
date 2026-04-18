@@ -57,6 +57,18 @@ const CHECK_INFO: Record<string, CheckInfo> = {
   missing_alt: { importance: "Средняя", description: "Картинки без атрибута alt. Alt-текст помогает поисковикам понять содержание изображения. Также важен для доступности сайта для людей с нарушениями зрения." },
   heavy_image: { importance: "Средняя", description: "Тяжёлые изображения (>200kb). Большие картинки замедляют загрузку страниц и ухудшают Core Web Vitals. Используйте сжатие и форматы WebP/AVIF." },
   empty_page: { importance: "Средняя", description: "Страницы с малым количеством контента. Страницы с менее 50 словами считаются пустыми. Поисковики расценивают их как малополезные и занижают в выдаче." },
+  // Аналитика
+  no_yandex_metrika: { importance: "Высокая", description: "Яндекс Метрика не найдена. Без счётчика невозможно отслеживать трафик, поведение пользователей и конверсии." },
+  no_google_analytics: { importance: "Высокая", description: "Google Analytics не найден. Необходим для отслеживания трафика из Google и анализа поведения пользователей." },
+  duplicate_metrika: { importance: "Средняя", description: "Дубль счётчика Яндекс Метрики. Несколько счётчиков на одной странице искажают статистику посещений и поведенческие метрики." },
+  duplicate_ga: { importance: "Средняя", description: "Дубль счётчика Google Analytics. Несколько счётчиков на одной странице задваивают данные и искажают аналитику." },
+  // Структурированные данные
+  no_schema_jsonld: { importance: "Средняя", description: "Schema.org разметка помогает поисковикам лучше понять содержимое страницы и показывать расширенные сниппеты в выдаче." },
+  invalid_schema_jsonld: { importance: "Высокая", description: "Некорректный JSON-LD. Ошибки в разметке Schema.org приводят к тому что поисковики игнорируют разметку и не показывают расширенные сниппеты." },
+  no_og_title: { importance: "Средняя", description: "Open Graph теги используются при публикации страницы в социальных сетях. Без og:title соцсети сами выберут заголовок." },
+  no_og_description: { importance: "Средняя", description: "Без og:description соцсети сами подберут описание при публикации страницы — часто неудачно." },
+  no_og_image: { importance: "Средняя", description: "Без og:image при публикации в соцсетях не отображается превью-картинка, что снижает кликабельность ссылок." },
+  no_twitter_card: { importance: "Низкая", description: "Twitter Cards управляют отображением страницы при публикации в Twitter/X." },
 };
 const IMPORTANCE_CLS: Record<string, string> = {
   "Критическая": "text-red-400",
@@ -142,6 +154,34 @@ const SECTIONS: SectionDef[] = [
       { code: "missing_alt", label: "Картинки без alt", severity: "warning" },
       { code: "heavy_image", label: "Тяжёлые изображения (>200kb)", severity: "warning" },
       { code: "empty_page", label: "Пустые страницы (<50 слов)", severity: "warning" },
+    ],
+  },
+  {
+    id: "analytics",
+    title: "Аналитика",
+    description: "Счётчики Яндекс Метрики и Google Analytics",
+    icon: ({ className }: any) => <span className={className}>📊</span>,
+    types: ["analytics"],
+    checks: [
+      { code: "no_yandex_metrika", label: "Яндекс Метрика не установлена", severity: "warning" },
+      { code: "no_google_analytics", label: "Google Analytics не установлен", severity: "warning" },
+      { code: "duplicate_metrika", label: "Дубль счётчика Яндекс Метрики", severity: "warning" },
+      { code: "duplicate_ga", label: "Дубль счётчика Google Analytics", severity: "warning" },
+    ],
+  },
+  {
+    id: "structured",
+    title: "Структурированные данные",
+    description: "Schema.org JSON-LD, Open Graph и Twitter Cards",
+    icon: ({ className }: any) => <span className={className}>🔖</span>,
+    types: ["structured"],
+    checks: [
+      { code: "invalid_schema_jsonld", label: "Некорректный JSON-LD", severity: "warning" },
+      { code: "no_og_title", label: "Нет og:title", severity: "warning" },
+      { code: "no_og_description", label: "Нет og:description", severity: "warning" },
+      { code: "no_og_image", label: "Нет og:image", severity: "warning" },
+      { code: "no_schema_jsonld", label: "Нет Schema.org JSON-LD разметки", severity: "info" },
+      { code: "no_twitter_card", label: "Нет Twitter Card", severity: "info" },
     ],
   },
 ];
