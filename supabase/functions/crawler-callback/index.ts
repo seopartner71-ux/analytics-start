@@ -428,3 +428,70 @@ async function checkSSL(
     return null;
   }
 }
+
+function detectAnalytics(html: string): { metrikaIds: string[]; gaIds: string[] } {
+  const metrikaIds = new Set<string>();
+  const gaIds = new Set<string>();
+  let m: RegExpExecArray | null;
+
+  // Yandex Metrika: ym(XXXXXXXX, ...)
+  const ymCalls = /\bym\s*\(\s*(\d{6,12})\s*,/gi;
+  while ((m = ymCalls.exec(html)) !== null) metrikaIds.add(m[1]);
+
+  // new Ya.Metrika({ id: XXXXXX })
+  const yaMetrikaObj = /Ya\.Metrika2?\s*\(\s*\{[^}]*\bid\s*:\s*["']?(\d{6,12})["']?/gi;
+  while ((m = yaMetrikaObj.exec(html)) !== null) metrikaIds.add(m[1]);
+
+  // Пиксель mc.yandex.ru/watch/XXXXXX
+  const ymPixel = /mc\.yandex\.(?:ru|com)\/watch\/(\d{6,12})/gi;
+  while ((m = ymPixel.exec(html)) !== null) metrikaIds.add(m[1]);
+
+  // GA4: gtag('config','G-XXXX')
+  const ga4 = /gtag\s*\(\s*['"]config['"]\s*,\s*['"](G-[A-Z0-9]+)['"]/gi;
+  while ((m = ga4.exec(html)) !== null) gaIds.add(m[1]);
+
+  // UA legacy
+  const ua = /['"](UA-\d{4,10}-\d{1,4})['"]/gi;
+  while ((m = ua.exec(html)) !== null) gaIds.add(m[1]);
+
+  // googletagmanager.com/gtag/js?id=...
+  const gtmSrc = /googletagmanager\.com\/gtag\/js\?id=(G-[A-Z0-9]+|UA-\d{4,10}-\d{1,4})/gi;
+  while ((m = gtmSrc.exec(html)) !== null) gaIds.add(m[1]);
+
+  return { metrikaIds: [...metrikaIds], gaIds: [...gaIds] };
+}
+
+function detectStructuredData(html: string): {
+  jsonLdBlocks: number;
+  invalidJsonLd: string[];
+  og: { title: boolean; description: boolean; image: boolean };
+  twitterCard: boolean;
+} {
+  const jsonLdRe = /<script\b[^>]*type\s*=\s*["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+  let jsonLdBlocks = 0;
+  const invalidJsonLd: string[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = jsonLdRe.exec(html)) !== null) {
+    jsonLdBlocks++;
+    const raw = m[1].trim();
+    if (!raw) {
+      invalidJsonLd.push("Пустой блок JSON-LD");
+      continue;
+    }
+    try {
+      JSON.parse(raw);
+    } catch (e) {
+      invalidJsonLd.push(e instanceof Error ? e.message.slice(0, 200) : "Parse error");
+    }
+  }
+
+  const has = (re: RegExp) => re.test(html);
+  const og = {
+    title: has(/<meta\b[^>]*property\s*=\s*["']og:title["'][^>]*content\s*=\s*["'][^"']+["']/i),
+    description: has(/<meta\b[^>]*property\s*=\s*["']og:description["'][^>]*content\s*=\s*["'][^"']+["']/i),
+    image: has(/<meta\b[^>]*property\s*=\s*["']og:image["'][^>]*content\s*=\s*["'][^"']+["']/i),
+  };
+  const twitterCard = has(/<meta\b[^>]*name\s*=\s*["']twitter:card["'][^>]*content\s*=\s*["'][^"']+["']/i);
+
+  return { jsonLdBlocks, invalidJsonLd, og, twitterCard };
+}
