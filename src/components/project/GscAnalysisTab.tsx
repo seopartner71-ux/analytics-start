@@ -5,10 +5,18 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { Search, Link2, BarChart3, MousePointerClick, Eye, Percent, ArrowUpDown, Plug } from "lucide-react";
+import { toast } from "sonner";
 
 interface Props { projectId: string; }
 
 export function GscAnalysisTab({ projectId }: Props) {
+  const handleConnect = () => {
+    toast.info("Подключение Google Search Console", {
+      description: "OAuth-интеграция с GSC будет добавлена следующим этапом. Сейчас доступен только просмотр интерфейса.",
+      duration: 5000,
+    });
+  };
+
   const { data: project } = useQuery({
     queryKey: ["project-detail-gsc", projectId],
     queryFn: async () => {
@@ -62,7 +70,7 @@ export function GscAnalysisTab({ projectId }: Props) {
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <Badge variant="secondary" className="text-[11px]">Не подключено</Badge>
-            <Button size="sm" disabled className="gap-1.5 text-[12px]">
+            <Button size="sm" onClick={handleConnect} className="gap-1.5 text-[12px]">
               <Plug className="h-3.5 w-3.5" /> Подключить Google Search Console
             </Button>
           </div>
