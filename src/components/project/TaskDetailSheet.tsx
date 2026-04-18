@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { getDeadlineStatus, DEADLINE_STYLES, STAGE_COLORS, STAGE_PROGRESS } from "@/lib/task-helpers";
 import type { Tables } from "@/integrations/supabase/types";
+import { TaskTimerWidget } from "@/components/time-tracking/TaskTimerWidget";
 
 export type CrmTask = Tables<"crm_tasks"> & {
   creator?: Tables<"team_members"> | null;
@@ -527,6 +528,9 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Time tracking widget */}
+              <TaskTimerWidget taskId={task.id} projectId={editProjectId || task.project_id || null} />
 
             </div>
 
