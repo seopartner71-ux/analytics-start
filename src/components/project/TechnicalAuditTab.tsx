@@ -366,6 +366,15 @@ export function TechnicalAuditTab({ projectId }: Props) {
             </div>
             <Progress value={Math.min(scanProgress, 100)} className="h-2 bg-[#333]" />
           </div>
+          {stats && scanStatus === "done" && (
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-2 pt-2 border-t border-[#333]">
+              <div className="rounded bg-[#1e1e1e] p-2"><div className="text-[10px] text-zinc-500">Страниц</div><div className="text-[14px] font-semibold text-zinc-100">{stats.total_pages}</div></div>
+              <div className="rounded bg-[#1e1e1e] p-2"><div className="text-[10px] text-zinc-500">Ошибок</div><div className="text-[14px] font-semibold text-zinc-100">{stats.total_issues}</div></div>
+              <div className="rounded bg-[#1e1e1e] p-2"><div className="text-[10px] text-zinc-500">Критичных</div><div className="text-[14px] font-semibold text-red-400">{stats.critical_count}</div></div>
+              <div className="rounded bg-[#1e1e1e] p-2"><div className="text-[10px] text-zinc-500">Предупр.</div><div className="text-[14px] font-semibold text-yellow-400">{stats.warning_count}</div></div>
+              <div className="rounded bg-[#1e1e1e] p-2"><div className="text-[10px] text-zinc-500">Балл</div><div className="text-[14px] font-semibold text-emerald-400">{stats.score}/100</div></div>
+            </div>
+          )}
         </Card>
       )}
 
