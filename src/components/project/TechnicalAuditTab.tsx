@@ -211,6 +211,27 @@ const SECTIONS: SectionDef[] = [
       { code: "no_twitter_card", label: "Нет Twitter Card", severity: "info" },
     ],
   },
+  {
+    id: "speed",
+    title: "Скорость",
+    description: "PageSpeed, Core Web Vitals (LCP, CLS, TBT), минификация и mobile-friendly",
+    icon: ({ className }: any) => <span className={className}>⚡️</span>,
+    types: ["speed"],
+    checks: [
+      { code: "pagespeed_poor", label: "Низкий PageSpeed Score", severity: "critical" },
+      { code: "lcp_poor", label: "LCP слишком медленный", severity: "critical" },
+      { code: "tbt_poor", label: "Total Blocking Time высокий", severity: "critical" },
+      { code: "cls_poor", label: "CLS слишком высокий", severity: "critical" },
+      { code: "no_viewport", label: "Нет viewport для мобильных", severity: "critical" },
+      { code: "pagespeed_average", label: "Средний PageSpeed Score", severity: "warning" },
+      { code: "lcp_average", label: "LCP требует улучшения", severity: "warning" },
+      { code: "tbt_average", label: "Total Blocking Time требует улучшения", severity: "warning" },
+      { code: "cls_average", label: "CLS требует улучшения", severity: "warning" },
+      { code: "render_blocking", label: "Render-blocking ресурсы", severity: "warning" },
+      { code: "unminified_js", label: "JavaScript не минифицирован", severity: "warning" },
+      { code: "unminified_css", label: "CSS не минифицирован", severity: "warning" },
+    ],
+  },
 ];
 
 // Коды, для которых при раскрытии показываем дополнительный текст из details (title/description/h1)
