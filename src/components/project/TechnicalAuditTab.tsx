@@ -785,18 +785,17 @@ function BentoSections({
 
       {/* Детали выбранной секции */}
       {active && (
-        active.id === "speed" ? (
-          <PageSpeedBlock siteUrl={baseUrl} />
-        ) : (
-          <AuditSection
-            key={active.id}
-            section={active}
-            issues={issues}
-            baseUrl={baseUrl}
-            defaultOpen={true}
-          />
-        )
+        <AuditSection
+          key={active.id}
+          section={active}
+          issues={issues}
+          baseUrl={baseUrl}
+          defaultOpen={true}
+        />
       )}
+
+      {/* Отдельный блок PageSpeed Insights — всегда внизу */}
+      <PageSpeedBlock siteUrl={baseUrl} />
     </div>
   );
 }
