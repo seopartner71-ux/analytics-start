@@ -469,27 +469,54 @@ export function PageSpeedBlock({ siteUrl }: { siteUrl?: string | null }) {
   return (
     <Card className="p-5 space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex items-start gap-3">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="flex items-start gap-3 text-left flex-1 min-w-0 group"
+        >
           <div className="h-10 w-10 rounded-lg bg-yellow-500/15 text-yellow-400 flex items-center justify-center shrink-0">
             <Zap className="h-5 w-5" />
           </div>
-          <div>
-            <div className="text-base font-semibold text-foreground">PageSpeed Insights</div>
-            <div className="text-xs text-muted-foreground mt-0.5 break-all">
-              {url ? (
-                <span className="inline-flex items-center gap-1">
-                  {url}
-                  <a href={url} target="_blank" rel="noreferrer" className="text-primary hover:underline">
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <div className="text-base font-semibold text-foreground">PageSpeed Insights</div>
+              <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", open && "rotate-180")} />
+              {hasResults && (
+                <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                  данные есть
                 </span>
-              ) : (
-                "URL сайта не указан в проекте"
               )}
             </div>
+            <div className="text-xs text-muted-foreground mt-0.5 break-all">
+              {url ? url : "URL сайта не указан в проекте"}
+            </div>
+            {checkedAt && hasResults && (
+              <div className="text-[11px] text-muted-foreground mt-0.5">
+                Последняя проверка: {formatCheckedAt(checkedAt)}
+              </div>
+            )}
           </div>
-        </div>
-        <Button onClick={handleCheck} disabled={!url || loading !== null} size="sm">
+        </button>
+        {url && (
+          <a
+            href={url}
+            target="_blank"
+            rel="noreferrer"
+            className="text-primary hover:underline self-start mt-3"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
+        )}
+        <Button
+          onClick={(e) => {
+            e.stopPropagation();
+            setOpen(true);
+            handleCheck();
+          }}
+          disabled={!url || loading !== null}
+          size="sm"
+        >
           {loading ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" /> Проверяем…
@@ -502,49 +529,47 @@ export function PageSpeedBlock({ siteUrl }: { siteUrl?: string | null }) {
         </Button>
       </div>
 
-      {checkedAt && hasResults && (
-        <div className="text-[11px] text-muted-foreground -mt-2">
-          Последняя проверка: {formatCheckedAt(checkedAt)} · данные сохранены до следующей проверки
-        </div>
-      )}
+      {open && (
+        <>
+          {error && !hasResults && (
+            <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-300">
+              {error}
+            </div>
+          )}
 
-      {error && !hasResults && (
-        <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-300">
-          {error}
-        </div>
-      )}
+          {!hasResults && !loading && !error && (
+            <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+              Нажмите «Проверить скорость», чтобы запросить данные Google PageSpeed Insights для мобильной и десктопной версий. Будут показаны метрики, найденные проблемы и рекомендации Lighthouse.
+            </div>
+          )}
 
-      {!hasResults && !loading && !error && (
-        <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-          Нажмите «Проверить скорость», чтобы запросить данные Google PageSpeed Insights для мобильной и десктопной версий. Будут показаны метрики, найденные проблемы и рекомендации Lighthouse.
-        </div>
-      )}
-
-      {hasResults && (
-        <Tabs value={tab} onValueChange={(v) => setTab(v as Strategy)}>
-          <TabsList>
-            <TabsTrigger value="mobile" className="gap-2">
-              <Smartphone className="h-4 w-4" /> Мобильная
-            </TabsTrigger>
-            <TabsTrigger value="desktop" className="gap-2">
-              <Monitor className="h-4 w-4" /> Десктоп
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value="mobile" className="mt-4">
-            {results.mobile ? (
-              <ResultPanel data={results.mobile} />
-            ) : (
-              <div className="text-sm text-muted-foreground">Нет данных для мобильной версии.</div>
-            )}
-          </TabsContent>
-          <TabsContent value="desktop" className="mt-4">
-            {results.desktop ? (
-              <ResultPanel data={results.desktop} />
-            ) : (
-              <div className="text-sm text-muted-foreground">Нет данных для десктопной версии.</div>
-            )}
-          </TabsContent>
-        </Tabs>
+          {hasResults && (
+            <Tabs value={tab} onValueChange={(v) => setTab(v as Strategy)}>
+              <TabsList>
+                <TabsTrigger value="mobile" className="gap-2">
+                  <Smartphone className="h-4 w-4" /> Мобильная
+                </TabsTrigger>
+                <TabsTrigger value="desktop" className="gap-2">
+                  <Monitor className="h-4 w-4" /> Десктоп
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="mobile" className="mt-4">
+                {results.mobile ? (
+                  <ResultPanel data={results.mobile} />
+                ) : (
+                  <div className="text-sm text-muted-foreground">Нет данных для мобильной версии.</div>
+                )}
+              </TabsContent>
+              <TabsContent value="desktop" className="mt-4">
+                {results.desktop ? (
+                  <ResultPanel data={results.desktop} />
+                ) : (
+                  <div className="text-sm text-muted-foreground">Нет данных для десктопной версии.</div>
+                )}
+              </TabsContent>
+            </Tabs>
+          )}
+        </>
       )}
     </Card>
   );
