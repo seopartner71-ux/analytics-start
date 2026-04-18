@@ -230,14 +230,16 @@ export default function CrmTasksPage() {
       (t.project?.name || "").toLowerCase().includes(search.toLowerCase());
     const matchesProject = filterProject === "all" || t.project?.id === filterProject;
     const matchesAssignee = filterAssignee === "all" || t.assignee?.id === filterAssignee;
-    const isOverdue = t.deadline ? new Date(t.deadline) < new Date() && t.stage !== "Завершена" : false;
+    const dlStatus = getDeadlineStatus(t.deadline, t.stage);
     const matchesStatus =
       filterStatus === "all" ||
-      (filterStatus === "overdue" && isOverdue) ||
+      (filterStatus === "overdue" && dlStatus === "overdue") ||
+      (filterStatus === "soon" && dlStatus === "soon") ||
       (filterStatus === "in_progress" && t.stage === "В работе") ||
       (filterStatus === "new" && t.stage === "Новые") ||
-      (filterStatus === "done" && t.stage === "Завершена") ||
-      (filterStatus === "waiting" && t.stage === "Ждёт выполнения");
+      (filterStatus === "review" && t.stage === "На проверке") ||
+      (filterStatus === "returned" && t.stage === "Возвращена") ||
+      (filterStatus === "accepted" && (t.stage === "Принята" || t.stage === "Завершена"));
     return matchesSearch && matchesProject && matchesAssignee && matchesStatus;
   });
 
