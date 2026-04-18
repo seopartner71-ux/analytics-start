@@ -4,11 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { TrendingDown, TrendingUp, AlertTriangle, Wallet, Clock, Target, DollarSign } from "lucide-react";
+import { TrendingDown, TrendingUp, AlertTriangle, Wallet, Clock, Target, DollarSign, BellRing, Loader2 } from "lucide-react";
 import { startOfMonth, endOfMonth, format, subMonths } from "date-fns";
 import { ru } from "date-fns/locale";
+import { toast } from "sonner";
 
 interface ProjectRow {
   id: string;
