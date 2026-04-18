@@ -361,7 +361,7 @@ export function TechnicalAuditTab({ projectId }: Props) {
           </div>
           <div className="space-y-1">
             <div className="flex items-center justify-between text-[11px] text-zinc-400">
-              <span>{scanStatus === "scanning" ? "Краулинг страниц..." : scanStatus === "done" ? "Сканирование завершено" : ""}</span>
+              <span>{scanStatus === "running" ? "Краулинг страниц..." : scanStatus === "pending" ? "В очереди..." : scanStatus === "done" ? "Сканирование завершено" : scanStatus === "error" ? "Произошла ошибка" : ""}</span>
               <span>{Math.round(scanProgress)}%</span>
             </div>
             <Progress value={Math.min(scanProgress, 100)} className="h-2 bg-[#333]" />
