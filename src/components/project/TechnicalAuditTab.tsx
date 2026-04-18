@@ -306,8 +306,14 @@ function AuditSection({
     catch { return null; }
   })();
 
-  // Группируем найденные issues этой секции по code (сохраняем сами issues для деталей)
-  const sectionIssues = (issues ?? []).filter((i) => section.types.includes(i.type));
+  // Группируем найденные issues этой секции по code.
+  // Матчим по type ИЛИ по code (если code есть в каталоге секции) — так issues
+  // от внешних краулеров с "неправильным" type всё равно попадут в нужную секцию
+  // и получат русский label.
+  const sectionCodes = new Set(section.checks.map((c) => c.code));
+  const sectionIssues = (issues ?? []).filter(
+    (i) => section.types.includes(i.type) || sectionCodes.has(i.code),
+  );
   type Group = { items: { url: string | null; details: any }[]; total: number; severity: string };
   const groupMap = new Map<string, Group>();
   for (const i of sectionIssues) {
@@ -322,7 +328,16 @@ function AuditSection({
   }
 
   const catalogCodes = new Set(section.checks.map((c) => c.code));
-  const extraCodes = Array.from(groupMap.keys()).filter((c) => !catalogCodes.has(c));
+  // Коды, принадлежащие другим секциям каталога — исключаем из "extras",
+  // чтобы избежать дублей и отображения raw-кода вместо русского label.
+  const ownedByOtherSection = new Set<string>();
+  for (const s of SECTIONS) {
+    if (s.id === section.id) continue;
+    for (const c of s.checks) ownedByOtherSection.add(c.code);
+  }
+  const extraCodes = Array.from(groupMap.keys()).filter(
+    (c) => !catalogCodes.has(c) && !ownedByOtherSection.has(c),
+  );
   const rows = [
     ...section.checks.map((c) => ({
       code: c.code,
