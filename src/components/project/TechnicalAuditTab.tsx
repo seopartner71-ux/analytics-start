@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { ChevronDown, ChevronRight, Download, ExternalLink, ShieldAlert, Link2, FileSearch, CheckCircle2, AlertTriangle, Info, AlertCircle, HelpCircle, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { PageSpeedBlock } from "./PageSpeedBlock";
 
 // ============ Описания проверок (для tooltip) ============
 type CheckInfo = { description: string; importance: "Критическая" | "Высокая" | "Средняя" | "Низкая" };
