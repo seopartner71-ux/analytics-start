@@ -29,6 +29,7 @@ import ProfilePage from "./pages/ProfilePage";
 import ChatPage from "./pages/ChatPage";
 import ReportsPage from "./pages/ReportsPage";
 import Finance from "./pages/Finance";
+import TimeTrackingPage from "./pages/TimeTrackingPage";
 import { CrmLayout } from "./components/CrmLayout";
 
 const queryClient = new QueryClient();
@@ -64,6 +65,7 @@ const App = () => (
                 <Route path="/chat" element={<ProtectedRoute><CrmLayout><ChatPage /></CrmLayout></ProtectedRoute>} />
                 <Route path="/reports" element={<ProtectedRoute><CrmLayout><ReportsPage /></CrmLayout></ProtectedRoute>} />
                 <Route path="/finance" element={<ProtectedRoute><CrmLayout><Finance /></CrmLayout></ProtectedRoute>} />
+                <Route path="/time-tracking" element={<ProtectedRoute><CrmLayout><TimeTrackingPage /></CrmLayout></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
