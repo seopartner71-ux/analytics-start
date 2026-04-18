@@ -783,13 +783,16 @@ function BentoSections({
 
       {/* Детали выбранной секции */}
       {active && (
-        <AuditSection
-          key={active.id}
-          section={active}
-          issues={issues}
-          baseUrl={baseUrl}
-          defaultOpen={true}
-        />
+        <>
+          {active.id === "speed" && <PageSpeedBlock siteUrl={baseUrl} />}
+          <AuditSection
+            key={active.id}
+            section={active}
+            issues={issues}
+            baseUrl={baseUrl}
+            defaultOpen={true}
+          />
+        </>
       )}
     </div>
   );
