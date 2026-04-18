@@ -326,6 +326,31 @@ export default function Finance() {
         </TabsContent>
       </Tabs>
 
+
+      {/* Динамика выручки и прибыли за 6 месяцев */}
+      <ChartCard title="Динамика выручки и прибыли · последние 6 месяцев">
+        <ResponsiveContainer width="100%" height={300}>
+          <ComposedChart data={revenueProfit6m}>
+            <defs>
+              <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#10b981" stopOpacity={0.85} />
+                <stop offset="95%" stopColor="#10b981" stopOpacity={0.35} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+            <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" />
+            <YAxis stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => `${(v / 1000).toFixed(0)}к`} />
+            <RTooltip
+              contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}
+              formatter={(v) => new Intl.NumberFormat("ru-RU", { style: "currency", currency: "RUB", maximumFractionDigits: 0 }).format(Number(v))}
+            />
+            <Legend />
+            <Bar dataKey="Выручка" fill="url(#revGrad)" radius={[6, 6, 0, 0]} barSize={38} />
+            <Line type="monotone" dataKey="Прибыль" stroke="#FFB800" strokeWidth={3} dot={{ r: 4, fill: "#FFB800" }} activeDot={{ r: 6 }} />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </ChartCard>
+
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <ChartCard title="Доходы vs Расходы по месяцам">
