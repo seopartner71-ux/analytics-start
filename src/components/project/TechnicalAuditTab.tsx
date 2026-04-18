@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { ChevronDown, ChevronRight, Download, ExternalLink } from "lucide-react";
+import { ChevronDown, ChevronRight, Download, ExternalLink, ShieldAlert, Link2, FileSearch, CheckCircle2, AlertTriangle, Info, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,12 +15,14 @@ interface Props { projectId: string; }
 
 // ============ КАТАЛОГ ПРОВЕРОК ============
 type CheckDef = { code: string; label: string; severity: "critical" | "warning" | "info" };
-type SectionDef = { id: string; title: string; types: string[]; checks: CheckDef[] };
+type SectionDef = { id: string; title: string; types: string[]; checks: CheckDef[]; icon: any; description: string };
 
 const SECTIONS: SectionDef[] = [
   {
     id: "technical",
     title: "Технические ошибки",
+    description: "HTTPS, robots.txt, sitemap, скорость ответа сервера",
+    icon: ShieldAlert,
     types: ["technical"],
     checks: [
       { code: "no_https", label: "Сайт не использует HTTPS", severity: "critical" },
@@ -45,6 +47,8 @@ const SECTIONS: SectionDef[] = [
   {
     id: "links",
     title: "Ссылки и контент",
+    description: "Внутренние и внешние ссылки, редиректы, битые URL",
+    icon: Link2,
     types: ["links"],
     checks: [
       { code: "broken_link", label: "Битые внутренние ссылки", severity: "critical" },
@@ -56,6 +60,8 @@ const SECTIONS: SectionDef[] = [
   {
     id: "onpage",
     title: "Ошибки парсера",
+    description: "Title, description, H1, изображения и контент страниц",
+    icon: FileSearch,
     types: ["onpage", "media"],
     checks: [
       { code: "missing_h1", label: "Страницы без H1", severity: "critical" },
@@ -77,6 +83,25 @@ const SECTIONS: SectionDef[] = [
     ],
   },
 ];
+
+// Коды, для которых при раскрытии показываем дополнительный текст из details (title/description/h1)
+const TEXT_DETAIL_CODES = new Set([
+  "title_too_long", "title_too_short", "title_equals_h1", "duplicate_title", "multiple_title",
+  "description_too_long", "duplicate_description", "multiple_description",
+  "duplicate_h1", "multiple_h1",
+]);
+
+// Какое поле details содержит сам текст для конкретного кода
+function getDetailText(code: string, details: any): { text: string; len?: number } | null {
+  if (!details || typeof details !== "object") return null;
+  const candidates = ["title", "description", "h1", "text", "value", "content"];
+  for (const k of candidates) {
+    if (typeof details[k] === "string" && details[k]) {
+      return { text: details[k], len: typeof details.length === "number" ? details.length : details[k].length };
+    }
+  }
+  return null;
+}
 
 const SEV_CLS: Record<string, string> = {
   critical: "bg-red-500/20 text-red-400 border-red-500/30",
@@ -119,6 +144,32 @@ function pageWord(n: number) {
   return "страниц";
 }
 
+// ============ Стили severity ============
+const SEV_LEFT_BORDER: Record<string, string> = {
+  critical: "border-l-4 border-l-red-500",
+  warning: "border-l-4 border-l-yellow-500",
+  info: "border-l-4 border-l-blue-500",
+  ok: "border-l-4 border-l-emerald-500",
+};
+const SEV_ROW_BG: Record<string, string> = {
+  critical: "bg-red-500/[0.04] hover:bg-red-500/[0.08]",
+  warning: "bg-yellow-500/[0.04] hover:bg-yellow-500/[0.08]",
+  info: "bg-blue-500/[0.04] hover:bg-blue-500/[0.08]",
+  ok: "bg-emerald-500/[0.04]",
+};
+const SEV_ICON: Record<string, any> = {
+  critical: AlertCircle,
+  warning: AlertTriangle,
+  info: Info,
+  ok: CheckCircle2,
+};
+const SEV_ICON_COLOR: Record<string, string> = {
+  critical: "text-red-400",
+  warning: "text-yellow-400",
+  info: "text-blue-400",
+  ok: "text-emerald-400",
+};
+
 // ============ СЕКЦИЯ ============
 function AuditSection({
   section,
@@ -139,23 +190,21 @@ function AuditSection({
     catch { return null; }
   })();
 
-  // Группируем найденные issues этой секции по code
+  // Группируем найденные issues этой секции по code (сохраняем сами issues для деталей)
   const sectionIssues = (issues ?? []).filter((i) => section.types.includes(i.type));
-  const groupMap = new Map<string, { urls: Set<string>; total: number; severity: string }>();
+  type Group = { items: { url: string | null; details: any }[]; total: number; severity: string };
+  const groupMap = new Map<string, Group>();
   for (const i of sectionIssues) {
     const code = i.code || "unknown";
     let g = groupMap.get(code);
-    if (!g) { g = { urls: new Set(), total: 0, severity: i.severity || "info" }; groupMap.set(code, g); }
+    if (!g) { g = { items: [], total: 0, severity: i.severity || "info" }; groupMap.set(code, g); }
     g.total += 1;
     let url = extractUrl(i);
-    if (url) {
-      if (url.startsWith("/") && origin) url = origin + url;
-      g.urls.add(url);
-    }
+    if (url && url.startsWith("/") && origin) url = origin + url;
+    g.items.push({ url, details: i.details });
     if ((SEV_ORDER[i.severity] ?? 9) < (SEV_ORDER[g.severity] ?? 9)) g.severity = i.severity;
   }
 
-  // Строим финальный список: каталог + неизвестные коды
   const catalogCodes = new Set(section.checks.map((c) => c.code));
   const extraCodes = Array.from(groupMap.keys()).filter((c) => !catalogCodes.has(c));
   const rows = [
@@ -170,7 +219,6 @@ function AuditSection({
     })),
   ];
 
-  // Сортировка: проблемы вверху по severity, "ОК" вниз
   rows.sort((a, b) => {
     const aHas = !!a.group, bHas = !!b.group;
     if (aHas !== bHas) return aHas ? -1 : 1;
@@ -178,25 +226,53 @@ function AuditSection({
   });
 
   const problemCount = rows.filter((r) => !!r.group).length;
+  const hasCritical = rows.some((r) => !!r.group && r.severity === "critical");
+  const hasWarning = rows.some((r) => !!r.group && r.severity === "warning");
+
+  // Цвет счётчика секции
+  const counterCls = problemCount === 0
+    ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+    : hasCritical
+      ? "bg-red-500/15 text-red-400 border-red-500/30"
+      : hasWarning
+        ? "bg-yellow-500/15 text-yellow-400 border-yellow-500/30"
+        : "bg-blue-500/15 text-blue-400 border-blue-500/30";
+
+  const SectionIcon = section.icon;
+  const sectionLeftBorder = problemCount === 0
+    ? "border-l-4 border-l-emerald-500"
+    : hasCritical
+      ? "border-l-4 border-l-red-500"
+      : hasWarning
+        ? "border-l-4 border-l-yellow-500"
+        : "border-l-4 border-l-blue-500";
 
   return (
-    <Card className="bg-[#252525] border-[#333] overflow-hidden">
+    <Card className={cn("bg-[#252525] border-[#333] overflow-hidden", sectionLeftBorder)}>
       <button
         type="button"
         onClick={() => setSectionOpen((v) => !v)}
-        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#2a2a2a] transition-colors text-left"
+        className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-[#2a2a2a] transition-colors text-left"
       >
-        {sectionOpen ? <ChevronDown className="h-4 w-4 text-zinc-500" /> : <ChevronRight className="h-4 w-4 text-zinc-500" />}
-        <h3 className="flex-1 text-[14px] font-semibold text-zinc-100">{section.title}</h3>
-        {problemCount > 0 ? (
-          <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-[11px]">
-            Найдено: {problemCount}
-          </Badge>
-        ) : (
-          <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[11px]">
-            Ошибок нет
-          </Badge>
-        )}
+        <div className={cn(
+          "h-9 w-9 rounded-lg flex items-center justify-center shrink-0",
+          problemCount === 0 ? "bg-emerald-500/15" : hasCritical ? "bg-red-500/15" : hasWarning ? "bg-yellow-500/15" : "bg-blue-500/15"
+        )}>
+          <SectionIcon className={cn(
+            "h-5 w-5",
+            problemCount === 0 ? "text-emerald-400" : hasCritical ? "text-red-400" : hasWarning ? "text-yellow-400" : "text-blue-400"
+          )} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-[14px] font-semibold text-zinc-100">{section.title}</h3>
+          <p className="text-[11px] text-zinc-500 truncate">{section.description}</p>
+        </div>
+        <Badge className={cn("text-[11px] border", counterCls)}>
+          {problemCount === 0 ? "Ошибок нет" : `Найдено: ${problemCount}`}
+        </Badge>
+        {sectionOpen
+          ? <ChevronDown className="h-4 w-4 text-zinc-500 shrink-0" />
+          : <ChevronRight className="h-4 w-4 text-zinc-500 shrink-0" />}
       </button>
 
       {sectionOpen && (
@@ -204,59 +280,80 @@ function AuditSection({
           {rows.map((r) => {
             const isOpen = !!rowOpen[r.code];
             const has = !!r.group;
-            const urlList = r.group ? Array.from(r.group.urls) : [];
-            const pages = urlList.length || r.group?.total || 0;
+            const items = r.group ? r.group.items : [];
+            const uniqueUrls = Array.from(new Set(items.map((it) => it.url).filter(Boolean) as string[]));
+            const pages = uniqueUrls.length || r.group?.total || 0;
+            const sevKey = has ? r.severity : "ok";
+            const SevIcon = SEV_ICON[sevKey];
+            const showText = TEXT_DETAIL_CODES.has(r.code);
 
             return (
-              <div key={r.code}>
+              <div key={r.code} className={cn(SEV_LEFT_BORDER[sevKey])}>
                 <button
                   type="button"
                   disabled={!has}
                   onClick={() => has && setRowOpen((p) => ({ ...p, [r.code]: !p[r.code] }))}
                   className={cn(
                     "w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors",
-                    has ? "hover:bg-[#2a2a2a]" : "bg-[#1f2a20]/30 cursor-default"
+                    has ? cn("cursor-pointer", SEV_ROW_BG[sevKey]) : cn("cursor-default", SEV_ROW_BG.ok)
                   )}
                 >
-                  {has ? (
-                    isOpen ? <ChevronDown className="h-3.5 w-3.5 text-zinc-500 shrink-0" /> : <ChevronRight className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
-                  ) : (
-                    <span className="h-3.5 w-3.5 shrink-0" />
-                  )}
-                  <span className={cn("flex-1 text-[13px] truncate", has ? "text-zinc-200" : "text-emerald-400")}>
-                    {has ? r.label : `✅ ${r.label} — ошибок нет`}
+                  <SevIcon className={cn("h-4 w-4 shrink-0", SEV_ICON_COLOR[sevKey])} />
+                  <span className={cn("flex-1 text-[13px] truncate", has ? "text-zinc-200" : "text-zinc-400")}>
+                    {r.label}
                   </span>
-                  {has && (
+                  {has ? (
                     <>
-                      <Badge className="bg-zinc-700 text-zinc-300 text-[11px] shrink-0">
+                      <Badge className="bg-zinc-700/70 text-zinc-300 text-[11px] shrink-0 border-0">
                         {pages} {pageWord(pages)}
                       </Badge>
                       <span className={cn("inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium shrink-0", SEV_CLS[r.severity] ?? SEV_CLS.info)}>
                         {SEV_LABEL[r.severity] ?? r.severity}
                       </span>
+                      {isOpen
+                        ? <ChevronDown className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
+                        : <ChevronRight className="h-3.5 w-3.5 text-zinc-500 shrink-0" />}
                     </>
+                  ) : (
+                    <span className="text-[11px] text-emerald-400 shrink-0">Ошибок нет</span>
                   )}
                 </button>
                 {has && isOpen && (
-                  <div className="px-4 pb-3 pl-11 space-y-1 bg-[#181818]">
-                    {urlList.length === 0 ? (
-                      <div className="text-[11px] text-zinc-500 py-2">URL не переданы краулером</div>
+                  <div className="px-4 py-3 pl-11 space-y-2 bg-[#181818]">
+                    {items.length === 0 ? (
+                      <div className="text-[11px] text-zinc-500">URL не переданы краулером</div>
                     ) : (
-                      urlList.slice(0, 100).map((u, i) => (
-                        <a
-                          key={i}
-                          href={u}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 text-[12px] text-blue-400 hover:text-blue-300 hover:underline font-mono py-0.5"
-                        >
-                          <ExternalLink className="h-3 w-3 shrink-0" />
-                          <span className="truncate">{u}</span>
-                        </a>
-                      ))
+                      items.slice(0, 100).map((it, i) => {
+                        const detail = showText ? getDetailText(r.code, it.details) : null;
+                        return (
+                          <div key={i} className="space-y-1 border-b border-[#222] last:border-0 pb-2 last:pb-0">
+                            {it.url ? (
+                              <a
+                                href={it.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1.5 text-[12px] text-blue-400 hover:text-blue-300 hover:underline font-mono"
+                              >
+                                <ExternalLink className="h-3 w-3 shrink-0" />
+                                <span className="truncate">{it.url}</span>
+                              </a>
+                            ) : (
+                              <div className="text-[11px] text-zinc-500">URL не указан</div>
+                            )}
+                            {detail && (
+                              <div className="ml-5 rounded bg-[#0f0f0f] border border-[#262626] px-2.5 py-1.5">
+                                <div className="text-[10px] text-zinc-500 uppercase tracking-wide mb-0.5">
+                                  Текст {detail.len != null && <span className="text-zinc-600">· {detail.len} симв.</span>}
+                                </div>
+                                <div className="text-[12px] text-zinc-300 break-words">{detail.text}</div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
                     )}
-                    {urlList.length > 100 && (
-                      <div className="text-[11px] text-zinc-500 pt-1">…и ещё {urlList.length - 100} URL</div>
+                    {items.length > 100 && (
+                      <div className="text-[11px] text-zinc-500 pt-1">…и ещё {items.length - 100} записей</div>
                     )}
                   </div>
                 )}
