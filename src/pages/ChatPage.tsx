@@ -161,7 +161,7 @@ export default function ChatPage() {
                       className={cn("flex gap-2.5 mb-3", isMine && "flex-row-reverse")}
                     >
                       <div
-                        className="h-8 w-8 rounded-full flex items-center justify-center text-[11px] font-bold text-white shrink-0 mt-1"
+                        className="h-8 w-8 rounded-full flex items-center justify-center text-[11px] font-bold text-foreground shrink-0 mt-1"
                         style={{ backgroundColor: color }}
                       >
                         {getInitials(displayName)}

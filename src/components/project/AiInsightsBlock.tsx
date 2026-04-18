@@ -205,7 +205,7 @@ export function AiInsightsBlock({ projectId, summary: rawSummary, isAdmin, onSav
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2.5">
-            <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-purple-500 text-white">
+            <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-purple-500 text-foreground">
               <Sparkles className="h-4 w-4" />
             </div>
             <div>
@@ -296,7 +296,7 @@ export function AiInsightsBlock({ projectId, summary: rawSummary, isAdmin, onSav
                             className={cn(
                               "relative flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap shrink-0",
                               isActive
-                                ? `bg-gradient-to-r ${colorClass} text-white shadow-sm`
+                                ? `bg-gradient-to-r ${colorClass} text-foreground shadow-sm`
                                 : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
                             )}
                           >
@@ -341,7 +341,7 @@ export function AiInsightsBlock({ projectId, summary: rawSummary, isAdmin, onSav
                       ) : activeChannelData ? (
                         <div className="flex gap-3 items-start">
                           <div className={cn(
-                            "flex items-center justify-center h-8 w-8 rounded-lg shrink-0 bg-gradient-to-br text-white",
+                            "flex items-center justify-center h-8 w-8 rounded-lg shrink-0 bg-gradient-to-br text-foreground",
                             CHANNEL_CONFIG.find(c => c.key === activeChannel)?.colorClass
                           )}>
                             {(() => {

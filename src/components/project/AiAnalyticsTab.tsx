@@ -127,7 +127,7 @@ export function AiAnalyticsTab({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-gradient-to-br from-primary via-purple-500 to-pink-500 text-white shadow-lg shadow-primary/20">
+          <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-gradient-to-br from-primary via-purple-500 to-pink-500 text-foreground shadow-lg shadow-primary/20">
             <Sparkles className="h-5 w-5" />
           </div>
           <div>
@@ -167,7 +167,7 @@ export function AiAnalyticsTab({
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-purple-500/5" />
         <div className="relative p-6">
           <div className="flex items-center gap-2.5 mb-4">
-            <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
+            <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-foreground">
               <Brain className="h-4 w-4" />
             </div>
             <h3 className="text-sm font-semibold text-foreground">{t("aiAnalytics.businessMeaning")}</h3>
@@ -213,7 +213,7 @@ export function AiAnalyticsTab({
         <div className="relative p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2.5">
-              <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 text-white">
+              <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 text-foreground">
                 <Target className="h-4 w-4" />
               </div>
               <div>

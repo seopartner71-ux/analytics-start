@@ -111,7 +111,7 @@ const DeltaBadge = ({ change, invert }: { change: number; invert?: boolean }) =>
 const SectionHeader = ({ icon: Icon, title, color, lightMode }: { icon: React.ElementType; title: string; color: string; lightMode: boolean }) => (
   <div className="flex items-center gap-3 mb-6 mt-2">
     <div className="h-10 w-10 rounded-xl flex items-center justify-center shadow-lg" style={{ background: `linear-gradient(135deg, ${color}, ${color}dd)` }}>
-      <Icon className="h-5 w-5 text-white" />
+      <Icon className="h-5 w-5 text-foreground" />
     </div>
     <h2 className="text-2xl font-bold">{title}</h2>
   </div>
@@ -196,7 +196,7 @@ export const ReportView = forwardRef<HTMLDivElement, ReportViewProps>(
                 <div className="relative p-6 sm:p-8">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-500/25">
-                      <Bot className="h-5 w-5 text-white" />
+                      <Bot className="h-5 w-5 text-foreground" />
                     </div>
                     <div>
                       <h2 className="text-lg font-bold">AI Executive Summary</h2>

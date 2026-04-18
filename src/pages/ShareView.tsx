@@ -184,7 +184,7 @@ const ShareView = () => {
               <div className="absolute inset-0 bg-card/60 backdrop-blur-sm" />
               <div className="relative p-5 sm:p-6">
                 <div className="flex items-center gap-2.5 mb-4">
-                  <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-purple-500 text-white">
+                  <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-purple-500 text-foreground">
                     <Sparkles className="h-4 w-4" />
                   </div>
                   <div>
