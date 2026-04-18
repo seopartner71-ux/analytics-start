@@ -377,8 +377,8 @@ export function YandexWebmasterTab({ projectId }: Props) {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button size="sm" className="gap-1.5 text-[12px] bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-foreground border-0" onClick={handleRefresh} disabled={refreshing}>
-              <RefreshCw className={cn("h-3.5 w-3.5", refreshing && "animate-spin")} /> {refreshing ? "Обновление..." : "🔄 Обновить данные"}
+            <Button size="sm" className="gap-1.5 text-[12px]" onClick={handleRefresh} disabled={refreshing}>
+              <RefreshCw className={cn("h-3.5 w-3.5", refreshing && "animate-spin")} /> {refreshing ? "Обновление..." : "Обновить данные"}
             </Button>
           </div>
         </div>
@@ -392,31 +392,41 @@ export function YandexWebmasterTab({ projectId }: Props) {
         })}
       </div>
 
-      {/* SUMMARY CARDS */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {/* SUMMARY CARDS — единый стиль с «Аналитикой» */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {([
-          { label: "Фатальные ошибки", count: fatalCount, color: "#F44336", emoji: "🔴" },
-          { label: "Критичные ошибки", count: criticalCount, color: "#FF9800", emoji: "🟠" },
-          { label: "Возможные проблемы", count: possibleCount, color: "#FFC107", emoji: "🟡" },
-          { label: "Рекомендации", count: recCount, color: "#2196F3", emoji: "🔵" },
-        ]).map(card => (
-          <Card key={card.label} className={cn("bg-card border-border overflow-hidden", card.count > 0 && card.color === "#F44336" && "shadow-[0_0_20px_rgba(244,67,54,0.15)]")} style={{ borderLeftWidth: 3, borderLeftColor: card.color }}>
-            <div className="p-4">
-              <div className="text-[11px] text-muted-foreground flex items-center gap-1.5"><span>{card.emoji}</span> {card.label}</div>
-              <div className="text-2xl font-bold text-foreground mt-1">{card.count}</div>
-            </div>
-          </Card>
-        ))}
+          { label: "Фатальные ошибки", count: fatalCount, tone: "destructive", emoji: "🔴" },
+          { label: "Критичные ошибки", count: criticalCount, tone: "chart-4", emoji: "🟠" },
+          { label: "Возможные проблемы", count: possibleCount, tone: "chart-5", emoji: "🟡" },
+          { label: "Рекомендации", count: recCount, tone: "chart-2", emoji: "🔵" },
+        ] as const).map(card => {
+          const isDestructive = card.tone === "destructive";
+          const bgCls = isDestructive ? "bg-destructive/10" : `bg-[hsl(var(--${card.tone}))]/10`;
+          const textCls = isDestructive ? "text-destructive" : `text-[hsl(var(--${card.tone}))]`;
+          return (
+            <Card key={card.label} className="bg-card rounded-lg shadow-sm border border-border p-4">
+              <div className="flex items-center gap-3">
+                <div className={`h-9 w-9 rounded-lg ${bgCls} flex items-center justify-center text-base`}>
+                  <span>{card.emoji}</span>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide truncate">{card.label}</p>
+                  <p className={`text-xl font-bold tabular-nums ${card.count > 0 ? textCls : "text-foreground"}`}>{card.count}</p>
+                </div>
+              </div>
+            </Card>
+          );
+        })}
       </div>
 
       {/* STATUS BANNER */}
       {healthMetrics.length > 0 && (
         fatalCount > 0 ? (
-          <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-3 text-[13px] text-red-400 font-medium">🚨 Фатальные ошибки! Сайт может пропасть из поиска</div>
+          <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-[13px] text-destructive font-medium">🚨 Фатальные ошибки! Сайт может пропасть из поиска</div>
         ) : criticalCount > 0 ? (
-          <div className="rounded-lg bg-orange-500/10 border border-orange-500/20 px-4 py-3 text-[13px] text-orange-400 font-medium">⚠️ Обнаружены критичные ошибки — требуют срочного исправления</div>
+          <div className="rounded-lg bg-[hsl(var(--chart-4))]/10 border border-[hsl(var(--chart-4))]/20 px-4 py-3 text-[13px] text-[hsl(var(--chart-4))] font-medium">⚠️ Обнаружены критичные ошибки — требуют срочного исправления</div>
         ) : (
-          <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-4 py-3 text-[13px] text-emerald-400 font-medium">✅ Критических проблем не обнаружено</div>
+          <div className="rounded-lg bg-[hsl(var(--chart-3))]/10 border border-[hsl(var(--chart-3))]/20 px-4 py-3 text-[13px] text-[hsl(var(--chart-3))] font-medium">✅ Критических проблем не обнаружено</div>
         )
       )}
 
@@ -424,7 +434,7 @@ export function YandexWebmasterTab({ projectId }: Props) {
       <div className="flex flex-wrap items-center gap-2">
         {([["all", "Все"], ["errors", "Только ошибки"], ["fatal", "Фатальные"], ["critical", "Критичные"]] as const).map(([val, label]) => (
           <Button key={val} variant={filter === val ? "default" : "outline"} size="sm"
-            className={cn("text-[11px] h-7", filter === val ? "bg-purple-600 hover:bg-purple-700 text-foreground border-0" : "border-border text-muted-foreground hover:bg-muted/60")}
+            className="text-[11px] h-7"
             onClick={() => setFilter(val)}>
             {label}
           </Button>
