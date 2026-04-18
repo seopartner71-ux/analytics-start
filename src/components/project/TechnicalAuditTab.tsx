@@ -227,6 +227,106 @@ function SectionBlock({ title, checks, domain, banner, onResultChange, onComment
 
 interface Props { projectId: string; }
 
+const ISSUE_CODE_LABELS: Record<string, string> = {
+  TITLE_MISSING: "Отсутствует Title",
+  TITLE_TOO_LONG: "Title слишком длинный",
+  TITLE_TOO_SHORT: "Title слишком короткий",
+  TITLE_DUPLICATE: "Дубли Title",
+  H1_MISSING: "Отсутствует H1",
+  H1_DUPLICATE: "Несколько H1 на странице",
+  DESCRIPTION_MISSING: "Отсутствует meta description",
+  DESCRIPTION_TOO_LONG: "Description слишком длинный",
+  DESCRIPTION_DUPLICATE: "Дубли description",
+  CANONICAL_MISSING: "Отсутствует canonical",
+  STATUS_4XX: "Ошибки 4xx",
+  STATUS_5XX: "Ошибки 5xx",
+  BROKEN_LINK: "Битая ссылка",
+  REDIRECT_CHAIN: "Цепочка редиректов",
+  IMAGE_NO_ALT: "Изображение без alt",
+  IMAGE_TOO_HEAVY: "Тяжёлое изображение",
+  SLOW_PAGE: "Медленная загрузка страницы",
+  THIN_CONTENT: "Мало контента на странице",
+};
+
+const SEV_CLS: Record<string, string> = {
+  critical: "bg-red-500/20 text-red-400 border-red-500/30",
+  warning: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+  info: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+};
+
+const SEV_ORDER: Record<string, number> = { critical: 0, warning: 1, info: 2 };
+
+function IssuesGrouped({ issues }: { issues: any[] }) {
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+
+  if (!issues || issues.length === 0) {
+    return <div className="text-[12px] text-zinc-500">Проблем не обнаружено</div>;
+  }
+
+  // Group by code
+  const map = new Map<string, { code: string; severity: string; message: string; urls: Set<string> }>();
+  for (const i of issues) {
+    const code = i.code || "UNKNOWN";
+    let g = map.get(code);
+    if (!g) {
+      g = { code, severity: i.severity || "info", message: i.message || "", urls: new Set() };
+      map.set(code, g);
+    }
+    const url = i.crawl_pages?.url;
+    if (url) g.urls.add(url);
+    // Prefer worst severity
+    if ((SEV_ORDER[i.severity] ?? 9) < (SEV_ORDER[g.severity] ?? 9)) g.severity = i.severity;
+  }
+
+  const groups = Array.from(map.values()).sort((a, b) => {
+    const s = (SEV_ORDER[a.severity] ?? 9) - (SEV_ORDER[b.severity] ?? 9);
+    if (s !== 0) return s;
+    return b.urls.size - a.urls.size;
+  });
+
+  return (
+    <div className="rounded-lg border border-[#333] bg-[#1e1e1e] divide-y divide-[#2a2a2a]">
+      {groups.map((g) => {
+        const isOpen = !!expanded[g.code];
+        const label = ISSUE_CODE_LABELS[g.code] ?? g.message ?? g.code;
+        const count = g.urls.size;
+        return (
+          <div key={g.code}>
+            <button
+              type="button"
+              onClick={() => setExpanded((p) => ({ ...p, [g.code]: !p[g.code] }))}
+              className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-[#252525] transition-colors text-left"
+            >
+              {isOpen ? <ChevronDown className="h-3.5 w-3.5 text-zinc-500 shrink-0" /> : <ChevronRight className="h-3.5 w-3.5 text-zinc-500 shrink-0" />}
+              <span className={cn("inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium shrink-0", SEV_CLS[g.severity] ?? SEV_CLS.info)}>
+                {g.severity}
+              </span>
+              <span className="flex-1 text-[13px] text-zinc-200 truncate">{label}</span>
+              <Badge className="bg-zinc-700 text-zinc-300 text-[11px] shrink-0">{count} {count === 1 ? "страница" : count < 5 ? "страницы" : "страниц"}</Badge>
+            </button>
+            {isOpen && count > 0 && (
+              <div className="px-3 pb-3 pl-10 space-y-1">
+                {Array.from(g.urls).map((url) => (
+                  <a
+                    key={url}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block text-[12px] text-cyan-400 hover:underline font-mono break-all"
+                  >
+                    {url}
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+
 export function TechnicalAuditTab({ projectId }: Props) {
   const [filter, setFilter] = useState<"all" | "errors" | "high" | "unchecked">("all");
   const [search, setSearch] = useState("");
