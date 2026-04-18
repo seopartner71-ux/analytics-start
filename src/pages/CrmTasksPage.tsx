@@ -24,6 +24,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 import { cn } from "@/lib/utils";
+import { TASK_STAGES, STAGE_COLORS, STAGE_PROGRESS, getDeadlineStatus, DEADLINE_STYLES } from "@/lib/task-helpers";
 
 import { TaskDetailSheet, CrmTask, getAvatarUrl } from "@/components/project/TaskDetailSheet";
 
@@ -64,7 +65,8 @@ function AddTaskDialog() {
       const { error } = await supabase.from("crm_tasks").insert({
         title: form.title,
         stage: form.stage,
-        stage_color: form.stage === "Новые" ? "#3b82f6" : form.stage === "В работе" ? "#f59e0b" : form.stage === "Завершена" ? "#10b981" : "#8b5cf6",
+        stage_color: STAGE_COLORS[form.stage] || "#3b82f6",
+        stage_progress: STAGE_PROGRESS[form.stage] || 0,
         priority: form.priority,
         deadline: form.deadline || null,
         project_id: projectId,
@@ -97,10 +99,7 @@ function AddTaskDialog() {
               <Select value={form.stage} onValueChange={v => setForm(f => ({ ...f, stage: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Новые">Новые</SelectItem>
-                  <SelectItem value="В работе">В работе</SelectItem>
-                  <SelectItem value="Ждёт выполнения">Ждёт выполнения</SelectItem>
-                  <SelectItem value="Завершена">Завершена</SelectItem>
+                  {TASK_STAGES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -148,18 +147,12 @@ function PropertyRow({ label, children }: { label: string; children: React.React
 
 /* ─── Kanban ─── */
 function KanbanView({ tasks, onSelect }: { tasks: CrmTask[]; onSelect: (t: CrmTask) => void }) {
-  const stages = ["Новые", "В работе", "Ждёт выполнения", "Завершена"];
-  const stageColors: Record<string, string> = {
-    "Новые": "#3b82f6",
-    "В работе": "#f59e0b",
-    "Ждёт выполнения": "#8b5cf6",
-    "Завершена": "#10b981",
-  };
+  const stages = ["Новые", "В работе", "На проверке", "Возвращена", "Принята"] as const;
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
       {stages.map(stage => {
         const stageTasks = tasks.filter(t => t.stage === stage);
-        const color = stageColors[stage];
+        const color = STAGE_COLORS[stage];
         return (
           <div key={stage} className="space-y-2.5">
             <div className="flex items-center gap-2 pb-2.5 border-b-2" style={{ borderColor: color }}>
@@ -168,7 +161,8 @@ function KanbanView({ tasks, onSelect }: { tasks: CrmTask[]; onSelect: (t: CrmTa
             </div>
             <AnimatePresence>
               {stageTasks.map((t, i) => {
-                const isOverdue = t.deadline ? new Date(t.deadline) < new Date() && t.stage !== "Завершена" : false;
+                const dlStatus = getDeadlineStatus(t.deadline, t.stage);
+                const dlStyle = DEADLINE_STYLES[dlStatus];
                 return (
                   <motion.div
                     key={t.id}
@@ -180,8 +174,9 @@ function KanbanView({ tasks, onSelect }: { tasks: CrmTask[]; onSelect: (t: CrmTa
                       <CardContent className="p-3.5 space-y-2.5">
                         <p className="text-sm font-medium text-foreground line-clamp-2 leading-snug">{t.title}</p>
                         <div className="flex items-center justify-between">
-                          <span className={`text-[11px] ${isOverdue ? "text-destructive font-semibold" : "text-muted-foreground"}`}>
-                            {isOverdue && <AlertTriangle className="h-3 w-3 inline mr-1" />}
+                          <span className={cn("text-[11px] font-medium flex items-center gap-1", dlStyle.text)}>
+                            {dlStatus === "overdue" && <AlertTriangle className="h-3 w-3" />}
+                            {dlStatus === "soon" && <Clock className="h-3 w-3" />}
                             {t.deadline ? new Date(t.deadline).toLocaleDateString("ru-RU", { day: "numeric", month: "short" }) : "—"}
                           </span>
                           {t.assignee && <AvatarCircle initials={getInitials(t.assignee.full_name)} className="h-6 w-6 text-[10px]" />}
