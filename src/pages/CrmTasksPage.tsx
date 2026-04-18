@@ -243,7 +243,9 @@ export default function CrmTasksPage() {
     return matchesSearch && matchesProject && matchesAssignee && matchesStatus;
   });
 
-  const overdueCount = tasks.filter(t => t.deadline && new Date(t.deadline) < new Date() && t.stage !== "Завершена").length;
+  const overdueCount = tasks.filter(t => getDeadlineStatus(t.deadline, t.stage) === "overdue").length;
+  const reviewCount = tasks.filter(t => t.stage === "На проверке").length;
+  const returnedCount = tasks.filter(t => t.stage === "Возвращена").length;
 
   const toggle = (id: string) => {
     const s = new Set(selected);
