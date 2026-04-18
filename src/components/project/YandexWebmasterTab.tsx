@@ -132,7 +132,7 @@ function buildChecks(domain: string): WmCheck[] {
 function StatusBadge({ status }: { status: CheckStatus }) {
   if (status === "ok") return <span className="inline-flex items-center gap-1 text-[11px] text-emerald-400">✅ Ошибок нет</span>;
   if (status === "error") return <span className="inline-flex items-center gap-1 text-[11px] text-red-400">🔴 Ошибка обнаружена</span>;
-  return <span className="text-[11px] text-zinc-500">Не проверено</span>;
+  return <span className="text-[11px] text-muted-foreground">Не проверено</span>;
 }
 
 function CheckRowWm({ check, sectionType }: { check: WmCheck; sectionType: SectionType }) {
@@ -142,9 +142,9 @@ function CheckRowWm({ check, sectionType }: { check: WmCheck; sectionType: Secti
 
   return (
     <div className={cn("border-l-[3px] rounded-r-lg", borderCls)}>
-      <div className="flex items-center gap-3 px-3 py-2.5 hover:bg-[#2a2a2a] cursor-pointer transition-colors" onClick={() => (check.errorUrls && check.errorUrls.length > 0) && setExpanded(!expanded)}>
-        <span className="w-[40px] text-[12px] text-zinc-500 font-mono shrink-0">{check.number}</span>
-        <span className={cn("flex-1 text-[13px] truncate", check.status === "ok" ? "text-zinc-500" : "text-zinc-200")}>{check.name}</span>
+      <div className="flex items-center gap-3 px-3 py-2.5 hover:bg-muted/50 cursor-pointer transition-colors" onClick={() => (check.errorUrls && check.errorUrls.length > 0) && setExpanded(!expanded)}>
+        <span className="w-[40px] text-[12px] text-muted-foreground font-mono shrink-0">{check.number}</span>
+        <span className={cn("flex-1 text-[13px] truncate", check.status === "ok" ? "text-muted-foreground" : "text-foreground")}>{check.name}</span>
         <div className="w-[180px] shrink-0"><StatusBadge status={check.status} /></div>
         {check.errorCount !== undefined && check.errorCount > 0 && (
           <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-[10px]">{check.errorCount} стр.</Badge>
@@ -157,12 +157,12 @@ function CheckRowWm({ check, sectionType }: { check: WmCheck; sectionType: Secti
           )}
         </div>
         {check.errorUrls && check.errorUrls.length > 0 && (
-          <span className="text-zinc-500">{expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}</span>
+          <span className="text-muted-foreground">{expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}</span>
         )}
       </div>
       {expanded && check.errorUrls && (
         <div className="px-4 pb-3 pl-[60px] space-y-1">
-          {check.errorUrls.slice(0, 10).map((u, i) => <div key={i} className="text-[12px] text-zinc-400 font-mono">{u}</div>)}
+          {check.errorUrls.slice(0, 10).map((u, i) => <div key={i} className="text-[12px] text-muted-foreground font-mono">{u}</div>)}
           {check.errorUrls.length > 10 && <div className="text-[11px] text-cyan-400 cursor-pointer">Показать все {check.errorUrls.length}</div>}
         </div>
       )}
@@ -178,9 +178,9 @@ function SectionWm({ section, checks }: { section: SectionType; checks: WmCheck[
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
       <CollapsibleTrigger className="w-full">
-        <div className="flex items-center gap-3 px-4 py-3 bg-[#252525] rounded-lg hover:bg-[#2a2a2a] transition-colors">
-          {open ? <ChevronDown className="h-4 w-4 text-zinc-400" /> : <ChevronRight className="h-4 w-4 text-zinc-400" />}
-          <span className="text-[14px] font-semibold text-zinc-100">{meta.emoji} {meta.label}</span>
+        <div className="flex items-center gap-3 px-4 py-3 bg-card rounded-lg hover:bg-muted/50 transition-colors">
+          {open ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+          <span className="text-[14px] font-semibold text-foreground">{meta.emoji} {meta.label}</span>
           <Badge className="text-[11px]" style={{ backgroundColor: `${meta.color}20`, color: meta.color, borderColor: `${meta.color}50` }}>{checks.length} проверок</Badge>
           {errCount > 0 && <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-[11px]">{errCount} ошибок</Badge>}
         </div>
@@ -189,7 +189,7 @@ function SectionWm({ section, checks }: { section: SectionType; checks: WmCheck[
         <div className="mx-4 mt-2 mb-2 rounded-lg px-4 py-2 text-[12px] border" style={{ backgroundColor: `${meta.color}08`, borderColor: `${meta.color}20`, color: `${meta.color}cc` }}>
           {meta.info}
         </div>
-        <div className="flex items-center gap-3 px-3 py-2 text-[11px] text-zinc-500 font-medium border-b border-[#333] mx-1">
+        <div className="flex items-center gap-3 px-3 py-2 text-[11px] text-muted-foreground font-medium border-b border-border mx-1">
           <div className="w-[40px] shrink-0">№</div>
           <div className="flex-1">Проверка</div>
           <div className="w-[180px] shrink-0">Статус</div>
@@ -350,21 +350,21 @@ export function YandexWebmasterTab({ projectId }: Props) {
   return (
     <div className="space-y-5">
       {/* HEADER */}
-      <Card className="bg-[#252525] border-[#333] p-5">
+      <Card className="bg-card border-border p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-1.5">
-            <h2 className="text-lg font-bold text-zinc-100">Яндекс Вебмастер</h2>
-            <div className="flex flex-wrap gap-x-6 gap-y-1 text-[13px] text-zinc-400">
-              <span>Сайт: <span className="text-zinc-200 font-medium">{domain}</span></span>
-              <span>Дата анализа: <span className="text-zinc-200">{lastUpdate ? format(lastUpdate, "dd.MM.yyyy HH:mm") : "—"}</span></span>
-              <span>Подготовил: <span className="text-zinc-200">{specialist?.full_name || project?.seo_specialist || "—"}</span></span>
+            <h2 className="text-lg font-bold text-foreground">Яндекс Вебмастер</h2>
+            <div className="flex flex-wrap gap-x-6 gap-y-1 text-[13px] text-muted-foreground">
+              <span>Сайт: <span className="text-foreground font-medium">{domain}</span></span>
+              <span>Дата анализа: <span className="text-foreground">{lastUpdate ? format(lastUpdate, "dd.MM.yyyy HH:mm") : "—"}</span></span>
+              <span>Подготовил: <span className="text-foreground">{specialist?.full_name || project?.seo_specialist || "—"}</span></span>
             </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            {lastUpdate && <span className="text-[11px] text-zinc-500">Последнее обновление: {format(lastUpdate, "dd.MM.yyyy 'в' HH:mm")}</span>}
+            {lastUpdate && <span className="text-[11px] text-muted-foreground">Последнее обновление: {format(lastUpdate, "dd.MM.yyyy 'в' HH:mm")}</span>}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-1.5 text-[12px] border-[#444] text-zinc-300 hover:bg-[#333]">
+                <Button variant="outline" size="sm" className="gap-1.5 text-[12px] border-border text-foreground/90 hover:bg-muted/60">
                   {pdfLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileDown className="h-3.5 w-3.5" />}
                   Скачать отчёт
                 </Button>
@@ -377,7 +377,7 @@ export function YandexWebmasterTab({ projectId }: Props) {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button size="sm" className="gap-1.5 text-[12px] bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white border-0" onClick={handleRefresh} disabled={refreshing}>
+            <Button size="sm" className="gap-1.5 text-[12px] bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-foreground border-0" onClick={handleRefresh} disabled={refreshing}>
               <RefreshCw className={cn("h-3.5 w-3.5", refreshing && "animate-spin")} /> {refreshing ? "Обновление..." : "🔄 Обновить данные"}
             </Button>
           </div>
@@ -400,10 +400,10 @@ export function YandexWebmasterTab({ projectId }: Props) {
           { label: "Возможные проблемы", count: possibleCount, color: "#FFC107", emoji: "🟡" },
           { label: "Рекомендации", count: recCount, color: "#2196F3", emoji: "🔵" },
         ]).map(card => (
-          <Card key={card.label} className={cn("bg-[#252525] border-[#333] overflow-hidden", card.count > 0 && card.color === "#F44336" && "shadow-[0_0_20px_rgba(244,67,54,0.15)]")} style={{ borderLeftWidth: 3, borderLeftColor: card.color }}>
+          <Card key={card.label} className={cn("bg-card border-border overflow-hidden", card.count > 0 && card.color === "#F44336" && "shadow-[0_0_20px_rgba(244,67,54,0.15)]")} style={{ borderLeftWidth: 3, borderLeftColor: card.color }}>
             <div className="p-4">
-              <div className="text-[11px] text-zinc-400 flex items-center gap-1.5"><span>{card.emoji}</span> {card.label}</div>
-              <div className="text-2xl font-bold text-zinc-100 mt-1">{card.count}</div>
+              <div className="text-[11px] text-muted-foreground flex items-center gap-1.5"><span>{card.emoji}</span> {card.label}</div>
+              <div className="text-2xl font-bold text-foreground mt-1">{card.count}</div>
             </div>
           </Card>
         ))}
@@ -424,23 +424,23 @@ export function YandexWebmasterTab({ projectId }: Props) {
       <div className="flex flex-wrap items-center gap-2">
         {([["all", "Все"], ["errors", "Только ошибки"], ["fatal", "Фатальные"], ["critical", "Критичные"]] as const).map(([val, label]) => (
           <Button key={val} variant={filter === val ? "default" : "outline"} size="sm"
-            className={cn("text-[11px] h-7", filter === val ? "bg-purple-600 hover:bg-purple-700 text-white border-0" : "border-[#444] text-zinc-400 hover:bg-[#333]")}
+            className={cn("text-[11px] h-7", filter === val ? "bg-purple-600 hover:bg-purple-700 text-foreground border-0" : "border-border text-muted-foreground hover:bg-muted/60")}
             onClick={() => setFilter(val)}>
             {label}
           </Button>
         ))}
         <div className="relative ml-auto">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500" />
-          <Input placeholder="Поиск по проверке..." value={search} onChange={e => setSearch(e.target.value)} className="pl-8 bg-[#1e1e1e] border-[#333] text-zinc-300 text-[12px] h-7 w-[240px]" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input placeholder="Поиск по проверке..." value={search} onChange={e => setSearch(e.target.value)} className="pl-8 bg-muted/40 border-border text-foreground/90 text-[12px] h-7 w-[240px]" />
         </div>
       </div>
 
       {/* Empty state */}
       {healthMetrics.length === 0 && (
-        <Card className="bg-[#252525] border-[#333] p-12 text-center">
-          <RefreshCw className="h-12 w-12 mx-auto mb-4 text-zinc-600" />
-          <p className="text-zinc-400 text-[14px] mb-3">Нажмите «Обновить данные» для загрузки данных из Яндекс Вебмастер</p>
-          <Button size="sm" className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white border-0" onClick={handleRefresh} disabled={refreshing}>
+        <Card className="bg-card border-border p-12 text-center">
+          <RefreshCw className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+          <p className="text-muted-foreground text-[14px] mb-3">Нажмите «Обновить данные» для загрузки данных из Яндекс Вебмастер</p>
+          <Button size="sm" className="bg-gradient-to-r from-purple-600 to-indigo-600 text-foreground border-0" onClick={handleRefresh} disabled={refreshing}>
             {refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : "🔄 Обновить данные"}
           </Button>
         </Card>
@@ -460,50 +460,50 @@ export function YandexWebmasterTab({ projectId }: Props) {
       {healthMetrics.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Indexation */}
-          <Card className="bg-[#252525] border-[#333] p-4">
-            <h4 className="text-[13px] font-semibold text-zinc-200 mb-3">📊 Индексация</h4>
+          <Card className="bg-card border-border p-4">
+            <h4 className="text-[13px] font-semibold text-foreground mb-3">📊 Индексация</h4>
             <div className="space-y-2">
-              <div className="flex justify-between text-[12px]"><span className="text-zinc-400">Страниц в индексе</span><span className="text-zinc-100 font-bold">{Number(yIndexed).toLocaleString("ru-RU")}</span></div>
-              <div className="flex justify-between text-[12px]"><span className="text-zinc-400">Всего страниц</span><span className="text-zinc-100 font-bold">{Number(yTotal).toLocaleString("ru-RU")}</span></div>
-              <div className="flex justify-between text-[12px]"><span className="text-zinc-400">Исключено</span><span className="text-red-400 font-bold">{Number(yExcluded).toLocaleString("ru-RU")}</span></div>
+              <div className="flex justify-between text-[12px]"><span className="text-muted-foreground">Страниц в индексе</span><span className="text-foreground font-bold">{Number(yIndexed).toLocaleString("ru-RU")}</span></div>
+              <div className="flex justify-between text-[12px]"><span className="text-muted-foreground">Всего страниц</span><span className="text-foreground font-bold">{Number(yTotal).toLocaleString("ru-RU")}</span></div>
+              <div className="flex justify-between text-[12px]"><span className="text-muted-foreground">Исключено</span><span className="text-red-400 font-bold">{Number(yExcluded).toLocaleString("ru-RU")}</span></div>
               {Number(yTotal) > 0 && (
-                <Progress value={(Number(yIndexed) / Number(yTotal)) * 100} className="h-2 bg-[#333]" />
+                <Progress value={(Number(yIndexed) / Number(yTotal)) * 100} className="h-2 bg-muted" />
               )}
             </div>
           </Card>
 
           {/* Search queries */}
-          <Card className="bg-[#252525] border-[#333] p-4">
-            <h4 className="text-[13px] font-semibold text-zinc-200 mb-3">🔍 Поисковые запросы</h4>
+          <Card className="bg-card border-border p-4">
+            <h4 className="text-[13px] font-semibold text-foreground mb-3">🔍 Поисковые запросы</h4>
             <div className="space-y-2">
-              <div className="flex justify-between text-[12px]"><span className="text-zinc-400">Всего показов</span><span className="text-zinc-100 font-bold">{Number(yQueries).toLocaleString("ru-RU")}</span></div>
-              <div className="flex justify-between text-[12px]"><span className="text-zinc-400">Средний CTR</span><span className="text-cyan-400 font-bold">{Number(yAvgCtr).toFixed(2)}%</span></div>
-              <div className="flex justify-between text-[12px]"><span className="text-zinc-400">Средняя позиция</span><span className="text-zinc-100 font-bold">{Number(yAvgPos).toFixed(1)}</span></div>
+              <div className="flex justify-between text-[12px]"><span className="text-muted-foreground">Всего показов</span><span className="text-foreground font-bold">{Number(yQueries).toLocaleString("ru-RU")}</span></div>
+              <div className="flex justify-between text-[12px]"><span className="text-muted-foreground">Средний CTR</span><span className="text-cyan-400 font-bold">{Number(yAvgCtr).toFixed(2)}%</span></div>
+              <div className="flex justify-between text-[12px]"><span className="text-muted-foreground">Средняя позиция</span><span className="text-foreground font-bold">{Number(yAvgPos).toFixed(1)}</span></div>
             </div>
           </Card>
 
           {/* External links */}
-          <Card className="bg-[#252525] border-[#333] p-4">
-            <h4 className="text-[13px] font-semibold text-zinc-200 mb-3">🔗 Внешние ссылки</h4>
+          <Card className="bg-card border-border p-4">
+            <h4 className="text-[13px] font-semibold text-foreground mb-3">🔗 Внешние ссылки</h4>
             <div className="space-y-2">
-              <div className="flex justify-between text-[12px]"><span className="text-zinc-400">Внешних ссылок</span><span className="text-zinc-100 font-bold">{Number(yExtLinks).toLocaleString("ru-RU")}</span></div>
-              <div className="flex justify-between text-[12px]"><span className="text-zinc-400">Ссылающихся доменов</span><span className="text-zinc-100 font-bold">{Number(yRefDomains).toLocaleString("ru-RU")}</span></div>
+              <div className="flex justify-between text-[12px]"><span className="text-muted-foreground">Внешних ссылок</span><span className="text-foreground font-bold">{Number(yExtLinks).toLocaleString("ru-RU")}</span></div>
+              <div className="flex justify-between text-[12px]"><span className="text-muted-foreground">Ссылающихся доменов</span><span className="text-foreground font-bold">{Number(yRefDomains).toLocaleString("ru-RU")}</span></div>
             </div>
           </Card>
 
           {/* Замечания + Sitemap */}
-          <Card className="bg-[#252525] border-[#333] p-4">
-            <h4 className="text-[13px] font-semibold text-zinc-200 mb-3">⚠️ Замечания</h4>
+          <Card className="bg-card border-border p-4">
+            <h4 className="text-[13px] font-semibold text-foreground mb-3">⚠️ Замечания</h4>
             <div className="space-y-2">
-              <div className="flex justify-between text-[12px]"><span className="text-zinc-400">Активных проблем</span><span className="text-red-400 font-bold">{siteErrors.filter(e => e.status === "Новая").length}</span></div>
-              <div className="flex justify-between text-[12px]"><span className="text-zinc-400">Всего из Вебмастера</span><span className="text-zinc-100 font-bold">{siteErrors.length}</span></div>
+              <div className="flex justify-between text-[12px]"><span className="text-muted-foreground">Активных проблем</span><span className="text-red-400 font-bold">{siteErrors.filter(e => e.status === "Новая").length}</span></div>
+              <div className="flex justify-between text-[12px]"><span className="text-muted-foreground">Всего из Вебмастера</span><span className="text-foreground font-bold">{siteErrors.length}</span></div>
               <div className="flex justify-between text-[12px]">
-                <span className="text-zinc-400">Sitemap</span>
-                <span className={cn("font-bold", getMetric("sitemap_status") === "ok" ? "text-emerald-400" : "text-zinc-500")}>{getMetric("sitemap_status") === "ok" ? "✅ Подключен" : "Не настроен"}</span>
+                <span className="text-muted-foreground">Sitemap</span>
+                <span className={cn("font-bold", getMetric("sitemap_status") === "ok" ? "text-emerald-400" : "text-muted-foreground")}>{getMetric("sitemap_status") === "ok" ? "✅ Подключен" : "Не настроен"}</span>
               </div>
               <div className="flex justify-between text-[12px]">
-                <span className="text-zinc-400">Последний обход</span>
-                <span className="text-zinc-100">{(() => { const v = getMetric("last_crawl"); try { return v && v !== "0" ? format(parseISO(v), "dd.MM.yyyy") : "—"; } catch { return "—"; } })()}</span>
+                <span className="text-muted-foreground">Последний обход</span>
+                <span className="text-foreground">{(() => { const v = getMetric("last_crawl"); try { return v && v !== "0" ? format(parseISO(v), "dd.MM.yyyy") : "—"; } catch { return "—"; } })()}</span>
               </div>
             </div>
           </Card>
@@ -514,23 +514,23 @@ export function YandexWebmasterTab({ projectId }: Props) {
       {errorChecks.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <h3 className="text-[14px] font-semibold text-zinc-100">Рекомендации по исправлениям</h3>
+            <h3 className="text-[14px] font-semibold text-foreground">Рекомендации по исправлениям</h3>
             <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-[11px]">{errorChecks.length}</Badge>
           </div>
           <div className="grid gap-3 md:grid-cols-2">
             {errorChecks.map(c => {
               const meta = SECTION_META[c.section];
               return (
-                <Card key={c.number} className="bg-[#252525] border-[#333] p-4 space-y-2">
+                <Card key={c.number} className="bg-card border-border p-4 space-y-2">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium" style={{ backgroundColor: `${meta.color}20`, color: meta.color, borderColor: `${meta.color}40` }}>{meta.emoji} {meta.label}</span>
-                    <span className="text-[12px] font-mono text-zinc-500">{c.number}</span>
-                    <span className="text-[13px] font-medium text-zinc-200">{c.name}</span>
+                    <span className="text-[12px] font-mono text-muted-foreground">{c.number}</span>
+                    <span className="text-[13px] font-medium text-foreground">{c.name}</span>
                   </div>
-                  <Textarea placeholder="Задание для специалиста / разработчика..." className="bg-[#1e1e1e] border-[#333] text-zinc-300 text-[12px] min-h-[60px]" />
+                  <Textarea placeholder="Задание для специалиста / разработчика..." className="bg-muted/40 border-border text-foreground/90 text-[12px] min-h-[60px]" />
                   <div className="flex items-center gap-2">
                     <Select defaultValue="new">
-                      <SelectTrigger className="h-7 w-[130px] text-[11px] bg-[#1e1e1e] border-[#333] text-zinc-300"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="h-7 w-[130px] text-[11px] bg-muted/40 border-border text-foreground/90"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="new">Новая</SelectItem>
                         <SelectItem value="inprogress">В работе</SelectItem>

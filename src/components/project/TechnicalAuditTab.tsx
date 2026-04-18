@@ -379,11 +379,11 @@ function AuditSection({
         : "border-l-4 border-l-blue-500";
 
   return (
-    <Card className={cn("bg-[#252525] border-[#333] overflow-hidden", sectionLeftBorder)}>
+    <Card className={cn("bg-card border-border overflow-hidden", sectionLeftBorder)}>
       <button
         type="button"
         onClick={() => setSectionOpen((v) => !v)}
-        className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-[#2a2a2a] transition-colors text-left"
+        className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-muted/50 transition-colors text-left"
       >
         <div className={cn(
           "h-9 w-9 rounded-lg flex items-center justify-center shrink-0",
@@ -395,19 +395,19 @@ function AuditSection({
           )} />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-[14px] font-semibold text-zinc-100">{section.title}</h3>
-          <p className="text-[11px] text-zinc-500 truncate">{section.description}</p>
+          <h3 className="text-[14px] font-semibold text-foreground">{section.title}</h3>
+          <p className="text-[11px] text-muted-foreground truncate">{section.description}</p>
         </div>
         <Badge className={cn("text-[11px] border", counterCls)}>
           {problemCount === 0 ? "Ошибок нет" : `Найдено: ${problemCount}`}
         </Badge>
         {sectionOpen
-          ? <ChevronDown className="h-4 w-4 text-zinc-500 shrink-0" />
-          : <ChevronRight className="h-4 w-4 text-zinc-500 shrink-0" />}
+          ? <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+          : <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />}
       </button>
 
       {sectionOpen && (
-        <div className="border-t border-[#333] divide-y divide-[#2a2a2a]">
+        <div className="border-t border-border divide-y divide-border">
           {rows.map((r) => {
             const isOpen = !!rowOpen[r.code];
             const has = !!r.group;
@@ -434,7 +434,7 @@ function AuditSection({
                   )}
                 >
                   <SevIcon className={cn("h-4 w-4 shrink-0", SEV_ICON_COLOR[sevKey])} />
-                  <span className={cn("flex-1 min-w-0", has ? "text-zinc-200" : "text-zinc-400")}>
+                  <span className={cn("flex-1 min-w-0", has ? "text-foreground" : "text-muted-foreground")}>
                     <span className="flex items-center gap-1.5 text-[13px] min-w-0">
                       <span className="truncate">{r.label}</span>
                       {CHECK_INFO[r.code] && (
@@ -445,7 +445,7 @@ function AuditSection({
                                 role="button"
                                 tabIndex={0}
                                 onClick={(e) => e.stopPropagation()}
-                                className="inline-flex shrink-0 text-zinc-500 hover:text-zinc-300 transition-colors cursor-help"
+                                className="inline-flex shrink-0 text-muted-foreground hover:text-foreground/90 transition-colors cursor-help"
                               >
                                 <HelpCircle className="h-3.5 w-3.5" />
                               </span>
@@ -455,7 +455,7 @@ function AuditSection({
                                 <div className="font-semibold text-zinc-900">{r.label}</div>
                                 <div className="text-zinc-700">{CHECK_INFO[r.code].description}</div>
                                 <div className="pt-1 border-t border-zinc-200">
-                                  <span className="text-zinc-500">Важность: </span>
+                                  <span className="text-muted-foreground">Важность: </span>
                                   <span className={cn("font-semibold", IMPORTANCE_CLS[CHECK_INFO[r.code].importance])}>
                                     {CHECK_INFO[r.code].importance}
                                   </span>
@@ -467,31 +467,31 @@ function AuditSection({
                       )}
                     </span>
                     {duplicateValue && (
-                      <span className="block text-[11px] italic text-zinc-500 truncate mt-0.5">
+                      <span className="block text-[11px] italic text-muted-foreground truncate mt-0.5">
                         {String(duplicateValue)}
                       </span>
                     )}
                   </span>
                   {has ? (
                     <>
-                      <Badge className="bg-zinc-700/70 text-zinc-300 text-[11px] shrink-0 border-0">
+                      <Badge className="bg-muted text-foreground/90 text-[11px] shrink-0 border-0">
                         {pages} {pageWord(pages)}
                       </Badge>
                       <span className={cn("inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium shrink-0", SEV_CLS[r.severity] ?? SEV_CLS.info)}>
                         {SEV_LABEL[r.severity] ?? r.severity}
                       </span>
                       {isOpen
-                        ? <ChevronDown className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
-                        : <ChevronRight className="h-3.5 w-3.5 text-zinc-500 shrink-0" />}
+                        ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
                     </>
                   ) : (
                     <span className="text-[11px] text-emerald-400 shrink-0">Ошибок нет</span>
                   )}
                 </button>
                 {has && isOpen && (
-                  <div className="px-4 py-3 pl-11 space-y-2 bg-[#181818]">
+                  <div className="px-4 py-3 pl-11 space-y-2 bg-muted/30">
                     {items.length === 0 ? (
-                      <div className="text-[11px] text-zinc-500">URL не переданы краулером</div>
+                      <div className="text-[11px] text-muted-foreground">URL не переданы краулером</div>
                     ) : isDuplicateCode ? (
                       (() => {
                         const groups = new Map<string, string[]>();
@@ -505,20 +505,20 @@ function AuditSection({
                         }
                         const entries = Array.from(groups.entries()).sort((a, b) => b[1].length - a[1].length);
                         if (entries.length === 0) {
-                          return <div className="text-[11px] text-zinc-500">Значения дублей не переданы краулером</div>;
+                          return <div className="text-[11px] text-muted-foreground">Значения дублей не переданы краулером</div>;
                         }
                         return (
                           <>
                             {entries.slice(0, 50).map(([value, urls], gi) => (
-                              <div key={gi} className="rounded border border-[#262626] bg-[#0f0f0f] overflow-hidden">
-                                <div className="flex items-center justify-between gap-2 px-3 py-2 bg-[#141414] border-b border-[#262626]">
+                              <div key={gi} className="rounded border border-border bg-background overflow-hidden">
+                                <div className="flex items-center justify-between gap-2 px-3 py-2 bg-muted/40 border-b border-border">
                                   <div className="min-w-0 flex-1">
-                                    <div className="text-[10px] text-zinc-500 uppercase tracking-wide mb-0.5">
+                                    <div className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">
                                       Дубль · {value.length} симв.
                                     </div>
-                                    <div className="text-[12px] text-zinc-300 break-words">{value}</div>
+                                    <div className="text-[12px] text-foreground/90 break-words">{value}</div>
                                   </div>
-                                  <Badge className="bg-zinc-700/70 text-zinc-300 text-[11px] shrink-0 border-0">
+                                  <Badge className="bg-muted text-foreground/90 text-[11px] shrink-0 border-0">
                                     {urls.length} {pageWord(urls.length)}
                                   </Badge>
                                 </div>
@@ -536,13 +536,13 @@ function AuditSection({
                                     </a>
                                   ))}
                                   {urls.length > 100 && (
-                                    <div className="text-[11px] text-zinc-500">…и ещё {urls.length - 100}</div>
+                                    <div className="text-[11px] text-muted-foreground">…и ещё {urls.length - 100}</div>
                                   )}
                                 </div>
                               </div>
                             ))}
                             {entries.length > 50 && (
-                              <div className="text-[11px] text-zinc-500 pt-1">…и ещё {entries.length - 50} групп дублей</div>
+                              <div className="text-[11px] text-muted-foreground pt-1">…и ещё {entries.length - 50} групп дублей</div>
                             )}
                           </>
                         );
@@ -551,7 +551,7 @@ function AuditSection({
                       items.slice(0, 100).map((it, i) => {
                         const detail = showText ? getDetailText(r.code, it.details) : null;
                         return (
-                          <div key={i} className="space-y-1 border-b border-[#222] last:border-0 pb-2 last:pb-0">
+                          <div key={i} className="space-y-1 border-b border-border last:border-0 pb-2 last:pb-0">
                             {it.url ? (
                               <a
                                 href={it.url}
@@ -563,14 +563,14 @@ function AuditSection({
                                 <span className="truncate">{it.url}</span>
                               </a>
                             ) : (
-                              <div className="text-[11px] text-zinc-500">URL не указан</div>
+                              <div className="text-[11px] text-muted-foreground">URL не указан</div>
                             )}
                             {detail && (
-                              <div className="ml-5 rounded bg-[#0f0f0f] border border-[#262626] px-2.5 py-1.5">
-                                <div className="text-[10px] text-zinc-500 uppercase tracking-wide mb-0.5">
-                                  Текст {detail.len != null && <span className="text-zinc-600">· {detail.len} симв.</span>}
+                              <div className="ml-5 rounded bg-background border border-border px-2.5 py-1.5">
+                                <div className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">
+                                  Текст {detail.len != null && <span className="text-muted-foreground">· {detail.len} симв.</span>}
                                 </div>
-                                <div className="text-[12px] text-zinc-300 break-words">{detail.text}</div>
+                                <div className="text-[12px] text-foreground/90 break-words">{detail.text}</div>
                               </div>
                             )}
                           </div>
@@ -578,7 +578,7 @@ function AuditSection({
                       })
                     )}
                     {!isDuplicateCode && items.length > 100 && (
-                      <div className="text-[11px] text-zinc-500 pt-1">…и ещё {items.length - 100} записей</div>
+                      <div className="text-[11px] text-muted-foreground pt-1">…и ещё {items.length - 100} записей</div>
                     )}
                   </div>
                 )}
@@ -704,26 +704,26 @@ export function TechnicalAuditTab({ projectId }: Props) {
   return (
     <div className="space-y-5">
       {/* Шапка */}
-      <Card className="bg-[#252525] border-[#333] p-5">
+      <Card className="bg-card border-border p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-1.5">
-            <h2 className="text-lg font-bold text-zinc-100">Технический аудит</h2>
-            <div className="flex flex-wrap gap-x-6 gap-y-1 text-[13px] text-zinc-400">
-              <span>Сайт: <span className="text-zinc-200 font-medium">{domain}</span></span>
-              <span>Дата аудита: <span className="text-zinc-200">{format(new Date(), "dd.MM.yyyy")}</span></span>
-              <span>Подготовил: <span className="text-zinc-200">{specialist?.full_name || project?.seo_specialist || "—"}</span></span>
+            <h2 className="text-lg font-bold text-foreground">Технический аудит</h2>
+            <div className="flex flex-wrap gap-x-6 gap-y-1 text-[13px] text-muted-foreground">
+              <span>Сайт: <span className="text-foreground font-medium">{domain}</span></span>
+              <span>Дата аудита: <span className="text-foreground">{format(new Date(), "dd.MM.yyyy")}</span></span>
+              <span>Подготовил: <span className="text-foreground">{specialist?.full_name || project?.seo_specialist || "—"}</span></span>
             </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            {scanStatus === "idle" && <Badge className="bg-zinc-700 text-zinc-400">Ожидает запуска</Badge>}
+            {scanStatus === "idle" && <Badge className="bg-muted text-muted-foreground">Ожидает запуска</Badge>}
             {scanStatus === "pending" && <Badge className="bg-blue-500/20 text-blue-400">В очереди</Badge>}
             {scanStatus === "running" && <Badge className="bg-yellow-500/20 text-yellow-400 animate-pulse">Сканирование...</Badge>}
             {scanStatus === "done" && <Badge className="bg-emerald-500/20 text-emerald-400">Готов</Badge>}
             {scanStatus === "error" && <Badge className="bg-red-500/20 text-red-400">Ошибка</Badge>}
-            <Button variant="outline" size="sm" className="gap-1.5 text-[12px] border-[#444] text-zinc-300 hover:bg-[#333]">
+            <Button variant="outline" size="sm" className="gap-1.5 text-[12px] border-border text-foreground/90 hover:bg-muted/60">
               <Download className="h-3.5 w-3.5" /> Скачать PDF отчёт
             </Button>
-            <Button size="sm" className="gap-1.5 text-[12px] bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white border-0" onClick={handleStartScan}>
+            <Button size="sm" className="gap-1.5 text-[12px] bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-foreground border-0" onClick={handleStartScan}>
               🔍 Запустить аудит
             </Button>
           </div>
@@ -732,25 +732,25 @@ export function TechnicalAuditTab({ projectId }: Props) {
 
       {/* Панель прогресса */}
       {showSfPanel && (
-        <Card className="bg-[#252525] border-[#333] p-4 space-y-3">
+        <Card className="bg-card border-border p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-[13px] font-semibold text-zinc-200">🤖 Python краулер — Сканирование</span>
-            <Button variant="ghost" size="sm" className="text-zinc-500 text-[11px]" onClick={() => setShowSfPanel(false)}>Скрыть</Button>
+            <span className="text-[13px] font-semibold text-foreground">🤖 Python краулер — Сканирование</span>
+            <Button variant="ghost" size="sm" className="text-muted-foreground text-[11px]" onClick={() => setShowSfPanel(false)}>Скрыть</Button>
           </div>
           <div className="flex items-center gap-3">
-            <Input value={domain !== "—" ? `https://${domain}` : ""} readOnly className="bg-[#1e1e1e] border-[#333] text-zinc-300 text-[12px] max-w-xs" />
-            <span className="text-[11px] text-zinc-500">Время сканирования: 5–15 минут для сайтов до 500 страниц</span>
+            <Input value={domain !== "—" ? `https://${domain}` : ""} readOnly className="bg-muted/40 border-border text-foreground/90 text-[12px] max-w-xs" />
+            <span className="text-[11px] text-muted-foreground">Время сканирования: 5–15 минут для сайтов до 500 страниц</span>
           </div>
           {(scanStatus === "pending" || scanStatus === "running") && (
             <div className="space-y-1">
-              <div className="flex items-center justify-between text-[11px] text-zinc-400">
+              <div className="flex items-center justify-between text-[11px] text-muted-foreground">
                 <span className="inline-flex items-center gap-2">
                   <span className="h-3 w-3 rounded-full border-2 border-yellow-400 border-t-transparent animate-spin" />
                   {scanStatus === "running" ? "Идёт сканирование..." : "В очереди..."}
                 </span>
                 <span>{Math.round(scanProgress)}%</span>
               </div>
-              <Progress value={Math.min(scanProgress, 100)} className="h-2 bg-[#333]" />
+              <Progress value={Math.min(scanProgress, 100)} className="h-2 bg-muted" />
             </div>
           )}
           {scanStatus === "error" && (
@@ -761,14 +761,14 @@ export function TechnicalAuditTab({ projectId }: Props) {
 
       {/* Карточки статистики */}
       {scanStatus === "done" && effectiveStats && (
-        <Card className="bg-[#252525] border-[#333] p-4 space-y-2">
-          <div className="text-[13px] font-semibold text-zinc-200">Результаты сканирования</div>
+        <Card className="bg-card border-border p-4 space-y-2">
+          <div className="text-[13px] font-semibold text-foreground">Результаты сканирования</div>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            <div className="rounded-lg bg-[#1e1e1e] p-3"><div className="text-[10px] text-zinc-500 uppercase">Всего страниц</div><div className="text-[18px] font-bold text-zinc-100">{effectiveStats.total_pages}</div></div>
-            <div className="rounded-lg bg-[#1e1e1e] p-3"><div className="text-[10px] text-zinc-500 uppercase">Критических</div><div className="text-[18px] font-bold text-red-400">{effectiveStats.critical_count}</div></div>
-            <div className="rounded-lg bg-[#1e1e1e] p-3"><div className="text-[10px] text-zinc-500 uppercase">Предупреждений</div><div className="text-[18px] font-bold text-yellow-400">{effectiveStats.warning_count}</div></div>
-            <div className="rounded-lg bg-[#1e1e1e] p-3"><div className="text-[10px] text-zinc-500 uppercase">Средний TTFB</div><div className="text-[18px] font-bold text-zinc-100">{effectiveStats.avg_load_time_ms} мс</div></div>
-            <div className="rounded-lg bg-[#1e1e1e] p-3"><div className="text-[10px] text-zinc-500 uppercase">Оценка сайта</div><div className="text-[18px] font-bold text-emerald-400">{effectiveStats.score}/100</div></div>
+            <div className="rounded-lg bg-muted/40 p-3"><div className="text-[10px] text-muted-foreground uppercase">Всего страниц</div><div className="text-[18px] font-bold text-foreground">{effectiveStats.total_pages}</div></div>
+            <div className="rounded-lg bg-muted/40 p-3"><div className="text-[10px] text-muted-foreground uppercase">Критических</div><div className="text-[18px] font-bold text-red-400">{effectiveStats.critical_count}</div></div>
+            <div className="rounded-lg bg-muted/40 p-3"><div className="text-[10px] text-muted-foreground uppercase">Предупреждений</div><div className="text-[18px] font-bold text-yellow-400">{effectiveStats.warning_count}</div></div>
+            <div className="rounded-lg bg-muted/40 p-3"><div className="text-[10px] text-muted-foreground uppercase">Средний TTFB</div><div className="text-[18px] font-bold text-foreground">{effectiveStats.avg_load_time_ms} мс</div></div>
+            <div className="rounded-lg bg-muted/40 p-3"><div className="text-[10px] text-muted-foreground uppercase">Оценка сайта</div><div className="text-[18px] font-bold text-emerald-400">{effectiveStats.score}/100</div></div>
           </div>
         </Card>
       )}
@@ -789,8 +789,8 @@ export function TechnicalAuditTab({ projectId }: Props) {
       )}
 
       {scanStatus !== "done" && !showSfPanel && (
-        <Card className="bg-[#252525] border-[#333] p-8 text-center">
-          <div className="text-[14px] text-zinc-400">Запустите аудит, чтобы получить технический анализ сайта</div>
+        <Card className="bg-card border-border p-8 text-center">
+          <div className="text-[14px] text-muted-foreground">Запустите аудит, чтобы получить технический анализ сайта</div>
         </Card>
       )}
     </div>

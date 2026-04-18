@@ -354,7 +354,7 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
             <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-lg flex items-center justify-center text-xs font-bold text-white bg-[hsl(var(--primary))]">Я</div>
+                  <div className="h-8 w-8 rounded-lg flex items-center justify-center text-xs font-bold text-foreground bg-[hsl(var(--primary))]">Я</div>
                   <div>
                     <p className="text-[13px] font-semibold text-foreground">Авторизация Яндекс</p>
                     <p className="text-[11px] text-muted-foreground">Один токен для Метрики и Вебмастера</p>
@@ -457,7 +457,7 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div
-                        className="h-8 w-8 rounded-lg flex items-center justify-center text-xs font-bold text-white"
+                        className="h-8 w-8 rounded-lg flex items-center justify-center text-xs font-bold text-foreground"
                         style={{ backgroundColor: def.color }}
                       >
                         {def.icon}
