@@ -387,7 +387,7 @@ export function TechnicalAuditTab({ projectId }: Props) {
               <Download className="h-3.5 w-3.5" /> Скачать PDF отчёт
             </Button>
             <Button size="sm" className="gap-1.5 text-[12px] bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white border-0" onClick={handleStartScan}>
-              🔍 Запустить аудит (Screaming Frog)
+              🔍 Запустить аудит
             </Button>
           </div>
         </div>
@@ -396,36 +396,98 @@ export function TechnicalAuditTab({ projectId }: Props) {
       {showSfPanel && (
         <Card className="bg-[#252525] border-[#333] p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-[13px] font-semibold text-zinc-200">🤖 Screaming Frog — Сканирование</span>
+            <span className="text-[13px] font-semibold text-zinc-200">🤖 Python краулер — Сканирование</span>
             <Button variant="ghost" size="sm" className="text-zinc-500 text-[11px]" onClick={() => setShowSfPanel(false)}>Скрыть</Button>
           </div>
           <div className="flex items-center gap-3">
             <Input value={`https://${domain}`} readOnly className="bg-[#1e1e1e] border-[#333] text-zinc-300 text-[12px] max-w-xs" />
-            <span className="text-[11px] text-zinc-500">Время сканирования: 5-15 минут для сайтов до 500 страниц</span>
+            <span className="text-[11px] text-zinc-500">Время сканирования: 5–15 минут для сайтов до 500 страниц</span>
           </div>
-          <div className="space-y-1">
-            <div className="flex items-center justify-between text-[11px] text-zinc-400">
-              <span>{scanStatus === "running" ? "Краулинг страниц..." : scanStatus === "pending" ? "В очереди..." : scanStatus === "done" ? "Сканирование завершено" : scanStatus === "error" ? "Произошла ошибка" : ""}</span>
-              <span>{Math.round(scanProgress)}%</span>
-            </div>
-            <Progress value={Math.min(scanProgress, 100)} className="h-2 bg-[#333]" />
-          </div>
-          {stats && scanStatus === "done" && (
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-2 pt-2 border-t border-[#333]">
-              <div className="rounded bg-[#1e1e1e] p-2"><div className="text-[10px] text-zinc-500">Страниц</div><div className="text-[14px] font-semibold text-zinc-100">{stats.total_pages}</div></div>
-              <div className="rounded bg-[#1e1e1e] p-2"><div className="text-[10px] text-zinc-500">Ошибок</div><div className="text-[14px] font-semibold text-zinc-100">{stats.total_issues}</div></div>
-              <div className="rounded bg-[#1e1e1e] p-2"><div className="text-[10px] text-zinc-500">Критичных</div><div className="text-[14px] font-semibold text-red-400">{stats.critical_count}</div></div>
-              <div className="rounded bg-[#1e1e1e] p-2"><div className="text-[10px] text-zinc-500">Предупр.</div><div className="text-[14px] font-semibold text-yellow-400">{stats.warning_count}</div></div>
-              <div className="rounded bg-[#1e1e1e] p-2"><div className="text-[10px] text-zinc-500">Балл</div><div className="text-[14px] font-semibold text-emerald-400">{stats.score}/100</div></div>
+          {(scanStatus === "pending" || scanStatus === "running") && (
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-[11px] text-zinc-400">
+                <span className="inline-flex items-center gap-2">
+                  <span className="h-3 w-3 rounded-full border-2 border-yellow-400 border-t-transparent animate-spin" />
+                  {scanStatus === "running" ? "Идёт сканирование..." : "В очереди..."}
+                </span>
+                <span>{Math.round(scanProgress)}%</span>
+              </div>
+              <Progress value={Math.min(scanProgress, 100)} className="h-2 bg-[#333]" />
             </div>
           )}
+          {scanStatus === "error" && (
+            <div className="text-[12px] text-red-400">Произошла ошибка при сканировании</div>
+          )}
+        </Card>
+      )}
+
+      {scanStatus === "done" && effectiveStats && (
+        <Card className="bg-[#252525] border-[#333] p-4 space-y-4">
+          <div className="text-[13px] font-semibold text-zinc-200">Результаты сканирования (Python краулер)</div>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div className="rounded-lg bg-[#1e1e1e] p-3"><div className="text-[10px] text-zinc-500 uppercase">Всего страниц</div><div className="text-[18px] font-bold text-zinc-100">{effectiveStats.total_pages}</div></div>
+            <div className="rounded-lg bg-[#1e1e1e] p-3"><div className="text-[10px] text-zinc-500 uppercase">Критических</div><div className="text-[18px] font-bold text-red-400">{effectiveStats.critical_count}</div></div>
+            <div className="rounded-lg bg-[#1e1e1e] p-3"><div className="text-[10px] text-zinc-500 uppercase">Предупреждений</div><div className="text-[18px] font-bold text-yellow-400">{effectiveStats.warning_count}</div></div>
+            <div className="rounded-lg bg-[#1e1e1e] p-3"><div className="text-[10px] text-zinc-500 uppercase">Средний TTFB</div><div className="text-[18px] font-bold text-zinc-100">{effectiveStats.avg_load_time_ms} мс</div></div>
+            <div className="rounded-lg bg-[#1e1e1e] p-3"><div className="text-[10px] text-zinc-500 uppercase">Оценка сайта</div><div className="text-[18px] font-bold text-emerald-400">{effectiveStats.score}/100</div></div>
+          </div>
+          {(() => {
+            const TYPE_TITLES: Record<string, string> = {
+              technical: "Технические ошибки",
+              onpage: "Контент и On-Page",
+              media: "Медиа",
+              links: "Ссылки",
+            };
+            const SEV_CLS: Record<string, string> = {
+              critical: "bg-red-500/20 text-red-400 border-red-500/30",
+              warning: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+              info: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+            };
+            const grouped: Record<string, any[]> = {};
+            for (const i of jobIssues) {
+              const t = i.type || "technical";
+              (grouped[t] ||= []).push(i);
+            }
+            const order = ["technical", "onpage", "media", "links"];
+            const keys = [...order.filter(k => grouped[k]), ...Object.keys(grouped).filter(k => !order.includes(k))];
+            if (keys.length === 0) return <div className="text-[12px] text-zinc-500">Проблем не обнаружено</div>;
+            return (
+              <div className="space-y-3">
+                {keys.map(type => (
+                  <div key={type} className="rounded-lg border border-[#333] bg-[#1e1e1e]">
+                    <div className="flex items-center gap-2 px-3 py-2 border-b border-[#333]">
+                      <span className="text-[13px] font-semibold text-zinc-200">{TYPE_TITLES[type] ?? type}</span>
+                      <Badge className="bg-zinc-700 text-zinc-300 text-[10px]">{grouped[type].length}</Badge>
+                    </div>
+                    <div className="divide-y divide-[#2a2a2a]">
+                      {grouped[type].map((i: any) => (
+                        <div key={i.id} className="flex items-start gap-3 px-3 py-2">
+                          <span className={cn("inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium shrink-0", SEV_CLS[i.severity] ?? SEV_CLS.info)}>
+                            {i.severity}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <div className="text-[12px] text-zinc-200 break-words">{i.message || i.code}</div>
+                            {i.crawl_pages?.url && (
+                              <a href={i.crawl_pages.url} target="_blank" rel="noopener noreferrer" className="text-[11px] text-cyan-400 hover:underline font-mono break-all">
+                                {i.crawl_pages.url}
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
         </Card>
       )}
 
       <div className="flex flex-wrap gap-2">
         {Object.entries(TYPE_ICON).map(([k, v]) => (
           <span key={k} className={cn("inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-medium", v.color)}>
-            {v.icon} {v.label} — {k === "auto" ? "данные из Screaming Frog" : k === "external" ? "открывает сторонний инструмент" : "заполняет SEO-специалист"}
+            {v.icon} {v.label} — {k === "auto" ? "данные из Python краулера" : k === "external" ? "открывает сторонний инструмент" : "заполняет SEO-специалист"}
           </span>
         ))}
       </div>
@@ -451,7 +513,7 @@ export function TechnicalAuditTab({ projectId }: Props) {
       <div className="space-y-4">
         <SectionBlock title="Раздел 1 — Технические ошибки" checks={applyFilter(s1)} domain={domain} onResultChange={updateResult(setS1)} onCommentChange={updateComment(setS1)} />
         <SectionBlock title="Раздел 2 — Ссылки и контент" checks={applyFilter(s2)} domain={domain} onResultChange={updateResult(setS2)} onCommentChange={updateComment(setS2)} />
-        <SectionBlock title="Раздел 3 — Ошибки выявленные парсером (Screaming Frog)" checks={applyFilter(s3)} domain={domain} banner="🤖 Все проверки этого раздела заполняются автоматически после запуска Screaming Frog" onResultChange={updateResult(setS3)} onCommentChange={updateComment(setS3)} />
+        <SectionBlock title="Раздел 3 — Ошибки, выявленные парсером" checks={applyFilter(s3)} domain={domain} banner="🤖 Все проверки этого раздела заполняются автоматически после запуска Python краулера" onResultChange={updateResult(setS3)} onCommentChange={updateComment(setS3)} />
       </div>
 
       {errorChecks.length > 0 && (
