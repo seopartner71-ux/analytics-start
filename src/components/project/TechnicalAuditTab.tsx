@@ -156,6 +156,34 @@ const SECTIONS: SectionDef[] = [
       { code: "empty_page", label: "Пустые страницы (<50 слов)", severity: "warning" },
     ],
   },
+  {
+    id: "analytics",
+    title: "Аналитика",
+    description: "Счётчики Яндекс Метрики и Google Analytics",
+    icon: ({ className }: any) => <span className={className}>📊</span>,
+    types: ["analytics"],
+    checks: [
+      { code: "no_yandex_metrika", label: "Яндекс Метрика не установлена", severity: "warning" },
+      { code: "no_google_analytics", label: "Google Analytics не установлен", severity: "warning" },
+      { code: "duplicate_metrika", label: "Дубль счётчика Яндекс Метрики", severity: "warning" },
+      { code: "duplicate_ga", label: "Дубль счётчика Google Analytics", severity: "warning" },
+    ],
+  },
+  {
+    id: "structured",
+    title: "Структурированные данные",
+    description: "Schema.org JSON-LD, Open Graph и Twitter Cards",
+    icon: ({ className }: any) => <span className={className}>🔖</span>,
+    types: ["structured"],
+    checks: [
+      { code: "invalid_schema_jsonld", label: "Некорректный JSON-LD", severity: "warning" },
+      { code: "no_og_title", label: "Нет og:title", severity: "warning" },
+      { code: "no_og_description", label: "Нет og:description", severity: "warning" },
+      { code: "no_og_image", label: "Нет og:image", severity: "warning" },
+      { code: "no_schema_jsonld", label: "Нет Schema.org JSON-LD разметки", severity: "info" },
+      { code: "no_twitter_card", label: "Нет Twitter Card", severity: "info" },
+    ],
+  },
 ];
 
 // Коды, для которых при раскрытии показываем дополнительный текст из details (title/description/h1)
