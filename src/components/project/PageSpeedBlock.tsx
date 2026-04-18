@@ -260,7 +260,20 @@ function AuditGroup({ title, subtitle, items }: { title: string; subtitle?: stri
 }
 
 function ResultPanel({ data }: { data: PageSpeedMetrics }) {
-  const totalIssues = data.opportunities.length + data.diagnostics.length + data.failed.length;
+  const opportunities = data.opportunities ?? [];
+  const diagnostics = data.diagnostics ?? [];
+  const failed = data.failed ?? [];
+  const totalIssues = opportunities.length + diagnostics.length + failed.length;
+
+  // Top-3 проблемы: сначала по экономии мс, затем по серьёзности
+  const sevWeight = { critical: 3, warning: 2, info: 1 } as const;
+  const top3 = [...opportunities, ...diagnostics, ...failed]
+    .map((it) => ({ it, score: (it.savingsMs ?? 0) + sevWeight[it.severity] * 50 }))
+    .filter((x) => x.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3)
+    .map((x) => x.it);
+
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-5 rounded-xl border border-border bg-card p-4">
@@ -291,19 +304,59 @@ function ResultPanel({ data }: { data: PageSpeedMetrics }) {
         </div>
       ) : (
         <div className="space-y-5">
+          {top3.length > 0 && (
+            <div className="rounded-xl border border-yellow-500/30 bg-gradient-to-br from-yellow-500/10 via-orange-500/5 to-transparent p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="h-7 w-7 rounded-lg bg-yellow-500/20 text-yellow-400 flex items-center justify-center">
+                  <Zap className="h-4 w-4" />
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-foreground">Топ-3 приоритета</div>
+                  <div className="text-[11px] text-muted-foreground">Самые значимые проблемы по экономии времени и серьёзности</div>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+                {top3.map((it, idx) => {
+                  const meta = SEV_META[it.severity];
+                  return (
+                    <div key={it.id} className={cn("rounded-lg border p-3", meta.ring, meta.bg)}>
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span className={cn("h-5 w-5 rounded-full flex items-center justify-center text-[11px] font-bold", meta.text, "bg-background/40")}>
+                          {idx + 1}
+                        </span>
+                        <span className={cn("text-[10px] uppercase tracking-wider font-semibold", meta.text)}>
+                          {meta.label}
+                        </span>
+                      </div>
+                      <div className="text-[13px] font-medium text-foreground leading-snug line-clamp-2">{it.title}</div>
+                      {(it.savingsMs ?? 0) > 0 && (
+                        <div className="mt-1.5 text-[11px] text-muted-foreground tabular-nums">
+                          экономия ~{Math.round(it.savingsMs!)} мс
+                        </div>
+                      )}
+                      {!it.savingsMs && it.displayValue && (
+                        <div className="mt-1.5 text-[11px] text-muted-foreground">{it.displayValue}</div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <AuditGroup
             title="Возможности ускорения"
             subtitle="Что можно оптимизировать, чтобы сократить время загрузки"
-            items={data.opportunities}
+            items={opportunities}
           />
           <AuditGroup
             title="Диагностика"
             subtitle="Сведения о работе страницы и потенциальных причинах замедления"
-            items={data.diagnostics}
+            items={diagnostics}
           />
           <AuditGroup
             title="Прочие найденные проблемы"
-            items={data.failed}
+            items={failed}
           />
         </div>
       )}
