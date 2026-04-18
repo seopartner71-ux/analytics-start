@@ -407,7 +407,7 @@ function PaymentsTab({ payments, clients, ownerId, onChange }: { payments: Payme
     if (!editing) return;
     const payload = {
       owner_id: ownerId,
-      client_id: editing.client_id || null,
+      client_id: editing.client_id && !String(editing.client_id).startsWith("crm:") ? editing.client_id : null,
       client_name: editing.client_name || "",
       service: editing.service || "",
       contract_amount: Number(editing.contract_amount || 0),
@@ -561,7 +561,7 @@ function InvoicesTab({ invoices, clients, ownerId, onChange }: { invoices: Invoi
     const payload = {
       owner_id: ownerId,
       invoice_number: editing.invoice_number || nextNumber,
-      client_id: editing.client_id || null,
+      client_id: editing.client_id && !String(editing.client_id).startsWith("crm:") ? editing.client_id : null,
       client_name: editing.client_name || "",
       services: editing.services || [],
       amount: Number(editing.amount || 0),
