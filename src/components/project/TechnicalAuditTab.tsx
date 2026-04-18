@@ -232,8 +232,11 @@ export function TechnicalAuditTab({ projectId }: Props) {
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<"table" | "cards">("table");
   const [showSfPanel, setShowSfPanel] = useState(false);
-  const [scanStatus, setScanStatus] = useState<"idle" | "scanning" | "done">("idle");
+  const [scanStatus, setScanStatus] = useState<"idle" | "pending" | "running" | "done" | "error">("idle");
   const [scanProgress, setScanProgress] = useState(0);
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [stats, setStats] = useState<any>(null);
+  const channelRef = useRef<any>(null);
 
   const { data: project } = useQuery({
     queryKey: ["project-detail-audit", projectId],
