@@ -110,6 +110,41 @@ Deno.serve(async (req) => {
       return json({ ok: true, inserted: rows.length });
     }
 
+    // analyze_page — детектит mixed_content, cyclic_link, ssl_expiring_soon / ssl_error
+    // body: { action, job_id, page_url, html?: string, page_id?: string }
+    if (action === "analyze_page") {
+      const pageUrl = body.page_url as string;
+      const html = (body.html as string) || "";
+      if (!pageUrl) return json({ error: "page_url is required" }, 400);
+
+      let pageId: string | null = body.page_id ?? null;
+      if (!pageId) {
+        const { data: pageRow } = await supabase
+          .from("crawl_pages")
+          .select("id")
+          .eq("job_id", job_id)
+          .eq("url", pageUrl)
+          .maybeSingle();
+        pageId = pageRow?.id ?? null;
+      }
+
+      const issues = await analyzePage(pageUrl, html);
+      if (issues.length === 0) return json({ ok: true, inserted: 0 });
+
+      const rows = issues.map((i) => ({
+        job_id,
+        page_id: pageId,
+        type: i.type,
+        code: i.code,
+        severity: i.severity,
+        message: i.message,
+        details: i.details ?? {},
+      }));
+      const { error } = await supabase.from("crawl_issues").insert(rows);
+      if (error) throw error;
+      return json({ ok: true, inserted: rows.length, codes: issues.map((i) => i.code) });
+    }
+
     if (action === "save_stats") {
       const s = body.stats || {};
       const row = {
@@ -143,4 +178,155 @@ function json(data: unknown, status = 200) {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+}
+
+// ============ Детекторы ============
+type DetectedIssue = {
+  type: string;
+  code: string;
+  severity: "critical" | "warning" | "info";
+  message: string;
+  details?: Record<string, unknown>;
+};
+
+async function analyzePage(pageUrl: string, html: string): Promise<DetectedIssue[]> {
+  const issues: DetectedIssue[] = [];
+  let parsed: URL;
+  try {
+    parsed = new URL(pageUrl);
+  } catch {
+    return issues;
+  }
+
+  // 1. Mixed content (только для HTTPS страниц)
+  if (parsed.protocol === "https:" && html) {
+    const mixed = detectMixedContent(html);
+    if (mixed.length > 0) {
+      issues.push({
+        type: "technical",
+        code: "mixed_content",
+        severity: "warning",
+        message: `Найдено ${mixed.length} HTTP-ресурсов на HTTPS странице`,
+        details: { resources: mixed.slice(0, 20), count: mixed.length },
+      });
+    }
+  }
+
+  // 2. Cyclic link (страница ссылается сама на себя)
+  if (html) {
+    const selfLinks = detectCyclicLinks(html, parsed);
+    if (selfLinks.length > 0) {
+      issues.push({
+        type: "technical",
+        code: "cyclic_link",
+        severity: "warning",
+        message: `Страница содержит ${selfLinks.length} ссылок на саму себя`,
+        details: { samples: selfLinks.slice(0, 10), count: selfLinks.length },
+      });
+    }
+  }
+
+  // 3. SSL — проверка сертификата для HTTPS
+  if (parsed.protocol === "https:") {
+    const sslCheck = await checkSSL(parsed.hostname);
+    if (sslCheck) {
+      if (sslCheck.error) {
+        issues.push({
+          type: "technical",
+          code: "ssl_error",
+          severity: "critical",
+          message: `Ошибка SSL сертификата: ${sslCheck.error}`,
+          details: { hostname: parsed.hostname, error: sslCheck.error },
+        });
+      } else if (sslCheck.daysLeft !== null && sslCheck.daysLeft <= 30) {
+        issues.push({
+          type: "technical",
+          code: "ssl_expiring_soon",
+          severity: "critical",
+          message: `SSL сертификат истекает через ${sslCheck.daysLeft} дн.`,
+          details: {
+            hostname: parsed.hostname,
+            valid_to: sslCheck.validTo,
+            days_left: sslCheck.daysLeft,
+          },
+        });
+      }
+    }
+  }
+
+  return issues;
+}
+
+function detectMixedContent(html: string): string[] {
+  const found: string[] = [];
+  // Атрибуты, в которых может быть HTTP-ресурс на HTTPS странице
+  const re = /\b(?:src|href|action|data-src|poster)\s*=\s*["'](http:\/\/[^"']+)["']/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(html)) !== null) {
+    // Ссылки в <a href> — это переходы, не ресурсы. Грубо отсечём по тегу anchor:
+    const tagStart = html.lastIndexOf("<", m.index);
+    const tagSlice = html.slice(tagStart, m.index).toLowerCase();
+    if (tagSlice.startsWith("<a ") || tagSlice.startsWith("<a\t") || tagSlice.startsWith("<a\n")) continue;
+    if (!found.includes(m[1])) found.push(m[1]);
+    if (found.length >= 100) break;
+  }
+  return found;
+}
+
+function detectCyclicLinks(html: string, pageUrl: URL): string[] {
+  const samples: string[] = [];
+  const re = /<a\b[^>]*\bhref\s*=\s*["']([^"']+)["'][^>]*>/gi;
+  const pageHrefNoHash = pageUrl.origin + pageUrl.pathname + pageUrl.search;
+  let m: RegExpExecArray | null;
+  let count = 0;
+  while ((m = re.exec(html)) !== null) {
+    const raw = m[1].trim();
+    if (!raw || raw.startsWith("#") || raw.startsWith("javascript:") || raw.startsWith("mailto:") || raw.startsWith("tel:")) continue;
+    let resolved: URL;
+    try {
+      resolved = new URL(raw, pageUrl);
+    } catch {
+      continue;
+    }
+    const resolvedNoHash = resolved.origin + resolved.pathname + resolved.search;
+    if (resolvedNoHash === pageHrefNoHash) {
+      count++;
+      if (samples.length < 10) samples.push(raw);
+    }
+  }
+  return count > 0 ? samples : [];
+}
+
+async function checkSSL(
+  hostname: string
+): Promise<{ validTo: string | null; daysLeft: number | null; error: string | null } | null> {
+  try {
+    // Deno не даёт прямого доступа к peer-сертификату в fetch. Используем публичный API ssl-checker.
+    // https://ssl-checker.io/api/v1/check/<hostname>
+    const resp = await fetch(`https://ssl-checker.io/api/v1/check/${encodeURIComponent(hostname)}`, {
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!resp.ok) {
+      await resp.text().catch(() => null);
+      return null;
+    }
+    const data = await resp.json();
+    const result = data?.result ?? data;
+    const validTo: string | null = result?.valid_till ?? result?.cert_valid_to ?? null;
+    const daysLeft: number | null =
+      typeof result?.days_left === "number"
+        ? result.days_left
+        : validTo
+        ? Math.floor((new Date(validTo).getTime() - Date.now()) / 86400000)
+        : null;
+    const sslValid = result?.cert_valid ?? result?.valid ?? true;
+    if (sslValid === false) {
+      return { validTo, daysLeft, error: "Сертификат недействителен" };
+    }
+    return { validTo, daysLeft, error: null };
+  } catch (e) {
+    // Не считаем недоступность API ошибкой сертификата
+    console.warn("SSL check failed:", e instanceof Error ? e.message : e);
+    return null;
+  }
 }
