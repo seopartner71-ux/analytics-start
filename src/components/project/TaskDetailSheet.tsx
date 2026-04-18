@@ -319,11 +319,13 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
   if (!task) return null;
 
   const deadlineDate = task.deadline ? new Date(task.deadline) : null;
-  const isOverdue = deadlineDate ? deadlineDate < new Date() && task.stage !== "Завершена" : false;
+  const deadlineStatus = getDeadlineStatus(task.deadline, editStage || task.stage);
+  const isOverdue = deadlineStatus === "overdue";
   const diffDays = deadlineDate ? Math.abs(Math.ceil((deadlineDate.getTime() - Date.now()) / 86400000)) : 0;
   const overduePeriod = diffDays >= 30 ? `${Math.floor(diffDays / 30)} мес.` : `${diffDays} дн.`;
   const taskIdShort = task.id.slice(0, 4).toUpperCase();
   const completedSubs = subtasks.filter((s: any) => s.is_done).length;
+  const subtasksProgress = subtasks.length > 0 ? Math.round((completedSubs / subtasks.length) * 100) : 0;
 
   const copyId = () => {
     navigator.clipboard.writeText(task.id);
