@@ -32,7 +32,7 @@ import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
 /* ────────── Types ────────── */
-type Client = { id: string; name: string; email: string | null; phone: string | null; notes: string | null };
+type Client = { id: string; name: string; email: string | null; phone: string | null; notes: string | null; source?: "finance" | "crm" };
 type Payment = {
   id: string; client_id: string | null; client_name: string; service: string;
   contract_amount: number; paid_amount: number; next_payment_date: string | null;
