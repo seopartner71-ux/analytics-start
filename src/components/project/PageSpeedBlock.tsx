@@ -260,7 +260,20 @@ function AuditGroup({ title, subtitle, items }: { title: string; subtitle?: stri
 }
 
 function ResultPanel({ data }: { data: PageSpeedMetrics }) {
-  const totalIssues = data.opportunities.length + data.diagnostics.length + data.failed.length;
+  const opportunities = data.opportunities ?? [];
+  const diagnostics = data.diagnostics ?? [];
+  const failed = data.failed ?? [];
+  const totalIssues = opportunities.length + diagnostics.length + failed.length;
+
+  // Top-3 проблемы: сначала по экономии мс, затем по серьёзности
+  const sevWeight = { critical: 3, warning: 2, info: 1 } as const;
+  const top3 = [...opportunities, ...diagnostics, ...failed]
+    .map((it) => ({ it, score: (it.savingsMs ?? 0) + sevWeight[it.severity] * 50 }))
+    .filter((x) => x.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3)
+    .map((x) => x.it);
+
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-5 rounded-xl border border-border bg-card p-4">
