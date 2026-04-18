@@ -768,6 +768,38 @@ export function TechnicalAuditTab({ projectId }: Props) {
   const [stats, setStats] = useState<any>(null);
   const [showSfPanel, setShowSfPanel] = useState(false);
   const channelRef = useRef<any>(null);
+  const queryClient = useQueryClient();
+  const [resetting, setResetting] = useState(false);
+
+  const handleResetAll = async () => {
+    if (!confirm("Удалить все данные сканирования по этому проекту? Действие необратимо.")) return;
+    setResetting(true);
+    try {
+      const { data: jobs } = await supabase
+        .from("crawl_jobs")
+        .select("id")
+        .eq("project_id", projectId);
+      const jobIds = (jobs ?? []).map((j: any) => j.id);
+      if (jobIds.length > 0) {
+        await supabase.from("crawl_issues").delete().in("job_id", jobIds);
+        await supabase.from("crawl_pages").delete().in("job_id", jobIds);
+        await supabase.from("crawl_stats").delete().in("job_id", jobIds);
+        await supabase.from("crawl_jobs").delete().in("id", jobIds);
+      }
+      setJobId(null);
+      setStats(null);
+      setScanStatus("idle");
+      setScanProgress(0);
+      setShowSfPanel(false);
+      await queryClient.invalidateQueries({ queryKey: ["crawl-stats"] });
+      await queryClient.invalidateQueries({ queryKey: ["crawl-issues-all"] });
+      toast.success("Все данные сканирования удалены");
+    } catch (e: any) {
+      toast.error("Не удалось сбросить данные: " + (e?.message ?? ""));
+    } finally {
+      setResetting(false);
+    }
+  };
 
   const { data: project } = useQuery({
     queryKey: ["project-detail-audit", projectId],
