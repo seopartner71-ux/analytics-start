@@ -532,3 +532,45 @@ function detectStructuredData(html: string): {
 
   return { jsonLdBlocks, invalidJsonLd, og, twitterCard };
 }
+
+// ============ Заголовки H1-H6 ============
+type Heading = { level: number; text: string };
+
+function extractHeadings(html: string): Heading[] {
+  const result: Heading[] = [];
+  const re = /<h([1-6])\b[^>]*>([\s\S]*?)<\/h\1>/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(html)) !== null) {
+    const level = parseInt(m[1], 10);
+    const text = m[2]
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 200);
+    result.push({ level, text });
+  }
+  return result;
+}
+
+function detectHeadingHierarchyIssues(
+  headings: Heading[]
+): Array<{ from: number; to: number; text: string }> {
+  const jumps: Array<{ from: number; to: number; text: string }> = [];
+  if (headings.length === 0) return jumps;
+
+  // Иерархия нарушена, если уровень увеличивается более чем на 1.
+  // Например: H1 → H3 (перескок через H2).
+  let prevLevel = 0;
+  for (const h of headings) {
+    // Первый встретившийся заголовок задаёт стартовый уровень
+    if (prevLevel === 0) {
+      prevLevel = h.level;
+      continue;
+    }
+    if (h.level > prevLevel + 1) {
+      jumps.push({ from: prevLevel, to: h.level, text: h.text });
+    }
+    prevLevel = h.level;
+  }
+  return jumps;
+}
