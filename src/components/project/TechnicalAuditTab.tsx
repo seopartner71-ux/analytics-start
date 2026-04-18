@@ -591,6 +591,175 @@ function AuditSection({
   );
 }
 
+// ============ BENTO-СЕТКА РАЗДЕЛОВ ============
+function BentoSections({
+  sections,
+  issues,
+  baseUrl,
+}: {
+  sections: SectionDef[];
+  issues: any[];
+  baseUrl?: string | null;
+}) {
+  const [activeId, setActiveId] = useState<string>(sections[0]?.id ?? "");
+
+  // Считаем статистику по каждой секции
+  const sectionStats = sections.map((s) => {
+    const codes = new Set(s.checks.map((c) => c.code));
+    const own = (issues ?? []).filter((i) => s.types.includes(i.type) || codes.has(i.code));
+    const groups = new Map<string, { severity: string; count: number }>();
+    for (const i of own) {
+      const code = i.code || "unknown";
+      const g = groups.get(code);
+      if (!g) groups.set(code, { severity: i.severity || "info", count: 1 });
+      else g.count += 1;
+    }
+    let critical = 0, warning = 0, info = 0;
+    for (const g of groups.values()) {
+      if (g.severity === "critical") critical += 1;
+      else if (g.severity === "warning") warning += 1;
+      else info += 1;
+    }
+    const problemCount = groups.size;
+    const totalChecks = s.checks.length;
+    const passed = totalChecks - problemCount;
+    const score = totalChecks > 0 ? Math.round((passed / totalChecks) * 100) : 100;
+    const status: "ok" | "critical" | "warning" | "info" =
+      problemCount === 0 ? "ok" : critical > 0 ? "critical" : warning > 0 ? "warning" : "info";
+    return { section: s, problemCount, critical, warning, info, score, status, passed, totalChecks };
+  });
+
+  const STATUS_GRADIENT: Record<string, string> = {
+    ok: "from-emerald-500/20 via-emerald-500/5 to-transparent",
+    critical: "from-red-500/25 via-red-500/5 to-transparent",
+    warning: "from-yellow-500/20 via-yellow-500/5 to-transparent",
+    info: "from-blue-500/20 via-blue-500/5 to-transparent",
+  };
+  const STATUS_RING: Record<string, string> = {
+    ok: "ring-emerald-500/40",
+    critical: "ring-red-500/50",
+    warning: "ring-yellow-500/40",
+    info: "ring-blue-500/40",
+  };
+  const STATUS_TEXT: Record<string, string> = {
+    ok: "text-emerald-400",
+    critical: "text-red-400",
+    warning: "text-yellow-400",
+    info: "text-blue-400",
+  };
+  const STATUS_BG_ICON: Record<string, string> = {
+    ok: "bg-emerald-500/15 text-emerald-400",
+    critical: "bg-red-500/15 text-red-400",
+    warning: "bg-yellow-500/15 text-yellow-400",
+    info: "bg-blue-500/15 text-blue-400",
+  };
+  const STATUS_PROGRESS: Record<string, string> = {
+    ok: "bg-emerald-500",
+    critical: "bg-red-500",
+    warning: "bg-yellow-500",
+    info: "bg-blue-500",
+  };
+
+  const active = sections.find((s) => s.id === activeId) ?? sections[0];
+
+  return (
+    <div className="space-y-5">
+      {/* Bento-сетка */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+        {sectionStats.map(({ section, problemCount, critical, warning, info, score, status, passed, totalChecks }) => {
+          const Icon = section.icon;
+          const isActive = section.id === activeId;
+          return (
+            <button
+              key={section.id}
+              type="button"
+              onClick={() => setActiveId(section.id)}
+              className={cn(
+                "group relative overflow-hidden rounded-xl border bg-card p-4 text-left transition-all",
+                "hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20",
+                isActive ? cn("ring-2 border-transparent", STATUS_RING[status]) : "border-border hover:border-border/80"
+              )}
+            >
+              {/* Градиентный фон по статусу */}
+              <div className={cn("absolute inset-0 bg-gradient-to-br opacity-80 pointer-events-none", STATUS_GRADIENT[status])} />
+              {/* Декоративный круг */}
+              <div className={cn("absolute -right-8 -top-8 h-24 w-24 rounded-full blur-2xl opacity-50 pointer-events-none", STATUS_PROGRESS[status])} />
+
+              <div className="relative space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className={cn("h-9 w-9 rounded-lg flex items-center justify-center shrink-0", STATUS_BG_ICON[status])}>
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <div className="text-right">
+                    <div className={cn("text-[22px] font-bold leading-none tabular-nums", STATUS_TEXT[status])}>
+                      {problemCount}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">
+                      {problemCount === 0 ? "Ошибок нет" : "проблем"}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <h3 className="text-[13px] font-semibold text-foreground leading-tight line-clamp-2 min-h-[34px]">
+                    {section.title}
+                  </h3>
+                </div>
+
+                {/* Прогресс-бар по % здоровья */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                    <span>{passed}/{totalChecks} OK</span>
+                    <span className={cn("font-semibold tabular-nums", STATUS_TEXT[status])}>{score}%</span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className={cn("h-full transition-all", STATUS_PROGRESS[status])}
+                      style={{ width: `${score}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Severity-точки */}
+                {problemCount > 0 && (
+                  <div className="flex items-center gap-1.5 pt-1">
+                    {critical > 0 && (
+                      <span className="inline-flex items-center gap-1 text-[10px] text-red-400">
+                        <span className="h-1.5 w-1.5 rounded-full bg-red-500" />{critical}
+                      </span>
+                    )}
+                    {warning > 0 && (
+                      <span className="inline-flex items-center gap-1 text-[10px] text-yellow-400">
+                        <span className="h-1.5 w-1.5 rounded-full bg-yellow-500" />{warning}
+                      </span>
+                    )}
+                    {info > 0 && (
+                      <span className="inline-flex items-center gap-1 text-[10px] text-blue-400">
+                        <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />{info}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Детали выбранной секции */}
+      {active && (
+        <AuditSection
+          key={active.id}
+          section={active}
+          issues={issues}
+          baseUrl={baseUrl}
+          defaultOpen={true}
+        />
+      )}
+    </div>
+  );
+}
+
 // ============ ОСНОВНОЙ КОМПОНЕНТ ============
 export function TechnicalAuditTab({ projectId }: Props) {
   const [scanStatus, setScanStatus] = useState<"idle" | "pending" | "running" | "done" | "error">("idle");
