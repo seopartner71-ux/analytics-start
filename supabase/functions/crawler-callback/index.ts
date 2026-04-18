@@ -39,7 +39,18 @@ Deno.serve(async (req) => {
     const action = body?.action as string;
     const job_id = body?.job_id as string;
 
-    if (!action || !job_id) return json({ error: "action and job_id are required" }, 400);
+    if (!action) return json({ error: "action is required" }, 400);
+
+    // claim_job — атомарно берёт следующий pending job
+    if (action === "claim_job") {
+      const { data, error } = await supabase.rpc("claim_next_crawl_job");
+      if (error) throw error;
+      const job = Array.isArray(data) && data.length > 0 ? data[0] : null;
+      if (!job) return json({ ok: true, job: null }); // нет заданий
+      return json({ ok: true, job });
+    }
+
+    if (!job_id) return json({ error: "job_id is required" }, 400);
 
     // Verify job exists
     const { data: job, error: jobErr } = await supabase
