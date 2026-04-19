@@ -89,6 +89,18 @@ const CHECK_INFO: Record<string, CheckInfo> = {
   unminified_js: { importance: "Средняя", description: "JavaScript не минифицирован. Минификация уменьшает размер файлов и ускоряет загрузку страниц." },
   unminified_css: { importance: "Средняя", description: "CSS не минифицирован. Минификация уменьшает размер стилей и ускоряет загрузку страниц." },
   no_viewport: { importance: "Критическая", description: "Без мета тега viewport страница не адаптируется под мобильные устройства. Google использует mobile-first индексацию." },
+  // Безопасность
+  ssl_expiring_critical: { importance: "Критическая", description: "SSL сертификат истекает менее чем через 14 дней. После истечения сайт будет помечен браузером как небезопасный и выпадет из поиска. Срочно продлите сертификат." },
+  no_hsts: { importance: "Средняя", description: "Отсутствует заголовок HTTP Strict-Transport-Security (HSTS). HSTS заставляет браузер использовать только HTTPS и защищает от атак понижения протокола." },
+  no_x_frame_options: { importance: "Средняя", description: "Отсутствует заголовок X-Frame-Options. Без него страницу можно встроить в iframe на стороннем сайте — это уязвимость к clickjacking-атакам." },
+  no_x_content_type: { importance: "Низкая", description: "Отсутствует заголовок X-Content-Type-Options: nosniff. Без него браузер может неверно интерпретировать MIME-тип ресурсов, что создаёт риск XSS." },
+  // Контент-парсер
+  keyword_stuffing: { importance: "Средняя", description: "Возможный keyword stuffing — переспам ключевыми словами. Поисковики могут понизить страницу или применить фильтр за переоптимизацию." },
+  thin_content: { importance: "Средняя", description: "Мало текстового контента (менее 100 слов). Тонкий контент считается малополезным — поисковики занижают такие страницы в выдаче." },
+  long_sentences: { importance: "Средняя", description: "Слишком длинные предложения ухудшают читабельность текста и поведенческие факторы. Разбивайте предложения на более короткие." },
+  poor_readability: { importance: "Средняя", description: "Низкая читабельность текста. Сложный текст ухудшает поведенческие факторы и снижает время на странице." },
+  // Внешние ссылки
+  broken_external_link: { importance: "Средняя", description: "Битые внешние ссылки. Ссылки на несуществующие сторонние страницы ухудшают пользовательский опыт и доверие к сайту." },
 };
 const IMPORTANCE_CLS: Record<string, string> = {
   "Критическая": "text-red-400",
