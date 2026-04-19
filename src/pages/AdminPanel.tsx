@@ -19,6 +19,8 @@ import {
   CheckCircle2, XCircle, Settings2, Rocket,
 } from "lucide-react";
 import { OnboardingTaskTemplateEditor } from "@/components/admin/OnboardingTaskTemplateEditor";
+import { AiAssistantSettings } from "@/components/admin/AiAssistantSettings";
+import { Bot } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -172,6 +174,10 @@ export default function AdminPanel() {
                 <TabsTrigger value="onboarding-template" className="gap-1.5">
                   <Rocket className="h-3.5 w-3.5" />
                   Шаблон онбординга
+                </TabsTrigger>
+                <TabsTrigger value="ai-assistant" className="gap-1.5">
+                  <Bot className="h-3.5 w-3.5" />
+                  AI-ассистент
                 </TabsTrigger>
               </TabsList>
 
@@ -336,6 +342,10 @@ export default function AdminPanel() {
                     <OnboardingTaskTemplateEditor />
                   </CardContent>
                 </Card>
+              </TabsContent>
+
+              <TabsContent value="ai-assistant">
+                <AiAssistantSettings />
               </TabsContent>
           </Tabs>
         </div>
