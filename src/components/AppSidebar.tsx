@@ -196,6 +196,7 @@ export function AppSidebar({ activeTab, onTabChange, projectName, projectLogo }:
                 <SidebarMenu>
                   {[
                     { title: "Задачи", tab: "worklog", icon: ClipboardList },
+                    { title: "Чат", tab: "chat", icon: MessageSquare, badge: chatUnread },
                     { title: "Отчёты", tab: "builder", icon: FileText },
                     { title: "Интеграции", tab: "integrations", icon: Plug },
                     { title: "Настройки", tab: "settings", icon: Settings },
