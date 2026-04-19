@@ -30,6 +30,7 @@ import { TaskDetailSheet, CrmTask } from "@/components/project/TaskDetailSheet";
 import { TechnicalAuditTab } from "@/components/project/TechnicalAuditTab";
 import { MobileFriendlyTab } from "@/components/project/MobileFriendlyTab";
 import { PageSpeedTab } from "@/components/project/PageSpeedTab";
+import { OnboardingTab } from "@/components/project/OnboardingTab";
 import { YandexWebmasterTab } from "@/components/project/YandexWebmasterTab";
 import { GscAnalysisTab } from "@/components/project/GscAnalysisTab";
 import { ProjectChatTab } from "@/components/project/ProjectChatTab";
