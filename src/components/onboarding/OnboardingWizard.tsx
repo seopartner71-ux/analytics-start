@@ -21,7 +21,7 @@ interface Props {
 interface Tariff { id: string; code: string; name: string; description: string | null; price_max: number; is_custom: boolean }
 interface TeamMember { id: string; full_name: string; role: string }
 interface ChecklistTpl { section: string; title: string; assignee_role: "seo" | "manager"; due_day: number; sort_order: number }
-interface TaskTpl { id: string; month: number; week: number; title: string; assignee_role: "seo" | "manager" }
+interface TaskTpl { id: string; month: number; week: number; title: string; assignee_role: "seo" | "manager" | "director"; sort_order: number }
 
 export function OnboardingWizard({ open, onOpenChange, onCreated }: Props) {
   const { user } = useAuth();
@@ -142,22 +142,25 @@ export function OnboardingWizard({ open, onOpenChange, onCreated }: Props) {
         if (error) throw error;
       }
 
-      // 4. Задачи Месяца 1 (6) — без триггеров на assignee, отключим автоуведомление путём insert as owner
-      const tasks = taskTpl.map((t) => {
-        const deadline = addDays(start, (t.week - 1) * 7 + 6); // конец недели
+      // 4. Задачи онбординга по 3 периодам (37 шт) — в отдельную таблицу onboarding_tasks
+      const onbTasks = taskTpl.map((t) => {
+        const deadline = addDays(start, (t.week - 1) * 7 + 6);
+        const assignee = t.assignee_role === "seo" ? seoId : t.assignee_role === "manager" ? managerId : null;
         return {
-          owner_id: user.id,
+          onboarding_id: onb.id,
           project_id: project.id,
+          template_id: t.id,
+          period: t.month,
+          week: t.week,
+          sort_order: t.sort_order,
           title: t.title,
-          description: `Автозадача онбординга — Месяц ${t.month}, Неделя ${t.week}`,
-          assignee_id: t.assignee_role === "seo" ? seoId : managerId,
-          stage: "Новые",
-          priority: "medium",
-          deadline: deadline.toISOString(),
+          assignee_role: t.assignee_role,
+          assignee_id: assignee,
+          due_date: format(deadline, "yyyy-MM-dd"),
         };
       });
-      if (tasks.length) {
-        const { error } = await supabase.from("crm_tasks").insert(tasks);
+      if (onbTasks.length) {
+        const { error } = await supabase.from("onboarding_tasks").insert(onbTasks);
         if (error) throw error;
       }
 
