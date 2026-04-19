@@ -941,6 +941,15 @@ export function TechnicalAuditTab({ projectId }: Props) {
         setScanProgress(data.progress ?? 0);
         if (data.status !== "idle") setShowSfPanel(true);
       }
+      const { data: doneJob } = await supabase
+        .from("crawl_jobs")
+        .select("id")
+        .eq("project_id", projectId)
+        .eq("status", "done")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (doneJob) setLastDoneJobId(doneJob.id);
     })();
   }, [projectId]);
 
