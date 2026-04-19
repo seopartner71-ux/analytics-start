@@ -18,6 +18,7 @@ import {
 import { format, isPast, parseISO, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { ru as ruLocale } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import CompanyNewsWidget from "@/components/dashboard/CompanyNewsWidget";
 
 const STAGE_COLORS: Record<string, string> = {
   "В работе": "#4CAF50",
@@ -362,6 +363,9 @@ const Index = () => {
           )}
         </Card>
       </div>
+
+      {/* Company news widget */}
+      <CompanyNewsWidget />
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
