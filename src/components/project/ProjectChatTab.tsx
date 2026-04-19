@@ -8,7 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Paperclip, Send, Search, X, FileIcon, Trash2 } from "lucide-react";
+import { Paperclip, Send, Search, X, FileIcon, Trash2, SmilePlus } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
 import { format, isToday, isYesterday } from "date-fns";
 import { ru } from "date-fns/locale";
@@ -31,6 +32,16 @@ interface ChatMessage {
   mentions: string[];
   created_at: string;
 }
+
+interface Reaction {
+  id: string;
+  message_id: string;
+  user_id: string;
+  user_name: string;
+  emoji: string;
+}
+
+const REACTION_EMOJIS = ["👍", "❤️", "🎉"];
 
 interface Participant {
   id: string;
@@ -122,6 +133,49 @@ export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) 
     },
   });
 
+  // --- Reactions ---
+  const messageIds = useMemo(() => messages.map(m => m.id), [messages]);
+  const { data: reactions = [] } = useQuery<Reaction[]>({
+    queryKey: ["project-message-reactions", projectId, messageIds.length],
+    queryFn: async () => {
+      if (!messageIds.length) return [];
+      const { data, error } = await supabase
+        .from("project_message_reactions")
+        .select("*")
+        .in("message_id", messageIds);
+      if (error) throw error;
+      return data as Reaction[];
+    },
+    enabled: messageIds.length > 0,
+  });
+
+  const reactionsByMessage = useMemo(() => {
+    const map = new Map<string, Reaction[]>();
+    for (const r of reactions) {
+      const arr = map.get(r.message_id) || [];
+      arr.push(r);
+      map.set(r.message_id, arr);
+    }
+    return map;
+  }, [reactions]);
+
+  const toggleReaction = useCallback(async (messageId: string, emoji: string) => {
+    if (!user) return;
+    const existing = reactions.find(r => r.message_id === messageId && r.user_id === user.id && r.emoji === emoji);
+    if (existing) {
+      const { error } = await supabase.from("project_message_reactions").delete().eq("id", existing.id);
+      if (error) toast.error(error.message);
+    } else {
+      const { error } = await supabase.from("project_message_reactions").insert({
+        message_id: messageId,
+        user_id: user.id,
+        user_name: profile?.full_name || profile?.email || "Пользователь",
+        emoji,
+      });
+      if (error) toast.error(error.message);
+    }
+  }, [user, profile, reactions]);
+
   // --- Realtime subscription ---
   useEffect(() => {
     if (!projectId) return;
@@ -144,6 +198,13 @@ export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) 
           queryClient.setQueryData<ChatMessage[]>(["project-messages", projectId], (old = []) =>
             old.filter(m => m.id !== (payload.old as any).id)
           );
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "project_message_reactions" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["project-message-reactions", projectId] });
         }
       )
       .subscribe();
@@ -347,14 +408,67 @@ export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) 
                         </a>
                       )}
                     </div>
-                    {isMine && (
-                      <button
-                        onClick={() => deleteMessage(m.id)}
-                        className="text-[10px] text-muted-foreground hover:text-destructive transition-colors"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
-                    )}
+                    {(() => {
+                      const msgReactions = reactionsByMessage.get(m.id) || [];
+                      const grouped = new Map<string, Reaction[]>();
+                      for (const r of msgReactions) {
+                        const arr = grouped.get(r.emoji) || [];
+                        arr.push(r);
+                        grouped.set(r.emoji, arr);
+                      }
+                      return (
+                        <div className={`flex items-center gap-1 flex-wrap ${isMine ? "justify-end" : ""}`}>
+                          {Array.from(grouped.entries()).map(([emoji, list]) => {
+                            const mine = list.some(r => r.user_id === user?.id);
+                            return (
+                              <button
+                                key={emoji}
+                                onClick={() => toggleReaction(m.id, emoji)}
+                                title={list.map(r => r.user_name).join(", ")}
+                                className={`text-xs px-1.5 py-0.5 rounded-full border transition-colors ${
+                                  mine
+                                    ? "bg-primary/15 border-primary/40 text-foreground"
+                                    : "bg-muted border-border text-muted-foreground hover:bg-muted/70"
+                                }`}
+                              >
+                                <span className="mr-0.5">{emoji}</span>
+                                <span className="text-[10px]">{list.length}</span>
+                              </button>
+                            );
+                          })}
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <button
+                                className="text-muted-foreground hover:text-foreground transition-colors p-0.5"
+                                title="Добавить реакцию"
+                              >
+                                <SmilePlus className="h-3.5 w-3.5" />
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-1 flex gap-1" side="top" align={isMine ? "end" : "start"}>
+                              {REACTION_EMOJIS.map(emoji => (
+                                <button
+                                  key={emoji}
+                                  onClick={() => toggleReaction(m.id, emoji)}
+                                  className="text-lg hover:bg-accent rounded px-1.5 py-0.5 transition-colors"
+                                >
+                                  {emoji}
+                                </button>
+                              ))}
+                            </PopoverContent>
+                          </Popover>
+                          {isMine && (
+                            <button
+                              onClick={() => deleteMessage(m.id)}
+                              className="text-muted-foreground hover:text-destructive transition-colors p-0.5"
+                              title="Удалить"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               );
