@@ -131,6 +131,7 @@ const IMPORTANCE_CLS: Record<string, string> = {
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { CrawlerStatusIndicator } from "./CrawlerStatusIndicator";
 
 interface Props { projectId: string; }
 
