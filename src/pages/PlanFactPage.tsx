@@ -51,6 +51,19 @@ export default function PlanFactPage() {
     }
   };
 
+  const { data: hourCost = 2500 } = useQuery<number>({
+    queryKey: ["app-setting", "hour_cost"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("app_settings")
+        .select("value")
+        .eq("key", "hour_cost")
+        .maybeSingle();
+      const v = Number(data?.value);
+      return Number.isFinite(v) && v > 0 ? v : 2500;
+    },
+  });
+
   const { data: projects = [] } = useQuery<ProjectRow[]>({
     queryKey: ["plan-fact-projects"],
     queryFn: async () => {
@@ -86,20 +99,21 @@ export default function PlanFactPage() {
       const actualHours = (totals.get(p.id) || 0) / 60;
       const planned = Number(p.planned_hours) || 0;
       const rate = Number(p.hourly_rate) || 0;
-      const budget = Number(p.monthly_budget) || 0;
-      const cost = actualHours * rate;
+      // Доход (бюджет) = План часов × Ставка клиенту. Fallback на monthly_budget если ставка не задана.
+      const budget = planned > 0 && rate > 0 ? planned * rate : Number(p.monthly_budget) || 0;
+      // Себестоимость = Факт часов × Глобальная себестоимость часа (2500₽)
+      const cost = actualHours * hourCost;
       const profit = budget - cost;
       const margin = budget > 0 ? (profit / budget) * 100 : 0;
       const usagePct = planned > 0 ? Math.min(999, (actualHours / planned) * 100) : 0;
-      let status: "ok" | "warn" | "over" | "loss" | "no-plan" = "no-plan";
-      if (planned === 0 && budget === 0) status = "no-plan";
-      else if (profit < 0) status = "loss";
+      let status: "ok" | "warn" | "over" | "no-plan" = "no-plan";
+      if (planned === 0) status = "no-plan";
       else if (usagePct > 110) status = "over";
-      else if (usagePct > 90) status = "warn";
+      else if (usagePct >= 90) status = "warn";
       else status = "ok";
       return { ...p, actualHours, planned, rate, budget, cost, profit, margin, usagePct, status };
     });
-  }, [projects, entries]);
+  }, [projects, entries, hourCost]);
 
   const summary = useMemo(() => {
     const totalPlanned = rows.reduce((s, r) => s + r.planned, 0);
@@ -107,19 +121,21 @@ export default function PlanFactPage() {
     const totalBudget = rows.reduce((s, r) => s + r.budget, 0);
     const totalCost = rows.reduce((s, r) => s + r.cost, 0);
     const totalProfit = totalBudget - totalCost;
-    const lossCount = rows.filter((r) => r.status === "loss").length;
+    const withBudget = rows.filter((r) => r.budget > 0);
+    const avgMargin = withBudget.length > 0
+      ? withBudget.reduce((s, r) => s + r.margin, 0) / withBudget.length
+      : 0;
+    const problemCount = rows.filter((r) => r.planned > 0 && r.usagePct > 100).length;
     const overCount = rows.filter((r) => r.status === "over").length;
-    return { totalPlanned, totalActual, totalBudget, totalCost, totalProfit, lossCount, overCount };
+    return { totalPlanned, totalActual, totalBudget, totalCost, totalProfit, avgMargin, problemCount, overCount };
   }, [rows]);
 
   const statusBadge = (s: typeof rows[number]["status"]) => {
     switch (s) {
-      case "loss":
-        return <Badge variant="destructive" className="text-[10px]"><TrendingDown className="h-3 w-3 mr-1" />Убыток</Badge>;
       case "over":
-        return <Badge className="bg-orange-500/15 text-orange-500 border-0 text-[10px]"><AlertTriangle className="h-3 w-3 mr-1" />Превышение</Badge>;
+        return <Badge variant="destructive" className="text-[10px]"><AlertTriangle className="h-3 w-3 mr-1" />Критично</Badge>;
       case "warn":
-        return <Badge className="bg-yellow-500/15 text-yellow-500 border-0 text-[10px]">Близко к лимиту</Badge>;
+        return <Badge className="bg-yellow-500/15 text-yellow-500 border-0 text-[10px]">Предупреждение</Badge>;
       case "ok":
         return <Badge className="bg-emerald-500/15 text-emerald-500 border-0 text-[10px]"><TrendingUp className="h-3 w-3 mr-1" />В норме</Badge>;
       default:
