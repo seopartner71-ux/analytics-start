@@ -277,7 +277,7 @@ export default function PlanFactPage() {
                 </TableRow>
               )}
               {rows.map((r) => (
-                <TableRow key={r.id} className={r.status === "loss" ? "bg-destructive/5" : ""}>
+                <TableRow key={r.id} className={r.status === "over" ? "bg-destructive/5" : ""}>
                   <TableCell className="font-medium text-[13px]">{r.name}</TableCell>
                   <TableCell className="text-right text-[13px] tabular-nums">
                     {r.planned > 0 ? fmtHours(r.planned) : <span className="text-muted-foreground">—</span>}
