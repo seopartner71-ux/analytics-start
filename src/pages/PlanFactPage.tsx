@@ -227,7 +227,7 @@ export default function PlanFactPage() {
               {fmtMoney(summary.totalProfit)}
             </div>
             <div className="text-[11px] text-muted-foreground mt-1">
-              Маржа: {summary.totalBudget > 0 ? Math.round((summary.totalProfit / summary.totalBudget) * 100) : 0}%
+              Средняя маржа: {Math.round(summary.avgMargin)}%
             </div>
           </CardContent>
         </Card>
@@ -238,8 +238,10 @@ export default function PlanFactPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 pt-0">
-            <div className="text-2xl font-semibold text-destructive">{summary.lossCount}</div>
-            <div className="text-[11px] text-muted-foreground mt-1">Превышение часов: {summary.overCount}</div>
+            <div className={`text-2xl font-semibold ${summary.problemCount > 0 ? "text-destructive" : ""}`}>
+              {summary.problemCount}
+            </div>
+            <div className="text-[11px] text-muted-foreground mt-1">Критично (&gt;110%): {summary.overCount}</div>
           </CardContent>
         </Card>
       </div>
