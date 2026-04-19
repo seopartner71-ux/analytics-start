@@ -14,7 +14,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   ArrowLeft, Plus, Send, Clock, CalendarDays, User, Tag, FileText,
   Upload, Download, Trash2, Loader2, Globe, Edit, XCircle, MessageSquare,
-  BarChart3, ShieldCheck, ClipboardCheck, Search, Smartphone, Zap, MessagesSquare, Rocket,
+  BarChart3, ShieldCheck, ClipboardCheck, Search, Smartphone, Zap, MessagesSquare,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,7 +30,7 @@ import { TaskDetailSheet, CrmTask } from "@/components/project/TaskDetailSheet";
 import { TechnicalAuditTab } from "@/components/project/TechnicalAuditTab";
 import { MobileFriendlyTab } from "@/components/project/MobileFriendlyTab";
 import { PageSpeedTab } from "@/components/project/PageSpeedTab";
-import { OnboardingTab } from "@/components/project/OnboardingTab";
+
 import { YandexWebmasterTab } from "@/components/project/YandexWebmasterTab";
 import { GscAnalysisTab } from "@/components/project/GscAnalysisTab";
 import { ProjectChatTab } from "@/components/project/ProjectChatTab";
@@ -331,9 +331,6 @@ export default function CrmProjectDetailPage() {
       {/* Tab switcher */}
       <Tabs defaultValue={defaultTab} className="w-full">
         <TabsList className="mb-4">
-          <TabsTrigger value="onboarding" className="gap-1.5 text-[13px]">
-            <Rocket className="h-3.5 w-3.5" /> Онбординг
-          </TabsTrigger>
           <TabsTrigger value="checklist" className="gap-1.5 text-[13px]">
             <FileText className="h-3.5 w-3.5" /> Задачи
           </TabsTrigger>
@@ -386,10 +383,6 @@ export default function CrmProjectDetailPage() {
 
         <TabsContent value="pagespeed">
           <PageSpeedTab projectId={id!} />
-        </TabsContent>
-
-        <TabsContent value="onboarding">
-          <OnboardingTab projectId={id!} />
         </TabsContent>
 
         <TabsContent value="checklist">

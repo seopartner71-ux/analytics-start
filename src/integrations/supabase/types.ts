@@ -1318,6 +1318,195 @@ export type Database = {
           },
         ]
       }
+      onboarding_checklist_items: {
+        Row: {
+          assignee_id: string | null
+          assignee_role: string
+          checked: boolean
+          completed_at: string | null
+          completed_by: string | null
+          completed_by_name: string | null
+          created_at: string
+          due_date: string | null
+          due_day: number
+          id: string
+          onboarding_id: string
+          section: string
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assignee_id?: string | null
+          assignee_role: string
+          checked?: boolean
+          completed_at?: string | null
+          completed_by?: string | null
+          completed_by_name?: string | null
+          created_at?: string
+          due_date?: string | null
+          due_day?: number
+          id?: string
+          onboarding_id: string
+          section: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assignee_id?: string | null
+          assignee_role?: string
+          checked?: boolean
+          completed_at?: string | null
+          completed_by?: string | null
+          completed_by_name?: string | null
+          created_at?: string
+          due_date?: string | null
+          due_day?: number
+          id?: string
+          onboarding_id?: string
+          section?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_checklist_items_assignee_id_fkey"
+            columns: ["assignee_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_checklist_items_onboarding_id_fkey"
+            columns: ["onboarding_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      onboarding_projects: {
+        Row: {
+          completed_at: string | null
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          contact_preferred: string | null
+          contact_telegram: string | null
+          contract_budget: number
+          created_at: string
+          first_payment_date: string | null
+          id: string
+          owner_id: string
+          payment_recurrence: string
+          progress: number
+          project_id: string
+          start_date: string
+          status: string
+          tariff_code: string
+          tariff_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          contact_preferred?: string | null
+          contact_telegram?: string | null
+          contract_budget?: number
+          created_at?: string
+          first_payment_date?: string | null
+          id?: string
+          owner_id: string
+          payment_recurrence?: string
+          progress?: number
+          project_id: string
+          start_date?: string
+          status?: string
+          tariff_code: string
+          tariff_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          contact_preferred?: string | null
+          contact_telegram?: string | null
+          contract_budget?: number
+          created_at?: string
+          first_payment_date?: string | null
+          id?: string
+          owner_id?: string
+          payment_recurrence?: string
+          progress?: number
+          project_id?: string
+          start_date?: string
+          status?: string
+          tariff_code?: string
+          tariff_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_projects_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_projects_tariff_id_fkey"
+            columns: ["tariff_id"]
+            isOneToOne: false
+            referencedRelation: "tariffs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      onboarding_task_templates: {
+        Row: {
+          assignee_role: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          month: number
+          sort_order: number
+          title: string
+          updated_at: string
+          week: number
+        }
+        Insert: {
+          assignee_role: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          month: number
+          sort_order?: number
+          title: string
+          updated_at?: string
+          week: number
+        }
+        Update: {
+          assignee_role?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          month?: number
+          sort_order?: number
+          title?: string
+          updated_at?: string
+          week?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           agency_name: string | null
@@ -1615,70 +1804,6 @@ export type Database = {
           },
         ]
       }
-      project_onboarding: {
-        Row: {
-          assignee_id: string | null
-          checked: boolean
-          completed_at: string | null
-          completed_by: string | null
-          completed_by_name: string | null
-          created_at: string
-          id: string
-          item_key: string
-          project_id: string
-          task_id: string | null
-          updated_at: string
-        }
-        Insert: {
-          assignee_id?: string | null
-          checked?: boolean
-          completed_at?: string | null
-          completed_by?: string | null
-          completed_by_name?: string | null
-          created_at?: string
-          id?: string
-          item_key: string
-          project_id: string
-          task_id?: string | null
-          updated_at?: string
-        }
-        Update: {
-          assignee_id?: string | null
-          checked?: boolean
-          completed_at?: string | null
-          completed_by?: string | null
-          completed_by_name?: string | null
-          created_at?: string
-          id?: string
-          item_key?: string
-          project_id?: string
-          task_id?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "project_onboarding_assignee_id_fkey"
-            columns: ["assignee_id"]
-            isOneToOne: false
-            referencedRelation: "team_members"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "project_onboarding_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "project_onboarding_task_id_fkey"
-            columns: ["task_id"]
-            isOneToOne: false
-            referencedRelation: "crm_tasks"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       projects: {
         Row: {
           account_manager: string | null
@@ -1945,6 +2070,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      tariffs: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          is_custom: boolean
+          name: string
+          price_max: number
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_custom?: boolean
+          name: string
+          price_max?: number
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_custom?: boolean
+          name?: string
+          price_max?: number
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       task_comments: {
         Row: {

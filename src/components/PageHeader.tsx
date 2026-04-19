@@ -34,6 +34,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/workload": "Загрузка команды",
   "/kpi": "KPI сотрудников",
   "/plan-fact": "План-факт по проектам",
+  "/onboarding": "Онбординг проектов",
 };
 
 interface PageHeaderProps {
