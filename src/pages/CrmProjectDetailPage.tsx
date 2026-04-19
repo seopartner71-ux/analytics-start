@@ -14,7 +14,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   ArrowLeft, Plus, Send, Clock, CalendarDays, User, Tag, FileText,
   Upload, Download, Trash2, Loader2, Globe, Edit, XCircle, MessageSquare,
-  BarChart3, ShieldCheck, ClipboardCheck, Search, Smartphone, Zap,
+  BarChart3, ShieldCheck, ClipboardCheck, Search, Smartphone, Zap, MessagesSquare,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,6 +32,7 @@ import { MobileFriendlyTab } from "@/components/project/MobileFriendlyTab";
 import { PageSpeedTab } from "@/components/project/PageSpeedTab";
 import { YandexWebmasterTab } from "@/components/project/YandexWebmasterTab";
 import { GscAnalysisTab } from "@/components/project/GscAnalysisTab";
+import { ProjectChatTab } from "@/components/project/ProjectChatTab";
 
 type TaskComment = Tables<"task_comments"> & {
   author?: Tables<"team_members"> | null;
@@ -350,7 +351,14 @@ export default function CrmProjectDetailPage() {
           <TabsTrigger value="pagespeed" className="gap-1.5 text-[13px]">
             <Zap className="h-3.5 w-3.5" /> PageSpeed
           </TabsTrigger>
+          <TabsTrigger value="chat" className="gap-1.5 text-[13px]">
+            <MessagesSquare className="h-3.5 w-3.5" /> Чат
+          </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="chat">
+          <ProjectChatTab projectId={id!} projectName={project?.name || ""} />
+        </TabsContent>
 
         <TabsContent value="analytics">
           <ProjectAnalyticsTab projectId={id!} />
