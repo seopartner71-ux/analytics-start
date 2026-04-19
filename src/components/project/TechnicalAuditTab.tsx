@@ -1071,6 +1071,18 @@ export function TechnicalAuditTab({ projectId }: Props) {
                 {resetting ? "Сброс..." : "Сбросить данные"}
               </Button>
             )}
+            {isRunning && jobId && (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={stopping}
+                onClick={handleStopScan}
+                className="gap-1.5 text-[12px] border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              >
+                <span className="h-2.5 w-2.5 rounded-sm bg-destructive" />
+                {stopping ? "Останавливаем..." : "Стоп аудит"}
+              </Button>
+            )}
             <Button
               size="sm"
               className={cn("gap-1.5 text-[12px]", isRunning && "opacity-80")}
