@@ -16,8 +16,9 @@ import {
 } from "@/components/ui/dialog";
 import {
   Shield, FolderOpen, Key, Users, Save, Eye, EyeOff,
-  CheckCircle2, XCircle, Settings2,
+  CheckCircle2, XCircle, Settings2, Rocket,
 } from "lucide-react";
+import { OnboardingTaskTemplateEditor } from "@/components/admin/OnboardingTaskTemplateEditor";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -167,6 +168,10 @@ export default function AdminPanel() {
                 <TabsTrigger value="keys" className="gap-1.5">
                   <Key className="h-3.5 w-3.5" />
                   {t("admin.tabs.keys")}
+                </TabsTrigger>
+                <TabsTrigger value="onboarding-template" className="gap-1.5">
+                  <Rocket className="h-3.5 w-3.5" />
+                  Шаблон онбординга
                 </TabsTrigger>
               </TabsList>
 
@@ -321,6 +326,14 @@ export default function AdminPanel() {
                         {t("admin.saveKeys")}
                       </Button>
                     </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="onboarding-template">
+                <Card>
+                  <CardContent className="pt-6">
+                    <OnboardingTaskTemplateEditor />
                   </CardContent>
                 </Card>
               </TabsContent>
