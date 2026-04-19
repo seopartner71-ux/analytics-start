@@ -408,14 +408,67 @@ export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) 
                         </a>
                       )}
                     </div>
-                    {isMine && (
-                      <button
-                        onClick={() => deleteMessage(m.id)}
-                        className="text-[10px] text-muted-foreground hover:text-destructive transition-colors"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
-                    )}
+                    {(() => {
+                      const msgReactions = reactionsByMessage.get(m.id) || [];
+                      const grouped = new Map<string, Reaction[]>();
+                      for (const r of msgReactions) {
+                        const arr = grouped.get(r.emoji) || [];
+                        arr.push(r);
+                        grouped.set(r.emoji, arr);
+                      }
+                      return (
+                        <div className={`flex items-center gap-1 flex-wrap ${isMine ? "justify-end" : ""}`}>
+                          {Array.from(grouped.entries()).map(([emoji, list]) => {
+                            const mine = list.some(r => r.user_id === user?.id);
+                            return (
+                              <button
+                                key={emoji}
+                                onClick={() => toggleReaction(m.id, emoji)}
+                                title={list.map(r => r.user_name).join(", ")}
+                                className={`text-xs px-1.5 py-0.5 rounded-full border transition-colors ${
+                                  mine
+                                    ? "bg-primary/15 border-primary/40 text-foreground"
+                                    : "bg-muted border-border text-muted-foreground hover:bg-muted/70"
+                                }`}
+                              >
+                                <span className="mr-0.5">{emoji}</span>
+                                <span className="text-[10px]">{list.length}</span>
+                              </button>
+                            );
+                          })}
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <button
+                                className="text-muted-foreground hover:text-foreground transition-colors p-0.5"
+                                title="Добавить реакцию"
+                              >
+                                <SmilePlus className="h-3.5 w-3.5" />
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-1 flex gap-1" side="top" align={isMine ? "end" : "start"}>
+                              {REACTION_EMOJIS.map(emoji => (
+                                <button
+                                  key={emoji}
+                                  onClick={() => toggleReaction(m.id, emoji)}
+                                  className="text-lg hover:bg-accent rounded px-1.5 py-0.5 transition-colors"
+                                >
+                                  {emoji}
+                                </button>
+                              ))}
+                            </PopoverContent>
+                          </Popover>
+                          {isMine && (
+                            <button
+                              onClick={() => deleteMessage(m.id)}
+                              className="text-muted-foreground hover:text-destructive transition-colors p-0.5"
+                              title="Удалить"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               );
