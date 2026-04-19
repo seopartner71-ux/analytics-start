@@ -107,11 +107,25 @@ Deno.serve(async (req) => {
     const proj = (projectRow as any)?.data;
     const projectBlock = proj ? `\n\nТекущий открытый проект: ${proj.name}${proj.url ? " (" + proj.url + ")" : ""}` : "";
 
+    const ragBlock = ragChunks.length
+      ? ragChunks.map((c) => `[Источник: ${c.source}, стр. ${c.page_number}]\n${c.content}`).join("\n\n---\n\n")
+      : "(в загруженных книгах не найдено релевантного контекста)";
+
     const fullSystem = `${systemPrompt}
+
+ВАЖНЫЕ ПРАВИЛА:
+- Если в "Контексте из книг" есть ответ — отвечай на его основе и **обязательно** в конце ответа укажи источник в формате: 📄 Источник: {название}, стр. {номер}
+- Если ответа нет в контексте и нет в стандартах — честно скажи "не знаю" и предложи спросить старшего
+- Объясняй просто, давай конкретные примеры
+- Отвечай на русском языке
 
 ---
 ## Стандарты компании (из базы знаний):
 ${standardsBlock}
+
+---
+## Контекст из загруженных книг (RAG):
+${ragBlock}
 
 ---
 ## Доступные статьи базы знаний (если релевантно — посоветуй прочитать):
@@ -129,15 +143,18 @@ ${tasksList}${projectBlock}`;
       });
     }
 
-    // 4. Call Lovable AI Gateway with streaming
-    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    // 4. Call OpenRouter (Claude Sonnet 4.5) with streaming
+    const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
+    const aiResp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${OPENROUTER_API_KEY}`,
         "Content-Type": "application/json",
+        "HTTP-Referer": "https://statpulse.app",
+        "X-Title": "StatPulse AI Assistant",
       },
       body: JSON.stringify({
-        model: "openai/gpt-5-mini",
+        model: "anthropic/claude-sonnet-4.5",
         messages: [{ role: "system", content: fullSystem }, ...messages],
         stream: true,
       }),
