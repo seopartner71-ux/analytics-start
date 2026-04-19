@@ -70,9 +70,6 @@ export default function OnboardingPage() {
         </Button>
       </div>
 
-      <div>
-
-      <div className="px-4">
       <Card>
         <CardContent className="p-0">
           {fetching ? (
