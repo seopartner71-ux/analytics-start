@@ -902,6 +902,20 @@ export function TechnicalAuditTab({ projectId }: Props) {
     },
   });
 
+  // Счётчик просканированных страниц во время выполнения
+  const { data: scannedPages = 0 } = useQuery({
+    queryKey: ["crawl-pages-count", jobId, scanStatus],
+    enabled: !!jobId && (scanStatus === "running" || scanStatus === "pending"),
+    refetchInterval: 3000,
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("crawl_pages")
+        .select("id", { count: "exact", head: true })
+        .eq("job_id", jobId!);
+      return count ?? 0;
+    },
+  });
+
   const effectiveStats: any = stats ?? jobStats;
 
   const handleStartScan = async () => {
