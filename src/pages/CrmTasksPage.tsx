@@ -302,7 +302,7 @@ export default function CrmTasksPage() {
       {/* Filters row */}
       <div className="flex flex-wrap items-center gap-2">
         <Select value={filterProject} onValueChange={setFilterProject}>
-          <SelectTrigger className="h-8 w-auto min-w-[140px] text-xs bg-muted/30 border-border/60">
+          <SelectTrigger className="h-8 flex-1 min-w-[120px] sm:flex-initial sm:w-auto sm:min-w-[140px] text-xs bg-muted/30 border-border/60">
             <FolderOpen className="h-3.5 w-3.5 mr-1.5 text-muted-foreground shrink-0" />
             <SelectValue placeholder="Проект" />
           </SelectTrigger>
@@ -315,7 +315,7 @@ export default function CrmTasksPage() {
         </Select>
 
         <Select value={filterAssignee} onValueChange={setFilterAssignee}>
-          <SelectTrigger className="h-8 w-auto min-w-[140px] text-xs bg-muted/30 border-border/60">
+          <SelectTrigger className="h-8 flex-1 min-w-[120px] sm:flex-initial sm:w-auto sm:min-w-[140px] text-xs bg-muted/30 border-border/60">
             <User className="h-3.5 w-3.5 mr-1.5 text-muted-foreground shrink-0" />
             <SelectValue placeholder="Исполнитель" />
           </SelectTrigger>
@@ -328,7 +328,7 @@ export default function CrmTasksPage() {
         </Select>
 
         <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="h-8 w-auto min-w-[140px] text-xs bg-muted/30 border-border/60">
+          <SelectTrigger className="h-8 flex-1 min-w-[120px] sm:flex-initial sm:w-auto sm:min-w-[140px] text-xs bg-muted/30 border-border/60">
             <Clock className="h-3.5 w-3.5 mr-1.5 text-muted-foreground shrink-0" />
             <SelectValue placeholder="Статус" />
           </SelectTrigger>
