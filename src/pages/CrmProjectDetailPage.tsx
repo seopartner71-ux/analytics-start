@@ -353,11 +353,11 @@ export default function CrmProjectDetailPage() {
           <TabsTrigger value="pagespeed" className="gap-1.5 text-[13px]">
             <Zap className="h-3.5 w-3.5" /> PageSpeed
           </TabsTrigger>
-          <TabsTrigger value="chat" className="gap-1.5 text-[13px]">
-            <MessagesSquare className="h-3.5 w-3.5" /> Чат
-          </TabsTrigger>
           <TabsTrigger value="links" className="gap-1.5 text-[13px]">
             <Link2 className="h-3.5 w-3.5" /> Ссылочный профиль
+          </TabsTrigger>
+          <TabsTrigger value="chat" className="gap-1.5 text-[13px]">
+            <MessagesSquare className="h-3.5 w-3.5" /> Чат
           </TabsTrigger>
         </TabsList>
 
