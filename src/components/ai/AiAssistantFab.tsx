@@ -235,6 +235,13 @@ export function AiAssistantFab() {
                   <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:240ms]" />
                 </div>
               )}
+              {!streaming && messages.length > 0 && messages[messages.length - 1].role === "assistant" && messages[messages.length - 1].content && (
+                <div className="flex justify-start pl-1">
+                  <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground hover:text-foreground gap-1" onClick={reportNotHelpful}>
+                    <ThumbsDown className="h-3 w-3" /> Не помогло
+                  </Button>
+                </div>
+              )}
             </div>
           </ScrollArea>
 
