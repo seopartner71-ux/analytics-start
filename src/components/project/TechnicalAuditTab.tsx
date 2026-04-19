@@ -734,7 +734,7 @@ function BentoSections({
   return (
     <div className="space-y-5">
       {/* Bento-сетка */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
         {sectionStats.map(({ section, problemCount, critical, warning, info, score, status, passed, totalChecks }) => {
           const Icon = section.icon;
           const isActive = section.id === activeId;
