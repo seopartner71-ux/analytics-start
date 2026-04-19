@@ -194,6 +194,10 @@ const SECTIONS: SectionDef[] = [
       { code: "missing_h2", label: "Страницы без заголовка H2", severity: "warning" },
       { code: "heading_hierarchy", label: "Нарушена иерархия заголовков", severity: "warning" },
       { code: "page_too_large", label: "Большой размер страницы (>200kb)", severity: "warning" },
+      { code: "keyword_stuffing", label: "Возможный keyword stuffing", severity: "warning" },
+      { code: "thin_content", label: "Мало текстового контента (<100 слов)", severity: "warning" },
+      { code: "long_sentences", label: "Слишком длинные предложения", severity: "warning" },
+      { code: "poor_readability", label: "Низкая читабельность текста", severity: "warning" },
     ],
   },
   {
@@ -243,6 +247,20 @@ const SECTIONS: SectionDef[] = [
       { code: "render_blocking", label: "Render-blocking ресурсы", severity: "warning" },
       { code: "unminified_js", label: "JavaScript не минифицирован", severity: "warning" },
       { code: "unminified_css", label: "CSS не минифицирован", severity: "warning" },
+    ],
+  {
+    id: "security",
+    title: "Безопасность",
+    description: "SSL сертификат, mixed content и заголовки безопасности",
+    icon: Lock,
+    types: ["security"],
+    checks: [
+      { code: "ssl_expiring_critical", label: "SSL сертификат истекает менее чем через 14 дней", severity: "critical" },
+      { code: "ssl_expiring_soon", label: "SSL сертификат истекает менее чем через 30 дней", severity: "warning" },
+      { code: "mixed_content", label: "Mixed content — HTTP ресурсы на HTTPS странице", severity: "warning" },
+      { code: "no_hsts", label: "Нет заголовка HSTS", severity: "warning" },
+      { code: "no_x_frame_options", label: "Нет заголовка X-Frame-Options", severity: "info" },
+      { code: "no_x_content_type", label: "Нет заголовка X-Content-Type-Options", severity: "info" },
     ],
   },
 ];
