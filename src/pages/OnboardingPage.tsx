@@ -66,16 +66,14 @@ export default function OnboardingPage() {
   return (
     <div className="space-y-5">
       <PageHeader
-        title="Онбординг проектов"
-        description="Запуск новых клиентов: чеклист, задачи, ответственные"
-        icon={Rocket}
         actions={
-          <Button size="sm" onClick={() => setWizardOpen(true)} className="gap-1.5">
+          <Button size="sm" onClick={() => setWizardOpen(true)} className="gap-1.5 h-8">
             <Plus className="h-4 w-4" /> Новый клиент
           </Button>
         }
       />
 
+      <div className="px-4">
       <Card>
         <CardContent className="p-0">
           {fetching ? (
