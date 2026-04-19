@@ -8,6 +8,16 @@ import { Progress } from "@/components/ui/progress";
 import { ChevronDown, ChevronRight, Download, ExternalLink, ShieldAlert, Link2, FileSearch, CheckCircle2, AlertTriangle, Info, AlertCircle, HelpCircle, Trash2, Lock, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // ============ Описания проверок (для tooltip) ============
 type CheckInfo = { description: string; importance: "Критическая" | "Высокая" | "Средняя" | "Низкая" };
@@ -828,6 +838,8 @@ export function TechnicalAuditTab({ projectId }: Props) {
   const [resetting, setResetting] = useState(false);
   const [stopping, setStopping] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [confirmStopOpen, setConfirmStopOpen] = useState(false);
+  const [confirmResetOpen, setConfirmResetOpen] = useState(false);
   const [lastDoneJobId, setLastDoneJobId] = useState<string | null>(null);
 
   const handleDownloadPdf = async () => {
@@ -866,7 +878,7 @@ export function TechnicalAuditTab({ projectId }: Props) {
 
   const handleStopScan = async () => {
     if (!jobId) return;
-    if (!confirm("Остановить текущий аудит? Прогресс будет помечен как прерванный.")) return;
+    setConfirmStopOpen(false);
     setStopping(true);
     try {
       const { error } = await supabase
@@ -884,7 +896,7 @@ export function TechnicalAuditTab({ projectId }: Props) {
   };
 
   const handleResetAll = async () => {
-    if (!confirm("Удалить все данные сканирования по этому проекту? Действие необратимо.")) return;
+    setConfirmResetOpen(false);
     setResetting(true);
     try {
       const { data: jobs } = await supabase
@@ -1124,7 +1136,7 @@ export function TechnicalAuditTab({ projectId }: Props) {
                 variant="outline"
                 size="sm"
                 disabled={resetting || isRunning}
-                onClick={handleResetAll}
+                onClick={() => setConfirmResetOpen(true)}
                 className="gap-1.5 text-[12px] border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
               >
                 <Trash2 className="h-3.5 w-3.5" />
@@ -1136,7 +1148,7 @@ export function TechnicalAuditTab({ projectId }: Props) {
                 variant="outline"
                 size="sm"
                 disabled={stopping}
-                onClick={handleStopScan}
+                onClick={() => setConfirmStopOpen(true)}
                 className="gap-1.5 text-[12px] border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
               >
                 <span className="h-2.5 w-2.5 rounded-sm bg-destructive" />
@@ -1252,6 +1264,46 @@ export function TechnicalAuditTab({ projectId }: Props) {
           <div className="text-[14px] text-muted-foreground">Запустите аудит, чтобы получить технический анализ сайта</div>
         </Card>
       )}
+
+      <AlertDialog open={confirmStopOpen} onOpenChange={setConfirmStopOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Остановить аудит?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Текущий прогресс будет помечен как прерванный. Уже собранные данные сохранятся.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleStopScan}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Остановить
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={confirmResetOpen} onOpenChange={setConfirmResetOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Удалить все данные сканирования?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Будут удалены все задания, страницы и ошибки по этому проекту. Действие необратимо.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleResetAll}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Удалить
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
