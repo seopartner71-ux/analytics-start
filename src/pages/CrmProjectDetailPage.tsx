@@ -388,6 +388,10 @@ export default function CrmProjectDetailPage() {
           <PageSpeedTab projectId={id!} />
         </TabsContent>
 
+        <TabsContent value="onboarding">
+          <OnboardingTab projectId={id!} />
+        </TabsContent>
+
         <TabsContent value="checklist">
       {/* Two-column layout */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
