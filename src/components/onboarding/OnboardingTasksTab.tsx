@@ -119,9 +119,8 @@ export function OnboardingTasksTab({ projectId }: { projectId: string }) {
       checked: value,
       status: value ? "done" : "not_started",
       completed_at: value ? new Date().toISOString() : null,
-      completed_by: value ? (user?.id as any) : null,
       completed_by_name: value ? (user?.email || "") : null,
-    });
+    } as any);
   };
 
   const changeStatus = (task: OnbTask, status: string) => {
