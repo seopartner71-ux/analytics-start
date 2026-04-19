@@ -1148,7 +1148,7 @@ export function TechnicalAuditTab({ projectId }: Props) {
                 variant="outline"
                 size="sm"
                 disabled={stopping}
-                onClick={handleStopScan}
+                onClick={() => setConfirmStopOpen(true)}
                 className="gap-1.5 text-[12px] border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
               >
                 <span className="h-2.5 w-2.5 rounded-sm bg-destructive" />
