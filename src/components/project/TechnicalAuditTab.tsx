@@ -838,6 +838,8 @@ export function TechnicalAuditTab({ projectId }: Props) {
   const [resetting, setResetting] = useState(false);
   const [stopping, setStopping] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [confirmStopOpen, setConfirmStopOpen] = useState(false);
+  const [confirmResetOpen, setConfirmResetOpen] = useState(false);
   const [lastDoneJobId, setLastDoneJobId] = useState<string | null>(null);
 
   const handleDownloadPdf = async () => {
