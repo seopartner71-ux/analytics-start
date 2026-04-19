@@ -33,6 +33,16 @@ interface ChatMessage {
   created_at: string;
 }
 
+interface Reaction {
+  id: string;
+  message_id: string;
+  user_id: string;
+  user_name: string;
+  emoji: string;
+}
+
+const REACTION_EMOJIS = ["👍", "❤️", "🎉"];
+
 interface Participant {
   id: string;
   user_id: string;
