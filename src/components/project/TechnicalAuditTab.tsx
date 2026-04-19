@@ -881,10 +881,9 @@ export function TechnicalAuditTab({ projectId }: Props) {
     setConfirmStopOpen(false);
     setStopping(true);
     try {
-      const { error } = await supabase
-        .from("crawl_jobs")
-        .update({ status: "error", error_message: "Остановлено пользователем", finished_at: new Date().toISOString() })
-        .eq("id", jobId);
+      const { error } = await supabase.functions.invoke("stop-audit", {
+        body: { job_id: jobId },
+      });
       if (error) throw error;
       setScanStatus("error");
       toast.success("Аудит остановлен");
