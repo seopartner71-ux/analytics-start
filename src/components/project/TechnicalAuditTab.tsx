@@ -896,7 +896,7 @@ export function TechnicalAuditTab({ projectId }: Props) {
   };
 
   const handleResetAll = async () => {
-    if (!confirm("Удалить все данные сканирования по этому проекту? Действие необратимо.")) return;
+    setConfirmResetOpen(false);
     setResetting(true);
     try {
       const { data: jobs } = await supabase
