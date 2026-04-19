@@ -1615,6 +1615,70 @@ export type Database = {
           },
         ]
       }
+      project_onboarding: {
+        Row: {
+          assignee_id: string | null
+          checked: boolean
+          completed_at: string | null
+          completed_by: string | null
+          completed_by_name: string | null
+          created_at: string
+          id: string
+          item_key: string
+          project_id: string
+          task_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          assignee_id?: string | null
+          checked?: boolean
+          completed_at?: string | null
+          completed_by?: string | null
+          completed_by_name?: string | null
+          created_at?: string
+          id?: string
+          item_key: string
+          project_id: string
+          task_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assignee_id?: string | null
+          checked?: boolean
+          completed_at?: string | null
+          completed_by?: string | null
+          completed_by_name?: string | null
+          created_at?: string
+          id?: string
+          item_key?: string
+          project_id?: string
+          task_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_onboarding_assignee_id_fkey"
+            columns: ["assignee_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_onboarding_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_onboarding_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "crm_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           account_manager: string | null
