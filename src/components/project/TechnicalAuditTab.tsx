@@ -1136,7 +1136,7 @@ export function TechnicalAuditTab({ projectId }: Props) {
                 variant="outline"
                 size="sm"
                 disabled={resetting || isRunning}
-                onClick={handleResetAll}
+                onClick={() => setConfirmResetOpen(true)}
                 className="gap-1.5 text-[12px] border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
               >
                 <Trash2 className="h-3.5 w-3.5" />
