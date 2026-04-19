@@ -131,6 +131,7 @@ const IMPORTANCE_CLS: Record<string, string> = {
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { CrawlerStatusIndicator } from "./CrawlerStatusIndicator";
 
 interface Props { projectId: string; }
 
@@ -1154,6 +1155,7 @@ export function TechnicalAuditTab({ projectId }: Props) {
                 {stopping ? "Останавливаем..." : "Стоп аудит"}
               </Button>
             )}
+            <CrawlerStatusIndicator />
             <Button
               size="sm"
               className={cn("gap-1.5 text-[12px]", isRunning && "opacity-80")}
