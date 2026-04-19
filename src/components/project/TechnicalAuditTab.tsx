@@ -1264,6 +1264,46 @@ export function TechnicalAuditTab({ projectId }: Props) {
           <div className="text-[14px] text-muted-foreground">Запустите аудит, чтобы получить технический анализ сайта</div>
         </Card>
       )}
+
+      <AlertDialog open={confirmStopOpen} onOpenChange={setConfirmStopOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Остановить аудит?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Текущий прогресс будет помечен как прерванный. Уже собранные данные сохранятся.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleStopScan}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Остановить
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={confirmResetOpen} onOpenChange={setConfirmResetOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Удалить все данные сканирования?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Будут удалены все задания, страницы и ошибки по этому проекту. Действие необратимо.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleResetAll}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Удалить
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
