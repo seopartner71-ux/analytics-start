@@ -2,3 +2,6 @@ project_id = "iigedewmxyqigivsqwqz"
 
 [functions.check-plan-overruns]
 verify_jwt = false
+
+[functions.get-report-data]
+verify_jwt = false
