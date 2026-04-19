@@ -837,18 +837,25 @@ export function TechnicalAuditTab({ projectId }: Props) {
     }
     setDownloadingPdf(true);
     try {
-      const res = await fetch(`http://155.212.221.64:8000/report/${lastDoneJobId}?secret=3384233842`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) throw new Error("Не авторизован");
+      const url = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/download-audit-pdf?job_id=${lastDoneJobId}`;
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) {
+        const errText = await res.text().catch(() => "");
+        throw new Error(`HTTP ${res.status} ${errText.slice(0, 200)}`);
+      }
       const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
+      const objUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = url;
+      a.href = objUrl;
       const safeDomain = (domain && domain !== "—" ? domain : "site").replace(/[^a-z0-9.-]/gi, "_");
       a.download = `seo-report-${safeDomain}.pdf`;
       document.body.appendChild(a);
       a.click();
       a.remove();
-      URL.revokeObjectURL(url);
+      URL.revokeObjectURL(objUrl);
       toast.success("PDF отчёт скачан");
     } catch (e: any) {
       toast.error("Не удалось скачать PDF: " + (e?.message ?? ""));
