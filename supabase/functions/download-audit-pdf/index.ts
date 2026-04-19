@@ -63,11 +63,22 @@ Deno.serve(async (req) => {
       });
     }
 
-    const upstream = await fetch(`${REPORT_BASE}/report/${jobId}?secret=${encodeURIComponent(secret)}`);
+    let upstream: Response;
+    try {
+      upstream = await fetch(`${REPORT_BASE}/report/${jobId}?secret=${encodeURIComponent(secret)}`);
+    } catch (e) {
+      return new Response(
+        JSON.stringify({
+          error: "Сервер генерации PDF недоступен. Попробуйте позже или обратитесь к администратору.",
+          detail: e instanceof Error ? e.message : String(e),
+        }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
     if (!upstream.ok) {
       const text = await upstream.text().catch(() => "");
       return new Response(
-        JSON.stringify({ error: `Upstream error ${upstream.status}`, detail: text.slice(0, 500) }),
+        JSON.stringify({ error: `Ошибка генерации PDF (${upstream.status})`, detail: text.slice(0, 500) }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
