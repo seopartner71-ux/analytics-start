@@ -826,6 +826,26 @@ export function TechnicalAuditTab({ projectId }: Props) {
   const channelRef = useRef<any>(null);
   const queryClient = useQueryClient();
   const [resetting, setResetting] = useState(false);
+  const [stopping, setStopping] = useState(false);
+
+  const handleStopScan = async () => {
+    if (!jobId) return;
+    if (!confirm("Остановить текущий аудит? Прогресс будет помечен как прерванный.")) return;
+    setStopping(true);
+    try {
+      const { error } = await supabase
+        .from("crawl_jobs")
+        .update({ status: "error", error_message: "Остановлено пользователем", finished_at: new Date().toISOString() })
+        .eq("id", jobId);
+      if (error) throw error;
+      setScanStatus("error");
+      toast.success("Аудит остановлен");
+    } catch (e: any) {
+      toast.error("Не удалось остановить аудит: " + (e?.message ?? ""));
+    } finally {
+      setStopping(false);
+    }
+  };
 
   const handleResetAll = async () => {
     if (!confirm("Удалить все данные сканирования по этому проекту? Действие необратимо.")) return;
