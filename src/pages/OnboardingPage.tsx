@@ -63,14 +63,14 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="space-y-5">
-      <PageHeader
-        actions={
-          <Button size="sm" onClick={() => setWizardOpen(true)} className="gap-1.5 h-8">
-            <Plus className="h-4 w-4" /> Новый клиент
-          </Button>
-        }
-      />
+    <div className="space-y-5 p-4">
+      <div className="flex justify-end">
+        <Button size="sm" onClick={() => setWizardOpen(true)} className="gap-1.5 h-8">
+          <Plus className="h-4 w-4" /> Новый клиент
+        </Button>
+      </div>
+
+      <div>
 
       <div className="px-4">
       <Card>
