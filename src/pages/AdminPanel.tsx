@@ -31,6 +31,8 @@ const INTEGRATION_KEYS = [
   { key: "gsc_client_id", label: "Google Search Console Client ID", service: "googleSearchConsole" },
   { key: "gsc_client_secret", label: "Google Search Console Client Secret", service: "googleSearchConsole", secret: true },
   { key: "topvisor_api_key", label: "Topvisor API Key", service: "topvisor", secret: true },
+  { key: "tochka_client_id", label: "Точка Банк Client ID", service: "tochka" },
+  { key: "tochka_client_secret", label: "Точка Банк Client Secret", service: "tochka", secret: true },
 ];
 
 export default function AdminPanel() {
