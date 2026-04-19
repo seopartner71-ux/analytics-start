@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, MessageSquare, Calendar, User as UserIcon, ChevronDown, ChevronUp } from "lucide-react";
+import { RelatedArticles } from "@/components/knowledge/RelatedArticles";
 import { format, isPast, parseISO } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -230,6 +231,10 @@ export function OnboardingTasksTab({ projectId }: { projectId: string }) {
                           <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => saveComment(task)}>Сохранить</Button>
                         </div>
                       )}
+
+                      <div className="mt-3">
+                        <RelatedArticles taskId={task.id} scope="onboarding_task" />
+                      </div>
                     </div>
                     <div className="flex flex-col gap-1.5 shrink-0 w-40">
                       <Select value={task.status} onValueChange={(v) => changeStatus(task, v)}>

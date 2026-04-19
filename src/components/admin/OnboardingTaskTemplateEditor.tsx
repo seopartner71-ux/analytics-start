@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Plus, Trash2, GripVertical, Loader2, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
+import { RelatedArticles } from "@/components/knowledge/RelatedArticles";
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent,
 } from "@dnd-kit/core";
@@ -31,19 +32,22 @@ const ROLES = [
   { value: "director", label: "Директор" },
 ];
 
-function SortableRow({ tpl, onChange, onDelete }: { tpl: Tpl; onChange: (patch: Partial<Tpl>) => void; onDelete: () => void; }) {
+function SortableRow({ tpl, onChange, onDelete, persisted }: { tpl: Tpl; onChange: (patch: Partial<Tpl>) => void; onDelete: () => void; persisted: boolean; }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: tpl.id });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
   return (
-    <div ref={setNodeRef} style={style} className="flex items-center gap-2 p-2 border rounded-md bg-card">
-      <button {...attributes} {...listeners} className="text-muted-foreground hover:text-foreground cursor-grab"><GripVertical className="h-4 w-4" /></button>
-      <Input value={tpl.title} onChange={(e) => onChange({ title: e.target.value })} className="h-8 text-[13px] flex-1" />
-      <Input type="number" min={1} max={12} value={tpl.week} onChange={(e) => onChange({ week: Number(e.target.value) })} className="h-8 w-16 text-[12px]" placeholder="Нед." />
-      <Select value={tpl.assignee_role} onValueChange={(v) => onChange({ assignee_role: v })}>
-        <SelectTrigger className="h-8 w-32 text-[12px]"><SelectValue /></SelectTrigger>
-        <SelectContent>{ROLES.map((r) => <SelectItem key={r.value} value={r.value} className="text-[12px]">{r.label}</SelectItem>)}</SelectContent>
-      </Select>
-      <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-red-500 hover:text-red-600" onClick={onDelete}><Trash2 className="h-3.5 w-3.5" /></Button>
+    <div ref={setNodeRef} style={style} className="border rounded-md bg-card p-2 space-y-2">
+      <div className="flex items-center gap-2">
+        <button {...attributes} {...listeners} className="text-muted-foreground hover:text-foreground cursor-grab"><GripVertical className="h-4 w-4" /></button>
+        <Input value={tpl.title} onChange={(e) => onChange({ title: e.target.value })} className="h-8 text-[13px] flex-1" />
+        <Input type="number" min={1} max={12} value={tpl.week} onChange={(e) => onChange({ week: Number(e.target.value) })} className="h-8 w-16 text-[12px]" placeholder="Нед." />
+        <Select value={tpl.assignee_role} onValueChange={(v) => onChange({ assignee_role: v })}>
+          <SelectTrigger className="h-8 w-32 text-[12px]"><SelectValue /></SelectTrigger>
+          <SelectContent>{ROLES.map((r) => <SelectItem key={r.value} value={r.value} className="text-[12px]">{r.label}</SelectItem>)}</SelectContent>
+        </Select>
+        <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-red-500 hover:text-red-600" onClick={onDelete}><Trash2 className="h-3.5 w-3.5" /></Button>
+      </div>
+      {persisted && <RelatedArticles taskId={tpl.id} scope="onboarding_template" canEdit />}
     </div>
   );
 }
@@ -166,6 +170,7 @@ export function OnboardingTaskTemplateEditor() {
                       tpl={t}
                       onChange={(patch) => updateLocal(t.id, patch)}
                       onDelete={() => deleteTask(t.id)}
+                      persisted={!!t.id && t.id.length === 36 && !t.id.startsWith("new-")}
                     />
                   ))}
                 </SortableContext>

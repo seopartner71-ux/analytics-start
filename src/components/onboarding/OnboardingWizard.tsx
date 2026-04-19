@@ -159,9 +159,27 @@ export function OnboardingWizard({ open, onOpenChange, onCreated }: Props) {
           due_date: format(deadline, "yyyy-MM-dd"),
         };
       });
+      let insertedTasks: any[] = [];
       if (onbTasks.length) {
-        const { error } = await supabase.from("onboarding_tasks").insert(onbTasks);
+        const { data: ins, error } = await supabase.from("onboarding_tasks").insert(onbTasks).select("id, template_id");
         if (error) throw error;
+        insertedTasks = ins || [];
+      }
+
+      // 4b. Прикрепить статьи из шаблона к созданным задачам
+      const templateIds = insertedTasks.map((t) => t.template_id).filter(Boolean);
+      if (templateIds.length) {
+        const { data: tplLinks } = await supabase
+          .from("onboarding_template_articles")
+          .select("template_id, article_id")
+          .in("template_id", templateIds);
+        if (tplLinks?.length) {
+          const taskByTpl = new Map(insertedTasks.map((t) => [t.template_id, t.id]));
+          const taskArticles = tplLinks
+            .map((l) => ({ task_id: taskByTpl.get(l.template_id), article_id: l.article_id }))
+            .filter((r) => r.task_id);
+          if (taskArticles.length) await supabase.from("onboarding_task_articles").insert(taskArticles);
+        }
       }
 
       // 5. Системное сообщение в чат проекта
