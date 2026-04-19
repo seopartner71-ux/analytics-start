@@ -1154,6 +1154,7 @@ export function TechnicalAuditTab({ projectId }: Props) {
                 {stopping ? "Останавливаем..." : "Стоп аудит"}
               </Button>
             )}
+            <CrawlerStatusIndicator />
             <Button
               size="sm"
               className={cn("gap-1.5 text-[12px]", isRunning && "opacity-80")}
