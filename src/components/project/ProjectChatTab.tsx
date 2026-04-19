@@ -133,6 +133,49 @@ export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) 
     },
   });
 
+  // --- Reactions ---
+  const messageIds = useMemo(() => messages.map(m => m.id), [messages]);
+  const { data: reactions = [] } = useQuery<Reaction[]>({
+    queryKey: ["project-message-reactions", projectId, messageIds.length],
+    queryFn: async () => {
+      if (!messageIds.length) return [];
+      const { data, error } = await supabase
+        .from("project_message_reactions")
+        .select("*")
+        .in("message_id", messageIds);
+      if (error) throw error;
+      return data as Reaction[];
+    },
+    enabled: messageIds.length > 0,
+  });
+
+  const reactionsByMessage = useMemo(() => {
+    const map = new Map<string, Reaction[]>();
+    for (const r of reactions) {
+      const arr = map.get(r.message_id) || [];
+      arr.push(r);
+      map.set(r.message_id, arr);
+    }
+    return map;
+  }, [reactions]);
+
+  const toggleReaction = useCallback(async (messageId: string, emoji: string) => {
+    if (!user) return;
+    const existing = reactions.find(r => r.message_id === messageId && r.user_id === user.id && r.emoji === emoji);
+    if (existing) {
+      const { error } = await supabase.from("project_message_reactions").delete().eq("id", existing.id);
+      if (error) toast.error(error.message);
+    } else {
+      const { error } = await supabase.from("project_message_reactions").insert({
+        message_id: messageId,
+        user_id: user.id,
+        user_name: profile?.full_name || profile?.email || "Пользователь",
+        emoji,
+      });
+      if (error) toast.error(error.message);
+    }
+  }, [user, profile, reactions]);
+
   // --- Realtime subscription ---
   useEffect(() => {
     if (!projectId) return;
