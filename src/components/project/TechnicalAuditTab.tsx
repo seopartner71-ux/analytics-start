@@ -953,6 +953,10 @@ export function TechnicalAuditTab({ projectId }: Props) {
     })();
   }, [projectId]);
 
+  useEffect(() => {
+    if (scanStatus === "done" && jobId) setLastDoneJobId(jobId);
+  }, [scanStatus, jobId]);
+
   const { data: jobStats } = useQuery({
     queryKey: ["crawl-stats", jobId],
     enabled: !!jobId && scanStatus === "done",
