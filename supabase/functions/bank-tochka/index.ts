@@ -54,8 +54,20 @@ Deno.serve(async (req) => {
     const body = (await req.json()) as RequestBody;
     const action = body.action;
 
-    const clientId = Deno.env.get("TOCHKA_CLIENT_ID");
-    const clientSecret = Deno.env.get("TOCHKA_CLIENT_SECRET");
+    let clientId = Deno.env.get("TOCHKA_CLIENT_ID") ?? "";
+    let clientSecret = Deno.env.get("TOCHKA_CLIENT_SECRET") ?? "";
+
+    // Fallback: значения из admin app_settings
+    if (!clientId || !clientSecret) {
+      const { data: settings } = await supabase
+        .from("app_settings")
+        .select("key,value")
+        .in("key", ["tochka_client_id", "tochka_client_secret"]);
+      for (const s of settings ?? []) {
+        if (s.key === "tochka_client_id" && !clientId) clientId = s.value;
+        if (s.key === "tochka_client_secret" && !clientSecret) clientSecret = s.value;
+      }
+    }
 
     // --- get_auth_url: формирует ссылку на OAuth ---
     if (action === "get_auth_url") {
