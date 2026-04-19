@@ -42,6 +42,13 @@ const CHECK_INFO: Record<string, CheckInfo> = {
   orphan_page: { importance: "Высокая", description: "Orphan-страница — на неё нет внутренних ссылок с других страниц сайта. Поисковые роботы могут её не найти, а пользователи не смогут до неё дойти по навигации." },
   hreflang_no_default: { importance: "Средняя", description: "Hreflang-разметка без x-default. Тег x-default указывает версию страницы по умолчанию для пользователей из стран, не указанных в hreflang." },
   hreflang_duplicate: { importance: "Средняя", description: "Дублирующиеся hreflang-теги для одного языка/региона. Поисковики могут проигнорировать всю hreflang-разметку при наличии дублей." },
+  utm_in_url: { importance: "Средняя", description: "Страницы с UTM параметрами в URL могут попасть в индекс поисковиков и создавать дубли страниц. Закройте их через canonical или robots.txt." },
+  pagination_no_canonical: { importance: "Средняя", description: "Страница пагинации без canonical. Это приводит к индексации множества похожих страниц и размытию ссылочного веса." },
+  pagination_empty_next: { importance: "Средняя", description: "Тег rel=next указывает на пустой или несуществующий URL. Поисковики не смогут корректно построить цепочку пагинации." },
+  nofollow_links: { importance: "Средняя", description: "Ссылки с rel=nofollow не передают ссылочный вес. Проверьте что важные внутренние ссылки не закрыты nofollow." },
+  hidden_content: { importance: "Средняя", description: "Контент скрытый через display:none виден поисковым роботам. Большое количество скрытых элементов может быть расценено как попытка манипуляции." },
+  invisible_content: { importance: "Средняя", description: "Контент скрытый через visibility:hidden виден поисковым роботам. Используйте скрытие осознанно — поисковики могут счесть это манипуляцией." },
+  similar_content: { importance: "Средняя", description: "Страницы с похожим контентом конкурируют между собой в поиске. Объедините их или сделайте уникальными." },
   // Ссылки и контент
   http_link: { importance: "Высокая", description: "Внутренние ссылки с HTTP. Если сайт работает на HTTPS но внутренние ссылки ведут на HTTP — это создаёт лишние редиректы, замедляет загрузку и теряет ссылочный вес." },
   redirect_301: { importance: "Средняя", description: "Внутренние ссылки ведут на 301 редирект. Замените их на конечные URL чтобы не терять ссылочный вес и ускорить переходы." },
@@ -156,6 +163,9 @@ const SECTIONS: SectionDef[] = [
       { code: "orphan_page", label: "Orphan страница — нет входящих ссылок", severity: "warning" },
       { code: "hreflang_no_default", label: "Hreflang без x-default", severity: "info" },
       { code: "hreflang_duplicate", label: "Дублирующиеся hreflang теги", severity: "warning" },
+      { code: "utm_in_url", label: "UTM параметры в URL могут попасть в индекс", severity: "warning" },
+      { code: "pagination_no_canonical", label: "Страница пагинации без canonical", severity: "warning" },
+      { code: "pagination_empty_next", label: "rel=next указывает на пустой URL", severity: "warning" },
     ],
   },
   {
@@ -168,6 +178,7 @@ const SECTIONS: SectionDef[] = [
       { code: "http_link", label: "Ссылки с HTTP на HTTPS сайте", severity: "warning" },
       { code: "external_link", label: "Исходящие внешние ссылки", severity: "info" },
       { code: "broken_external_link", label: "Битые внешние ссылки", severity: "warning" },
+      { code: "nofollow_links", label: "Ссылки с rel=nofollow", severity: "info" },
     ],
   },
   {
@@ -199,6 +210,9 @@ const SECTIONS: SectionDef[] = [
       { code: "thin_content", label: "Мало текстового контента (<100 слов)", severity: "warning" },
       { code: "long_sentences", label: "Слишком длинные предложения", severity: "warning" },
       { code: "poor_readability", label: "Низкая читабельность текста", severity: "warning" },
+      { code: "hidden_content", label: "Скрытый контент (display:none)", severity: "warning" },
+      { code: "invisible_content", label: "Скрытый контент (visibility:hidden)", severity: "warning" },
+      { code: "similar_content", label: "Похожий контент на страницах", severity: "warning" },
     ],
   },
   {
