@@ -135,7 +135,6 @@ const SECTIONS: SectionDef[] = [
       { code: "ssl_expiring_soon", label: "SSL сертификат скоро истекает", severity: "critical" },
       { code: "ssl_error", label: "Ошибка SSL сертификата", severity: "critical" },
       { code: "crawl_error", label: "Ошибка при сканировании", severity: "critical" },
-      { code: "mixed_content", label: "Mixed content — HTTP ресурсы на HTTPS странице", severity: "warning" },
       { code: "no_last_modified", label: "Не установлен заголовок Last-Modified", severity: "warning" },
       { code: "cyclic_link", label: "Циклические ссылки на текущую страницу", severity: "warning" },
       { code: "no_http_to_https_redirect", label: "HTTP не редиректит на HTTPS", severity: "warning" },
