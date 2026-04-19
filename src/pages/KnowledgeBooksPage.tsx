@@ -56,7 +56,7 @@ export default function KnowledgeBooksPage() {
       });
       const j = await r.json();
       if (!r.ok) throw new Error(j.error || "Ошибка загрузки");
-      toast.success(`Книга добавлена: ${j.chunks} фрагментов из ${j.pages} страниц`);
+      toast.success("PDF принят. Обработка идёт в фоне (1–3 мин). Список обновится автоматически.");
       setTitle("");
       if (fileRef.current) fileRef.current.value = "";
       await load();
