@@ -944,6 +944,56 @@ export function TechnicalAuditTab({ projectId }: Props) {
     return () => { supabase.removeChannel(ch); };
   }, [jobId]);
 
+  const isRunning = scanStatus === "pending" || scanStatus === "running";
+
+  // Конфигурация статус-баннера
+  const statusBanner = (() => {
+    switch (scanStatus) {
+      case "pending":
+        return {
+          show: true,
+          bg: "bg-blue-500/10 border-blue-500/30",
+          dot: "bg-blue-400",
+          text: "text-blue-300",
+          title: "Аудит в очереди",
+          subtitle: "Краулер скоро начнёт обход страниц",
+          showProgress: true,
+        };
+      case "running":
+        return {
+          show: true,
+          bg: "bg-yellow-500/10 border-yellow-500/30",
+          dot: "bg-yellow-400 animate-pulse",
+          text: "text-yellow-300",
+          title: "Аудит идёт…",
+          subtitle: "Сканируем страницы сайта — не закрывайте вкладку",
+          showProgress: true,
+        };
+      case "done":
+        return {
+          show: true,
+          bg: "bg-emerald-500/10 border-emerald-500/30",
+          dot: "bg-emerald-400",
+          text: "text-emerald-300",
+          title: "Аудит завершён",
+          subtitle: "Результаты ниже актуальны на эту дату",
+          showProgress: false,
+        };
+      case "error":
+        return {
+          show: true,
+          bg: "bg-red-500/10 border-red-500/30",
+          dot: "bg-red-400",
+          text: "text-red-300",
+          title: "Ошибка аудита",
+          subtitle: "Попробуйте запустить аудит ещё раз или сбросить данные",
+          showProgress: false,
+        };
+      default:
+        return { show: false } as any;
+    }
+  })();
+
   return (
     <div className="space-y-5">
       {/* Шапка */}
@@ -958,11 +1008,6 @@ export function TechnicalAuditTab({ projectId }: Props) {
             </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            {scanStatus === "idle" && <Badge variant="secondary" className="text-[11px]">Ожидает запуска</Badge>}
-            {scanStatus === "pending" && <Badge className="bg-[hsl(var(--chart-2))]/15 text-[hsl(var(--chart-2))] hover:bg-[hsl(var(--chart-2))]/15 text-[11px]">В очереди</Badge>}
-            {scanStatus === "running" && <Badge className="bg-[hsl(var(--chart-4))]/15 text-[hsl(var(--chart-4))] hover:bg-[hsl(var(--chart-4))]/15 animate-pulse text-[11px]">Сканирование...</Badge>}
-            {scanStatus === "done" && <Badge className="bg-[hsl(var(--chart-3))]/15 text-[hsl(var(--chart-3))] hover:bg-[hsl(var(--chart-3))]/15 text-[11px]">Готов</Badge>}
-            {scanStatus === "error" && <Badge variant="destructive" className="text-[11px]">Ошибка</Badge>}
             <Button variant="outline" size="sm" className="gap-1.5 text-[12px]">
               <Download className="h-3.5 w-3.5" /> Скачать PDF отчёт
             </Button>
@@ -970,7 +1015,7 @@ export function TechnicalAuditTab({ projectId }: Props) {
               <Button
                 variant="outline"
                 size="sm"
-                disabled={resetting}
+                disabled={resetting || isRunning}
                 onClick={handleResetAll}
                 className="gap-1.5 text-[12px] border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
               >
@@ -978,39 +1023,61 @@ export function TechnicalAuditTab({ projectId }: Props) {
                 {resetting ? "Сброс..." : "Сбросить данные"}
               </Button>
             )}
-            <Button size="sm" className="gap-1.5 text-[12px]" onClick={handleStartScan}>
-              Запустить аудит
+            <Button
+              size="sm"
+              className={cn("gap-1.5 text-[12px]", isRunning && "opacity-80")}
+              onClick={handleStartScan}
+              disabled={isRunning}
+            >
+              {isRunning ? (
+                <>
+                  <span className="h-3 w-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                  Аудит идёт…
+                </>
+              ) : scanStatus === "done" ? "Перезапустить аудит" : "Запустить аудит"}
             </Button>
           </div>
         </div>
       </Card>
 
-      {/* Панель прогресса */}
+      {/* Большой статус-баннер */}
+      {statusBanner.show && (
+        <Card className={cn("p-4 border", statusBanner.bg)}>
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <span className={cn("h-3 w-3 rounded-full shrink-0", statusBanner.dot)} />
+              <div className="min-w-0">
+                <div className={cn("text-[14px] font-semibold", statusBanner.text)}>
+                  {statusBanner.title}
+                </div>
+                <div className="text-[12px] text-muted-foreground truncate">
+                  {statusBanner.subtitle}
+                </div>
+              </div>
+            </div>
+            {statusBanner.showProgress && (
+              <div className="flex items-center gap-3 min-w-[220px]">
+                <Progress value={Math.min(scanProgress, 100)} className="h-2 bg-muted flex-1" />
+                <span className={cn("text-[12px] font-semibold tabular-nums", statusBanner.text)}>
+                  {Math.round(scanProgress)}%
+                </span>
+              </div>
+            )}
+          </div>
+        </Card>
+      )}
+
+      {/* Панель сканирования (URL и тайминг) */}
       {showSfPanel && (
         <Card className="bg-card border-border p-4 space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-[13px] font-semibold text-foreground">Сканирование</span>
             <Button variant="ghost" size="sm" className="text-muted-foreground text-[11px]" onClick={() => setShowSfPanel(false)}>Скрыть</Button>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <Input value={domain !== "—" ? `https://${domain}` : ""} readOnly className="bg-muted/40 border-border text-foreground/90 text-[12px] max-w-xs" />
             <span className="text-[11px] text-muted-foreground">Время сканирования: 5–15 минут для сайтов до 500 страниц</span>
           </div>
-          {(scanStatus === "pending" || scanStatus === "running") && (
-            <div className="space-y-1">
-              <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                <span className="inline-flex items-center gap-2">
-                  <span className="h-3 w-3 rounded-full border-2 border-yellow-400 border-t-transparent animate-spin" />
-                  {scanStatus === "running" ? "Идёт сканирование..." : "В очереди..."}
-                </span>
-                <span>{Math.round(scanProgress)}%</span>
-              </div>
-              <Progress value={Math.min(scanProgress, 100)} className="h-2 bg-muted" />
-            </div>
-          )}
-          {scanStatus === "error" && (
-            <div className="text-[12px] text-red-400">Произошла ошибка при сканировании</div>
-          )}
         </Card>
       )}
 
