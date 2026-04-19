@@ -97,21 +97,21 @@ export default function PlanFactPage() {
     }
     return projects.map((p) => {
       const actualHours = (totals.get(p.id) || 0) / 60;
-      const planned = Number(p.planned_hours) || 0;
-      const rate = Number(p.hourly_rate) || 0;
-      // Доход (бюджет) = План часов × Ставка клиенту. Fallback на monthly_budget если ставка не задана.
-      const budget = planned > 0 && rate > 0 ? planned * rate : Number(p.monthly_budget) || 0;
-      // Себестоимость = Факт часов × Глобальная себестоимость часа (2500₽)
+      const budget = Number(p.monthly_budget) || 0;
+      // Доступно часов = Бюджет договора / Себестоимость часа (2500₽)
+      const planned = hourCost > 0 ? budget / hourCost : 0;
+      // Себестоимость факт = Факт часов × Себестоимость часа
       const cost = actualHours * hourCost;
       const profit = budget - cost;
       const margin = budget > 0 ? (profit / budget) * 100 : 0;
       const usagePct = planned > 0 ? Math.min(999, (actualHours / planned) * 100) : 0;
+      const remaining = planned - actualHours;
       let status: "ok" | "warn" | "over" | "no-plan" = "no-plan";
       if (planned === 0) status = "no-plan";
       else if (usagePct > 110) status = "over";
       else if (usagePct >= 90) status = "warn";
       else status = "ok";
-      return { ...p, actualHours, planned, rate, budget, cost, profit, margin, usagePct, status };
+      return { ...p, actualHours, planned, remaining, budget, cost, profit, margin, usagePct, status };
     });
   }, [projects, entries, hourCost]);
 
