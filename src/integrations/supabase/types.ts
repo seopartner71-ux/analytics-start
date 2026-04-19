@@ -449,6 +449,65 @@ export type Database = {
           },
         ]
       }
+      company_news: {
+        Row: {
+          body: string
+          created_at: string
+          created_by: string
+          id: string
+          pinned: boolean
+          title: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          body?: string
+          created_at?: string
+          created_by: string
+          id?: string
+          pinned?: boolean
+          title: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          pinned?: boolean
+          title?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      company_news_reads: {
+        Row: {
+          news_id: string
+          read_at: string
+          user_id: string
+        }
+        Insert: {
+          news_id: string
+          read_at?: string
+          user_id: string
+        }
+        Update: {
+          news_id?: string
+          read_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_news_reads_news_id_fkey"
+            columns: ["news_id"]
+            isOneToOne: false
+            referencedRelation: "company_news"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crawl_issues: {
         Row: {
           code: string
