@@ -1,0 +1,1 @@
+INSERT INTO public.app_settings (key, value) VALUES ('hour_cost', '2500') ON CONFLICT (key) DO NOTHING;
