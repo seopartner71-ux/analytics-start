@@ -27,6 +27,7 @@ import { ComparisonTab } from "@/components/project/ComparisonTab";
 import { DashboardTab } from "@/components/project/DashboardTab";
 import { PositionsTab } from "@/components/project/PositionsTab";
 import { ProjectChatTab } from "@/components/project/ProjectChatTab";
+import { LinkProfileTab } from "@/components/project/LinkProfileTab";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { supabase } from "@/integrations/supabase/client";
 import { DateRangeProvider, useDateRange } from "@/contexts/DateRangeContext";
@@ -411,6 +412,8 @@ function ProjectDetailInner() {
       }
       case "chat":
         return <ProjectChatTab projectId={project.id} projectName={project.name} />;
+      case "links":
+        return <LinkProfileTab projectId={project.id} />;
       case "integrations":
         return <IntegrationsTab projectId={project.id} integrations={integrations} />;
       case "settings":
@@ -541,7 +544,7 @@ function ProjectDetailInner() {
         <div className="flex-1 flex flex-col">
           <PageHeader
             projectId={id}
-            showDatePicker={!["settings", "integrations"].includes(activeTab)}
+            showDatePicker={!["settings", "integrations", "links"].includes(activeTab)}
             dateRange={range}
             onDateRangeChange={setRange}
             compRange={compRange}
