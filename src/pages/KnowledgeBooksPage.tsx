@@ -35,6 +35,13 @@ export default function KnowledgeBooksPage() {
 
   useEffect(() => { load(); }, []);
 
+  useEffect(() => {
+    const hasProcessing = books.some((b) => b.status === "processing");
+    if (!hasProcessing) return;
+    const t = setInterval(load, 5000);
+    return () => clearInterval(t);
+  }, [books]);
+
   const handleUpload = async (file: File) => {
     if (file.type !== "application/pdf") {
       toast.error("Поддерживается только PDF");
@@ -56,7 +63,7 @@ export default function KnowledgeBooksPage() {
       });
       const j = await r.json();
       if (!r.ok) throw new Error(j.error || "Ошибка загрузки");
-      toast.success(`Книга добавлена: ${j.chunks} фрагментов из ${j.pages} страниц`);
+      toast.success("PDF принят. Обработка идёт в фоне (1–3 мин). Список обновится автоматически.");
       setTitle("");
       if (fileRef.current) fileRef.current.value = "";
       await load();

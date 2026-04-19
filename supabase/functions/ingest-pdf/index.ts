@@ -1,5 +1,5 @@
 // Ingest PDF into knowledge_chunks with OpenAI embeddings
-// Admin-only. Accepts multipart/form-data with file + title.
+// Admin-only. Heavy work runs in background via EdgeRuntime.waitUntil.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { extractText, getDocumentProxy } from "npm:unpdf@0.12.1";
 
@@ -49,6 +49,54 @@ async function embedBatch(texts: string[]): Promise<number[][]> {
   return j.data.map((d: any) => d.embedding);
 }
 
+async function processBook(bookId: string, buf: Uint8Array, title: string) {
+  const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
+  try {
+    // Extract text per page
+    const pdf = await getDocumentProxy(buf);
+    const { text } = await extractText(pdf, { mergePages: false });
+    const pages: string[] = Array.isArray(text) ? text : [String(text || "")];
+
+    const chunks = chunkText(pages, 500, 80);
+    if (chunks.length === 0) {
+      await admin.from("knowledge_books").update({
+        status: "failed",
+        error_message: "Не извлечено ни одного чанка",
+      }).eq("id", bookId);
+      return;
+    }
+
+    const BATCH = 64;
+    let idx = 0;
+    for (let i = 0; i < chunks.length; i += BATCH) {
+      const slice = chunks.slice(i, i + BATCH);
+      const embeddings = await embedBatch(slice.map((c) => c.text.slice(0, 8000)));
+      const rows = slice.map((c, j) => ({
+        book_id: bookId,
+        content: c.text,
+        embedding: embeddings[j] as any,
+        source: title,
+        page_number: c.page,
+        chunk_index: idx++,
+      }));
+      const { error: insErr } = await admin.from("knowledge_chunks").insert(rows);
+      if (insErr) throw insErr;
+    }
+
+    await admin.from("knowledge_books").update({
+      status: "ready",
+      pages_count: pages.length,
+      chunks_count: chunks.length,
+    }).eq("id", bookId);
+  } catch (e) {
+    console.error("processBook error:", e);
+    await admin.from("knowledge_books").update({
+      status: "failed",
+      error_message: (e as Error).message?.slice(0, 500) || "Unknown error",
+    }).eq("id", bookId);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -63,7 +111,6 @@ Deno.serve(async (req) => {
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
-    // Verify admin role
     const { data: roles } = await admin.from("user_roles").select("role").eq("user_id", user.id);
     const isAdmin = (roles || []).some((r: any) => r.role === "admin");
     if (!isAdmin) return new Response(JSON.stringify({ error: "Admin only" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -87,48 +134,16 @@ Deno.serve(async (req) => {
     await admin.storage.from("knowledge-pdfs").upload(path, buf, { contentType: "application/pdf", upsert: true });
     await admin.from("knowledge_books").update({ file_path: path }).eq("id", book.id);
 
-    // Extract text per page
-    let pages: string[] = [];
-    try {
-      const pdf = await getDocumentProxy(buf);
-      const { text } = await extractText(pdf, { mergePages: false });
-      pages = Array.isArray(text) ? text : [String(text || "")];
-    } catch (e) {
-      await admin.from("knowledge_books").update({ status: "failed", error_message: `PDF parse: ${(e as Error).message}` }).eq("id", book.id);
-      throw e;
-    }
+    // Heavy work in background — return immediately
+    // @ts-ignore EdgeRuntime is provided by Supabase runtime
+    EdgeRuntime.waitUntil(processBook(book.id, buf, title));
 
-    const chunks = chunkText(pages, 500, 80);
-    if (chunks.length === 0) {
-      await admin.from("knowledge_books").update({ status: "failed", error_message: "Не извлечено ни одного чанка" }).eq("id", book.id);
-      return new Response(JSON.stringify({ error: "Empty PDF" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
-
-    // Embed in batches of 64 and insert
-    const BATCH = 64;
-    let idx = 0;
-    for (let i = 0; i < chunks.length; i += BATCH) {
-      const slice = chunks.slice(i, i + BATCH);
-      const embeddings = await embedBatch(slice.map((c) => c.text.slice(0, 8000)));
-      const rows = slice.map((c, j) => ({
-        book_id: book.id,
-        content: c.text,
-        embedding: embeddings[j] as any,
-        source: title,
-        page_number: c.page,
-        chunk_index: idx++,
-      }));
-      const { error: insErr } = await admin.from("knowledge_chunks").insert(rows);
-      if (insErr) throw insErr;
-    }
-
-    await admin.from("knowledge_books").update({
-      status: "ready",
-      pages_count: pages.length,
-      chunks_count: chunks.length,
-    }).eq("id", book.id);
-
-    return new Response(JSON.stringify({ success: true, book_id: book.id, pages: pages.length, chunks: chunks.length }), {
+    return new Response(JSON.stringify({
+      success: true,
+      book_id: book.id,
+      status: "processing",
+      message: "PDF принят, обработка идёт в фоне. Обновите страницу через 1-3 минуты.",
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
