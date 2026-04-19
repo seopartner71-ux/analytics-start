@@ -70,6 +70,29 @@ export function AppSidebar({ activeTab, onTabChange, projectName, projectLogo }:
     },
   });
 
+  // Unread chat messages for current project
+  const { data: chatUnread = 0 } = useQuery({
+    queryKey: ["project-chat-unread", projectId, user?.id],
+    enabled: !!projectId && !!user?.id,
+    refetchInterval: 30000,
+    queryFn: async () => {
+      const { data: read } = await supabase
+        .from("project_message_reads")
+        .select("last_read_at")
+        .eq("project_id", projectId!)
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      const since = read?.last_read_at || "1970-01-01";
+      const { count } = await supabase
+        .from("project_messages")
+        .select("id", { count: "exact", head: true })
+        .eq("project_id", projectId!)
+        .gt("created_at", since)
+        .neq("user_id", user!.id);
+      return count || 0;
+    },
+  });
+
   const isActive = (url: string) => {
     if (url === "/") return location.pathname === "/";
     return location.pathname.startsWith(url);
@@ -94,7 +117,7 @@ export function AppSidebar({ activeTab, onTabChange, projectName, projectLogo }:
     </SidebarMenuItem>
   );
 
-  const renderTabButton = (item: { title: string; tab: string; icon: React.ElementType }) => (
+  const renderTabButton = (item: { title: string; tab: string; icon: React.ElementType; badge?: number }) => (
     <SidebarMenuItem key={item.tab}>
       <SidebarMenuButton
         onClick={() => onTabChange?.(item.tab)}
@@ -105,7 +128,12 @@ export function AppSidebar({ activeTab, onTabChange, projectName, projectLogo }:
         )}
       >
         <item.icon className="h-4 w-4 shrink-0" />
-        {!collapsed && <span>{item.title}</span>}
+        {!collapsed && <span className="flex-1">{item.title}</span>}
+        {!collapsed && item.badge && item.badge > 0 ? (
+          <span className="ml-auto inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold">
+            {item.badge > 99 ? "99+" : item.badge}
+          </span>
+        ) : null}
       </SidebarMenuButton>
     </SidebarMenuItem>
   );
@@ -168,6 +196,7 @@ export function AppSidebar({ activeTab, onTabChange, projectName, projectLogo }:
                 <SidebarMenu>
                   {[
                     { title: "Задачи", tab: "worklog", icon: ClipboardList },
+                    { title: "Чат", tab: "chat", icon: MessageSquare, badge: chatUnread },
                     { title: "Отчёты", tab: "builder", icon: FileText },
                     { title: "Интеграции", tab: "integrations", icon: Plug },
                     { title: "Настройки", tab: "settings", icon: Settings },
