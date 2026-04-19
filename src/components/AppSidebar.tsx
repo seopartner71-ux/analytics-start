@@ -117,7 +117,7 @@ export function AppSidebar({ activeTab, onTabChange, projectName, projectLogo }:
     </SidebarMenuItem>
   );
 
-  const renderTabButton = (item: { title: string; tab: string; icon: React.ElementType }) => (
+  const renderTabButton = (item: { title: string; tab: string; icon: React.ElementType; badge?: number }) => (
     <SidebarMenuItem key={item.tab}>
       <SidebarMenuButton
         onClick={() => onTabChange?.(item.tab)}
@@ -128,7 +128,12 @@ export function AppSidebar({ activeTab, onTabChange, projectName, projectLogo }:
         )}
       >
         <item.icon className="h-4 w-4 shrink-0" />
-        {!collapsed && <span>{item.title}</span>}
+        {!collapsed && <span className="flex-1">{item.title}</span>}
+        {!collapsed && item.badge && item.badge > 0 ? (
+          <span className="ml-auto inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold">
+            {item.badge > 99 ? "99+" : item.badge}
+          </span>
+        ) : null}
       </SidebarMenuButton>
     </SidebarMenuItem>
   );
