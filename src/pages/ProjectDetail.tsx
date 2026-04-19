@@ -544,7 +544,7 @@ function ProjectDetailInner() {
         <div className="flex-1 flex flex-col">
           <PageHeader
             projectId={id}
-            showDatePicker={!["settings", "integrations"].includes(activeTab)}
+            showDatePicker={!["settings", "integrations", "links"].includes(activeTab)}
             dateRange={range}
             onDateRangeChange={setRange}
             compRange={compRange}
