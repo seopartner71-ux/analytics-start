@@ -200,6 +200,13 @@ export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) 
           );
         }
       )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "project_message_reactions" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["project-message-reactions", projectId] });
+        }
+      )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
