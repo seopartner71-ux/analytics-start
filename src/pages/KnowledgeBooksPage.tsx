@@ -35,6 +35,13 @@ export default function KnowledgeBooksPage() {
 
   useEffect(() => { load(); }, []);
 
+  useEffect(() => {
+    const hasProcessing = books.some((b) => b.status === "processing");
+    if (!hasProcessing) return;
+    const t = setInterval(load, 5000);
+    return () => clearInterval(t);
+  }, [books]);
+
   const handleUpload = async (file: File) => {
     if (file.type !== "application/pdf") {
       toast.error("Поддерживается только PDF");
