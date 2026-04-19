@@ -1098,8 +1098,19 @@ export function TechnicalAuditTab({ projectId }: Props) {
             </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <Button variant="outline" size="sm" className="gap-1.5 text-[12px]">
-              <Download className="h-3.5 w-3.5" /> Скачать PDF отчёт
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-[12px]"
+              disabled={!lastDoneJobId || downloadingPdf}
+              onClick={handleDownloadPdf}
+              title={!lastDoneJobId ? "Сначала запустите аудит" : undefined}
+            >
+              {downloadingPdf ? (
+                <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Генерация PDF...</>
+              ) : (
+                <><Download className="h-3.5 w-3.5" /> {lastDoneJobId ? "Скачать PDF отчёт" : "Сначала запустите аудит"}</>
+              )}
             </Button>
             {(jobId || scanStatus !== "idle") && (
               <Button
