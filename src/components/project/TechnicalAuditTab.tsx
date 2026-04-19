@@ -215,6 +215,7 @@ const SECTIONS: SectionDef[] = [
       { code: "missing_h2", label: "Страницы без заголовка H2", severity: "warning" },
       { code: "heading_hierarchy", label: "Нарушена иерархия заголовков", severity: "warning" },
       { code: "missing_alt", label: "Картинки без alt", severity: "warning" },
+      { code: "heavy_image", label: "Тяжелые изображения", severity: "warning" },
       { code: "empty_page", label: "Пустые страницы (<50 слов)", severity: "warning" },
       { code: "page_too_large", label: "Большой размер страницы (>200kb)", severity: "warning" },
       { code: "keyword_stuffing", label: "Возможный keyword stuffing", severity: "warning" },
