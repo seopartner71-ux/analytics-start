@@ -409,6 +409,8 @@ function ProjectDetailInner() {
           />
         );
       }
+      case "chat":
+        return <ProjectChatTab projectId={project.id} projectName={project.name} />;
       case "integrations":
         return <IntegrationsTab projectId={project.id} integrations={integrations} />;
       case "settings":
