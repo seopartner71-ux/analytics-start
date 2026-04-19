@@ -1566,6 +1566,101 @@ export type Database = {
         }
         Relationships: []
       }
+      onboarding_tasks: {
+        Row: {
+          assignee_id: string | null
+          assignee_role: string
+          checked: boolean
+          comment: string | null
+          completed_at: string | null
+          completed_by: string | null
+          completed_by_name: string | null
+          created_at: string
+          due_date: string | null
+          id: string
+          onboarding_id: string
+          period: number
+          project_id: string
+          sort_order: number
+          status: string
+          template_id: string | null
+          title: string
+          updated_at: string
+          week: number
+        }
+        Insert: {
+          assignee_id?: string | null
+          assignee_role?: string
+          checked?: boolean
+          comment?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          completed_by_name?: string | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          onboarding_id: string
+          period: number
+          project_id: string
+          sort_order?: number
+          status?: string
+          template_id?: string | null
+          title: string
+          updated_at?: string
+          week: number
+        }
+        Update: {
+          assignee_id?: string | null
+          assignee_role?: string
+          checked?: boolean
+          comment?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          completed_by_name?: string | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          onboarding_id?: string
+          period?: number
+          project_id?: string
+          sort_order?: number
+          status?: string
+          template_id?: string | null
+          title?: string
+          updated_at?: string
+          week?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_tasks_assignee_id_fkey"
+            columns: ["assignee_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_tasks_onboarding_id_fkey"
+            columns: ["onboarding_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_tasks_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_task_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           agency_name: string | null
@@ -2576,6 +2671,10 @@ export type Database = {
         Returns: boolean
       }
       notify_overdue_tasks: { Args: never; Returns: undefined }
+      recalc_onboarding_progress: {
+        Args: { p_onboarding_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "viewer" | "manager"
