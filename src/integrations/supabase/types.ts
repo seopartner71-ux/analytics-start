@@ -1211,6 +1211,45 @@ export type Database = {
           },
         ]
       }
+      knowledge_articles: {
+        Row: {
+          author_id: string
+          category: string
+          content: string
+          created_at: string
+          id: string
+          tags: string[]
+          title: string
+          updated_at: string
+          updated_by: string | null
+          views_count: number
+        }
+        Insert: {
+          author_id: string
+          category?: string
+          content?: string
+          created_at?: string
+          id?: string
+          tags?: string[]
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+          views_count?: number
+        }
+        Update: {
+          author_id?: string
+          category?: string
+          content?: string
+          created_at?: string
+          id?: string
+          tags?: string[]
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          views_count?: number
+        }
+        Relationships: []
+      }
       link_profile: {
         Row: {
           acceptor_url: string
@@ -1527,6 +1566,39 @@ export type Database = {
           },
         ]
       }
+      onboarding_task_articles: {
+        Row: {
+          article_id: string
+          created_at: string
+          task_id: string
+        }
+        Insert: {
+          article_id: string
+          created_at?: string
+          task_id: string
+        }
+        Update: {
+          article_id?: string
+          created_at?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_task_articles_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_task_articles_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       onboarding_task_templates: {
         Row: {
           assignee_role: string
@@ -1654,6 +1726,39 @@ export type Database = {
           },
           {
             foreignKeyName: "onboarding_tasks_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_task_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      onboarding_template_articles: {
+        Row: {
+          article_id: string
+          created_at: string
+          template_id: string
+        }
+        Insert: {
+          article_id: string
+          created_at?: string
+          template_id: string
+        }
+        Update: {
+          article_id?: string
+          created_at?: string
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_template_articles_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_template_articles_template_id_fkey"
             columns: ["template_id"]
             isOneToOne: false
             referencedRelation: "onboarding_task_templates"
@@ -2665,6 +2770,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_article_views: {
+        Args: { p_article_id: string }
+        Returns: undefined
       }
       is_project_participant: {
         Args: { _project_id: string; _user_id: string }
