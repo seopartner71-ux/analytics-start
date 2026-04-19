@@ -97,21 +97,21 @@ export default function PlanFactPage() {
     }
     return projects.map((p) => {
       const actualHours = (totals.get(p.id) || 0) / 60;
-      const planned = Number(p.planned_hours) || 0;
-      const rate = Number(p.hourly_rate) || 0;
-      // Доход (бюджет) = План часов × Ставка клиенту. Fallback на monthly_budget если ставка не задана.
-      const budget = planned > 0 && rate > 0 ? planned * rate : Number(p.monthly_budget) || 0;
-      // Себестоимость = Факт часов × Глобальная себестоимость часа (2500₽)
+      const budget = Number(p.monthly_budget) || 0;
+      // Доступно часов = Бюджет договора / Себестоимость часа (2500₽)
+      const planned = hourCost > 0 ? budget / hourCost : 0;
+      // Себестоимость факт = Факт часов × Себестоимость часа
       const cost = actualHours * hourCost;
       const profit = budget - cost;
       const margin = budget > 0 ? (profit / budget) * 100 : 0;
       const usagePct = planned > 0 ? Math.min(999, (actualHours / planned) * 100) : 0;
+      const remaining = planned - actualHours;
       let status: "ok" | "warn" | "over" | "no-plan" = "no-plan";
       if (planned === 0) status = "no-plan";
       else if (usagePct > 110) status = "over";
       else if (usagePct >= 90) status = "warn";
       else status = "ok";
-      return { ...p, actualHours, planned, rate, budget, cost, profit, margin, usagePct, status };
+      return { ...p, actualHours, planned, remaining, budget, cost, profit, margin, usagePct, status };
     });
   }, [projects, entries, hourCost]);
 
@@ -227,7 +227,7 @@ export default function PlanFactPage() {
               {fmtMoney(summary.totalProfit)}
             </div>
             <div className="text-[11px] text-muted-foreground mt-1">
-              Маржа: {summary.totalBudget > 0 ? Math.round((summary.totalProfit / summary.totalBudget) * 100) : 0}%
+              Средняя маржа: {Math.round(summary.avgMargin)}%
             </div>
           </CardContent>
         </Card>
@@ -238,8 +238,10 @@ export default function PlanFactPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 pt-0">
-            <div className="text-2xl font-semibold text-destructive">{summary.lossCount}</div>
-            <div className="text-[11px] text-muted-foreground mt-1">Превышение часов: {summary.overCount}</div>
+            <div className={`text-2xl font-semibold ${summary.problemCount > 0 ? "text-destructive" : ""}`}>
+              {summary.problemCount}
+            </div>
+            <div className="text-[11px] text-muted-foreground mt-1">Критично (&gt;110%): {summary.overCount}</div>
           </CardContent>
         </Card>
       </div>
@@ -257,7 +259,7 @@ export default function PlanFactPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Проект</TableHead>
-                <TableHead className="text-right">План, ч</TableHead>
+                <TableHead className="text-right">Доступно, ч</TableHead>
                 <TableHead className="text-right">Факт, ч</TableHead>
                 <TableHead className="w-[180px]">Использование</TableHead>
                 <TableHead className="text-right">Бюджет</TableHead>
@@ -275,7 +277,7 @@ export default function PlanFactPage() {
                 </TableRow>
               )}
               {rows.map((r) => (
-                <TableRow key={r.id} className={r.status === "loss" ? "bg-destructive/5" : ""}>
+                <TableRow key={r.id} className={r.status === "over" ? "bg-destructive/5" : ""}>
                   <TableCell className="font-medium text-[13px]">{r.name}</TableCell>
                   <TableCell className="text-right text-[13px] tabular-nums">
                     {r.planned > 0 ? fmtHours(r.planned) : <span className="text-muted-foreground">—</span>}
@@ -298,7 +300,7 @@ export default function PlanFactPage() {
                     {r.budget > 0 ? fmtMoney(r.budget) : <span className="text-muted-foreground">—</span>}
                   </TableCell>
                   <TableCell className="text-right text-[13px] tabular-nums text-muted-foreground">
-                    {r.rate > 0 ? fmtMoney(r.cost) : <span>—</span>}
+                    {r.actualHours > 0 ? fmtMoney(r.cost) : <span>—</span>}
                   </TableCell>
                   <TableCell className={`text-right text-[13px] tabular-nums font-medium ${r.profit < 0 ? "text-destructive" : r.budget > 0 ? "text-emerald-500" : ""}`}>
                     {r.budget > 0 || r.cost > 0 ? fmtMoney(r.profit) : <span className="text-muted-foreground">—</span>}
