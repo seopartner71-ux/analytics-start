@@ -1445,6 +1445,82 @@ export type Database = {
           },
         ]
       }
+      project_message_reads: {
+        Row: {
+          last_read_at: string
+          project_id: string
+          user_id: string
+        }
+        Insert: {
+          last_read_at?: string
+          project_id: string
+          user_id: string
+        }
+        Update: {
+          last_read_at?: string
+          project_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_message_reads_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_messages: {
+        Row: {
+          attachment_mime: string | null
+          attachment_name: string | null
+          attachment_url: string | null
+          body: string
+          created_at: string
+          id: string
+          is_system: boolean
+          mentions: string[]
+          project_id: string
+          user_id: string | null
+          user_name: string
+        }
+        Insert: {
+          attachment_mime?: string | null
+          attachment_name?: string | null
+          attachment_url?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          is_system?: boolean
+          mentions?: string[]
+          project_id: string
+          user_id?: string | null
+          user_name?: string
+        }
+        Update: {
+          attachment_mime?: string | null
+          attachment_name?: string | null
+          attachment_url?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          is_system?: boolean
+          mentions?: string[]
+          project_id?: string
+          user_id?: string | null
+          user_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_messages_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           account_manager: string | null
@@ -2112,6 +2188,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_project_participant: {
+        Args: { _project_id: string; _user_id: string }
         Returns: boolean
       }
       notify_overdue_tasks: { Args: never; Returns: undefined }
