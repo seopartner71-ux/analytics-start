@@ -827,6 +827,35 @@ export function TechnicalAuditTab({ projectId }: Props) {
   const queryClient = useQueryClient();
   const [resetting, setResetting] = useState(false);
   const [stopping, setStopping] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [lastDoneJobId, setLastDoneJobId] = useState<string | null>(null);
+
+  const handleDownloadPdf = async () => {
+    if (!lastDoneJobId) {
+      toast.error("Сначала запустите аудит");
+      return;
+    }
+    setDownloadingPdf(true);
+    try {
+      const res = await fetch(`http://155.212.221.64:8000/report/${lastDoneJobId}?secret=3384233842`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const safeDomain = (domain && domain !== "—" ? domain : "site").replace(/[^a-z0-9.-]/gi, "_");
+      a.download = `seo-report-${safeDomain}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast.success("PDF отчёт скачан");
+    } catch (e: any) {
+      toast.error("Не удалось скачать PDF: " + (e?.message ?? ""));
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
 
   const handleStopScan = async () => {
     if (!jobId) return;
