@@ -51,6 +51,19 @@ export default function PlanFactPage() {
     }
   };
 
+  const { data: hourCost = 2500 } = useQuery<number>({
+    queryKey: ["app-setting", "hour_cost"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("app_settings")
+        .select("value")
+        .eq("key", "hour_cost")
+        .maybeSingle();
+      const v = Number(data?.value);
+      return Number.isFinite(v) && v > 0 ? v : 2500;
+    },
+  });
+
   const { data: projects = [] } = useQuery<ProjectRow[]>({
     queryKey: ["plan-fact-projects"],
     queryFn: async () => {
