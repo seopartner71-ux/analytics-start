@@ -330,6 +330,9 @@ export default function CrmProjectDetailPage() {
       {/* Tab switcher */}
       <Tabs defaultValue={defaultTab} className="w-full">
         <TabsList className="mb-4">
+          <TabsTrigger value="onboarding" className="gap-1.5 text-[13px]">
+            <Rocket className="h-3.5 w-3.5" /> Онбординг
+          </TabsTrigger>
           <TabsTrigger value="checklist" className="gap-1.5 text-[13px]">
             <FileText className="h-3.5 w-3.5" /> Задачи
           </TabsTrigger>
