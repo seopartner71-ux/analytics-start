@@ -357,7 +357,7 @@ export default function CrmProjectDetailPage() {
         </TabsList>
 
         <TabsContent value="chat">
-          <ProjectChatTab projectId={id!} />
+          <ProjectChatTab projectId={id!} projectName={project?.name || ""} />
         </TabsContent>
 
         <TabsContent value="analytics">
