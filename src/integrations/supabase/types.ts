@@ -38,6 +38,33 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_feedback: {
+        Row: {
+          answer: string | null
+          created_at: string
+          id: string
+          question: string
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          answer?: string | null
+          created_at?: string
+          id?: string
+          question: string
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          answer?: string | null
+          created_at?: string
+          id?: string
+          question?: string
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       app_settings: {
         Row: {
           created_at: string
@@ -1273,6 +1300,89 @@ export type Database = {
           views_count?: number
         }
         Relationships: []
+      }
+      knowledge_books: {
+        Row: {
+          chunks_count: number
+          created_at: string
+          error_message: string | null
+          file_name: string
+          file_path: string | null
+          id: string
+          pages_count: number
+          status: string
+          title: string
+          updated_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          chunks_count?: number
+          created_at?: string
+          error_message?: string | null
+          file_name: string
+          file_path?: string | null
+          id?: string
+          pages_count?: number
+          status?: string
+          title: string
+          updated_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          chunks_count?: number
+          created_at?: string
+          error_message?: string | null
+          file_name?: string
+          file_path?: string | null
+          id?: string
+          pages_count?: number
+          status?: string
+          title?: string
+          updated_at?: string
+          uploaded_by?: string
+        }
+        Relationships: []
+      }
+      knowledge_chunks: {
+        Row: {
+          book_id: string | null
+          chunk_index: number
+          content: string
+          created_at: string
+          embedding: string | null
+          id: number
+          page_number: number
+          source: string
+        }
+        Insert: {
+          book_id?: string | null
+          chunk_index?: number
+          content: string
+          created_at?: string
+          embedding?: string | null
+          id?: number
+          page_number?: number
+          source: string
+        }
+        Update: {
+          book_id?: string | null
+          chunk_index?: number
+          content?: string
+          created_at?: string
+          embedding?: string | null
+          id?: number
+          page_number?: number
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_chunks_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_books"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       link_profile: {
         Row: {
@@ -2802,6 +2912,20 @@ export type Database = {
       is_project_participant: {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
+      }
+      match_chunks: {
+        Args: {
+          match_count?: number
+          match_threshold?: number
+          query_embedding: string
+        }
+        Returns: {
+          content: string
+          id: number
+          page_number: number
+          similarity: number
+          source: string
+        }[]
       }
       notify_overdue_tasks: { Args: never; Returns: undefined }
       recalc_onboarding_progress: {
