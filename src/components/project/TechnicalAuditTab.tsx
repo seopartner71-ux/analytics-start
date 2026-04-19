@@ -162,6 +162,7 @@ const SECTIONS: SectionDef[] = [
     types: ["links"],
     checks: [
       { code: "broken_link", label: "Битые внутренние ссылки", severity: "critical" },
+      { code: "broken_external_link", label: "Битые внешние ссылки", severity: "warning" },
       { code: "http_link", label: "Ссылки с HTTP на HTTPS сайте", severity: "warning" },
       { code: "redirect_301", label: "Внутренние ссылки ведут на редирект 301", severity: "warning" },
       { code: "external_link", label: "Исходящие внешние ссылки", severity: "info" },
