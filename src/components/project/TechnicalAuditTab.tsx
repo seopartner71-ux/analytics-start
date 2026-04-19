@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { ChevronDown, ChevronRight, Download, ExternalLink, ShieldAlert, Link2, FileSearch, CheckCircle2, AlertTriangle, Info, AlertCircle, HelpCircle, Trash2, Lock } from "lucide-react";
+import { ChevronDown, ChevronRight, Download, ExternalLink, ShieldAlert, Link2, FileSearch, CheckCircle2, AlertTriangle, Info, AlertCircle, HelpCircle, Trash2, Lock, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -827,6 +827,35 @@ export function TechnicalAuditTab({ projectId }: Props) {
   const queryClient = useQueryClient();
   const [resetting, setResetting] = useState(false);
   const [stopping, setStopping] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [lastDoneJobId, setLastDoneJobId] = useState<string | null>(null);
+
+  const handleDownloadPdf = async () => {
+    if (!lastDoneJobId) {
+      toast.error("Сначала запустите аудит");
+      return;
+    }
+    setDownloadingPdf(true);
+    try {
+      const res = await fetch(`http://155.212.221.64:8000/report/${lastDoneJobId}?secret=3384233842`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const safeDomain = (domain && domain !== "—" ? domain : "site").replace(/[^a-z0-9.-]/gi, "_");
+      a.download = `seo-report-${safeDomain}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast.success("PDF отчёт скачан");
+    } catch (e: any) {
+      toast.error("Не удалось скачать PDF: " + (e?.message ?? ""));
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
 
   const handleStopScan = async () => {
     if (!jobId) return;
@@ -912,8 +941,21 @@ export function TechnicalAuditTab({ projectId }: Props) {
         setScanProgress(data.progress ?? 0);
         if (data.status !== "idle") setShowSfPanel(true);
       }
+      const { data: doneJob } = await supabase
+        .from("crawl_jobs")
+        .select("id")
+        .eq("project_id", projectId)
+        .eq("status", "done")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (doneJob) setLastDoneJobId(doneJob.id);
     })();
   }, [projectId]);
+
+  useEffect(() => {
+    if (scanStatus === "done" && jobId) setLastDoneJobId(jobId);
+  }, [scanStatus, jobId]);
 
   const { data: jobStats } = useQuery({
     queryKey: ["crawl-stats", jobId],
@@ -1056,8 +1098,19 @@ export function TechnicalAuditTab({ projectId }: Props) {
             </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <Button variant="outline" size="sm" className="gap-1.5 text-[12px]">
-              <Download className="h-3.5 w-3.5" /> Скачать PDF отчёт
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-[12px]"
+              disabled={!lastDoneJobId || downloadingPdf}
+              onClick={handleDownloadPdf}
+              title={!lastDoneJobId ? "Сначала запустите аудит" : undefined}
+            >
+              {downloadingPdf ? (
+                <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Генерация PDF...</>
+              ) : (
+                <><Download className="h-3.5 w-3.5" /> {lastDoneJobId ? "Скачать PDF отчёт" : "Сначала запустите аудит"}</>
+              )}
             </Button>
             {(jobId || scanStatus !== "idle") && (
               <Button
