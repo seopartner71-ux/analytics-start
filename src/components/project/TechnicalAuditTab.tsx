@@ -1189,16 +1189,12 @@ export function TechnicalAuditTab({ projectId }: Props) {
               </div>
             </div>
 
-            {/* Правая часть: прогресс + счётчик страниц + проценты */}
+            {/* Правая часть: прогресс + счётчик страниц */}
             {statusBanner.showProgress ? (
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 <Progress value={Math.min(scanProgress, 100)} className="h-2 bg-muted flex-1" />
                 <span className={cn("text-[12px] font-semibold tabular-nums whitespace-nowrap shrink-0", statusBanner.text)}>
-                  {scannedPages} {pageWord(scannedPages)}
-                </span>
-                <span className="text-muted-foreground/60 text-[11px]">·</span>
-                <span className={cn("text-[12px] font-semibold tabular-nums whitespace-nowrap shrink-0 min-w-[3.5ch] text-right", statusBanner.text)}>
-                  {Math.round(scanProgress)}%
+                  {Math.max(scannedPages, Math.round(scanProgress))} {pageWord(Math.max(scannedPages, Math.round(scanProgress)))}
                 </span>
               </div>
             ) : (
