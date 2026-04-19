@@ -135,6 +135,7 @@ export default function OnboardingPage() {
           )}
         </CardContent>
       </Card>
+      </div>
 
       <OnboardingWizard open={wizardOpen} onOpenChange={setWizardOpen} onCreated={load} />
     </div>
