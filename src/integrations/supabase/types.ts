@@ -1211,6 +1211,65 @@ export type Database = {
           },
         ]
       }
+      link_profile: {
+        Row: {
+          acceptor_url: string
+          anchor: string
+          cost: number
+          created_at: string
+          donor_url: string
+          id: string
+          last_checked_at: string | null
+          last_error: string | null
+          last_status_code: number | null
+          placed_at: string | null
+          project_id: string
+          status: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          acceptor_url: string
+          anchor?: string
+          cost?: number
+          created_at?: string
+          donor_url: string
+          id?: string
+          last_checked_at?: string | null
+          last_error?: string | null
+          last_status_code?: number | null
+          placed_at?: string | null
+          project_id: string
+          status?: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          acceptor_url?: string
+          anchor?: string
+          cost?: number
+          created_at?: string
+          donor_url?: string
+          id?: string
+          last_checked_at?: string | null
+          last_error?: string | null
+          last_status_code?: number | null
+          placed_at?: string | null
+          project_id?: string
+          status?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "link_profile_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       metrika_stats: {
         Row: {
           avg_duration_seconds: number
