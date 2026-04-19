@@ -48,6 +48,30 @@ Deno.serve(async (req) => {
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
+    // 1.5 RAG: get last user question and search PDF knowledge base
+    const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
+    let ragChunks: Array<{ content: string; source: string; page_number: number; similarity: number }> = [];
+    if (lastUserMsg && Deno.env.get("OPENAI_API_KEY")) {
+      try {
+        const er = await fetch("https://api.openai.com/v1/embeddings", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${Deno.env.get("OPENAI_API_KEY")}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ model: "text-embedding-3-small", input: lastUserMsg.content.slice(0, 8000) }),
+        });
+        if (er.ok) {
+          const ej = await er.json();
+          const { data: matches } = await admin.rpc("match_chunks", {
+            query_embedding: ej.data[0].embedding as any,
+            match_threshold: 0.35,
+            match_count: 5,
+          });
+          ragChunks = matches || [];
+        }
+      } catch (e) {
+        console.warn("RAG search skipped:", e);
+      }
+    }
+
     // 2. Build context (system prompt, standards, KB titles, user tasks, project)
     const [
       { data: settingRow },
