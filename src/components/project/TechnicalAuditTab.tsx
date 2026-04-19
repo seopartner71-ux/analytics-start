@@ -902,6 +902,20 @@ export function TechnicalAuditTab({ projectId }: Props) {
     },
   });
 
+  // Счётчик просканированных страниц во время выполнения
+  const { data: scannedPages = 0 } = useQuery({
+    queryKey: ["crawl-pages-count", jobId, scanStatus],
+    enabled: !!jobId && (scanStatus === "running" || scanStatus === "pending"),
+    refetchInterval: 3000,
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("crawl_pages")
+        .select("id", { count: "exact", head: true })
+        .eq("job_id", jobId!);
+      return count ?? 0;
+    },
+  });
+
   const effectiveStats: any = stats ?? jobStats;
 
   const handleStartScan = async () => {
@@ -1042,26 +1056,35 @@ export function TechnicalAuditTab({ projectId }: Props) {
 
       {/* Большой статус-баннер */}
       {statusBanner.show && (
-        <Card className={cn("p-4 border", statusBanner.bg)}>
-          <div className="flex items-center gap-4 flex-wrap">
-            <div className="flex items-center gap-3 min-w-0 flex-1">
-              <span className={cn("h-3 w-3 rounded-full shrink-0", statusBanner.dot)} />
-              <div className="min-w-0">
-                <div className={cn("text-[14px] font-semibold", statusBanner.text)}>
+        <Card className={cn("p-3 border", statusBanner.bg)}>
+          <div className="flex items-center gap-4 min-w-0">
+            {/* Левая часть: точка + заголовок + подзаголовок */}
+            <div className="flex items-center gap-3 min-w-0 shrink-0 max-w-[40%]">
+              <span className={cn("h-2.5 w-2.5 rounded-full shrink-0", statusBanner.dot)} />
+              <div className="min-w-0 leading-tight">
+                <div className={cn("text-[13px] font-semibold whitespace-nowrap", statusBanner.text)}>
                   {statusBanner.title}
                 </div>
-                <div className="text-[12px] text-muted-foreground truncate">
+                <div className="text-[11px] text-muted-foreground truncate">
                   {statusBanner.subtitle}
                 </div>
               </div>
             </div>
-            {statusBanner.showProgress && (
-              <div className="flex items-center gap-3 min-w-[220px]">
+
+            {/* Правая часть: прогресс + счётчик страниц + проценты */}
+            {statusBanner.showProgress ? (
+              <div className="flex items-center gap-3 flex-1 min-w-0">
                 <Progress value={Math.min(scanProgress, 100)} className="h-2 bg-muted flex-1" />
-                <span className={cn("text-[12px] font-semibold tabular-nums", statusBanner.text)}>
+                <span className={cn("text-[12px] font-semibold tabular-nums whitespace-nowrap shrink-0", statusBanner.text)}>
+                  {scannedPages} {pageWord(scannedPages)}
+                </span>
+                <span className="text-muted-foreground/60 text-[11px]">·</span>
+                <span className={cn("text-[12px] font-semibold tabular-nums whitespace-nowrap shrink-0 min-w-[3.5ch] text-right", statusBanner.text)}>
                   {Math.round(scanProgress)}%
                 </span>
               </div>
+            ) : (
+              <div className="flex-1" />
             )}
           </div>
         </Card>
