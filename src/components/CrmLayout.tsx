@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { PageHeader } from "@/components/PageHeader";
+import { AiAssistantFab } from "@/components/ai/AiAssistantFab";
 
 export function CrmLayout({ children }: { children: ReactNode }) {
   return (
@@ -14,6 +15,7 @@ export function CrmLayout({ children }: { children: ReactNode }) {
             {children}
           </main>
         </div>
+        <AiAssistantFab />
       </div>
     </SidebarProvider>
   );
