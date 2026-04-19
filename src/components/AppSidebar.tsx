@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 const allNav = [
   { title: "Дашборд", url: "/", icon: LayoutDashboard, minRole: "viewer" as const },
   { title: "Дашборд директора", url: "/director", icon: Briefcase, minRole: "admin" as const },
-  { title: "SEO Проекты", url: "/crm-projects", icon: FolderKanban, minRole: "viewer" as const },
+  { title: "Проекты", url: "/crm-projects", icon: FolderKanban, minRole: "viewer" as const },
   { title: "Задачи", url: "/tasks", icon: ClipboardList, minRole: "manager" as const },
   { title: "Мои задачи", url: "/my-tasks", icon: UserCheck, minRole: "viewer" as const },
   { title: "Тайм-трекинг", url: "/time-tracking", icon: Clock, minRole: "viewer" as const },
