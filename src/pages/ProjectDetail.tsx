@@ -26,6 +26,7 @@ import { ReportBuilderTab } from "@/components/project/ReportBuilderTab";
 import { ComparisonTab } from "@/components/project/ComparisonTab";
 import { DashboardTab } from "@/components/project/DashboardTab";
 import { PositionsTab } from "@/components/project/PositionsTab";
+import { ProjectChatTab } from "@/components/project/ProjectChatTab";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { supabase } from "@/integrations/supabase/client";
 import { DateRangeProvider, useDateRange } from "@/contexts/DateRangeContext";
