@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { ChevronDown, ChevronRight, Download, ExternalLink, ShieldAlert, Link2, FileSearch, CheckCircle2, AlertTriangle, Info, AlertCircle, HelpCircle, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Download, ExternalLink, ShieldAlert, Link2, FileSearch, CheckCircle2, AlertTriangle, Info, AlertCircle, HelpCircle, Trash2, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -89,6 +89,18 @@ const CHECK_INFO: Record<string, CheckInfo> = {
   unminified_js: { importance: "Средняя", description: "JavaScript не минифицирован. Минификация уменьшает размер файлов и ускоряет загрузку страниц." },
   unminified_css: { importance: "Средняя", description: "CSS не минифицирован. Минификация уменьшает размер стилей и ускоряет загрузку страниц." },
   no_viewport: { importance: "Критическая", description: "Без мета тега viewport страница не адаптируется под мобильные устройства. Google использует mobile-first индексацию." },
+  // Безопасность
+  ssl_expiring_critical: { importance: "Критическая", description: "SSL сертификат истекает менее чем через 14 дней. После истечения сайт будет помечен браузером как небезопасный и выпадет из поиска. Срочно продлите сертификат." },
+  no_hsts: { importance: "Средняя", description: "Отсутствует заголовок HTTP Strict-Transport-Security (HSTS). HSTS заставляет браузер использовать только HTTPS и защищает от атак понижения протокола." },
+  no_x_frame_options: { importance: "Средняя", description: "Отсутствует заголовок X-Frame-Options. Без него страницу можно встроить в iframe на стороннем сайте — это уязвимость к clickjacking-атакам." },
+  no_x_content_type: { importance: "Низкая", description: "Отсутствует заголовок X-Content-Type-Options: nosniff. Без него браузер может неверно интерпретировать MIME-тип ресурсов, что создаёт риск XSS." },
+  // Контент-парсер
+  keyword_stuffing: { importance: "Средняя", description: "Возможный keyword stuffing — переспам ключевыми словами. Поисковики могут понизить страницу или применить фильтр за переоптимизацию." },
+  thin_content: { importance: "Средняя", description: "Мало текстового контента (менее 100 слов). Тонкий контент считается малополезным — поисковики занижают такие страницы в выдаче." },
+  long_sentences: { importance: "Средняя", description: "Слишком длинные предложения ухудшают читабельность текста и поведенческие факторы. Разбивайте предложения на более короткие." },
+  poor_readability: { importance: "Средняя", description: "Низкая читабельность текста. Сложный текст ухудшает поведенческие факторы и снижает время на странице." },
+  // Внешние ссылки
+  broken_external_link: { importance: "Средняя", description: "Битые внешние ссылки. Ссылки на несуществующие сторонние страницы ухудшают пользовательский опыт и доверие к сайту." },
 };
 const IMPORTANCE_CLS: Record<string, string> = {
   "Критическая": "text-red-400",
@@ -123,7 +135,6 @@ const SECTIONS: SectionDef[] = [
       { code: "ssl_expiring_soon", label: "SSL сертификат скоро истекает", severity: "critical" },
       { code: "ssl_error", label: "Ошибка SSL сертификата", severity: "critical" },
       { code: "crawl_error", label: "Ошибка при сканировании", severity: "critical" },
-      { code: "mixed_content", label: "Mixed content — HTTP ресурсы на HTTPS странице", severity: "warning" },
       { code: "no_last_modified", label: "Не установлен заголовок Last-Modified", severity: "warning" },
       { code: "cyclic_link", label: "Циклические ссылки на текущую страницу", severity: "warning" },
       { code: "no_http_to_https_redirect", label: "HTTP не редиректит на HTTPS", severity: "warning" },
@@ -150,6 +161,7 @@ const SECTIONS: SectionDef[] = [
     types: ["links"],
     checks: [
       { code: "broken_link", label: "Битые внутренние ссылки", severity: "critical" },
+      { code: "broken_external_link", label: "Битые внешние ссылки", severity: "warning" },
       { code: "http_link", label: "Ссылки с HTTP на HTTPS сайте", severity: "warning" },
       { code: "redirect_301", label: "Внутренние ссылки ведут на редирект 301", severity: "warning" },
       { code: "external_link", label: "Исходящие внешние ссылки", severity: "info" },
@@ -181,6 +193,10 @@ const SECTIONS: SectionDef[] = [
       { code: "missing_h2", label: "Страницы без заголовка H2", severity: "warning" },
       { code: "heading_hierarchy", label: "Нарушена иерархия заголовков", severity: "warning" },
       { code: "page_too_large", label: "Большой размер страницы (>200kb)", severity: "warning" },
+      { code: "keyword_stuffing", label: "Возможный keyword stuffing", severity: "warning" },
+      { code: "thin_content", label: "Мало текстового контента (<100 слов)", severity: "warning" },
+      { code: "long_sentences", label: "Слишком длинные предложения", severity: "warning" },
+      { code: "poor_readability", label: "Низкая читабельность текста", severity: "warning" },
     ],
   },
   {
@@ -230,6 +246,21 @@ const SECTIONS: SectionDef[] = [
       { code: "render_blocking", label: "Render-blocking ресурсы", severity: "warning" },
       { code: "unminified_js", label: "JavaScript не минифицирован", severity: "warning" },
       { code: "unminified_css", label: "CSS не минифицирован", severity: "warning" },
+    ],
+  },
+  {
+    id: "security",
+    title: "Безопасность",
+    description: "SSL сертификат, mixed content и заголовки безопасности",
+    icon: Lock,
+    types: ["security"],
+    checks: [
+      { code: "ssl_expiring_critical", label: "SSL сертификат истекает менее чем через 14 дней", severity: "critical" },
+      { code: "ssl_expiring_soon", label: "SSL сертификат истекает менее чем через 30 дней", severity: "warning" },
+      { code: "mixed_content", label: "Mixed content — HTTP ресурсы на HTTPS странице", severity: "warning" },
+      { code: "no_hsts", label: "Нет заголовка HSTS", severity: "warning" },
+      { code: "no_x_frame_options", label: "Нет заголовка X-Frame-Options", severity: "info" },
+      { code: "no_x_content_type", label: "Нет заголовка X-Content-Type-Options", severity: "info" },
     ],
   },
 ];
