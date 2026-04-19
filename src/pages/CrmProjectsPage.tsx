@@ -229,9 +229,9 @@ export default function CrmProjectsPage() {
     <div className="space-y-4">
       {/* Filter bar */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap w-full md:w-auto">
           {(["all", "my", "overdue"] as const).map(f => {
-            const labels = { all: "Все проекты", my: "Мои проекты", overdue: "Просроченные" };
+            const labels = { all: "Все", my: "Мои", overdue: "Просрочен." };
             return (
               <button
                 key={f}
@@ -248,21 +248,21 @@ export default function CrmProjectsPage() {
             );
           })}
 
-          <div className="w-px h-6 bg-border mx-1" />
+          <div className="hidden md:block w-px h-6 bg-border mx-1" />
 
-          <div className="relative">
+          <div className="relative flex-1 md:flex-initial min-w-[160px] order-last md:order-none w-full md:w-auto">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <Input
-              placeholder="Поиск по клиенту или домену..."
+              placeholder="Поиск..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="pl-8 h-8 w-64 text-[13px] bg-card border-border"
+              className="pl-8 h-8 w-full md:w-64 text-[13px] bg-card border-border"
             />
           </div>
 
-          <div className="w-px h-6 bg-border mx-1" />
+          <div className="hidden md:block w-px h-6 bg-border mx-1" />
 
-          <div className="flex items-center border border-border rounded-md overflow-hidden">
+          <div className="flex items-center border border-border rounded-md overflow-hidden ml-auto md:ml-0">
             <button
               onClick={() => setView("kanban")}
               className={cn("p-1.5 transition-colors", view === "kanban" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:text-foreground")}
@@ -283,7 +283,7 @@ export default function CrmProjectsPage() {
         {canAddProject(role) && (
           <Dialog open={addOpen} onOpenChange={setAddOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 h-9 text-[13px] shadow-sm">
+              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 h-9 text-[13px] shadow-sm w-full md:w-auto">
                 <Plus className="h-4 w-4" /> Добавить проект
               </Button>
             </DialogTrigger>
