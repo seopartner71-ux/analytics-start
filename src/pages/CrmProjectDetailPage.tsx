@@ -30,7 +30,7 @@ import { TaskDetailSheet, CrmTask } from "@/components/project/TaskDetailSheet";
 import { TechnicalAuditTab } from "@/components/project/TechnicalAuditTab";
 import { MobileFriendlyTab } from "@/components/project/MobileFriendlyTab";
 import { PageSpeedTab } from "@/components/project/PageSpeedTab";
-import { OnboardingTab } from "@/components/project/OnboardingTab";
+
 import { YandexWebmasterTab } from "@/components/project/YandexWebmasterTab";
 import { GscAnalysisTab } from "@/components/project/GscAnalysisTab";
 import { ProjectChatTab } from "@/components/project/ProjectChatTab";
@@ -331,9 +331,6 @@ export default function CrmProjectDetailPage() {
       {/* Tab switcher */}
       <Tabs defaultValue={defaultTab} className="w-full">
         <TabsList className="mb-4">
-          <TabsTrigger value="onboarding" className="gap-1.5 text-[13px]">
-            <Rocket className="h-3.5 w-3.5" /> Онбординг
-          </TabsTrigger>
           <TabsTrigger value="checklist" className="gap-1.5 text-[13px]">
             <FileText className="h-3.5 w-3.5" /> Задачи
           </TabsTrigger>
@@ -386,10 +383,6 @@ export default function CrmProjectDetailPage() {
 
         <TabsContent value="pagespeed">
           <PageSpeedTab projectId={id!} />
-        </TabsContent>
-
-        <TabsContent value="onboarding">
-          <OnboardingTab projectId={id!} />
         </TabsContent>
 
         <TabsContent value="checklist">
