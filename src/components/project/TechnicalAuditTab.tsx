@@ -248,6 +248,7 @@ const SECTIONS: SectionDef[] = [
       { code: "unminified_js", label: "JavaScript не минифицирован", severity: "warning" },
       { code: "unminified_css", label: "CSS не минифицирован", severity: "warning" },
     ],
+  },
   {
     id: "security",
     title: "Безопасность",
