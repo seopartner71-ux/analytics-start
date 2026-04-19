@@ -32,6 +32,7 @@ const allNav = [
   { title: "Сотрудники", url: "/employees", icon: Users, minRole: "admin" as const },
   { title: "Отчёты", url: "/reports", icon: FileText, minRole: "manager" as const },
   { title: "База знаний", url: "/knowledge", icon: BookOpen, minRole: "viewer" as const },
+  { title: "📚 Книги для AI", url: "/knowledge-books", icon: BookOpen, minRole: "admin" as const },
   { title: "Чат", url: "/chat", icon: MessageSquare, minRole: "viewer" as const },
   { title: "Финансы", url: "/finance", icon: Wallet, minRole: "admin" as const },
   { title: "Интеграции", url: "/admin?tab=keys", icon: Plug, minRole: "admin" as const },

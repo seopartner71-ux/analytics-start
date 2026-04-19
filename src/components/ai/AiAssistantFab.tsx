@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { Bot, Send, Loader2, X, Sparkles, Trash2 } from "lucide-react";
+import { Bot, Send, Loader2, X, Sparkles, Trash2, ThumbsDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -135,6 +135,22 @@ export function AiAssistantFab() {
     toast.success("История очищена");
   };
 
+  const reportNotHelpful = async () => {
+    if (!user) return;
+    // last user/assistant pair
+    let lastUser = "", lastAns = "";
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (!lastAns && messages[i].role === "assistant") lastAns = messages[i].content;
+      else if (lastAns && messages[i].role === "user") { lastUser = messages[i].content; break; }
+    }
+    if (!lastUser) return toast.error("Нет вопроса для отметки");
+    const { error } = await supabase.from("ai_feedback").insert({
+      user_id: user.id, question: lastUser, answer: lastAns, reason: "not_helpful",
+    });
+    if (error) toast.error(error.message);
+    else toast.success("Спасибо! Админ увидит ваш вопрос и пополнит базу знаний.");
+  };
+
   if (!user) return null;
 
   return (
@@ -217,6 +233,13 @@ export function AiAssistantFab() {
                   <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce" />
                   <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:120ms]" />
                   <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:240ms]" />
+                </div>
+              )}
+              {!streaming && messages.length > 0 && messages[messages.length - 1].role === "assistant" && messages[messages.length - 1].content && (
+                <div className="flex justify-start pl-1">
+                  <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground hover:text-foreground gap-1" onClick={reportNotHelpful}>
+                    <ThumbsDown className="h-3 w-3" /> Не помогло
+                  </Button>
                 </div>
               )}
             </div>

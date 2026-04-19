@@ -35,6 +35,7 @@ import EmployeeKpiPage from "./pages/EmployeeKpiPage";
 import PlanFactPage from "./pages/PlanFactPage";
 import OnboardingPage from "./pages/OnboardingPage";
 import KnowledgeBasePage from "./pages/KnowledgeBasePage";
+import KnowledgeBooksPage from "./pages/KnowledgeBooksPage";
 import { CrmLayout } from "./components/CrmLayout";
 
 const queryClient = new QueryClient();
@@ -76,6 +77,7 @@ const App = () => (
                 <Route path="/plan-fact" element={<ProtectedRoute><CrmLayout><PlanFactPage /></CrmLayout></ProtectedRoute>} />
                 <Route path="/onboarding" element={<ProtectedRoute><CrmLayout><OnboardingPage /></CrmLayout></ProtectedRoute>} />
                 <Route path="/knowledge" element={<ProtectedRoute><CrmLayout><KnowledgeBasePage /></CrmLayout></ProtectedRoute>} />
+                <Route path="/knowledge-books" element={<ProtectedRoute><CrmLayout><KnowledgeBooksPage /></CrmLayout></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
