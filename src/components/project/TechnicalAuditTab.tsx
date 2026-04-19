@@ -826,6 +826,26 @@ export function TechnicalAuditTab({ projectId }: Props) {
   const channelRef = useRef<any>(null);
   const queryClient = useQueryClient();
   const [resetting, setResetting] = useState(false);
+  const [stopping, setStopping] = useState(false);
+
+  const handleStopScan = async () => {
+    if (!jobId) return;
+    if (!confirm("Остановить текущий аудит? Прогресс будет помечен как прерванный.")) return;
+    setStopping(true);
+    try {
+      const { error } = await supabase
+        .from("crawl_jobs")
+        .update({ status: "error", error_message: "Остановлено пользователем", finished_at: new Date().toISOString() })
+        .eq("id", jobId);
+      if (error) throw error;
+      setScanStatus("error");
+      toast.success("Аудит остановлен");
+    } catch (e: any) {
+      toast.error("Не удалось остановить аудит: " + (e?.message ?? ""));
+    } finally {
+      setStopping(false);
+    }
+  };
 
   const handleResetAll = async () => {
     if (!confirm("Удалить все данные сканирования по этому проекту? Действие необратимо.")) return;
@@ -1049,6 +1069,18 @@ export function TechnicalAuditTab({ projectId }: Props) {
               >
                 <Trash2 className="h-3.5 w-3.5" />
                 {resetting ? "Сброс..." : "Сбросить данные"}
+              </Button>
+            )}
+            {isRunning && jobId && (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={stopping}
+                onClick={handleStopScan}
+                className="gap-1.5 text-[12px] border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              >
+                <span className="h-2.5 w-2.5 rounded-sm bg-destructive" />
+                {stopping ? "Останавливаем..." : "Стоп аудит"}
               </Button>
             )}
             <Button
