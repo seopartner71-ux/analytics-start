@@ -259,7 +259,7 @@ export default function PlanFactPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Проект</TableHead>
-                <TableHead className="text-right">План, ч</TableHead>
+                <TableHead className="text-right">Доступно, ч</TableHead>
                 <TableHead className="text-right">Факт, ч</TableHead>
                 <TableHead className="w-[180px]">Использование</TableHead>
                 <TableHead className="text-right">Бюджет</TableHead>
