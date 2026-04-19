@@ -300,7 +300,7 @@ export default function PlanFactPage() {
                     {r.budget > 0 ? fmtMoney(r.budget) : <span className="text-muted-foreground">—</span>}
                   </TableCell>
                   <TableCell className="text-right text-[13px] tabular-nums text-muted-foreground">
-                    {r.rate > 0 ? fmtMoney(r.cost) : <span>—</span>}
+                    {r.actualHours > 0 ? fmtMoney(r.cost) : <span>—</span>}
                   </TableCell>
                   <TableCell className={`text-right text-[13px] tabular-nums font-medium ${r.profit < 0 ? "text-destructive" : r.budget > 0 ? "text-emerald-500" : ""}`}>
                     {r.budget > 0 || r.cost > 0 ? fmtMoney(r.profit) : <span className="text-muted-foreground">—</span>}
