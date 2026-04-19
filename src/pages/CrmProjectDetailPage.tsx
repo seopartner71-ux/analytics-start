@@ -291,13 +291,13 @@ export default function CrmProjectDetailPage() {
     <div className="space-y-5">
       {/* Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/crm-projects")} className="h-8 w-8 text-muted-foreground">
+        <div className="flex items-center gap-3 min-w-0 w-full md:w-auto">
+          <Button variant="ghost" size="icon" onClick={() => navigate("/crm-projects")} className="h-8 w-8 text-muted-foreground shrink-0">
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-xl font-bold text-foreground">{project.company?.name || project.name}</h1>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-lg md:text-xl font-bold text-foreground truncate">{project.company?.name || project.name}</h1>
               <Badge
                 className="text-[11px] font-medium border-0"
                 style={{ backgroundColor: `${currentStage?.color || '#9E9E9E'}20`, color: currentStage?.color || '#9E9E9E' }}
@@ -306,25 +306,27 @@ export default function CrmProjectDetailPage() {
               </Badge>
             </div>
             {project.url && (
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <Globe className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="text-[13px] text-muted-foreground">{project.url}</span>
+              <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
+                <Globe className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <span className="text-[13px] text-muted-foreground truncate">{project.url}</span>
               </div>
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto scrollbar-none">
           {managerName && (
-            <div className="flex items-center gap-2 mr-3">
+            <div className="hidden md:flex items-center gap-2 mr-3">
               <AvatarCircle name={managerName} size="md" />
               <span className="text-[13px] text-foreground">{managerName}</span>
             </div>
           )}
-          <Button variant="outline" size="sm" className="h-8 text-[13px] gap-1.5" onClick={() => setEditOpen(true)}>
-            <Edit className="h-3.5 w-3.5" /> Редактировать
+          <Button variant="outline" size="sm" className="h-8 text-[13px] gap-1.5 shrink-0" onClick={() => setEditOpen(true)}>
+            <Edit className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Редактировать</span>
           </Button>
-          <Button variant="outline" size="sm" className="h-8 text-[13px] gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/5">
-            <XCircle className="h-3.5 w-3.5" /> Закрыть проект
+          <Button variant="outline" size="sm" className="h-8 text-[13px] gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/5 shrink-0">
+            <XCircle className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Закрыть проект</span>
           </Button>
         </div>
       </div>
