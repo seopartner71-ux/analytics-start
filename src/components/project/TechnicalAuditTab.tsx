@@ -878,7 +878,7 @@ export function TechnicalAuditTab({ projectId }: Props) {
 
   const handleStopScan = async () => {
     if (!jobId) return;
-    if (!confirm("Остановить текущий аудит? Прогресс будет помечен как прерванный.")) return;
+    setConfirmStopOpen(false);
     setStopping(true);
     try {
       const { error } = await supabase
