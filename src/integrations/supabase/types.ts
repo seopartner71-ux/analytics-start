@@ -2425,6 +2425,54 @@ export type Database = {
           },
         ]
       }
+      project_members: {
+        Row: {
+          added_by: string | null
+          created_at: string
+          id: string
+          notifications_enabled: boolean
+          project_id: string
+          role: string
+          team_member_id: string
+          updated_at: string
+        }
+        Insert: {
+          added_by?: string | null
+          created_at?: string
+          id?: string
+          notifications_enabled?: boolean
+          project_id: string
+          role?: string
+          team_member_id: string
+          updated_at?: string
+        }
+        Update: {
+          added_by?: string | null
+          created_at?: string
+          id?: string
+          notifications_enabled?: boolean
+          project_id?: string
+          role?: string
+          team_member_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_members_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_members_team_member_id_fkey"
+            columns: ["team_member_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_message_reactions: {
         Row: {
           created_at: string
