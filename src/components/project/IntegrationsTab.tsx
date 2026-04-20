@@ -267,15 +267,21 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
   };
 
   const handleTopvisorConnect = () => {
-    if (!tvApiKey.trim() || !tvProjectId.trim() || !tvUserId.trim()) {
+    const normalizedUserId = tvUserId.trim();
+    if (!tvApiKey.trim() || !tvProjectId.trim() || !normalizedUserId) {
       toast.error(t("integrations.fillFields"));
+      return;
+    }
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailPattern.test(normalizedUserId)) {
+      toast.error("Для Topvisor в поле User ID нужно указать email аккаунта");
       return;
     }
     connectMutation.mutate({
       serviceName: "topvisor",
       apiKey: tvApiKey.trim(),
       externalProjectId: tvProjectId.trim(),
-      counterId: tvUserId.trim(),
+      counterId: normalizedUserId,
     });
     setTopvisorDialog(false);
     setTvApiKey("");
