@@ -417,6 +417,27 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
             onBlock={blocker.block}
             onUnblock={blocker.unblock}
           />
+          <TaskReviewWorkflow
+            stage={editStage || task.stage}
+            history={comments.map((c) => ({
+              id: c.id,
+              body: c.body,
+              is_system: c.is_system,
+              created_at: c.created_at,
+            }))}
+            onSubmitForReview={async (link) => {
+              // 1. сохраняем результат как комментарий, чтобы пройти проверку sendForReview
+              await supabase.from("task_comments").insert({
+                task_id: task.id,
+                body: `📎 Результат: ${link}`,
+                is_system: false,
+              });
+              queryClient.invalidateQueries({ queryKey: ["task-comments", task.id] });
+              await sendForReview();
+            }}
+            onAccept={acceptTask}
+            onReject={(reason) => returnTask(reason)}
+          />
         </div>
 
         <div className="flex flex-col md:flex-row h-[calc(100vh-72px)]">
