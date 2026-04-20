@@ -373,7 +373,7 @@ export default function CrmProjectDetailPage() {
         </TabsList>
 
         <TabsContent value="team">
-          <ProjectTeamTab />
+          <ProjectTeamTab projectId={id!} />
         </TabsContent>
 
         <TabsContent value="weekly">
