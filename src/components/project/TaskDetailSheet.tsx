@@ -320,7 +320,53 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["subtasks", task?.id] }),
   });
 
-  if (!task) return null;
+  const handleComplete = async ({ result, minutes }: { result: string; minutes: number }) => {
+    if (!task || !user) return;
+    setCompleting(true);
+    try {
+      // 1. Log time
+      const endedAt = new Date();
+      const startedAt = new Date(endedAt.getTime() - minutes * 60 * 1000);
+      await supabase.from("task_time_entries").insert({
+        task_id: task.id,
+        user_id: user.id,
+        project_id: editProjectId || task.project_id || null,
+        started_at: startedAt.toISOString(),
+        ended_at: endedAt.toISOString(),
+        comment: "Финальное списание при закрытии задачи",
+      });
+
+      // 2. Save result as comment
+      await supabase.from("task_comments").insert({
+        task_id: task.id,
+        body: `✅ Результат: ${result}`,
+        is_system: false,
+      });
+
+      // 3. Update status -> Выполнено (green)
+      const greenColor = "#10b981";
+      await supabase.from("crm_tasks").update({
+        stage: "Выполнено",
+        stage_color: greenColor,
+        stage_progress: 100,
+      } as any).eq("id", task.id);
+
+      await addSystemLog(`Задача завершена. Списано ${Math.floor(minutes / 60)}ч ${minutes % 60}м`);
+
+      setEditStage("Выполнено");
+      queryClient.invalidateQueries({ queryKey: ["crm-tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["project-tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["time-entries", task.id] });
+      queryClient.invalidateQueries({ queryKey: ["task-comments", task.id] });
+
+      setCompleteOpen(false);
+      toast.success("Задача успешно закрыта!");
+    } catch (e: any) {
+      toast.error(e.message || "Не удалось закрыть задачу");
+    } finally {
+      setCompleting(false);
+    }
+  };
 
   const deadlineDate = task.deadline ? new Date(task.deadline) : null;
   const deadlineStatus = getDeadlineStatus(task.deadline, editStage || task.stage);
