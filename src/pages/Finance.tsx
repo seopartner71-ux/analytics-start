@@ -339,17 +339,29 @@ export default function Finance() {
         <KpiTile label="Расходы" value={RUB(kpis.expenseTotal)} color="red" icon={<TrendingDown />} />
         <KpiTile label="Чистая прибыль" value={RUB(kpis.profit)} color="blue" icon={<Wallet />} />
         <KpiTile label="Налоги к уплате" value={RUB(kpis.taxDue)} color="amber" icon={<Receipt />} />
+        <KpiTile label="Дебиторка" value={RUB(kpis.debt)} color="red" icon={<AlertCircle />} hint="долги клиентов" />
+        <KpiTile
+          label="Следующий платёж"
+          value={kpis.upcoming?.next_payment_date ? format(parseISO(kpis.upcoming.next_payment_date), "d MMM", { locale: ru }) : "—"}
+          color="amber"
+          icon={<CalIcon />}
+          hint={kpis.upcoming?.client_name || "нет ожидаемых"}
+        />
+        <KpiTile label="Баланс" value={RUB(kpis.bankBalance)} color="blue" icon={<Wallet />} hint="все счета" />
+        <KpiTile label="Маржа" value={`${kpis.margin}%`} color={kpis.margin >= 30 ? "emerald" : "amber"} icon={<TrendingUp />} hint="прибыль / доход" />
       </div>
 
       {/* Tabs */}
       <Tabs defaultValue="payments" className="w-full">
-        <TabsList className="bg-card border border-border">
+        <TabsList className="bg-card border border-border flex-wrap h-auto">
           <TabsTrigger value="payments">Клиенты и платежи</TabsTrigger>
           <TabsTrigger value="invoices">Счета</TabsTrigger>
           <TabsTrigger value="expenses">Расходы</TabsTrigger>
           <TabsTrigger value="calendar">Платёжный календарь</TabsTrigger>
           <TabsTrigger value="taxes">Налоги</TabsTrigger>
           <TabsTrigger value="banks">Банки</TabsTrigger>
+          <TabsTrigger value="director">Дашборд директора</TabsTrigger>
+          <TabsTrigger value="profitability">Прибыльность клиентов</TabsTrigger>
         </TabsList>
 
         <TabsContent value="payments" className="mt-4">
@@ -369,6 +381,12 @@ export default function Finance() {
         </TabsContent>
         <TabsContent value="banks" className="mt-4">
           <BanksTab ownerId={ownerId} />
+        </TabsContent>
+        <TabsContent value="director" className="mt-4">
+          <DirectorDashboard invoices={invoices} payments={payments} expenses={expenses} />
+        </TabsContent>
+        <TabsContent value="profitability" className="mt-4">
+          <ProfitabilityReport invoices={invoices} payments={payments} />
         </TabsContent>
       </Tabs>
 
