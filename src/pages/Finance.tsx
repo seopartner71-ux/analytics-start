@@ -941,7 +941,7 @@ function TaxesTab({ taxes, invoices, ownerId, onChange }: { taxes: Tax[]; invoic
   }), [year, invoices, taxes, today]);
 
   const markPaid = async (q: number, amount: number, existingId?: string) => {
-    const payload = { owner_id: ownerId, year, quarter: q, amount, status: "paid", paid_at: format(new Date(), "yyyy-MM-dd") };
+    const payload = { year, quarter: q, amount, status: "paid", paid_at: format(new Date(), "yyyy-MM-dd") };
     if (existingId) await supabase.from("financial_taxes").update(payload).eq("id", existingId);
     else await supabase.from("financial_taxes").insert(payload);
     toast({ title: "Отмечено как уплачено" });
