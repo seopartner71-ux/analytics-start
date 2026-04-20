@@ -34,6 +34,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import BanksTab from "@/components/finance/BanksTab";
+import DirectorDashboard from "@/components/finance/DirectorDashboard";
+import ProfitabilityReport from "@/components/finance/ProfitabilityReport";
 import { generateInvoicePdf, type RequisitesData } from "@/lib/invoice-pdf";
 
 /* ────────── Types ────────── */
