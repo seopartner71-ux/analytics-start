@@ -11,6 +11,7 @@ import { FinanceGuard } from "@/components/FinanceGuard";
 import Index from "./pages/Index";
 import ProjectDetail from "./pages/ProjectDetail";
 import PublicReport from "./pages/PublicReport";
+import PublicWeeklyReport from "./pages/PublicWeeklyReport";
 import ShareView from "./pages/ShareView";
 import Team from "./pages/Team";
 import Auth from "./pages/Auth";
@@ -54,6 +55,7 @@ const App = () => (
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/share/:shareToken" element={<ShareView />} />
                 <Route path="/report/:id" element={<PublicReport />} />
+                <Route path="/weekly/:token" element={<PublicWeeklyReport />} />
                 <Route path="/oauth/yandex/callback" element={<OAuthCallback />} />
                 <Route path="/" element={<ProtectedRoute><CrmLayout><Index /></CrmLayout></ProtectedRoute>} />
                 <Route path="/companies" element={<ProtectedRoute><CrmLayout><CompaniesPage /></CrmLayout></ProtectedRoute>} />

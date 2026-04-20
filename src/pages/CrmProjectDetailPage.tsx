@@ -14,7 +14,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   ArrowLeft, Plus, Send, Clock, CalendarDays, User, Tag, FileText,
   Upload, Download, Trash2, Loader2, Globe, Edit, XCircle, MessageSquare,
-  BarChart3, ShieldCheck, ClipboardCheck, Search, Smartphone, Zap, MessagesSquare, Link2, Rocket,
+  BarChart3, ShieldCheck, ClipboardCheck, Search, Smartphone, Zap, MessagesSquare, Link2, Rocket, FileBarChart,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,6 +36,7 @@ import { GscAnalysisTab } from "@/components/project/GscAnalysisTab";
 import { ProjectChatTab } from "@/components/project/ProjectChatTab";
 import { LinkProfileTab } from "@/components/project/LinkProfileTab";
 import { OnboardingTasksTab } from "@/components/onboarding/OnboardingTasksTab";
+import { WeeklyReportsTab } from "@/components/project/WeeklyReportsTab";
 
 type TaskComment = Tables<"task_comments"> & {
   author?: Tables<"team_members"> | null;
@@ -362,10 +363,17 @@ export default function CrmProjectDetailPage() {
           <TabsTrigger value="onboarding" className="gap-1.5 text-[13px]">
             <Rocket className="h-3.5 w-3.5" /> Онбординг
           </TabsTrigger>
+          <TabsTrigger value="weekly" className="gap-1.5 text-[13px]">
+            <FileBarChart className="h-3.5 w-3.5" /> Недельные отчёты
+          </TabsTrigger>
           <TabsTrigger value="chat" className="gap-1.5 text-[13px]">
             <MessagesSquare className="h-3.5 w-3.5" /> Чат
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="weekly">
+          <WeeklyReportsTab projectId={id!} />
+        </TabsContent>
 
         <TabsContent value="onboarding">
           <OnboardingTasksTab projectId={id!} />
