@@ -26,6 +26,7 @@ import { TaskTimeManual } from "@/components/project/TaskTimeManual";
 import { CompleteTaskDialog } from "@/components/project/CompleteTaskDialog";
 import { CreateSubtaskDialog, type SubtaskFormValues } from "@/components/project/CreateSubtaskDialog";
 import { TaskBlockerSection, FrozenDeadlineBadge, useTaskBlocker } from "@/components/project/TaskBlocker";
+import { TaskReviewWorkflow } from "@/components/project/TaskReviewWorkflow";
 
 export type CrmTask = Tables<"crm_tasks"> & {
   creator?: Tables<"team_members"> | null;
