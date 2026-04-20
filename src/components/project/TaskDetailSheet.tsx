@@ -22,7 +22,8 @@ import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { getDeadlineStatus, DEADLINE_STYLES, STAGE_COLORS, STAGE_PROGRESS } from "@/lib/task-helpers";
 import type { Tables } from "@/integrations/supabase/types";
-import { TaskTimerWidget } from "@/components/time-tracking/TaskTimerWidget";
+import { TaskTimeManual } from "@/components/project/TaskTimeManual";
+import { CompleteTaskDialog } from "@/components/project/CompleteTaskDialog";
 
 export type CrmTask = Tables<"crm_tasks"> & {
   creator?: Tables<"team_members"> | null;
