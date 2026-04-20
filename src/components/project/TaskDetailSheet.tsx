@@ -704,6 +704,13 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
           </div>
         </div>
       </SheetContent>
+
+      <CompleteTaskDialog
+        open={completeOpen}
+        onOpenChange={setCompleteOpen}
+        onConfirm={handleComplete}
+        saving={completing}
+      />
     </Sheet>
   );
 }
