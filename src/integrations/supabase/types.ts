@@ -825,6 +825,8 @@ export type Database = {
           stage_progress: number | null
           title: string
           updated_at: string
+          week_number: number | null
+          week_year: number | null
         }
         Insert: {
           assignee_id?: string | null
@@ -841,6 +843,8 @@ export type Database = {
           stage_progress?: number | null
           title: string
           updated_at?: string
+          week_number?: number | null
+          week_year?: number | null
         }
         Update: {
           assignee_id?: string | null
@@ -857,6 +861,8 @@ export type Database = {
           stage_progress?: number | null
           title?: string
           updated_at?: string
+          week_number?: number | null
+          week_year?: number | null
         }
         Relationships: [
           {
@@ -2995,6 +3001,71 @@ export type Database = {
         }
         Relationships: []
       }
+      weekly_reports: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          done_items: Json
+          id: string
+          manager_comment: string
+          metrics: Json
+          planned_items: Json
+          project_id: string
+          sent_at: string | null
+          share_token: string
+          status: string
+          updated_at: string
+          week_end: string
+          week_number: number
+          week_start: string
+          week_year: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          done_items?: Json
+          id?: string
+          manager_comment?: string
+          metrics?: Json
+          planned_items?: Json
+          project_id: string
+          sent_at?: string | null
+          share_token?: string
+          status?: string
+          updated_at?: string
+          week_end: string
+          week_number: number
+          week_start: string
+          week_year: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          done_items?: Json
+          id?: string
+          manager_comment?: string
+          metrics?: Json
+          planned_items?: Json
+          project_id?: string
+          sent_at?: string | null
+          share_token?: string
+          status?: string
+          updated_at?: string
+          week_end?: string
+          week_number?: number
+          week_start?: string
+          week_year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weekly_reports_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       work_logs: {
         Row: {
           category: string
@@ -3230,6 +3301,24 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      get_weekly_report_by_token: {
+        Args: { p_token: string }
+        Returns: {
+          done_items: Json
+          id: string
+          manager_comment: string
+          metrics: Json
+          planned_items: Json
+          project_id: string
+          project_name: string
+          sent_at: string
+          status: string
+          week_end: string
+          week_number: number
+          week_start: string
+          week_year: number
+        }[]
       }
       has_finance_access: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
