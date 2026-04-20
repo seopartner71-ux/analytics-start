@@ -1205,10 +1205,13 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
           <h3 className="text-sm font-semibold text-foreground">Запросы</h3>
           <Badge variant="secondary" className="text-[10px] h-5">{keywords.length}</Badge>
         </div>
-        {!project?.topvisor_api_key || !project?.topvisor_project_id ? (
+        {!project?.topvisor_api_key || !project?.topvisor_project_id || !project?.topvisor_user_id ? (
           <div className="py-16 text-center">
             <Search className="h-10 w-10 mx-auto mb-2 text-muted-foreground/20" />
-            <p className="text-[13px] text-muted-foreground">Подключите Topvisor на вкладке «Интеграции»</p>
+            <p className="text-[13px] text-muted-foreground mb-1">Topvisor не подключён</p>
+            <p className="text-[11px] text-muted-foreground/70">
+              Заполните API-ключ, User ID и Project ID Topvisor в настройках проекта
+            </p>
           </div>
         ) : tvLoading ? (
           <div className="py-16 text-center">
@@ -1217,7 +1220,10 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
         ) : topProjectPositions.length === 0 ? (
           <div className="py-16 text-center">
             <Search className="h-10 w-10 mx-auto mb-2 text-muted-foreground/20" />
-            <p className="text-[13px] text-muted-foreground">Нет данных по позициям проекта</p>
+            <p className="text-[13px] text-muted-foreground mb-1">Нет данных по позициям проекта</p>
+            <p className="text-[11px] text-muted-foreground/70">
+              Проверьте, что в проекте Topvisor (ID: {project.topvisor_project_id}) добавлены ключевые слова и сделан хотя бы один съём позиций
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
