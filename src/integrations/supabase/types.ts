@@ -559,6 +559,63 @@ export type Database = {
           },
         ]
       }
+      company_requisites: {
+        Row: {
+          account_number: string | null
+          bank_name: string | null
+          bik: string | null
+          correspondent_account: string | null
+          created_at: string
+          director_name: string | null
+          email: string | null
+          id: string
+          inn: string | null
+          kpp: string | null
+          legal_address: string | null
+          legal_name: string
+          logo_url: string | null
+          ogrn: string | null
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_number?: string | null
+          bank_name?: string | null
+          bik?: string | null
+          correspondent_account?: string | null
+          created_at?: string
+          director_name?: string | null
+          email?: string | null
+          id?: string
+          inn?: string | null
+          kpp?: string | null
+          legal_address?: string | null
+          legal_name?: string
+          logo_url?: string | null
+          ogrn?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_number?: string | null
+          bank_name?: string | null
+          bik?: string | null
+          correspondent_account?: string | null
+          created_at?: string
+          director_name?: string | null
+          email?: string | null
+          id?: string
+          inn?: string | null
+          kpp?: string | null
+          legal_address?: string | null
+          legal_name?: string
+          logo_url?: string | null
+          ogrn?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       crawl_issues: {
         Row: {
           code: string
@@ -1072,6 +1129,276 @@ export type Database = {
           paid_at?: string | null
           quarter?: number
           status?: string
+          updated_at?: string
+          year?: number
+        }
+        Relationships: []
+      }
+      financial_clients: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      financial_expenses: {
+        Row: {
+          added_by: string | null
+          added_by_name: string | null
+          amount: number
+          category: string
+          comment: string | null
+          created_at: string
+          expense_date: string
+          id: string
+          receipt_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          added_by?: string | null
+          added_by_name?: string | null
+          amount?: number
+          category?: string
+          comment?: string | null
+          created_at?: string
+          expense_date?: string
+          id?: string
+          receipt_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          added_by?: string | null
+          added_by_name?: string | null
+          amount?: number
+          category?: string
+          comment?: string | null
+          created_at?: string
+          expense_date?: string
+          id?: string
+          receipt_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      financial_invoices: {
+        Row: {
+          amount: number
+          client_id: string | null
+          client_name: string
+          comment: string | null
+          created_at: string
+          due_at: string | null
+          id: string
+          invoice_number: string
+          issued_at: string
+          services: Json
+          status: string
+          updated_at: string
+          vat_included: boolean
+          vat_rate: number
+        }
+        Insert: {
+          amount?: number
+          client_id?: string | null
+          client_name?: string
+          comment?: string | null
+          created_at?: string
+          due_at?: string | null
+          id?: string
+          invoice_number: string
+          issued_at?: string
+          services?: Json
+          status?: string
+          updated_at?: string
+          vat_included?: boolean
+          vat_rate?: number
+        }
+        Update: {
+          amount?: number
+          client_id?: string | null
+          client_name?: string
+          comment?: string | null
+          created_at?: string
+          due_at?: string | null
+          id?: string
+          invoice_number?: string
+          issued_at?: string
+          services?: Json
+          status?: string
+          updated_at?: string
+          vat_included?: boolean
+          vat_rate?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_invoices_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "financial_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_payment_history: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          id: string
+          note: string | null
+          paid_at: string
+          payment_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          paid_at?: string
+          payment_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          paid_at?: string
+          payment_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_payment_history_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "financial_payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_payments: {
+        Row: {
+          client_id: string | null
+          client_name: string
+          comment: string | null
+          contract_amount: number
+          created_at: string
+          due_date: string | null
+          id: string
+          next_payment_date: string | null
+          paid_amount: number
+          recurrence: string
+          service: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          client_id?: string | null
+          client_name?: string
+          comment?: string | null
+          contract_amount?: number
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          next_payment_date?: string | null
+          paid_amount?: number
+          recurrence?: string
+          service?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string | null
+          client_name?: string
+          comment?: string | null
+          contract_amount?: number
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          next_payment_date?: string | null
+          paid_amount?: number
+          recurrence?: string
+          service?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_payments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "financial_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_taxes: {
+        Row: {
+          amount: number
+          created_at: string
+          due_date: string | null
+          id: string
+          income_base: number
+          paid_amount: number
+          paid_at: string | null
+          quarter: number | null
+          rate: number
+          status: string
+          tax_type: string
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          income_base?: number
+          paid_amount?: number
+          paid_at?: string | null
+          quarter?: number | null
+          rate?: number
+          status?: string
+          tax_type?: string
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          income_base?: number
+          paid_amount?: number
+          paid_at?: string | null
+          quarter?: number | null
+          rate?: number
+          status?: string
+          tax_type?: string
           updated_at?: string
           year?: number
         }
@@ -1906,6 +2233,7 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           email: string
+          finance_access: boolean
           full_name: string | null
           id: string
           preferred_language: string
@@ -1917,6 +2245,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           email: string
+          finance_access?: boolean
           full_name?: string | null
           id?: string
           preferred_language?: string
@@ -1928,6 +2257,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           email?: string
+          finance_access?: boolean
           full_name?: string | null
           id?: string
           preferred_language?: string
@@ -2898,6 +3228,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      has_finance_access: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
