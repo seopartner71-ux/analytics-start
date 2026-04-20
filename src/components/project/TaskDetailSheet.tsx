@@ -748,6 +748,17 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
         onConfirm={handleComplete}
         saving={completing}
       />
+
+      <CreateSubtaskDialog
+        open={isCreateSubtaskModalOpen}
+        onOpenChange={setIsCreateSubtaskModalOpen}
+        parentTaskTitle={task.title}
+        parentTaskShortId={taskIdShort}
+        members={members as any}
+        defaultAssigneeId={editAssigneeId || task.assignee_id || null}
+        submitting={creatingSubtask}
+        onSubmit={handleCreateSubtask}
+      />
     </Sheet>
   );
 }
