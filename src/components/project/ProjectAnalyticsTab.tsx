@@ -238,7 +238,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
   const { data: topvisorData, isLoading: tvLoading } = useQuery({
     queryKey: ["tv-positions-analytics", projectId, project?.topvisor_project_id, project?.topvisor_api_key],
     queryFn: async () => {
-      if (!project?.topvisor_api_key || !project?.topvisor_project_id) {
+      if (!project?.topvisor_api_key || !project?.topvisor_project_id || !project?.topvisor_user_id) {
         console.warn("[Topvisor] Missing config:", { 
           api_key: !!project?.topvisor_api_key, 
           project_id: project?.topvisor_project_id,
