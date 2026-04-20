@@ -185,6 +185,16 @@ export default function Finance() {
     enabled: !!ownerId,
   });
 
+  const { data: bankAccounts = [] } = useQuery({
+    queryKey: ["finance_bank_accounts"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("bank_accounts").select("id, balance, currency");
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!ownerId,
+  });
+
   /* KPIs current month */
   const kpis = useMemo(() => {
     const inMonth = (d: string) => {
@@ -200,8 +210,26 @@ export default function Finance() {
     const profit = income - expenseTotal;
     const taxDue = taxes.filter(t => t.status === "pending").reduce((s, t) => s + Number(t.amount), 0)
       || Math.round(totalIncomeYear * 0.06);
-    return { income, expenseTotal, profit, taxDue };
-  }, [payments, invoices, expenses, taxes, monthStart, monthEnd]);
+
+    // Дебиторка — невыплаченные суммы по платежам и неоплаченные счета
+    const debt = payments.reduce((s, p) => s + Math.max(0, Number(p.contract_amount) - Number(p.paid_amount || 0)), 0)
+      + invoices.filter(i => i.status !== "paid" && i.status !== "draft").reduce((s, i) => s + Number(i.amount), 0);
+
+    // Ближайший платёж
+    const upcoming = payments
+      .filter(p => p.status !== "paid" && p.next_payment_date && parseISO(p.next_payment_date) >= today)
+      .sort((a, b) => parseISO(a.next_payment_date!).getTime() - parseISO(b.next_payment_date!).getTime())[0];
+
+    // Баланс банков (только в RUB)
+    const bankBalance = bankAccounts
+      .filter((a: any) => !a.currency || a.currency === "RUB")
+      .reduce((s: number, a: any) => s + Number(a.balance || 0), 0);
+
+    // Маржа
+    const margin = income > 0 ? Math.round((profit / income) * 100) : 0;
+
+    return { income, expenseTotal, profit, taxDue, debt, upcoming, bankBalance, margin };
+  }, [payments, invoices, expenses, taxes, monthStart, monthEnd, bankAccounts, today]);
 
   /* Charts data */
   const months12 = useMemo(() => Array.from({ length: 12 }, (_, i) => addMonths(startOfMonth(today), -11 + i)), [today]);
