@@ -24,6 +24,7 @@ import { getDeadlineStatus, DEADLINE_STYLES, STAGE_COLORS, STAGE_PROGRESS } from
 import type { Tables } from "@/integrations/supabase/types";
 import { TaskTimeManual } from "@/components/project/TaskTimeManual";
 import { CompleteTaskDialog } from "@/components/project/CompleteTaskDialog";
+import { CreateSubtaskDialog, type SubtaskFormValues } from "@/components/project/CreateSubtaskDialog";
 
 export type CrmTask = Tables<"crm_tasks"> & {
   creator?: Tables<"team_members"> | null;
@@ -53,8 +54,8 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
   const [editStage, setEditStage] = useState("");
   const [editAssigneeId, setEditAssigneeId] = useState("");
   const [editingField, setEditingField] = useState<string | null>(null);
-  const [newSubtask, setNewSubtask] = useState("");
-  const [showSubtaskInput, setShowSubtaskInput] = useState(false);
+  const [isCreateSubtaskModalOpen, setIsCreateSubtaskModalOpen] = useState(false);
+  const [creatingSubtask, setCreatingSubtask] = useState(false);
   const [resultText, setResultText] = useState("");
   const [resultUploading, setResultUploading] = useState(false);
   const resultFileRef = useRef<HTMLInputElement>(null);
@@ -69,7 +70,7 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
     setEditStage(task.stage);
     setEditAssigneeId(task.assignee_id || "");
     setEditingField(null);
-    setShowSubtaskInput(false);
+    setIsCreateSubtaskModalOpen(false);
   }, [task?.id, open]);
 
   const isAdmin = true;
@@ -298,18 +299,31 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
     }
   };
 
-  const addSubtask = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.from("subtasks").insert({ task_id: task!.id, title: newSubtask, sort_order: subtasks.length } as any);
+  const handleCreateSubtask = async (values: SubtaskFormValues) => {
+    if (!task) return;
+    setCreatingSubtask(true);
+    try {
+      const payload: any = {
+        task_id: task.id,
+        title: values.title,
+        sort_order: subtasks.length,
+        description: values.description || null,
+        assignee_id: values.assignee_id,
+        deadline: values.deadline ? new Date(values.deadline).toISOString() : null,
+        plan_minutes: values.plan_hours != null ? Math.round(values.plan_hours * 60) : null,
+      };
+      const { error } = await supabase.from("subtasks").insert(payload);
       if (error) throw error;
-      await addSystemLog(`Добавлена подзадача «${newSubtask}»`);
-    },
-    onSuccess: () => {
-      setNewSubtask("");
-      setShowSubtaskInput(false);
-      queryClient.invalidateQueries({ queryKey: ["subtasks", task?.id] });
-    },
-  });
+      await addSystemLog(`Добавлена подзадача «${values.title}»`);
+      queryClient.invalidateQueries({ queryKey: ["subtasks", task.id] });
+      setIsCreateSubtaskModalOpen(false);
+      toast.success("Подзадача успешно создана");
+    } catch (e: any) {
+      toast.error(e.message || "Не удалось создать подзадачу");
+    } finally {
+      setCreatingSubtask(false);
+    }
+  };
 
   const toggleSubtask = useMutation({
     mutationFn: async ({ id: stId, done }: { id: string; done: boolean }) => {
@@ -528,7 +542,7 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                       <span className="text-sm font-medium text-foreground">Подзадачи</span>
                       <span className="text-xs text-muted-foreground">{completedSubs}/{subtasks.length}</span>
                     </div>
-                    <Button size="sm" variant="ghost" className="h-7 text-xs gap-1" onClick={() => setShowSubtaskInput(true)}>
+                    <Button size="sm" variant="ghost" className="h-7 text-xs gap-1" onClick={() => setIsCreateSubtaskModalOpen(true)}>
                       <Plus className="h-3 w-3" /> Добавить
                     </Button>
                   </div>
@@ -542,19 +556,42 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                     </div>
                   )}
                   <div className="space-y-1">
-                    {subtasks.map((s: any) => (
-                      <div key={s.id} className="flex items-center gap-2.5 py-1.5 px-1 rounded-lg hover:bg-muted/30 transition-colors">
-                        <Checkbox checked={s.is_done} onCheckedChange={(v) => toggleSubtask.mutate({ id: s.id, done: !!v })} className="h-4 w-4" />
-                        <span className={cn("text-sm flex-1", s.is_done && "line-through text-muted-foreground")}>{s.title}</span>
-                      </div>
-                    ))}
+                    {subtasks.map((s: any) => {
+                      const assignee = members.find((m) => m.id === s.assignee_id);
+                      const dl = s.deadline ? new Date(s.deadline) : null;
+                      return (
+                        <div
+                          key={s.id}
+                          className="flex items-center gap-2.5 py-1.5 px-2 rounded-lg hover:bg-muted/30 transition-colors"
+                        >
+                          <Checkbox
+                            checked={s.is_done}
+                            onCheckedChange={(v) => toggleSubtask.mutate({ id: s.id, done: !!v })}
+                            className="h-4 w-4"
+                          />
+                          <span className={cn("text-sm flex-1 truncate", s.is_done && "line-through text-muted-foreground")}>
+                            {s.title}
+                          </span>
+                          {assignee && (
+                            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                              <img
+                                src={getAvatarUrl(assignee.full_name)}
+                                alt={assignee.full_name}
+                                className="h-5 w-5 rounded-full ring-1 ring-border/60"
+                              />
+                              <span className="hidden sm:inline max-w-[80px] truncate">{assignee.full_name}</span>
+                            </div>
+                          )}
+                          {dl && (
+                            <span className="text-[11px] text-muted-foreground tabular-nums whitespace-nowrap flex items-center gap-1">
+                              <CalendarDays className="h-3 w-3" />
+                              {dl.toLocaleDateString("ru-RU", { day: "2-digit", month: "short" })}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
-                  {showSubtaskInput && (
-                    <div className="flex gap-2">
-                      <Input value={newSubtask} onChange={e => setNewSubtask(e.target.value)} placeholder="Новая подзадача..." className="h-8 text-sm flex-1" autoFocus onKeyDown={e => e.key === "Enter" && newSubtask.trim() && addSubtask.mutate()} />
-                      <Button size="sm" className="h-8 text-xs" onClick={() => newSubtask.trim() && addSubtask.mutate()} disabled={addSubtask.isPending}>OK</Button>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
 
