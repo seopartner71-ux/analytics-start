@@ -364,6 +364,10 @@ export default function AdminPanel() {
                 </Card>
               </TabsContent>
 
+              <TabsContent value="requisites">
+                <CompanyRequisitesEditor />
+              </TabsContent>
+
               <TabsContent value="onboarding-template">
                 <Card>
                   <CardContent className="pt-6">
