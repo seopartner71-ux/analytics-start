@@ -551,18 +551,18 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
                         className="h-8 text-[12px]"
                       />
                     </div>
-                    {def.extraField && (
-                      <div className="space-y-1">
-                        <Label className="text-[11px] text-muted-foreground">{def.extraField.label}</Label>
+                    {(def as any).extraFields?.map((ef: { label: string; key: string; type?: string; placeholder?: string }) => (
+                      <div key={ef.key} className="space-y-1">
+                        <Label className="text-[11px] text-muted-foreground">{ef.label}</Label>
                         <Input
-                          value={vals[def.extraField.key] || ""}
-                          onChange={e => setIntField(def.key, def.extraField!.key, e.target.value)}
-                          placeholder={`Введите ${def.extraField.label.toLowerCase()}`}
+                          value={vals[ef.key] || ""}
+                          onChange={e => setIntField(def.key, ef.key, e.target.value)}
+                          placeholder={ef.placeholder || `Введите ${ef.label.toLowerCase()}`}
                           className="h-8 text-[12px]"
-                          type="password"
+                          type={ef.type === "password" ? "password" : "text"}
                         />
                       </div>
-                    )}
+                    ))}
                   </div>
                 </div>
               );
