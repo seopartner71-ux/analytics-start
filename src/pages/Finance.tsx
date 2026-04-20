@@ -36,6 +36,7 @@ import { cn } from "@/lib/utils";
 import BanksTab from "@/components/finance/BanksTab";
 import DirectorDashboard from "@/components/finance/DirectorDashboard";
 import ProfitabilityReport from "@/components/finance/ProfitabilityReport";
+import RevenueAnalytics from "@/components/finance/RevenueAnalytics";
 import { generateInvoicePdf, type RequisitesData } from "@/lib/invoice-pdf";
 
 /* ────────── Types ────────── */
@@ -357,6 +358,7 @@ export default function Finance() {
           <TabsTrigger value="payments">Клиенты и платежи</TabsTrigger>
           <TabsTrigger value="invoices">Счета</TabsTrigger>
           <TabsTrigger value="expenses">Расходы</TabsTrigger>
+          <TabsTrigger value="analytics">Аналитика</TabsTrigger>
           <TabsTrigger value="calendar">Платёжный календарь</TabsTrigger>
           <TabsTrigger value="taxes">Налоги</TabsTrigger>
           <TabsTrigger value="banks">Банки</TabsTrigger>
@@ -372,6 +374,9 @@ export default function Finance() {
         </TabsContent>
         <TabsContent value="expenses" className="mt-4">
           <ExpensesTab expenses={expenses} ownerId={ownerId} onChange={refreshAll} />
+        </TabsContent>
+        <TabsContent value="analytics" className="mt-4">
+          <RevenueAnalytics />
         </TabsContent>
         <TabsContent value="calendar" className="mt-4">
           <PaymentCalendar payments={payments} invoices={invoices} ownerId={ownerId} onChange={refreshAll} clients={clients} />
