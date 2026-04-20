@@ -368,6 +368,8 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
     }
   };
 
+  if (!task) return null;
+
   const deadlineDate = task.deadline ? new Date(task.deadline) : null;
   const deadlineStatus = getDeadlineStatus(task.deadline, editStage || task.stage);
   const isOverdue = deadlineStatus === "overdue";
