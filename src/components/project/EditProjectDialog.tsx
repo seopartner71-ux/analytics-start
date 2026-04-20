@@ -116,8 +116,10 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
         [def.fieldKey]: existing?.[def.fieldKey as keyof typeof existing] as string || "",
         connected: existing?.connected ? "true" : "false",
       };
-      if (def.extraField) {
-        vals[def.key][def.extraField.key] = existing?.[def.extraField.key as keyof typeof existing] as string || "";
+      if ((def as any).extraFields) {
+        for (const ef of (def as any).extraFields as Array<{ key: string }>) {
+          vals[def.key][ef.key] = (existing?.[ef.key as keyof typeof existing] as string) || "";
+        }
       }
     }
     setIntegrationValues(vals);
