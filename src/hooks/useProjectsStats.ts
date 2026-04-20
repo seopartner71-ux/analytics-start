@@ -114,11 +114,19 @@ export function useProjectsStats(projects: Array<{ id: string; topvisor_api_key?
               },
             });
 
-            if (!error && data && !data.error) {
+            if (error) {
+              console.warn(`[Topvisor] project ${project.id} invoke error:`, error.message);
+              return;
+            }
+            if (data?.error) {
+              console.warn(`[Topvisor] project ${project.id} API error:`, data.error);
+              return;
+            }
+            if (data) {
               results[project.id] = computeStats(data, []);
             }
-          } catch {
-            // skip failed projects
+          } catch (e) {
+            console.warn(`[Topvisor] project ${project.id} threw:`, e);
           }
         })
       );

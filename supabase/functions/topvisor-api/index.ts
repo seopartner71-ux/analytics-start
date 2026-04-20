@@ -316,8 +316,9 @@ serve(async (req) => {
       }
 
       const errMsg = data?.errors?.[0]?.string || data?.message || `Topvisor API error (${resp.status})`;
-      return new Response(JSON.stringify({ error: errMsg, raw: data }), {
-        status: resp.status >= 400 ? resp.status : 502,
+      const isAuthError = topvisorCode === 53 || topvisorCode === 54;
+      return new Response(JSON.stringify({ error: errMsg, code: topvisorCode, raw: data }), {
+        status: isAuthError ? 200 : (resp.status >= 400 ? resp.status : 502),
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
