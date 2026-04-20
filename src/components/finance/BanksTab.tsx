@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import { ru } from "date-fns/locale";
-import { Building2, Plus, RefreshCw, Unplug, ArrowDownCircle, ArrowUpCircle, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Building2, Plus, RefreshCw, Unplug, ArrowDownCircle, ArrowUpCircle, AlertCircle, CheckCircle2, Upload } from "lucide-react";
+import { useRef } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
