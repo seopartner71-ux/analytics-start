@@ -94,7 +94,8 @@ Deno.serve(async (req) => {
           user_id: uid,
           title,
           body,
-          project_id: "00000000-0000-0000-0000-000000000000",
+          project_id: null,
+          kind: "finance",
         });
       }
     }
