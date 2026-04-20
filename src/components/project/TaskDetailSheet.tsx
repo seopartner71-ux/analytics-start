@@ -654,7 +654,7 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                     <Button size="sm" variant="outline" className="gap-1.5 border-emerald-600/30 text-emerald-600 hover:bg-emerald-600/5" onClick={acceptTask}>
                       <ThumbsUp className="h-3.5 w-3.5" /> Принять
                     </Button>
-                    <Button size="sm" variant="outline" className="gap-1.5 border-destructive/30 text-destructive hover:bg-destructive/5" onClick={returnTask}>
+                    <Button size="sm" variant="outline" className="gap-1.5 border-destructive/30 text-destructive hover:bg-destructive/5" onClick={() => returnTask()}>
                       <ThumbsDown className="h-3.5 w-3.5" /> Вернуть
                     </Button>
                   </>
