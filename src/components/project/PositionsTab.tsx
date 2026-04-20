@@ -714,6 +714,21 @@ function PositionsDashboard({
           {isRu ? "Обновить" : "Refresh"}
         </Button>
 
+        <Button
+          variant="default"
+          size="sm"
+          className="gap-1.5"
+          onClick={handleRunCheck}
+          disabled={isRunningCheck}
+        >
+          {isRunningCheck ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <RefreshCw className="h-3.5 w-3.5" />
+          )}
+          {isRu ? "Обновить позиции в Topvisor" : "Run Topvisor check"}
+        </Button>
+
         {/* Brand filter */}
         <div className="flex items-center gap-1 ml-auto">
           <Button
