@@ -44,6 +44,7 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
   const [metrikaDialog, setMetrikaDialog] = useState(false);
   const [topvisorDialog, setTopvisorDialog] = useState(false);
   const [tvApiKey, setTvApiKey] = useState("");
+  const [tvUserId, setTvUserId] = useState("");
   const [tvProjectId, setTvProjectId] = useState("");
 
   // Yandex Webmaster dialog state
