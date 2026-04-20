@@ -10,6 +10,7 @@ import * as XLSX from "xlsx";
 import {
   Wallet, TrendingDown, TrendingUp, Receipt, Plus, Pencil, Trash2,
   Download, FileText, ChevronLeft, ChevronRight, Calendar as CalIcon, AlertCircle,
+  CheckCircle2, Copy, History, X,
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +22,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -31,6 +34,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import BanksTab from "@/components/finance/BanksTab";
+import { generateInvoicePdf, type RequisitesData } from "@/lib/invoice-pdf";
 
 /* ────────── Types ────────── */
 type Client = { id: string; name: string; email: string | null; phone: string | null; notes: string | null; source?: "finance" | "crm" };
@@ -73,7 +77,15 @@ const STATUS_BADGE = (status: string) => {
   );
 };
 const EXPENSE_CATS: Record<string, string> = {
-  salary: "Зарплата", ads: "Реклама", tools: "Инструменты", taxes: "Налоги", other: "Прочее",
+  salary: "👥 Зарплата",
+  ads: "📢 Реклама",
+  tools: "🛠️ Инструменты и сервисы",
+  rent: "🏢 Аренда офиса",
+  taxes: "💰 Налоги",
+  links: "🔗 Закупка ссылок",
+  copywriting: "📝 Копирайтинг",
+  transport: "🚗 Транспорт",
+  other: "📦 Прочее",
 };
 const TAX_DEADLINES: Record<number, string> = { 1: "25 апреля", 2: "25 июля", 3: "25 октября", 4: "25 января" };
 
@@ -448,8 +460,19 @@ function PaymentsTab({ payments, clients, ownerId, onChange }: { payments: Payme
   const [filterClient, setFilterClient] = useState<string>("all");
   const [editing, setEditing] = useState<Partial<Payment> | null>(null);
   const [open, setOpen] = useState(false);
+  const [historyClient, setHistoryClient] = useState<string | null>(null);
 
-  const filtered = payments.filter(p =>
+  const today = new Date();
+  const enriched = payments.map(p => {
+    let status = p.status;
+    if (status !== "paid" && p.next_payment_date) {
+      const due = parseISO(p.next_payment_date);
+      if (due < today && Number(p.paid_amount) < Number(p.contract_amount)) status = "overdue";
+    }
+    return { ...p, status };
+  });
+
+  const filtered = enriched.filter(p =>
     (filterStatus === "all" || p.status === filterStatus) &&
     (filterClient === "all" || p.client_name === filterClient)
   );
@@ -457,15 +480,14 @@ function PaymentsTab({ payments, clients, ownerId, onChange }: { payments: Payme
   const save = async () => {
     if (!editing) return;
     const payload = {
-      
       client_id: editing.client_id && !String(editing.client_id).startsWith("crm:") ? editing.client_id : null,
       client_name: editing.client_name || "",
       service: editing.service || "",
       contract_amount: Number(editing.contract_amount || 0),
       paid_amount: Number(editing.paid_amount || 0),
       next_payment_date: editing.next_payment_date || null,
-      status: editing.status || "unpaid",
-      recurrence: editing.recurrence || "once",
+      status: editing.status || "pending",
+      recurrence: editing.recurrence || "monthly",
       comment: editing.comment || null,
     };
     const { error } = editing.id
@@ -475,21 +497,33 @@ function PaymentsTab({ payments, clients, ownerId, onChange }: { payments: Payme
     else { toast({ title: "Сохранено" }); setOpen(false); setEditing(null); onChange(); }
   };
 
+  const markPaid = async (p: Payment) => {
+    const { error } = await supabase.from("financial_payments").update({
+      paid_amount: Number(p.contract_amount),
+      status: "paid",
+    }).eq("id", p.id);
+    if (error) { toast({ title: "Ошибка", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "Оплата отмечена", description: `${p.client_name} — ${RUB(Number(p.contract_amount))}` });
+    onChange();
+  };
+
   const remove = async (id: string) => {
     if (!confirm("Удалить платёж?")) return;
     await supabase.from("financial_payments").delete().eq("id", id);
     onChange();
   };
 
+  const clientHistory = historyClient ? enriched.filter(p => p.client_name === historyClient) : [];
+
   return (
     <Card className="bg-card border-border">
       <CardHeader className="flex-row items-center justify-between">
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Select value={filterStatus} onValueChange={setFilterStatus}>
             <SelectTrigger className="w-40 bg-muted/40 border-border"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Все статусы</SelectItem>
-              {["paid", "partial", "unpaid", "overdue"].map(s => <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>)}
+              {["paid", "partial", "pending", "overdue"].map(s => <SelectItem key={s} value={s}>{STATUS_LABELS[s] || s}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={filterClient} onValueChange={setFilterClient}>
@@ -502,7 +536,7 @@ function PaymentsTab({ payments, clients, ownerId, onChange }: { payments: Payme
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => setEditing({ status: "unpaid", recurrence: "once" })} className="bg-amber-500 text-foreground hover:bg-amber-600">
+            <Button onClick={() => setEditing({ status: "pending", recurrence: "monthly" })} className="bg-amber-500 text-foreground hover:bg-amber-600">
               <Plus className="h-4 w-4 mr-1" /> Добавить
             </Button>
           </DialogTrigger>
@@ -531,19 +565,20 @@ function PaymentsTab({ payments, clients, ownerId, onChange }: { payments: Payme
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Следующий платёж"><Input type="date" className="bg-muted/40 border-border" value={editing?.next_payment_date || ""} onChange={e => setEditing(p => ({ ...p, next_payment_date: e.target.value }))} /></Field>
                 <Field label="Статус">
-                  <Select value={editing?.status || "unpaid"} onValueChange={v => setEditing(p => ({ ...p, status: v }))}>
+                  <Select value={editing?.status || "pending"} onValueChange={v => setEditing(p => ({ ...p, status: v }))}>
                     <SelectTrigger className="bg-muted/40 border-border"><SelectValue /></SelectTrigger>
-                    <SelectContent>{["paid", "partial", "unpaid", "overdue"].map(s => <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>)}</SelectContent>
+                    <SelectContent>{["paid", "partial", "pending", "overdue"].map(s => <SelectItem key={s} value={s}>{STATUS_LABELS[s] || s}</SelectItem>)}</SelectContent>
                   </Select>
                 </Field>
               </div>
-              <Field label="Повтор">
-                <Select value={editing?.recurrence || "once"} onValueChange={v => setEditing(p => ({ ...p, recurrence: v }))}>
+              <Field label="Повторение">
+                <Select value={editing?.recurrence || "monthly"} onValueChange={v => setEditing(p => ({ ...p, recurrence: v }))}>
                   <SelectTrigger className="bg-muted/40 border-border"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="once">Разово</SelectItem>
-                    <SelectItem value="weekly">Еженедельно</SelectItem>
                     <SelectItem value="monthly">Ежемесячно</SelectItem>
+                    <SelectItem value="quarterly">Ежеквартально</SelectItem>
+                    <SelectItem value="yearly">Ежегодно</SelectItem>
                   </SelectContent>
                 </Select>
               </Field>
@@ -574,7 +609,11 @@ function PaymentsTab({ payments, clients, ownerId, onChange }: { payments: Payme
             {filtered.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Нет платежей</TableCell></TableRow>}
             {filtered.map(p => (
               <TableRow key={p.id} className="border-border">
-                <TableCell className="font-medium">{p.client_name}</TableCell>
+                <TableCell>
+                  <button className="font-medium text-left hover:text-amber-400 underline-offset-2 hover:underline" onClick={() => setHistoryClient(p.client_name)}>
+                    {p.client_name}
+                  </button>
+                </TableCell>
                 <TableCell>{p.service}</TableCell>
                 <TableCell>{RUB(Number(p.contract_amount))}</TableCell>
                 <TableCell className="text-emerald-400">{RUB(Number(p.paid_amount))}</TableCell>
@@ -583,6 +622,12 @@ function PaymentsTab({ payments, clients, ownerId, onChange }: { payments: Payme
                 <TableCell>{STATUS_BADGE(p.status)}</TableCell>
                 <TableCell>
                   <div className="flex gap-1">
+                    {p.status !== "paid" && (
+                      <Button size="icon" variant="ghost" title="Отметить оплаченным" onClick={() => markPaid(p)}>
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                      </Button>
+                    )}
+                    <Button size="icon" variant="ghost" title="История" onClick={() => setHistoryClient(p.client_name)}><History className="h-3.5 w-3.5" /></Button>
                     <Button size="icon" variant="ghost" onClick={() => { setEditing(p); setOpen(true); }}><Pencil className="h-3.5 w-3.5" /></Button>
                     <Button size="icon" variant="ghost" onClick={() => remove(p.id)}><Trash2 className="h-3.5 w-3.5 text-red-400" /></Button>
                   </div>
@@ -592,14 +637,48 @@ function PaymentsTab({ payments, clients, ownerId, onChange }: { payments: Payme
           </TableBody>
         </Table>
       </CardContent>
+
+      <Sheet open={!!historyClient} onOpenChange={(o) => !o && setHistoryClient(null)}>
+        <SheetContent className="bg-card border-border w-full sm:max-w-lg">
+          <SheetHeader><SheetTitle>История · {historyClient}</SheetTitle></SheetHeader>
+          <div className="mt-4 space-y-3">
+            {clientHistory.length === 0 && <div className="text-sm text-muted-foreground">Нет платежей</div>}
+            {clientHistory.map(p => (
+              <Card key={p.id} className="bg-muted/40 border-border">
+                <CardContent className="p-3 space-y-1 text-sm">
+                  <div className="flex justify-between items-start">
+                    <span className="font-medium">{p.service || "—"}</span>
+                    {STATUS_BADGE(p.status)}
+                  </div>
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Договор: {RUB(Number(p.contract_amount))}</span>
+                    <span className="text-emerald-400">Оплачено: {RUB(Number(p.paid_amount))}</span>
+                  </div>
+                  {p.next_payment_date && <div className="text-xs text-muted-foreground">След. платёж: {format(parseISO(p.next_payment_date), "dd.MM.yyyy")}</div>}
+                  {p.comment && <div className="text-xs italic text-muted-foreground">{p.comment}</div>}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </SheetContent>
+      </Sheet>
     </Card>
   );
 }
 
 /* ────────── Invoices Tab ────────── */
-function InvoicesTab({ invoices, clients, ownerId, onChange }: { invoices: Invoice[]; clients: Client[]; ownerId: string; onChange: () => void }) {
-  const [editing, setEditing] = useState<Partial<Invoice> | null>(null);
+type InvoiceFull = Invoice & { vat_rate?: number; vat_included?: boolean; comment?: string | null };
+function InvoicesTab({ invoices, clients, ownerId, onChange }: { invoices: InvoiceFull[]; clients: Client[]; ownerId: string; onChange: () => void }) {
+  const [editing, setEditing] = useState<Partial<InvoiceFull> & { lines?: { name: string; qty: number; price: number }[] } | null>(null);
   const [open, setOpen] = useState(false);
+
+  const { data: requisites } = useQuery({
+    queryKey: ["company_requisites"],
+    queryFn: async (): Promise<RequisitesData> => {
+      const { data } = await supabase.from("company_requisites").select("*").limit(1).maybeSingle();
+      return (data as RequisitesData) || {};
+    },
+  });
 
   const nextNumber = useMemo(() => {
     const year = new Date().getFullYear();
@@ -607,18 +686,26 @@ function InvoicesTab({ invoices, clients, ownerId, onChange }: { invoices: Invoi
     return `СЧ-${year}-${String(count).padStart(3, "0")}`;
   }, [invoices]);
 
+  const linesTotal = useMemo(() => {
+    return (editing?.lines || []).reduce((s, l) => s + Number(l.qty || 0) * Number(l.price || 0), 0);
+  }, [editing?.lines]);
+
   const save = async () => {
     if (!editing) return;
+    const services = editing.lines && editing.lines.length > 0 ? editing.lines : (editing.services as any) || [];
+    const computedAmount = (editing.lines && editing.lines.length > 0) ? linesTotal : Number(editing.amount || 0);
     const payload = {
-      
       invoice_number: editing.invoice_number || nextNumber,
       client_id: editing.client_id && !String(editing.client_id).startsWith("crm:") ? editing.client_id : null,
       client_name: editing.client_name || "",
-      services: editing.services || [],
-      amount: Number(editing.amount || 0),
+      services,
+      amount: computedAmount,
+      vat_rate: Number(editing.vat_rate || 0),
+      vat_included: !!editing.vat_included,
       issued_at: editing.issued_at || format(new Date(), "yyyy-MM-dd"),
       due_at: editing.due_at || null,
       status: editing.status || "draft",
+      comment: editing.comment || null,
     };
     const { error } = editing.id
       ? await supabase.from("financial_invoices").update(payload).eq("id", editing.id)
@@ -633,12 +720,71 @@ function InvoicesTab({ invoices, clients, ownerId, onChange }: { invoices: Invoi
     onChange();
   };
 
-  const downloadPdf = (inv: Invoice) => {
-    // Заглушка — простой текстовый PDF через window.print или blob
-    const html = `<html><head><title>${inv.invoice_number}</title></head><body style="font-family:sans-serif;padding:40px"><h1>Счёт ${inv.invoice_number}</h1><p><b>Клиент:</b> ${inv.client_name}</p><p><b>Дата:</b> ${inv.issued_at}</p><p><b>Срок:</b> ${inv.due_at || "—"}</p><h2>Сумма: ${RUB(Number(inv.amount))}</h2></body></html>`;
-    const w = window.open("", "_blank");
-    if (w) { w.document.write(html); w.document.close(); setTimeout(() => w.print(), 200); }
+  const markPaid = async (i: InvoiceFull) => {
+    await supabase.from("financial_invoices").update({ status: "paid" }).eq("id", i.id);
+    toast({ title: "Счёт отмечен оплаченным" });
+    onChange();
   };
+
+  const duplicate = async (i: InvoiceFull) => {
+    const { error } = await supabase.from("financial_invoices").insert({
+      invoice_number: nextNumber,
+      client_id: i.client_id,
+      client_name: i.client_name,
+      services: i.services,
+      amount: Number(i.amount),
+      vat_rate: Number(i.vat_rate || 0),
+      vat_included: !!i.vat_included,
+      issued_at: format(new Date(), "yyyy-MM-dd"),
+      due_at: null,
+      status: "draft",
+    });
+    if (error) toast({ title: "Ошибка", description: error.message, variant: "destructive" });
+    else { toast({ title: "Счёт скопирован" }); onChange(); }
+  };
+
+  const downloadPdf = async (inv: InvoiceFull) => {
+    try {
+      const services = Array.isArray(inv.services) && inv.services.length > 0
+        ? (inv.services as any[]).map(s => ({ name: s.name || "", qty: Number(s.qty || 1), price: Number(s.price || 0) }))
+        : [{ name: "Услуги", qty: 1, price: Number(inv.amount) }];
+      await generateInvoicePdf({
+        invoice_number: inv.invoice_number,
+        client_name: inv.client_name,
+        issued_at: inv.issued_at,
+        due_at: inv.due_at,
+        amount: Number(inv.amount),
+        vat_rate: Number(inv.vat_rate || 0),
+        vat_included: !!inv.vat_included,
+        services,
+        comment: inv.comment || null,
+      }, requisites || {});
+    } catch (e: any) {
+      toast({ title: "Ошибка PDF", description: e?.message || String(e), variant: "destructive" });
+    }
+  };
+
+  const openEdit = (i?: InvoiceFull) => {
+    if (i) {
+      const lines = Array.isArray(i.services) && i.services.length > 0
+        ? (i.services as any[]).map(s => ({ name: s.name || "", qty: Number(s.qty || 1), price: Number(s.price || 0) }))
+        : [];
+      setEditing({ ...i, lines });
+    } else {
+      setEditing({ status: "draft", invoice_number: nextNumber, issued_at: format(new Date(), "yyyy-MM-dd"), lines: [{ name: "", qty: 1, price: 0 }], vat_rate: 0, vat_included: false });
+    }
+    setOpen(true);
+  };
+
+  const updateLine = (idx: number, patch: Partial<{ name: string; qty: number; price: number }>) => {
+    setEditing(p => {
+      const lines = [...(p?.lines || [])];
+      lines[idx] = { ...lines[idx], ...patch };
+      return { ...p, lines };
+    });
+  };
+  const addLine = () => setEditing(p => ({ ...p, lines: [...(p?.lines || []), { name: "", qty: 1, price: 0 }] }));
+  const removeLine = (idx: number) => setEditing(p => ({ ...p, lines: (p?.lines || []).filter((_, i) => i !== idx) }));
 
   return (
     <Card className="bg-card border-border">
@@ -646,14 +792,22 @@ function InvoicesTab({ invoices, clients, ownerId, onChange }: { invoices: Invoi
         <CardTitle className="text-base">Счета</CardTitle>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => setEditing({ status: "draft", invoice_number: nextNumber, issued_at: format(new Date(), "yyyy-MM-dd") })} className="bg-amber-500 text-foreground hover:bg-amber-600">
+            <Button onClick={() => openEdit()} className="bg-amber-500 text-foreground hover:bg-amber-600">
               <Plus className="h-4 w-4 mr-1" /> Создать счёт
             </Button>
           </DialogTrigger>
-          <DialogContent className="bg-card border-border text-foreground">
+          <DialogContent className="bg-card border-border text-foreground max-w-2xl max-h-[85vh] overflow-y-auto">
             <DialogHeader><DialogTitle>{editing?.id ? "Редактировать" : "Новый"} счёт</DialogTitle></DialogHeader>
             <div className="grid gap-3">
-              <Field label="Номер"><Input className="bg-muted/40 border-border" value={editing?.invoice_number || ""} onChange={e => setEditing(p => ({ ...p, invoice_number: e.target.value }))} /></Field>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Номер"><Input className="bg-muted/40 border-border" value={editing?.invoice_number || ""} onChange={e => setEditing(p => ({ ...p, invoice_number: e.target.value }))} /></Field>
+                <Field label="Статус">
+                  <Select value={editing?.status || "draft"} onValueChange={v => setEditing(p => ({ ...p, status: v }))}>
+                    <SelectTrigger className="bg-muted/40 border-border"><SelectValue /></SelectTrigger>
+                    <SelectContent>{["draft", "sent", "paid", "overdue"].map(s => <SelectItem key={s} value={s}>{STATUS_LABELS[s] || s}</SelectItem>)}</SelectContent>
+                  </Select>
+                </Field>
+              </div>
               <Field label="Клиент">
                 <Select value={editing?.client_id || ""} onValueChange={v => {
                   const c = clients.find(x => x.id === v);
@@ -664,17 +818,46 @@ function InvoicesTab({ invoices, clients, ownerId, onChange }: { invoices: Invoi
                 </Select>
               </Field>
               <Field label="Имя клиента"><Input className="bg-muted/40 border-border" value={editing?.client_name || ""} onChange={e => setEditing(p => ({ ...p, client_name: e.target.value }))} /></Field>
-              <Field label="Сумма"><Input type="number" className="bg-muted/40 border-border" value={editing?.amount || ""} onChange={e => setEditing(p => ({ ...p, amount: Number(e.target.value) }))} /></Field>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <Label className="text-xs text-muted-foreground">Услуги</Label>
+                  <Button size="sm" variant="outline" onClick={addLine}><Plus className="h-3 w-3 mr-1" />Строка</Button>
+                </div>
+                <div className="space-y-2">
+                  {(editing?.lines || []).map((l, idx) => (
+                    <div key={idx} className="grid grid-cols-[1fr_70px_110px_110px_30px] gap-2 items-center">
+                      <Input placeholder="Название" className="bg-muted/40 border-border" value={l.name} onChange={e => updateLine(idx, { name: e.target.value })} />
+                      <Input type="number" placeholder="Кол-во" className="bg-muted/40 border-border" value={l.qty} onChange={e => updateLine(idx, { qty: Number(e.target.value) })} />
+                      <Input type="number" placeholder="Цена" className="bg-muted/40 border-border" value={l.price} onChange={e => updateLine(idx, { price: Number(e.target.value) })} />
+                      <div className="text-right text-sm font-medium">{RUB(l.qty * l.price)}</div>
+                      <Button size="icon" variant="ghost" onClick={() => removeLine(idx)}><X className="h-3.5 w-3.5" /></Button>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-end mt-2 text-sm font-bold text-amber-400">Итого: {RUB(linesTotal)}</div>
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Выставлен"><Input type="date" className="bg-muted/40 border-border" value={editing?.issued_at || ""} onChange={e => setEditing(p => ({ ...p, issued_at: e.target.value }))} /></Field>
                 <Field label="Срок оплаты"><Input type="date" className="bg-muted/40 border-border" value={editing?.due_at || ""} onChange={e => setEditing(p => ({ ...p, due_at: e.target.value }))} /></Field>
               </div>
-              <Field label="Статус">
-                <Select value={editing?.status || "draft"} onValueChange={v => setEditing(p => ({ ...p, status: v }))}>
-                  <SelectTrigger className="bg-muted/40 border-border"><SelectValue /></SelectTrigger>
-                  <SelectContent>{["draft", "sent", "paid", "overdue"].map(s => <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>)}</SelectContent>
-                </Select>
-              </Field>
+
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <Checkbox id="vat_inc" checked={!!editing?.vat_included} onCheckedChange={v => setEditing(p => ({ ...p, vat_included: !!v, vat_rate: v ? (p?.vat_rate || 20) : 0 }))} />
+                  <Label htmlFor="vat_inc" className="text-sm cursor-pointer">НДС включён</Label>
+                </div>
+                {editing?.vat_included && (
+                  <div className="flex items-center gap-2">
+                    <Label className="text-sm">Ставка</Label>
+                    <Input type="number" className="w-20 bg-muted/40 border-border" value={editing?.vat_rate || 0} onChange={e => setEditing(p => ({ ...p, vat_rate: Number(e.target.value) }))} />
+                    <span className="text-sm">%</span>
+                  </div>
+                )}
+              </div>
+
+              <Field label="Комментарий"><Textarea className="bg-muted/40 border-border" value={editing?.comment || ""} onChange={e => setEditing(p => ({ ...p, comment: e.target.value }))} /></Field>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setOpen(false)}>Отмена</Button>
@@ -709,7 +892,9 @@ function InvoicesTab({ invoices, clients, ownerId, onChange }: { invoices: Invoi
                 <TableCell>
                   <div className="flex gap-1">
                     <Button size="icon" variant="ghost" onClick={() => downloadPdf(i)} title="Скачать PDF"><FileText className="h-3.5 w-3.5" /></Button>
-                    <Button size="icon" variant="ghost" onClick={() => { setEditing(i); setOpen(true); }}><Pencil className="h-3.5 w-3.5" /></Button>
+                    <Button size="icon" variant="ghost" onClick={() => duplicate(i)} title="Дублировать"><Copy className="h-3.5 w-3.5" /></Button>
+                    {i.status !== "paid" && <Button size="icon" variant="ghost" onClick={() => markPaid(i)} title="Отметить оплаченным"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /></Button>}
+                    <Button size="icon" variant="ghost" onClick={() => openEdit(i)}><Pencil className="h-3.5 w-3.5" /></Button>
                     <Button size="icon" variant="ghost" onClick={() => remove(i.id)}><Trash2 className="h-3.5 w-3.5 text-red-400" /></Button>
                   </div>
                 </TableCell>
