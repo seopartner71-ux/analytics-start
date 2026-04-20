@@ -263,13 +263,19 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
   };
 
   const handleTopvisorConnect = () => {
-    if (!tvApiKey.trim() || !tvProjectId.trim()) {
+    if (!tvApiKey.trim() || !tvProjectId.trim() || !tvUserId.trim()) {
       toast.error(t("integrations.fillFields"));
       return;
     }
-    connectMutation.mutate({ serviceName: "topvisor", apiKey: tvApiKey.trim(), counterId: tvProjectId.trim() });
+    connectMutation.mutate({
+      serviceName: "topvisor",
+      apiKey: tvApiKey.trim(),
+      externalProjectId: tvProjectId.trim(),
+      counterId: tvUserId.trim(),
+    });
     setTopvisorDialog(false);
     setTvApiKey("");
+    setTvUserId("");
     setTvProjectId("");
   };
 
