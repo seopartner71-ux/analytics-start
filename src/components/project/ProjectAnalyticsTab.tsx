@@ -686,6 +686,45 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     return keywords.reduce((acc, k) => acc + k.position, 0) / keywords.length;
   }, [keywords]);
 
+  const topvisorSummary = useMemo(() => {
+    const latestDate = keywordDates[0];
+    const prevDate = keywordDates[1];
+
+    const currentPositions = keywords
+      .map((k) => (latestDate ? k.datePositions[latestDate] : k.position))
+      .filter((p): p is number => typeof p === "number" && p > 0);
+
+    const previousPositions = prevDate
+      ? keywords
+          .map((k) => k.datePositions[prevDate])
+          .filter((p): p is number => typeof p === "number" && p > 0)
+      : [];
+
+    const top1 = currentPositions.filter((p) => p === 1).length;
+    const top3 = currentPositions.filter((p) => p <= 3).length;
+    const top10 = currentPositions.filter((p) => p <= 10).length;
+    const top30 = currentPositions.filter((p) => p <= 30).length;
+    const outside = Math.max(currentPositions.length - top30, 0);
+    const visibility = currentPositions.length ? Math.round((top10 / currentPositions.length) * 100) : 0;
+    const prevTop10 = previousPositions.filter((p) => p <= 10).length;
+    const prevAvg = previousPositions.length
+      ? previousPositions.reduce((sum, p) => sum + p, 0) / previousPositions.length
+      : 0;
+
+    return {
+      top1,
+      top3,
+      top10,
+      top30,
+      outside,
+      visibility,
+      avgPosition,
+      top10Delta: prevDate ? top10 - prevTop10 : 0,
+      avgDelta: prevAvg > 0 ? +(prevAvg - avgPosition).toFixed(1) : 0,
+      keywordsCount: keywords.length,
+    };
+  }, [avgPosition, keywordDates, keywords]);
+
   // ── Filter handlers ──
   const handlePreset = useCallback((key: string, days: number) => {
     const now = new Date();
@@ -873,6 +912,40 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
         keywords={keywords}
         goals={goalsData}
       />
+
+      {/* Topvisor summary panel */}
+      {hasTopvisor && (
+        <Card className="bg-card rounded-lg shadow-sm border border-border p-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
+            {[
+              { label: "TOP-1", value: topvisorSummary.top1, tone: "bg-[hsl(var(--chart-4))]/10 text-[hsl(var(--chart-4))]" },
+              { label: "TOP-3", value: topvisorSummary.top3, tone: "bg-[hsl(var(--chart-4))]/10 text-[hsl(var(--chart-4))]" },
+              { label: "TOP-10", value: topvisorSummary.top10, delta: topvisorSummary.top10Delta, tone: "bg-[hsl(var(--chart-2))]/10 text-[hsl(var(--chart-2))]" },
+              { label: "TOP-30", value: topvisorSummary.top30, tone: "bg-primary/10 text-primary" },
+              { label: "Вне ТОП", value: topvisorSummary.outside, tone: "bg-muted/50 text-muted-foreground" },
+              { label: "Ср. позиция", value: topvisorSummary.avgPosition > 0 ? topvisorSummary.avgPosition.toFixed(1) : "—", delta: topvisorSummary.avgDelta, invert: true, tone: "bg-muted/50 text-foreground" },
+              { label: "Видимость", value: `${topvisorSummary.visibility}%`, tone: "bg-muted/50 text-foreground" },
+              { label: "Запросов", value: topvisorSummary.keywordsCount, tone: "bg-muted/50 text-foreground" },
+            ].map((item) => {
+              const positive = item.invert ? Number(item.delta) > 0 : Number(item.delta) > 0;
+              return (
+                <div key={item.label} className={cn("rounded-lg px-3 py-2", item.tone)}>
+                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">{item.label}</p>
+                  <div className="flex items-end gap-1.5">
+                    <p className="text-lg font-bold leading-none">{item.value}</p>
+                    {item.delta !== undefined && item.delta !== 0 && (
+                      <span className={cn("text-[10px] font-semibold flex items-center gap-0.5", positive ? "text-emerald-500" : "text-red-500")}>
+                        {positive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                        {Math.abs(Number(item.delta))}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
