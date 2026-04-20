@@ -30,7 +30,7 @@ interface EditProjectDialogProps {
 const INTEGRATION_DEFS = [
   { key: "yandexMetrika", label: "Яндекс Метрика", icon: "Я", color: "hsl(var(--primary))", fieldLabel: "Counter ID", fieldKey: "counter_id" },
   { key: "yandexWebmaster", label: "Яндекс Вебмастер", icon: "Я", color: "#FF0000", fieldLabel: "Host ID", fieldKey: "external_project_id" },
-  { key: "topvisor", label: "TopVisor", icon: "T", color: "#4CAF50", fieldLabel: "Project ID", fieldKey: "external_project_id", extraField: { label: "API Key", key: "api_key" } },
+  { key: "topvisor", label: "TopVisor", icon: "T", color: "#4CAF50", fieldLabel: "Project ID", fieldKey: "external_project_id", extraFields: [{ label: "API Key", key: "api_key", type: "password" as const }, { label: "User ID (email)", key: "counter_id", type: "text" as const, placeholder: "user@example.com" }] },
   { key: "googleSearchConsole", label: "Google Search Console", icon: "G", color: "#4285F4", fieldLabel: "Property URL", fieldKey: "external_project_id" },
 ];
 
