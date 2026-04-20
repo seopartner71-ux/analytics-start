@@ -363,6 +363,9 @@ export default function EmployeesPage() {
           <TabsTrigger value="employees" className="gap-1.5">
             <Users className="h-3.5 w-3.5" /> Сотрудники
           </TabsTrigger>
+          <TabsTrigger value="reliability" className="gap-1.5">
+            <Award className="h-3.5 w-3.5" /> Надёжность
+          </TabsTrigger>
           {isAdmin && (
             <TabsTrigger value="access" className="gap-1.5">
               <Shield className="h-3.5 w-3.5" /> Доступ к системе
