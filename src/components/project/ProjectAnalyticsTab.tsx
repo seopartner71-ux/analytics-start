@@ -686,6 +686,45 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     return keywords.reduce((acc, k) => acc + k.position, 0) / keywords.length;
   }, [keywords]);
 
+  const topvisorSummary = useMemo(() => {
+    const latestDate = keywordDates[0];
+    const prevDate = keywordDates[1];
+
+    const currentPositions = keywords
+      .map((k) => (latestDate ? k.datePositions[latestDate] : k.position))
+      .filter((p): p is number => typeof p === "number" && p > 0);
+
+    const previousPositions = prevDate
+      ? keywords
+          .map((k) => k.datePositions[prevDate])
+          .filter((p): p is number => typeof p === "number" && p > 0)
+      : [];
+
+    const top1 = currentPositions.filter((p) => p === 1).length;
+    const top3 = currentPositions.filter((p) => p <= 3).length;
+    const top10 = currentPositions.filter((p) => p <= 10).length;
+    const top30 = currentPositions.filter((p) => p <= 30).length;
+    const outside = Math.max(currentPositions.length - top30, 0);
+    const visibility = currentPositions.length ? Math.round((top10 / currentPositions.length) * 100) : 0;
+    const prevTop10 = previousPositions.filter((p) => p <= 10).length;
+    const prevAvg = previousPositions.length
+      ? previousPositions.reduce((sum, p) => sum + p, 0) / previousPositions.length
+      : 0;
+
+    return {
+      top1,
+      top3,
+      top10,
+      top30,
+      outside,
+      visibility,
+      avgPosition,
+      top10Delta: prevDate ? top10 - prevTop10 : 0,
+      avgDelta: prevAvg > 0 ? +(prevAvg - avgPosition).toFixed(1) : 0,
+      keywordsCount: keywords.length,
+    };
+  }, [avgPosition, keywordDates, keywords]);
+
   // ── Filter handlers ──
   const handlePreset = useCallback((key: string, days: number) => {
     const now = new Date();
