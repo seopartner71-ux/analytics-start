@@ -448,6 +448,10 @@ export default function EmployeesPage() {
           )}
         </TabsContent>
 
+        <TabsContent value="reliability" className="mt-4">
+          <ReliabilityLeaderboard />
+        </TabsContent>
+
         {isAdmin && (
           <TabsContent value="access" className="mt-4">
             <SystemUsersTab />
