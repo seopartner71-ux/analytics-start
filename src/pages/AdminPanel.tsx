@@ -16,10 +16,12 @@ import {
 } from "@/components/ui/dialog";
 import {
   Shield, FolderOpen, Key, Users, Save, Eye, EyeOff,
-  CheckCircle2, XCircle, Settings2, Rocket,
+  CheckCircle2, XCircle, Settings2, Rocket, Wallet, Building,
 } from "lucide-react";
 import { OnboardingTaskTemplateEditor } from "@/components/admin/OnboardingTaskTemplateEditor";
 import { AiAssistantSettings } from "@/components/admin/AiAssistantSettings";
+import { CompanyRequisitesEditor } from "@/components/admin/CompanyRequisitesEditor";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Bot } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -158,7 +160,7 @@ export default function AdminPanel() {
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="mb-6">
+              <TabsList className="mb-6 flex-wrap h-auto">
                 <TabsTrigger value="projects" className="gap-1.5">
                   <FolderOpen className="h-3.5 w-3.5" />
                   {t("admin.tabs.projects")}
@@ -170,6 +172,10 @@ export default function AdminPanel() {
                 <TabsTrigger value="keys" className="gap-1.5">
                   <Key className="h-3.5 w-3.5" />
                   {t("admin.tabs.keys")}
+                </TabsTrigger>
+                <TabsTrigger value="requisites" className="gap-1.5">
+                  <Building className="h-3.5 w-3.5" />
+                  Реквизиты
                 </TabsTrigger>
                 <TabsTrigger value="onboarding-template" className="gap-1.5">
                   <Rocket className="h-3.5 w-3.5" />
@@ -258,6 +264,11 @@ export default function AdminPanel() {
                             <TableHead>Email</TableHead>
                             <TableHead>{t("admin.agency")}</TableHead>
                             <TableHead>{t("admin.projectCount")}</TableHead>
+                            <TableHead className="text-center">
+                              <span className="inline-flex items-center gap-1">
+                                <Wallet className="h-3.5 w-3.5" /> Финансы
+                              </span>
+                            </TableHead>
                             <TableHead>{t("admin.registered")}</TableHead>
                           </TableRow>
                         </TableHeader>
@@ -271,6 +282,23 @@ export default function AdminPanel() {
                                 <TableCell className="text-sm text-muted-foreground">{pr.agency_name || "—"}</TableCell>
                                 <TableCell>
                                   <Badge variant="secondary">{projectCount}</Badge>
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  <Checkbox
+                                    checked={!!pr.finance_access}
+                                    onCheckedChange={async (checked) => {
+                                      const { error } = await supabase
+                                        .from("profiles")
+                                        .update({ finance_access: !!checked })
+                                        .eq("id", pr.id);
+                                      if (error) {
+                                        toast.error(error.message);
+                                      } else {
+                                        toast.success(checked ? "Доступ к финансам выдан" : "Доступ к финансам снят");
+                                        queryClient.invalidateQueries({ queryKey: ["admin-profiles"] });
+                                      }
+                                    }}
+                                  />
                                 </TableCell>
                                 <TableCell className="text-sm text-muted-foreground">
                                   {new Date(pr.created_at).toLocaleDateString()}
@@ -334,6 +362,10 @@ export default function AdminPanel() {
                     </div>
                   </CardContent>
                 </Card>
+              </TabsContent>
+
+              <TabsContent value="requisites">
+                <CompanyRequisitesEditor />
               </TabsContent>
 
               <TabsContent value="onboarding-template">

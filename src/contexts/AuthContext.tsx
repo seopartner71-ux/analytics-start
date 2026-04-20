@@ -15,6 +15,7 @@ interface AuthContextType {
   isManager: boolean;
   isViewer: boolean;
   canEdit: boolean;
+  hasFinanceAccess: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -29,6 +30,7 @@ const AuthContext = createContext<AuthContextType>({
   isManager: false,
   isViewer: false,
   canEdit: false,
+  hasFinanceAccess: false,
   signOut: async () => {},
   refreshProfile: async () => {},
 });
@@ -87,9 +89,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isManager = role === "manager";
   const isViewer = role === "viewer";
   const canEdit = isAdmin || isManager;
+  const hasFinanceAccess = isAdmin || (profile as any)?.finance_access === true;
 
   return (
-    <AuthContext.Provider value={{ session, user, role, profile, loading, isAdmin, isManager, isViewer, canEdit, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ session, user, role, profile, loading, isAdmin, isManager, isViewer, canEdit, hasFinanceAccess, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

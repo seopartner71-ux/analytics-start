@@ -91,7 +91,7 @@ export default function Finance() {
   const { data: financeClients = [] } = useQuery({
     queryKey: ["finance_clients"],
     queryFn: async (): Promise<Client[]> => {
-      const { data, error } = await supabase.from("finance_clients").select("*").order("name");
+      const { data, error } = await supabase.from("financial_clients").select("*").order("name");
       if (error) throw error;
       return (data as any[]).map(c => ({ ...c, source: "finance" as const }));
     },
@@ -134,7 +134,7 @@ export default function Finance() {
   const { data: payments = [] } = useQuery({
     queryKey: ["finance_payments"],
     queryFn: async (): Promise<Payment[]> => {
-      const { data, error } = await supabase.from("finance_payments").select("*").order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("financial_payments").select("*").order("created_at", { ascending: false });
       if (error) throw error;
       return data as Payment[];
     },
@@ -144,7 +144,7 @@ export default function Finance() {
   const { data: invoices = [] } = useQuery({
     queryKey: ["finance_invoices"],
     queryFn: async (): Promise<Invoice[]> => {
-      const { data, error } = await supabase.from("finance_invoices").select("*").order("issued_at", { ascending: false });
+      const { data, error } = await supabase.from("financial_invoices").select("*").order("issued_at", { ascending: false });
       if (error) throw error;
       return data as Invoice[];
     },
@@ -154,7 +154,7 @@ export default function Finance() {
   const { data: expenses = [] } = useQuery({
     queryKey: ["finance_expenses"],
     queryFn: async (): Promise<Expense[]> => {
-      const { data, error } = await supabase.from("finance_expenses").select("*").order("expense_date", { ascending: false });
+      const { data, error } = await supabase.from("financial_expenses").select("*").order("expense_date", { ascending: false });
       if (error) throw error;
       return data as Expense[];
     },
@@ -164,7 +164,7 @@ export default function Finance() {
   const { data: taxes = [] } = useQuery({
     queryKey: ["finance_taxes"],
     queryFn: async (): Promise<Tax[]> => {
-      const { data, error } = await supabase.from("finance_taxes").select("*").order("year").order("quarter");
+      const { data, error } = await supabase.from("financial_taxes").select("*").order("year").order("quarter");
       if (error) throw error;
       return data as Tax[];
     },
@@ -228,7 +228,6 @@ export default function Finance() {
       };
     });
   }, [today, invoices, payments, expenses]);
-
 
   const expenseByCat = useMemo(() => {
     const map: Record<string, number> = {};
@@ -330,7 +329,6 @@ export default function Finance() {
           <BanksTab ownerId={ownerId} />
         </TabsContent>
       </Tabs>
-
 
       {/* Динамика выручки и прибыли за 6 месяцев */}
       <ChartCard title="Динамика выручки и прибыли · последние 6 месяцев">
@@ -459,7 +457,7 @@ function PaymentsTab({ payments, clients, ownerId, onChange }: { payments: Payme
   const save = async () => {
     if (!editing) return;
     const payload = {
-      owner_id: ownerId,
+      
       client_id: editing.client_id && !String(editing.client_id).startsWith("crm:") ? editing.client_id : null,
       client_name: editing.client_name || "",
       service: editing.service || "",
@@ -471,15 +469,15 @@ function PaymentsTab({ payments, clients, ownerId, onChange }: { payments: Payme
       comment: editing.comment || null,
     };
     const { error } = editing.id
-      ? await supabase.from("finance_payments").update(payload).eq("id", editing.id)
-      : await supabase.from("finance_payments").insert(payload);
+      ? await supabase.from("financial_payments").update(payload).eq("id", editing.id)
+      : await supabase.from("financial_payments").insert(payload);
     if (error) toast({ title: "Ошибка", description: error.message, variant: "destructive" });
     else { toast({ title: "Сохранено" }); setOpen(false); setEditing(null); onChange(); }
   };
 
   const remove = async (id: string) => {
     if (!confirm("Удалить платёж?")) return;
-    await supabase.from("finance_payments").delete().eq("id", id);
+    await supabase.from("financial_payments").delete().eq("id", id);
     onChange();
   };
 
@@ -612,7 +610,7 @@ function InvoicesTab({ invoices, clients, ownerId, onChange }: { invoices: Invoi
   const save = async () => {
     if (!editing) return;
     const payload = {
-      owner_id: ownerId,
+      
       invoice_number: editing.invoice_number || nextNumber,
       client_id: editing.client_id && !String(editing.client_id).startsWith("crm:") ? editing.client_id : null,
       client_name: editing.client_name || "",
@@ -623,15 +621,15 @@ function InvoicesTab({ invoices, clients, ownerId, onChange }: { invoices: Invoi
       status: editing.status || "draft",
     };
     const { error } = editing.id
-      ? await supabase.from("finance_invoices").update(payload).eq("id", editing.id)
-      : await supabase.from("finance_invoices").insert(payload);
+      ? await supabase.from("financial_invoices").update(payload).eq("id", editing.id)
+      : await supabase.from("financial_invoices").insert(payload);
     if (error) toast({ title: "Ошибка", description: error.message, variant: "destructive" });
     else { toast({ title: "Сохранено" }); setOpen(false); setEditing(null); onChange(); }
   };
 
   const remove = async (id: string) => {
     if (!confirm("Удалить счёт?")) return;
-    await supabase.from("finance_invoices").delete().eq("id", id);
+    await supabase.from("financial_invoices").delete().eq("id", id);
     onChange();
   };
 
@@ -732,22 +730,22 @@ function ExpensesTab({ expenses, ownerId, onChange }: { expenses: Expense[]; own
   const save = async () => {
     if (!editing) return;
     const payload = {
-      owner_id: ownerId,
+      
       category: editing.category || "other",
       amount: Number(editing.amount || 0),
       expense_date: editing.expense_date || format(new Date(), "yyyy-MM-dd"),
       comment: editing.comment || null,
     };
     const { error } = editing.id
-      ? await supabase.from("finance_expenses").update(payload).eq("id", editing.id)
-      : await supabase.from("finance_expenses").insert(payload);
+      ? await supabase.from("financial_expenses").update(payload).eq("id", editing.id)
+      : await supabase.from("financial_expenses").insert(payload);
     if (error) toast({ title: "Ошибка", description: error.message, variant: "destructive" });
     else { toast({ title: "Сохранено" }); setOpen(false); setEditing(null); onChange(); }
   };
 
   const remove = async (id: string) => {
     if (!confirm("Удалить расход?")) return;
-    await supabase.from("finance_expenses").delete().eq("id", id);
+    await supabase.from("financial_expenses").delete().eq("id", id);
     onChange();
   };
 
@@ -943,9 +941,9 @@ function TaxesTab({ taxes, invoices, ownerId, onChange }: { taxes: Tax[]; invoic
   }), [year, invoices, taxes, today]);
 
   const markPaid = async (q: number, amount: number, existingId?: string) => {
-    const payload = { owner_id: ownerId, year, quarter: q, amount, status: "paid", paid_at: format(new Date(), "yyyy-MM-dd") };
-    if (existingId) await supabase.from("finance_taxes").update(payload).eq("id", existingId);
-    else await supabase.from("finance_taxes").insert(payload);
+    const payload = { year, quarter: q, amount, status: "paid", paid_at: format(new Date(), "yyyy-MM-dd") };
+    if (existingId) await supabase.from("financial_taxes").update(payload).eq("id", existingId);
+    else await supabase.from("financial_taxes").insert(payload);
     toast({ title: "Отмечено как уплачено" });
     onChange();
   };
