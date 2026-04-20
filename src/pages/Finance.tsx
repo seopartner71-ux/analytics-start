@@ -460,8 +460,19 @@ function PaymentsTab({ payments, clients, ownerId, onChange }: { payments: Payme
   const [filterClient, setFilterClient] = useState<string>("all");
   const [editing, setEditing] = useState<Partial<Payment> | null>(null);
   const [open, setOpen] = useState(false);
+  const [historyClient, setHistoryClient] = useState<string | null>(null);
 
-  const filtered = payments.filter(p =>
+  const today = new Date();
+  const enriched = payments.map(p => {
+    let status = p.status;
+    if (status !== "paid" && p.next_payment_date) {
+      const due = parseISO(p.next_payment_date);
+      if (due < today && Number(p.paid_amount) < Number(p.contract_amount)) status = "overdue";
+    }
+    return { ...p, status };
+  });
+
+  const filtered = enriched.filter(p =>
     (filterStatus === "all" || p.status === filterStatus) &&
     (filterClient === "all" || p.client_name === filterClient)
   );
@@ -469,15 +480,14 @@ function PaymentsTab({ payments, clients, ownerId, onChange }: { payments: Payme
   const save = async () => {
     if (!editing) return;
     const payload = {
-      
       client_id: editing.client_id && !String(editing.client_id).startsWith("crm:") ? editing.client_id : null,
       client_name: editing.client_name || "",
       service: editing.service || "",
       contract_amount: Number(editing.contract_amount || 0),
       paid_amount: Number(editing.paid_amount || 0),
       next_payment_date: editing.next_payment_date || null,
-      status: editing.status || "unpaid",
-      recurrence: editing.recurrence || "once",
+      status: editing.status || "pending",
+      recurrence: editing.recurrence || "monthly",
       comment: editing.comment || null,
     };
     const { error } = editing.id
@@ -487,21 +497,33 @@ function PaymentsTab({ payments, clients, ownerId, onChange }: { payments: Payme
     else { toast({ title: "Сохранено" }); setOpen(false); setEditing(null); onChange(); }
   };
 
+  const markPaid = async (p: Payment) => {
+    const { error } = await supabase.from("financial_payments").update({
+      paid_amount: Number(p.contract_amount),
+      status: "paid",
+    }).eq("id", p.id);
+    if (error) { toast({ title: "Ошибка", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "Оплата отмечена", description: `${p.client_name} — ${RUB(Number(p.contract_amount))}` });
+    onChange();
+  };
+
   const remove = async (id: string) => {
     if (!confirm("Удалить платёж?")) return;
     await supabase.from("financial_payments").delete().eq("id", id);
     onChange();
   };
 
+  const clientHistory = historyClient ? enriched.filter(p => p.client_name === historyClient) : [];
+
   return (
     <Card className="bg-card border-border">
       <CardHeader className="flex-row items-center justify-between">
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Select value={filterStatus} onValueChange={setFilterStatus}>
             <SelectTrigger className="w-40 bg-muted/40 border-border"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Все статусы</SelectItem>
-              {["paid", "partial", "unpaid", "overdue"].map(s => <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>)}
+              {["paid", "partial", "pending", "overdue"].map(s => <SelectItem key={s} value={s}>{STATUS_LABELS[s] || s}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={filterClient} onValueChange={setFilterClient}>
@@ -514,7 +536,7 @@ function PaymentsTab({ payments, clients, ownerId, onChange }: { payments: Payme
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => setEditing({ status: "unpaid", recurrence: "once" })} className="bg-amber-500 text-foreground hover:bg-amber-600">
+            <Button onClick={() => setEditing({ status: "pending", recurrence: "monthly" })} className="bg-amber-500 text-foreground hover:bg-amber-600">
               <Plus className="h-4 w-4 mr-1" /> Добавить
             </Button>
           </DialogTrigger>
@@ -543,19 +565,20 @@ function PaymentsTab({ payments, clients, ownerId, onChange }: { payments: Payme
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Следующий платёж"><Input type="date" className="bg-muted/40 border-border" value={editing?.next_payment_date || ""} onChange={e => setEditing(p => ({ ...p, next_payment_date: e.target.value }))} /></Field>
                 <Field label="Статус">
-                  <Select value={editing?.status || "unpaid"} onValueChange={v => setEditing(p => ({ ...p, status: v }))}>
+                  <Select value={editing?.status || "pending"} onValueChange={v => setEditing(p => ({ ...p, status: v }))}>
                     <SelectTrigger className="bg-muted/40 border-border"><SelectValue /></SelectTrigger>
-                    <SelectContent>{["paid", "partial", "unpaid", "overdue"].map(s => <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>)}</SelectContent>
+                    <SelectContent>{["paid", "partial", "pending", "overdue"].map(s => <SelectItem key={s} value={s}>{STATUS_LABELS[s] || s}</SelectItem>)}</SelectContent>
                   </Select>
                 </Field>
               </div>
-              <Field label="Повтор">
-                <Select value={editing?.recurrence || "once"} onValueChange={v => setEditing(p => ({ ...p, recurrence: v }))}>
+              <Field label="Повторение">
+                <Select value={editing?.recurrence || "monthly"} onValueChange={v => setEditing(p => ({ ...p, recurrence: v }))}>
                   <SelectTrigger className="bg-muted/40 border-border"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="once">Разово</SelectItem>
-                    <SelectItem value="weekly">Еженедельно</SelectItem>
                     <SelectItem value="monthly">Ежемесячно</SelectItem>
+                    <SelectItem value="quarterly">Ежеквартально</SelectItem>
+                    <SelectItem value="yearly">Ежегодно</SelectItem>
                   </SelectContent>
                 </Select>
               </Field>
@@ -586,7 +609,11 @@ function PaymentsTab({ payments, clients, ownerId, onChange }: { payments: Payme
             {filtered.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Нет платежей</TableCell></TableRow>}
             {filtered.map(p => (
               <TableRow key={p.id} className="border-border">
-                <TableCell className="font-medium">{p.client_name}</TableCell>
+                <TableCell>
+                  <button className="font-medium text-left hover:text-amber-400 underline-offset-2 hover:underline" onClick={() => setHistoryClient(p.client_name)}>
+                    {p.client_name}
+                  </button>
+                </TableCell>
                 <TableCell>{p.service}</TableCell>
                 <TableCell>{RUB(Number(p.contract_amount))}</TableCell>
                 <TableCell className="text-emerald-400">{RUB(Number(p.paid_amount))}</TableCell>
@@ -595,6 +622,12 @@ function PaymentsTab({ payments, clients, ownerId, onChange }: { payments: Payme
                 <TableCell>{STATUS_BADGE(p.status)}</TableCell>
                 <TableCell>
                   <div className="flex gap-1">
+                    {p.status !== "paid" && (
+                      <Button size="icon" variant="ghost" title="Отметить оплаченным" onClick={() => markPaid(p)}>
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                      </Button>
+                    )}
+                    <Button size="icon" variant="ghost" title="История" onClick={() => setHistoryClient(p.client_name)}><History className="h-3.5 w-3.5" /></Button>
                     <Button size="icon" variant="ghost" onClick={() => { setEditing(p); setOpen(true); }}><Pencil className="h-3.5 w-3.5" /></Button>
                     <Button size="icon" variant="ghost" onClick={() => remove(p.id)}><Trash2 className="h-3.5 w-3.5 text-red-400" /></Button>
                   </div>
@@ -604,6 +637,31 @@ function PaymentsTab({ payments, clients, ownerId, onChange }: { payments: Payme
           </TableBody>
         </Table>
       </CardContent>
+
+      <Sheet open={!!historyClient} onOpenChange={(o) => !o && setHistoryClient(null)}>
+        <SheetContent className="bg-card border-border w-full sm:max-w-lg">
+          <SheetHeader><SheetTitle>История · {historyClient}</SheetTitle></SheetHeader>
+          <div className="mt-4 space-y-3">
+            {clientHistory.length === 0 && <div className="text-sm text-muted-foreground">Нет платежей</div>}
+            {clientHistory.map(p => (
+              <Card key={p.id} className="bg-muted/40 border-border">
+                <CardContent className="p-3 space-y-1 text-sm">
+                  <div className="flex justify-between items-start">
+                    <span className="font-medium">{p.service || "—"}</span>
+                    {STATUS_BADGE(p.status)}
+                  </div>
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Договор: {RUB(Number(p.contract_amount))}</span>
+                    <span className="text-emerald-400">Оплачено: {RUB(Number(p.paid_amount))}</span>
+                  </div>
+                  {p.next_payment_date && <div className="text-xs text-muted-foreground">След. платёж: {format(parseISO(p.next_payment_date), "dd.MM.yyyy")}</div>}
+                  {p.comment && <div className="text-xs italic text-muted-foreground">{p.comment}</div>}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </SheetContent>
+      </Sheet>
     </Card>
   );
 }
