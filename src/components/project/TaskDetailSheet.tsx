@@ -22,7 +22,8 @@ import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { getDeadlineStatus, DEADLINE_STYLES, STAGE_COLORS, STAGE_PROGRESS } from "@/lib/task-helpers";
 import type { Tables } from "@/integrations/supabase/types";
-import { TaskTimerWidget } from "@/components/time-tracking/TaskTimerWidget";
+import { TaskTimeManual } from "@/components/project/TaskTimeManual";
+import { CompleteTaskDialog } from "@/components/project/CompleteTaskDialog";
 
 export type CrmTask = Tables<"crm_tasks"> & {
   creator?: Tables<"team_members"> | null;
@@ -57,6 +58,8 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
   const [resultText, setResultText] = useState("");
   const [resultUploading, setResultUploading] = useState(false);
   const resultFileRef = useRef<HTMLInputElement>(null);
+  const [completeOpen, setCompleteOpen] = useState(false);
+  const [completing, setCompleting] = useState(false);
 
   useEffect(() => {
     if (!task) return;
@@ -317,6 +320,54 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["subtasks", task?.id] }),
   });
 
+  const handleComplete = async ({ result, minutes }: { result: string; minutes: number }) => {
+    if (!task || !user) return;
+    setCompleting(true);
+    try {
+      // 1. Log time
+      const endedAt = new Date();
+      const startedAt = new Date(endedAt.getTime() - minutes * 60 * 1000);
+      await supabase.from("task_time_entries").insert({
+        task_id: task.id,
+        user_id: user.id,
+        project_id: editProjectId || task.project_id || null,
+        started_at: startedAt.toISOString(),
+        ended_at: endedAt.toISOString(),
+        comment: "Финальное списание при закрытии задачи",
+      });
+
+      // 2. Save result as comment
+      await supabase.from("task_comments").insert({
+        task_id: task.id,
+        body: `✅ Результат: ${result}`,
+        is_system: false,
+      });
+
+      // 3. Update status -> Выполнено (green)
+      const greenColor = "#10b981";
+      await supabase.from("crm_tasks").update({
+        stage: "Выполнено",
+        stage_color: greenColor,
+        stage_progress: 100,
+      } as any).eq("id", task.id);
+
+      await addSystemLog(`Задача завершена. Списано ${Math.floor(minutes / 60)}ч ${minutes % 60}м`);
+
+      setEditStage("Выполнено");
+      queryClient.invalidateQueries({ queryKey: ["crm-tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["project-tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["time-entries", task.id] });
+      queryClient.invalidateQueries({ queryKey: ["task-comments", task.id] });
+
+      setCompleteOpen(false);
+      toast.success("Задача успешно закрыта!");
+    } catch (e: any) {
+      toast.error(e.message || "Не удалось закрыть задачу");
+    } finally {
+      setCompleting(false);
+    }
+  };
+
   if (!task) return null;
 
   const deadlineDate = task.deadline ? new Date(task.deadline) : null;
@@ -529,44 +580,48 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                 </CardContent>
               </Card>
 
-              {/* Time tracking widget */}
-              <TaskTimerWidget taskId={task.id} projectId={editProjectId || task.project_id || null} />
+              {/* Time tracking — manual only */}
+              <TaskTimeManual taskId={task.id} projectId={editProjectId || task.project_id || null} />
 
             </div>
 
-            {/* Sticky bottom action bar */}
-            <div className="border-t border-border/60 bg-card px-5 py-3 flex items-center gap-2 shrink-0 flex-wrap">
-              {(editStage === "Новые" || editStage === "Возвращена") && (
-                <Button size="sm" className="gap-1.5 shadow-sm bg-primary hover:bg-primary/90" onClick={startTask}>
-                  <Play className="h-3.5 w-3.5" /> Начать
-                </Button>
-              )}
-              {(editStage === "В работе" || editStage === "Возвращена") && (
-                <Button size="sm" className="gap-1.5 shadow-sm" onClick={sendForReview}>
-                  <Eye className="h-3.5 w-3.5" /> На проверку
-                </Button>
-              )}
-              {editStage === "На проверке" && (
-                <>
-                  <Button size="sm" className="gap-1.5 shadow-sm bg-emerald-600 hover:bg-emerald-700 text-white" onClick={acceptTask}>
-                    <ThumbsUp className="h-3.5 w-3.5" /> Принять
+            {/* Sticky bottom action bar — primary CTA */}
+            <div className="border-t border-border/60 bg-card px-5 py-3 shrink-0 space-y-2">
+              <Button
+                size="lg"
+                className="w-full h-11 gap-2 text-sm font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-md"
+                onClick={() => setCompleteOpen(true)}
+                disabled={editStage === "Принята" || editStage === "Завершена"}
+              >
+                <CheckCircle2 className="h-4 w-4" /> Завершить задачу
+              </Button>
+              <div className="flex items-center gap-2 flex-wrap">
+                {(editStage === "Новые" || editStage === "Возвращена") && (
+                  <Button size="sm" variant="outline" className="gap-1.5" onClick={startTask}>
+                    <Play className="h-3.5 w-3.5" /> Начать
                   </Button>
-                  <Button size="sm" variant="outline" className="gap-1.5 border-destructive/30 text-destructive hover:bg-destructive/5" onClick={returnTask}>
-                    <ThumbsDown className="h-3.5 w-3.5" /> Вернуть
+                )}
+                {editStage === "На проверке" && (
+                  <>
+                    <Button size="sm" variant="outline" className="gap-1.5 border-emerald-600/30 text-emerald-600 hover:bg-emerald-600/5" onClick={acceptTask}>
+                      <ThumbsUp className="h-3.5 w-3.5" /> Принять
+                    </Button>
+                    <Button size="sm" variant="outline" className="gap-1.5 border-destructive/30 text-destructive hover:bg-destructive/5" onClick={returnTask}>
+                      <ThumbsDown className="h-3.5 w-3.5" /> Вернуть
+                    </Button>
+                  </>
+                )}
+                {(editStage === "Принята" || editStage === "Завершена") && (
+                  <Button variant="outline" size="sm" className="gap-1.5 border-primary/30 text-primary hover:bg-primary/5" onClick={resumeTask}>
+                    <RotateCcw className="h-3.5 w-3.5" /> Возобновить
                   </Button>
-                </>
-              )}
-              {(editStage === "Принята" || editStage === "Завершена") && (
-                <Button variant="outline" size="sm" className="gap-1.5 border-primary/30 text-primary hover:bg-primary/5" onClick={resumeTask}>
-                  <RotateCcw className="h-3.5 w-3.5" /> Возобновить
-                </Button>
-              )}
-              <Badge className="ml-auto text-[10px]" style={{ backgroundColor: `${task.stage_color || '#3b82f6'}20`, color: task.stage_color || '#3b82f6' }}>
-                {editStage || task.stage}
-              </Badge>
+                )}
+                <Badge className="ml-auto text-[10px]" style={{ backgroundColor: `${task.stage_color || '#3b82f6'}20`, color: task.stage_color || '#3b82f6' }}>
+                  {editStage || task.stage}
+                </Badge>
+              </div>
             </div>
           </div>
-
           {/* RIGHT COLUMN: Chat */}
           <div className="flex-1 flex flex-col min-h-0">
             <div className="px-5 py-3 border-b border-border/60 bg-card flex items-center justify-between shrink-0">
@@ -649,6 +704,13 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
           </div>
         </div>
       </SheetContent>
+
+      <CompleteTaskDialog
+        open={completeOpen}
+        onOpenChange={setCompleteOpen}
+        onConfirm={handleComplete}
+        saving={completing}
+      />
     </Sheet>
   );
 }
