@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import { ru } from "date-fns/locale";
-import { Building2, Plus, RefreshCw, Unplug, ArrowDownCircle, ArrowUpCircle, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Building2, Plus, RefreshCw, Unplug, ArrowDownCircle, ArrowUpCircle, AlertCircle, CheckCircle2, Upload } from "lucide-react";
+import { useRef } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -59,6 +60,9 @@ export default function BanksTab({ ownerId }: { ownerId: string | null }) {
   const [connectOpen, setConnectOpen] = useState(false);
   const [provider, setProvider] = useState("tochka");
   const [syncingId, setSyncingId] = useState<string | null>(null);
+  const [importingId, setImportingId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [csvTargetAccount, setCsvTargetAccount] = useState<string | null>(null);
 
   const integrationsQ = useQuery({
     queryKey: ["bank_integrations", ownerId],
@@ -180,6 +184,87 @@ export default function BanksTab({ ownerId }: { ownerId: string | null }) {
     }
   };
 
+  const handleCsvImport = async (file: File, accountId: string) => {
+    setImportingId(accountId);
+    try {
+      const text = await file.text();
+      const lines = text.split(/\r?\n/).filter((l) => l.trim());
+      if (lines.length < 2) throw new Error("Файл пустой");
+
+      // Авто-детекция разделителя: ; или ,
+      const sep = lines[0].includes(";") ? ";" : ",";
+      const splitLine = (l: string) => {
+        const out: string[] = [];
+        let cur = "", inQ = false;
+        for (const ch of l) {
+          if (ch === '"') { inQ = !inQ; continue; }
+          if (ch === sep && !inQ) { out.push(cur); cur = ""; continue; }
+          cur += ch;
+        }
+        out.push(cur);
+        return out.map((s) => s.trim());
+      };
+      const headers = splitLine(lines[0]).map((h) => h.toLowerCase());
+      // Поиск колонок (поддержка популярных форматов: Тинькофф/Сбер/1С)
+      const findIdx = (...keys: string[]) => headers.findIndex((h) => keys.some((k) => h.includes(k)));
+      const dateIdx = findIdx("дата", "date", "operation date");
+      const amountIdx = findIdx("сумма", "amount");
+      const purposeIdx = findIdx("назначение", "purpose", "описание", "description");
+      const counterpartyIdx = findIdx("контрагент", "получатель", "плательщик", "counterparty", "name");
+      const directionIdx = findIdx("тип", "направление", "operation type");
+
+      if (dateIdx < 0 || amountIdx < 0) {
+        throw new Error("Не найдены обязательные колонки: дата и сумма");
+      }
+
+      const rows: any[] = [];
+      for (let i = 1; i < lines.length; i++) {
+        const cols = splitLine(lines[i]);
+        const rawDate = cols[dateIdx] || "";
+        const rawAmount = (cols[amountIdx] || "0").replace(/\s/g, "").replace(",", ".");
+        const amount = Math.abs(Number(rawAmount));
+        if (!rawDate || isNaN(amount) || amount === 0) continue;
+
+        // Парсинг даты ДД.ММ.ГГГГ или ГГГГ-ММ-ДД
+        let opDate = rawDate;
+        const m = rawDate.match(/^(\d{2})[.\/-](\d{2})[.\/-](\d{4})/);
+        if (m) opDate = `${m[3]}-${m[2]}-${m[1]}`;
+
+        const directionRaw = (directionIdx >= 0 ? cols[directionIdx] : "").toLowerCase();
+        const direction =
+          directionRaw.includes("приход") || directionRaw.includes("credit") || directionRaw.includes("in") || Number(rawAmount) > 0
+            ? "in"
+            : "out";
+
+        rows.push({
+          account_id: accountId,
+          owner_id: ownerId!,
+          operation_date: opDate,
+          amount,
+          direction,
+          counterparty: counterpartyIdx >= 0 ? cols[counterpartyIdx] || "" : "",
+          purpose: purposeIdx >= 0 ? cols[purposeIdx] || "" : "",
+          category: direction === "in" ? "income" : "expense",
+          external_id: `csv:${opDate}:${amount}:${i}`,
+        });
+      }
+
+      if (rows.length === 0) throw new Error("Не найдено ни одной операции");
+
+      const { error } = await supabase.from("bank_transactions").insert(rows);
+      if (error) throw error;
+
+      toast({ title: "Импорт CSV завершён", description: `Загружено операций: ${rows.length}` });
+      qc.invalidateQueries({ queryKey: ["bank_transactions"] });
+    } catch (e: any) {
+      toast({ title: "Ошибка импорта", description: e.message, variant: "destructive" });
+    } finally {
+      setImportingId(null);
+      setCsvTargetAccount(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   const totalBalance = useMemo(
     () => (accountsQ.data ?? []).reduce((s, a) => s + Number(a.balance || 0), 0),
     [accountsQ.data],
@@ -269,10 +354,50 @@ export default function BanksTab({ ownerId }: { ownerId: string | null }) {
         </div>
       )}
 
+      {/* Hidden file input для CSV-импорта */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".csv,text/csv"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f && csvTargetAccount) handleCsvImport(f, csvTargetAccount);
+        }}
+      />
+
       {/* Лента операций */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex-row items-center justify-between">
           <CardTitle className="text-base">Последние операции</CardTitle>
+          {accounts.length > 0 && (
+            <div className="flex items-center gap-2">
+              <Select
+                value={csvTargetAccount ?? ""}
+                onValueChange={(v) => setCsvTargetAccount(v)}
+              >
+                <SelectTrigger className="h-8 w-48 text-xs">
+                  <SelectValue placeholder="Счёт для импорта" />
+                </SelectTrigger>
+                <SelectContent>
+                  {accounts.map((a) => (
+                    <SelectItem key={a.id} value={a.id}>
+                      {a.bank_name || "Банк"} · {a.account_number.slice(-4)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={!csvTargetAccount || !!importingId}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload className={cn("h-3.5 w-3.5 mr-1", importingId && "animate-pulse")} />
+                Импорт CSV
+              </Button>
+            </div>
+          )}
         </CardHeader>
         <CardContent>
           {transactions.length === 0 ? (

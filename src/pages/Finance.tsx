@@ -34,6 +34,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import BanksTab from "@/components/finance/BanksTab";
+import DirectorDashboard from "@/components/finance/DirectorDashboard";
+import ProfitabilityReport from "@/components/finance/ProfitabilityReport";
 import { generateInvoicePdf, type RequisitesData } from "@/lib/invoice-pdf";
 
 /* ────────── Types ────────── */
@@ -183,6 +185,16 @@ export default function Finance() {
     enabled: !!ownerId,
   });
 
+  const { data: bankAccounts = [] } = useQuery({
+    queryKey: ["finance_bank_accounts"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("bank_accounts").select("id, balance, currency");
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!ownerId,
+  });
+
   /* KPIs current month */
   const kpis = useMemo(() => {
     const inMonth = (d: string) => {
@@ -198,8 +210,26 @@ export default function Finance() {
     const profit = income - expenseTotal;
     const taxDue = taxes.filter(t => t.status === "pending").reduce((s, t) => s + Number(t.amount), 0)
       || Math.round(totalIncomeYear * 0.06);
-    return { income, expenseTotal, profit, taxDue };
-  }, [payments, invoices, expenses, taxes, monthStart, monthEnd]);
+
+    // Дебиторка — невыплаченные суммы по платежам и неоплаченные счета
+    const debt = payments.reduce((s, p) => s + Math.max(0, Number(p.contract_amount) - Number(p.paid_amount || 0)), 0)
+      + invoices.filter(i => i.status !== "paid" && i.status !== "draft").reduce((s, i) => s + Number(i.amount), 0);
+
+    // Ближайший платёж
+    const upcoming = payments
+      .filter(p => p.status !== "paid" && p.next_payment_date && parseISO(p.next_payment_date) >= today)
+      .sort((a, b) => parseISO(a.next_payment_date!).getTime() - parseISO(b.next_payment_date!).getTime())[0];
+
+    // Баланс банков (только в RUB)
+    const bankBalance = bankAccounts
+      .filter((a: any) => !a.currency || a.currency === "RUB")
+      .reduce((s: number, a: any) => s + Number(a.balance || 0), 0);
+
+    // Маржа
+    const margin = income > 0 ? Math.round((profit / income) * 100) : 0;
+
+    return { income, expenseTotal, profit, taxDue, debt, upcoming, bankBalance, margin };
+  }, [payments, invoices, expenses, taxes, monthStart, monthEnd, bankAccounts, today]);
 
   /* Charts data */
   const months12 = useMemo(() => Array.from({ length: 12 }, (_, i) => addMonths(startOfMonth(today), -11 + i)), [today]);
@@ -309,17 +339,29 @@ export default function Finance() {
         <KpiTile label="Расходы" value={RUB(kpis.expenseTotal)} color="red" icon={<TrendingDown />} />
         <KpiTile label="Чистая прибыль" value={RUB(kpis.profit)} color="blue" icon={<Wallet />} />
         <KpiTile label="Налоги к уплате" value={RUB(kpis.taxDue)} color="amber" icon={<Receipt />} />
+        <KpiTile label="Дебиторка" value={RUB(kpis.debt)} color="red" icon={<AlertCircle />} hint="долги клиентов" />
+        <KpiTile
+          label="Следующий платёж"
+          value={kpis.upcoming?.next_payment_date ? format(parseISO(kpis.upcoming.next_payment_date), "d MMM", { locale: ru }) : "—"}
+          color="amber"
+          icon={<CalIcon />}
+          hint={kpis.upcoming?.client_name || "нет ожидаемых"}
+        />
+        <KpiTile label="Баланс" value={RUB(kpis.bankBalance)} color="blue" icon={<Wallet />} hint="все счета" />
+        <KpiTile label="Маржа" value={`${kpis.margin}%`} color={kpis.margin >= 30 ? "emerald" : "amber"} icon={<TrendingUp />} hint="прибыль / доход" />
       </div>
 
       {/* Tabs */}
       <Tabs defaultValue="payments" className="w-full">
-        <TabsList className="bg-card border border-border">
+        <TabsList className="bg-card border border-border flex-wrap h-auto">
           <TabsTrigger value="payments">Клиенты и платежи</TabsTrigger>
           <TabsTrigger value="invoices">Счета</TabsTrigger>
           <TabsTrigger value="expenses">Расходы</TabsTrigger>
           <TabsTrigger value="calendar">Платёжный календарь</TabsTrigger>
           <TabsTrigger value="taxes">Налоги</TabsTrigger>
           <TabsTrigger value="banks">Банки</TabsTrigger>
+          <TabsTrigger value="director">Дашборд директора</TabsTrigger>
+          <TabsTrigger value="profitability">Прибыльность клиентов</TabsTrigger>
         </TabsList>
 
         <TabsContent value="payments" className="mt-4">
@@ -339,6 +381,12 @@ export default function Finance() {
         </TabsContent>
         <TabsContent value="banks" className="mt-4">
           <BanksTab ownerId={ownerId} />
+        </TabsContent>
+        <TabsContent value="director" className="mt-4">
+          <DirectorDashboard invoices={invoices} payments={payments} expenses={expenses} />
+        </TabsContent>
+        <TabsContent value="profitability" className="mt-4">
+          <ProfitabilityReport invoices={invoices} payments={payments} />
         </TabsContent>
       </Tabs>
 
@@ -423,7 +471,7 @@ export default function Finance() {
 }
 
 /* ────────── KPI Tile ────────── */
-function KpiTile({ label, value, color, icon }: { label: string; value: string; color: "emerald" | "red" | "blue" | "amber"; icon: React.ReactNode }) {
+function KpiTile({ label, value, color, icon, hint }: { label: string; value: string; color: "emerald" | "red" | "blue" | "amber"; icon: React.ReactNode; hint?: string }) {
   const colorMap = {
     emerald: "from-emerald-500/20 to-emerald-500/5 border-emerald-500/30 text-emerald-400",
     red: "from-red-500/20 to-red-500/5 border-red-500/30 text-red-400",
@@ -438,6 +486,7 @@ function KpiTile({ label, value, color, icon }: { label: string; value: string; 
           <span className="opacity-70">{icon}</span>
         </div>
         <div className="text-2xl font-bold">{value}</div>
+        {hint && <div className="text-xs text-muted-foreground mt-1 truncate">{hint}</div>}
       </CardContent>
     </Card>
   );
