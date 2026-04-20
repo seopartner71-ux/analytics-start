@@ -913,6 +913,40 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
         goals={goalsData}
       />
 
+      {/* Topvisor summary panel */}
+      {hasTopvisor && (
+        <Card className="bg-card rounded-lg shadow-sm border border-border p-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
+            {[
+              { label: "TOP-1", value: topvisorSummary.top1, tone: "bg-[hsl(var(--chart-4))]/10 text-[hsl(var(--chart-4))]" },
+              { label: "TOP-3", value: topvisorSummary.top3, tone: "bg-[hsl(var(--chart-4))]/10 text-[hsl(var(--chart-4))]" },
+              { label: "TOP-10", value: topvisorSummary.top10, delta: topvisorSummary.top10Delta, tone: "bg-[hsl(var(--chart-2))]/10 text-[hsl(var(--chart-2))]" },
+              { label: "TOP-30", value: topvisorSummary.top30, tone: "bg-primary/10 text-primary" },
+              { label: "Вне ТОП", value: topvisorSummary.outside, tone: "bg-muted/50 text-muted-foreground" },
+              { label: "Ср. позиция", value: topvisorSummary.avgPosition > 0 ? topvisorSummary.avgPosition.toFixed(1) : "—", delta: topvisorSummary.avgDelta, invert: true, tone: "bg-muted/50 text-foreground" },
+              { label: "Видимость", value: `${topvisorSummary.visibility}%`, tone: "bg-muted/50 text-foreground" },
+              { label: "Запросов", value: topvisorSummary.keywordsCount, tone: "bg-muted/50 text-foreground" },
+            ].map((item) => {
+              const positive = item.invert ? Number(item.delta) > 0 : Number(item.delta) > 0;
+              return (
+                <div key={item.label} className={cn("rounded-lg px-3 py-2", item.tone)}>
+                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">{item.label}</p>
+                  <div className="flex items-end gap-1.5">
+                    <p className="text-lg font-bold leading-none">{item.value}</p>
+                    {item.delta !== undefined && item.delta !== 0 && (
+                      <span className={cn("text-[10px] font-semibold flex items-center gap-0.5", positive ? "text-emerald-500" : "text-red-500")}>
+                        {positive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                        {Math.abs(Number(item.delta))}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
+
       {/* KPI cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="bg-card rounded-lg shadow-sm border border-border p-4">
