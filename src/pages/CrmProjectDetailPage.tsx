@@ -360,9 +360,6 @@ export default function CrmProjectDetailPage() {
           <TabsTrigger value="links" className="gap-1.5 text-[13px]">
             <Link2 className="h-3.5 w-3.5" /> Ссылочный профиль
           </TabsTrigger>
-          <TabsTrigger value="onboarding" className="gap-1.5 text-[13px]">
-            <Rocket className="h-3.5 w-3.5" /> Онбординг
-          </TabsTrigger>
           <TabsTrigger value="weekly" className="gap-1.5 text-[13px]">
             <FileBarChart className="h-3.5 w-3.5" /> Недельные отчёты
           </TabsTrigger>
@@ -373,10 +370,6 @@ export default function CrmProjectDetailPage() {
 
         <TabsContent value="weekly">
           <WeeklyReportsTab projectId={id!} />
-        </TabsContent>
-
-        <TabsContent value="onboarding">
-          <OnboardingTasksTab projectId={id!} />
         </TabsContent>
 
         <TabsContent value="links">
