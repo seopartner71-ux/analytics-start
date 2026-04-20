@@ -1836,7 +1836,8 @@ export type Database = {
           error_id: string | null
           id: string
           is_read: boolean
-          project_id: string
+          kind: string
+          project_id: string | null
           title: string
           user_id: string
         }
@@ -1846,7 +1847,8 @@ export type Database = {
           error_id?: string | null
           id?: string
           is_read?: boolean
-          project_id: string
+          kind?: string
+          project_id?: string | null
           title: string
           user_id: string
         }
@@ -1856,7 +1858,8 @@ export type Database = {
           error_id?: string | null
           id?: string
           is_read?: boolean
-          project_id?: string
+          kind?: string
+          project_id?: string | null
           title?: string
           user_id?: string
         }
