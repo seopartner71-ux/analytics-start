@@ -2770,30 +2770,49 @@ export type Database = {
       }
       subtasks: {
         Row: {
+          assignee_id: string | null
           created_at: string
+          deadline: string | null
+          description: string | null
           id: string
           is_done: boolean
+          plan_minutes: number | null
           sort_order: number
           task_id: string
           title: string
         }
         Insert: {
+          assignee_id?: string | null
           created_at?: string
+          deadline?: string | null
+          description?: string | null
           id?: string
           is_done?: boolean
+          plan_minutes?: number | null
           sort_order?: number
           task_id: string
           title: string
         }
         Update: {
+          assignee_id?: string | null
           created_at?: string
+          deadline?: string | null
+          description?: string | null
           id?: string
           is_done?: boolean
+          plan_minutes?: number | null
           sort_order?: number
           task_id?: string
           title?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "subtasks_assignee_id_fkey"
+            columns: ["assignee_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "subtasks_task_id_fkey"
             columns: ["task_id"]
