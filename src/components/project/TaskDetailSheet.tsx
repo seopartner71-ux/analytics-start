@@ -26,6 +26,7 @@ import { TaskTimeManual } from "@/components/project/TaskTimeManual";
 import { CompleteTaskDialog } from "@/components/project/CompleteTaskDialog";
 import { CreateSubtaskDialog, type SubtaskFormValues } from "@/components/project/CreateSubtaskDialog";
 import { TaskBlockerSection, FrozenDeadlineBadge, useTaskBlocker } from "@/components/project/TaskBlocker";
+import { TaskReviewWorkflow } from "@/components/project/TaskReviewWorkflow";
 
 export type CrmTask = Tables<"crm_tasks"> & {
   creator?: Tables<"team_members"> | null;
@@ -244,10 +245,10 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
     toast.success("Задача принята");
   };
 
-  const returnTask = async () => {
+  const returnTask = async (reasonArg?: string) => {
     if (!task) return;
-    const reason = window.prompt("Причина возврата (комментарий для исполнителя):");
-    if (!reason || !reason.trim()) return;
+    const reason = reasonArg ?? window.prompt("Причина возврата (комментарий для исполнителя):") ?? "";
+    if (!reason.trim()) return;
     await supabase.from("crm_tasks").update({
       stage: "Возвращена",
       stage_color: STAGE_COLORS["Возвращена"],
@@ -415,6 +416,27 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
             problemType={blocker.problemType}
             onBlock={blocker.block}
             onUnblock={blocker.unblock}
+          />
+          <TaskReviewWorkflow
+            stage={editStage || task.stage}
+            history={comments.map((c) => ({
+              id: c.id,
+              body: c.body,
+              is_system: c.is_system,
+              created_at: c.created_at,
+            }))}
+            onSubmitForReview={async (link) => {
+              // 1. сохраняем результат как комментарий, чтобы пройти проверку sendForReview
+              await supabase.from("task_comments").insert({
+                task_id: task.id,
+                body: `📎 Результат: ${link}`,
+                is_system: false,
+              });
+              queryClient.invalidateQueries({ queryKey: ["task-comments", task.id] });
+              await sendForReview();
+            }}
+            onAccept={acceptTask}
+            onReject={(reason) => returnTask(reason)}
           />
         </div>
 
@@ -653,7 +675,7 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                     <Button size="sm" variant="outline" className="gap-1.5 border-emerald-600/30 text-emerald-600 hover:bg-emerald-600/5" onClick={acceptTask}>
                       <ThumbsUp className="h-3.5 w-3.5" /> Принять
                     </Button>
-                    <Button size="sm" variant="outline" className="gap-1.5 border-destructive/30 text-destructive hover:bg-destructive/5" onClick={returnTask}>
+                    <Button size="sm" variant="outline" className="gap-1.5 border-destructive/30 text-destructive hover:bg-destructive/5" onClick={() => returnTask()}>
                       <ThumbsDown className="h-3.5 w-3.5" /> Вернуть
                     </Button>
                   </>
