@@ -34,7 +34,7 @@ const allNav = [
   { title: "База знаний", url: "/knowledge", icon: BookOpen, minRole: "viewer" as const },
   { title: "📚 Книги для AI", url: "/knowledge-books", icon: BookOpen, minRole: "admin" as const },
   { title: "Чат", url: "/chat", icon: MessageSquare, minRole: "viewer" as const },
-  { title: "Финансы", url: "/finance", icon: Wallet, minRole: "admin" as const },
+  { title: "Финансы", url: "/finance", icon: Wallet, minRole: "viewer" as const, requireFinance: true },
   { title: "Интеграции", url: "/admin?tab=keys", icon: Plug, minRole: "admin" as const },
 ];
 
@@ -54,10 +54,14 @@ interface AppSidebarProps {
 export function AppSidebar({ activeTab, onTabChange, projectName, projectLogo }: AppSidebarProps) {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
-  const { user, role, isAdmin, isManager } = useAuth();
+  const { user, role, isAdmin, isManager, hasFinanceAccess } = useAuth();
   const ROLE_LEVELS = { viewer: 0, manager: 1, admin: 2 } as const;
   const userLevel = ROLE_LEVELS[role as keyof typeof ROLE_LEVELS] ?? 0;
-  const mainNav = allNav.filter(item => userLevel >= ROLE_LEVELS[item.minRole]);
+  const mainNav = allNav.filter(item => {
+    if (userLevel < ROLE_LEVELS[item.minRole]) return false;
+    if ((item as any).requireFinance && !hasFinanceAccess) return false;
+    return true;
+  });
   const { id: projectId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
