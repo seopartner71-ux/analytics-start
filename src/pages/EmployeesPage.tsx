@@ -6,7 +6,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Loader2, Plus, Users, Shield, Mail, Copy, Check } from "lucide-react";
+import { Search, Loader2, Plus, Users, Shield, Mail, Copy, Check, Award } from "lucide-react";
+import ReliabilityLeaderboard from "@/components/employees/ReliabilityLeaderboard";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -362,6 +363,9 @@ export default function EmployeesPage() {
           <TabsTrigger value="employees" className="gap-1.5">
             <Users className="h-3.5 w-3.5" /> Сотрудники
           </TabsTrigger>
+          <TabsTrigger value="reliability" className="gap-1.5">
+            <Award className="h-3.5 w-3.5" /> Надёжность
+          </TabsTrigger>
           {isAdmin && (
             <TabsTrigger value="access" className="gap-1.5">
               <Shield className="h-3.5 w-3.5" /> Доступ к системе
@@ -442,6 +446,10 @@ export default function EmployeesPage() {
               </table>
             </div>
           )}
+        </TabsContent>
+
+        <TabsContent value="reliability" className="mt-4">
+          <ReliabilityLeaderboard />
         </TabsContent>
 
         {isAdmin && (
