@@ -59,12 +59,6 @@ export function WeeklyReportsTab({ projectId }: { projectId: string }) {
   const generateNow = async () => {
     setGenerating(true);
     try {
-      const { data, error } = await supabase.functions.invoke("generate-weekly-reports", {
-        body: {},
-        // передаём project_id через query — edge сам читает url
-      });
-      // вызываем второй раз с query параметром — но invoke не поддерживает query, поэтому:
-      // используем fetch напрямую чтобы передать project_id
       const fnUrl = `https://iigedewmxyqigivsqwqz.supabase.co/functions/v1/generate-weekly-reports?project_id=${projectId}`;
       const sess = await supabase.auth.getSession();
       const r = await fetch(fnUrl, {
@@ -72,13 +66,13 @@ export function WeeklyReportsTab({ projectId }: { projectId: string }) {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${sess.data.session?.access_token || ""}`,
-          apikey: (supabase as any).supabaseKey || "",
+          apikey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlpZ2VkZXdteHlxaWdpdnNxd3F6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2MDU4MTMsImV4cCI6MjA5MDE4MTgxM30.11sID9y098DL29ocSLP109NuUyjF1I-hxY_1Rb3kKao",
         },
         body: "{}",
       });
       const j = await r.json();
       if (!r.ok) throw new Error(j.error || "Не удалось сгенерировать");
-      toast.success(j.count > 0 ? "Отчёт сгенерирован" : "Отчёт уже есть на эту неделю");
+      toast.success(j.count > 0 && j.created?.[0]?.status === "created" ? "Отчёт создан" : "Отчёт уже существует");
       await load();
     } catch (e: any) {
       toast.error(e.message);
