@@ -10,6 +10,7 @@ import * as XLSX from "xlsx";
 import {
   Wallet, TrendingDown, TrendingUp, Receipt, Plus, Pencil, Trash2,
   Download, FileText, ChevronLeft, ChevronRight, Calendar as CalIcon, AlertCircle,
+  CheckCircle2, Copy, History, X,
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +22,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -31,6 +34,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import BanksTab from "@/components/finance/BanksTab";
+import { generateInvoicePdf, type RequisitesData } from "@/lib/invoice-pdf";
 
 /* ────────── Types ────────── */
 type Client = { id: string; name: string; email: string | null; phone: string | null; notes: string | null; source?: "finance" | "crm" };
@@ -73,7 +77,15 @@ const STATUS_BADGE = (status: string) => {
   );
 };
 const EXPENSE_CATS: Record<string, string> = {
-  salary: "Зарплата", ads: "Реклама", tools: "Инструменты", taxes: "Налоги", other: "Прочее",
+  salary: "👥 Зарплата",
+  ads: "📢 Реклама",
+  tools: "🛠️ Инструменты и сервисы",
+  rent: "🏢 Аренда офиса",
+  taxes: "💰 Налоги",
+  links: "🔗 Закупка ссылок",
+  copywriting: "📝 Копирайтинг",
+  transport: "🚗 Транспорт",
+  other: "📦 Прочее",
 };
 const TAX_DEADLINES: Record<number, string> = { 1: "25 апреля", 2: "25 июля", 3: "25 октября", 4: "25 января" };
 
