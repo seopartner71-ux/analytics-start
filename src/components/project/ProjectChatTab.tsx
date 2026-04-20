@@ -114,6 +114,23 @@ export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) 
           });
         }
       }
+
+      // Members from project_members table
+      const { data: pmRows } = await supabase
+        .from("project_members")
+        .select("role, team_member:team_members(id, owner_id, full_name)")
+        .eq("project_id", projectId);
+      for (const row of (pmRows || []) as any[]) {
+        const tm = row.team_member;
+        if (!tm) continue;
+        if (list.some((p) => p.id === tm.id)) continue;
+        list.push({
+          id: tm.id,
+          user_id: tm.owner_id,
+          full_name: tm.full_name,
+          role: row.role,
+        });
+      }
       return list;
     },
   });
