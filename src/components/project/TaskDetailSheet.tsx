@@ -25,6 +25,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import { TaskTimeManual } from "@/components/project/TaskTimeManual";
 import { CompleteTaskDialog } from "@/components/project/CompleteTaskDialog";
 import { CreateSubtaskDialog, type SubtaskFormValues } from "@/components/project/CreateSubtaskDialog";
+import { TaskBlockerSection, FrozenDeadlineBadge, useTaskBlocker } from "@/components/project/TaskBlocker";
 
 export type CrmTask = Tables<"crm_tasks"> & {
   creator?: Tables<"team_members"> | null;
