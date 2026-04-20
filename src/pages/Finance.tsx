@@ -375,6 +375,9 @@ export default function Finance() {
         <TabsContent value="expenses" className="mt-4">
           <ExpensesTab expenses={expenses} ownerId={ownerId} onChange={refreshAll} />
         </TabsContent>
+        <TabsContent value="analytics" className="mt-4">
+          <RevenueAnalytics />
+        </TabsContent>
         <TabsContent value="calendar" className="mt-4">
           <PaymentCalendar payments={payments} invoices={invoices} ownerId={ownerId} onChange={refreshAll} clients={clients} />
         </TabsContent>
