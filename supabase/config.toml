@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.get-report-data]
 verify_jwt = false
+
+[functions.get-links]
+verify_jwt = false
+
+[functions.update-link-status]
+verify_jwt = false
