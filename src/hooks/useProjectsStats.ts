@@ -106,9 +106,11 @@ export function useProjectsStats(projects: Array<{ id: string; topvisor_api_key?
                 action: "get-rankings-history",
                 api_key: project.topvisor_api_key,
                 user_id: project.topvisor_user_id,
-                project_id: Number(project.topvisor_project_id),
-                date_from: monthAgo,
-                date_to: today,
+                payload: {
+                  project_id: Number(project.topvisor_project_id),
+                  date_from: monthAgo,
+                  date_to: today,
+                },
               },
             });
 
