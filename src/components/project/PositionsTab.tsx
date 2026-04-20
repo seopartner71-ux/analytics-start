@@ -413,9 +413,30 @@ function PositionsDashboard({
     return result;
   }, [keywordRows, searchQuery, brandFilter]);
 
+  const [isRunningCheck, setIsRunningCheck] = useState(false);
+
   const handleSync = () => {
     refetch();
     toast.success(isRu ? "Данные обновлены" : "Data refreshed");
+  };
+
+  const handleRunCheck = async () => {
+    if (isRunningCheck) return;
+    setIsRunningCheck(true);
+    try {
+      await callTopvisor("run-check", apiKey, userId, { project_id: tvProjectId });
+      toast.success(
+        isRu
+          ? "Съём позиций запущен в Topvisor. Данные появятся через 1–5 мин."
+          : "Position check started in Topvisor. Data will arrive in 1–5 min."
+      );
+      // Refetch after a short delay to pick up new data when ready
+      setTimeout(() => refetch(), 60_000);
+    } catch (e: any) {
+      toast.error(e?.message || (isRu ? "Не удалось запустить съём" : "Failed to start check"));
+    } finally {
+      setIsRunningCheck(false);
+    }
   };
 
   /* ── Compute dates with data for a specific searcher ── */
