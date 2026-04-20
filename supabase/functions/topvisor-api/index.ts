@@ -250,6 +250,18 @@ serve(async (req) => {
         fetchBody = JSON.stringify({ limit: 1 });
         break;
 
+      case "run-check": {
+        if (!isRecord(payload) || !payload.project_id) {
+          return new Response(JSON.stringify({ error: "payload.project_id is required for run-check" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        url = `${TV_BASE}/edit/positions_2/checker/go`;
+        fetchBody = JSON.stringify({ project_id: Number(payload.project_id) });
+        break;
+      }
+
       default:
         return new Response(JSON.stringify({ error: `Unknown action: ${action}` }), {
           status: 400,
