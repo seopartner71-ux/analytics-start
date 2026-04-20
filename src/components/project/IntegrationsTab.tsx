@@ -452,10 +452,17 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
             <div className="space-y-2">
               <Label>API Key *</Label>
               <Input value={tvApiKey} onChange={(e) => setTvApiKey(e.target.value)} placeholder="tv_xxxxxxxxxxxxxxxx" />
+              <p className="text-[11px] text-muted-foreground">Settings → API → API key</p>
             </div>
             <div className="space-y-2">
-              <Label>User ID *</Label>
-              <Input value={tvProjectId} onChange={(e) => setTvProjectId(e.target.value)} placeholder="12345" />
+              <Label>User ID (email) *</Label>
+              <Input value={tvUserId} onChange={(e) => setTvUserId(e.target.value)} placeholder="user@example.com" />
+              <p className="text-[11px] text-muted-foreground">Email вашего аккаунта Topvisor</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Project ID *</Label>
+              <Input value={tvProjectId} onChange={(e) => setTvProjectId(e.target.value)} placeholder="26206407" />
+              <p className="text-[11px] text-muted-foreground">ID проекта в Topvisor (виден в URL)</p>
             </div>
           </div>
           <DialogFooter>
