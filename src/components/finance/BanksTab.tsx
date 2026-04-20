@@ -184,6 +184,87 @@ export default function BanksTab({ ownerId }: { ownerId: string | null }) {
     }
   };
 
+  const handleCsvImport = async (file: File, accountId: string) => {
+    setImportingId(accountId);
+    try {
+      const text = await file.text();
+      const lines = text.split(/\r?\n/).filter((l) => l.trim());
+      if (lines.length < 2) throw new Error("Файл пустой");
+
+      // Авто-детекция разделителя: ; или ,
+      const sep = lines[0].includes(";") ? ";" : ",";
+      const splitLine = (l: string) => {
+        const out: string[] = [];
+        let cur = "", inQ = false;
+        for (const ch of l) {
+          if (ch === '"') { inQ = !inQ; continue; }
+          if (ch === sep && !inQ) { out.push(cur); cur = ""; continue; }
+          cur += ch;
+        }
+        out.push(cur);
+        return out.map((s) => s.trim());
+      };
+      const headers = splitLine(lines[0]).map((h) => h.toLowerCase());
+      // Поиск колонок (поддержка популярных форматов: Тинькофф/Сбер/1С)
+      const findIdx = (...keys: string[]) => headers.findIndex((h) => keys.some((k) => h.includes(k)));
+      const dateIdx = findIdx("дата", "date", "operation date");
+      const amountIdx = findIdx("сумма", "amount");
+      const purposeIdx = findIdx("назначение", "purpose", "описание", "description");
+      const counterpartyIdx = findIdx("контрагент", "получатель", "плательщик", "counterparty", "name");
+      const directionIdx = findIdx("тип", "направление", "operation type");
+
+      if (dateIdx < 0 || amountIdx < 0) {
+        throw new Error("Не найдены обязательные колонки: дата и сумма");
+      }
+
+      const rows: any[] = [];
+      for (let i = 1; i < lines.length; i++) {
+        const cols = splitLine(lines[i]);
+        const rawDate = cols[dateIdx] || "";
+        const rawAmount = (cols[amountIdx] || "0").replace(/\s/g, "").replace(",", ".");
+        const amount = Math.abs(Number(rawAmount));
+        if (!rawDate || isNaN(amount) || amount === 0) continue;
+
+        // Парсинг даты ДД.ММ.ГГГГ или ГГГГ-ММ-ДД
+        let opDate = rawDate;
+        const m = rawDate.match(/^(\d{2})[.\/-](\d{2})[.\/-](\d{4})/);
+        if (m) opDate = `${m[3]}-${m[2]}-${m[1]}`;
+
+        const directionRaw = (directionIdx >= 0 ? cols[directionIdx] : "").toLowerCase();
+        const direction =
+          directionRaw.includes("приход") || directionRaw.includes("credit") || directionRaw.includes("in") || Number(rawAmount) > 0
+            ? "in"
+            : "out";
+
+        rows.push({
+          account_id: accountId,
+          owner_id: ownerId!,
+          operation_date: opDate,
+          amount,
+          direction,
+          counterparty: counterpartyIdx >= 0 ? cols[counterpartyIdx] || "" : "",
+          purpose: purposeIdx >= 0 ? cols[purposeIdx] || "" : "",
+          category: direction === "in" ? "income" : "expense",
+          external_id: `csv:${opDate}:${amount}:${i}`,
+        });
+      }
+
+      if (rows.length === 0) throw new Error("Не найдено ни одной операции");
+
+      const { error } = await supabase.from("bank_transactions").insert(rows);
+      if (error) throw error;
+
+      toast({ title: "Импорт CSV завершён", description: `Загружено операций: ${rows.length}` });
+      qc.invalidateQueries({ queryKey: ["bank_transactions"] });
+    } catch (e: any) {
+      toast({ title: "Ошибка импорта", description: e.message, variant: "destructive" });
+    } finally {
+      setImportingId(null);
+      setCsvTargetAccount(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   const totalBalance = useMemo(
     () => (accountsQ.data ?? []).reduce((s, a) => s + Number(a.balance || 0), 0),
     [accountsQ.data],
