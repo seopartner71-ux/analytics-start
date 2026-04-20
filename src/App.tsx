@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { WorkspaceColorProvider } from "@/contexts/WorkspaceColorContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { FinanceGuard } from "@/components/FinanceGuard";
 import Index from "./pages/Index";
 import ProjectDetail from "./pages/ProjectDetail";
 import PublicReport from "./pages/PublicReport";
@@ -70,7 +71,7 @@ const App = () => (
                 <Route path="/profile" element={<ProtectedRoute><CrmLayout><ProfilePage /></CrmLayout></ProtectedRoute>} />
                 <Route path="/chat" element={<ProtectedRoute><CrmLayout><ChatPage /></CrmLayout></ProtectedRoute>} />
                 <Route path="/reports" element={<ProtectedRoute><CrmLayout><ReportsPage /></CrmLayout></ProtectedRoute>} />
-                <Route path="/finance" element={<ProtectedRoute><CrmLayout><Finance /></CrmLayout></ProtectedRoute>} />
+                <Route path="/finance" element={<ProtectedRoute><CrmLayout><FinanceGuard><Finance /></FinanceGuard></CrmLayout></ProtectedRoute>} />
                 <Route path="/time-tracking" element={<ProtectedRoute><CrmLayout><TimeTrackingPage /></CrmLayout></ProtectedRoute>} />
                 <Route path="/workload" element={<ProtectedRoute><CrmLayout><WorkloadPage /></CrmLayout></ProtectedRoute>} />
                 <Route path="/kpi" element={<ProtectedRoute><CrmLayout><EmployeeKpiPage /></CrmLayout></ProtectedRoute>} />
