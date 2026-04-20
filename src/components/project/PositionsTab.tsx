@@ -762,6 +762,78 @@ function PositionsDashboard({
         </div>
       </div>
 
+      {/* Topvisor summary panel — horizontal */}
+      {!isError && !isLoading && keywordRows.length > 0 && (() => {
+        const latestDate = allDates[allDates.length - 1];
+        const prevDate = allDates.length > 1 ? allDates[allDates.length - 2] : null;
+        const cur: number[] = [];
+        const prev: number[] = [];
+        for (const kw of filtered) {
+          for (const ri of allRegionIndexes) {
+            const c = kw.positions[`${latestDate}:${ri}`];
+            if (c !== null && c !== undefined) cur.push(c);
+            if (prevDate) {
+              const p = kw.positions[`${prevDate}:${ri}`];
+              if (p !== null && p !== undefined) prev.push(p);
+            }
+          }
+        }
+        const total = cur.length || 1;
+        const top1 = cur.filter((p) => p === 1).length;
+        const top3 = cur.filter((p) => p <= 3).length;
+        const top10 = cur.filter((p) => p <= 10).length;
+        const top30 = cur.filter((p) => p <= 30).length;
+        const outside = cur.length - top30;
+        const avg = cur.length ? cur.reduce((a, b) => a + b, 0) / cur.length : 0;
+        const prevAvg = prev.length ? prev.reduce((a, b) => a + b, 0) / prev.length : 0;
+        const avgDelta = prevAvg > 0 ? +(prevAvg - avg).toFixed(1) : 0;
+        const visibility = Math.round((top10 / total) * 100);
+        const prevTop10 = prev.filter((p) => p <= 10).length;
+        const top10Delta = top10 - prevTop10;
+
+        const stats = [
+          { label: isRu ? "TOP-1" : "TOP-1", value: top1, color: "text-amber-400", bg: "bg-amber-400/10" },
+          { label: isRu ? "TOP-3" : "TOP-3", value: top3, color: "text-amber-400", bg: "bg-amber-400/10" },
+          { label: isRu ? "TOP-10" : "TOP-10", value: top10, delta: top10Delta, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+          { label: isRu ? "TOP-30" : "TOP-30", value: top30, color: "text-primary", bg: "bg-primary/10" },
+          { label: isRu ? "Вне ТОП" : "Out", value: outside, color: "text-muted-foreground", bg: "bg-muted/40" },
+          { label: isRu ? "Ср. позиция" : "Avg pos", value: avg > 0 ? avg.toFixed(1) : "—", delta: avgDelta, invertDelta: true, color: "text-foreground", bg: "bg-muted/40" },
+          { label: isRu ? "Видимость" : "Visibility", value: `${visibility}%`, color: "text-foreground", bg: "bg-muted/40" },
+          { label: isRu ? "Запросов" : "Keywords", value: filtered.length, color: "text-foreground", bg: "bg-muted/40" },
+        ];
+
+        return (
+          <GlassCard>
+            <CardContent className="p-3">
+              <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
+                {stats.map((s, i) => {
+                  const d = (s as any).delta;
+                  const invert = (s as any).invertDelta;
+                  const positive = invert ? d > 0 : d > 0;
+                  return (
+                    <div key={i} className={cn("rounded-lg px-3 py-2 flex flex-col items-start gap-0.5", s.bg)}>
+                      <span className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">{s.label}</span>
+                      <div className="flex items-baseline gap-1.5">
+                        <span className={cn("text-lg font-bold leading-none", s.color)}>{s.value}</span>
+                        {d !== undefined && d !== 0 && (
+                          <span className={cn(
+                            "text-[10px] font-medium flex items-center gap-0.5",
+                            positive ? "text-emerald-500" : "text-destructive"
+                          )}>
+                            {positive ? <ArrowUp className="h-2.5 w-2.5" /> : <ArrowDown className="h-2.5 w-2.5" />}
+                            {Math.abs(d)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </GlassCard>
+        );
+      })()}
+
       {/* Search */}
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
