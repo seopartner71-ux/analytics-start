@@ -405,10 +405,17 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
   return (
     <Sheet open={open} onOpenChange={onClose}>
       <SheetContent className="w-full md:w-[88vw] md:max-w-[88vw] p-0 overflow-hidden border-l-0 shadow-2xl" side="right">
-        <div className="px-6 py-4 border-b border-border/60 bg-gradient-to-r from-primary/[0.04] to-transparent">
+        <div className="px-6 py-4 border-b border-border/60 bg-gradient-to-r from-primary/[0.04] to-transparent space-y-3">
           <SheetTitle className="text-lg font-bold text-foreground leading-tight tracking-tight">
             {task.title}
           </SheetTitle>
+          <TaskBlockerSection
+            isBlocked={blocker.isBlocked}
+            blockReason={blocker.blockReason}
+            problemType={blocker.problemType}
+            onBlock={blocker.block}
+            onUnblock={blocker.unblock}
+          />
         </div>
 
         <div className="flex flex-col md:flex-row h-[calc(100vh-72px)]">
