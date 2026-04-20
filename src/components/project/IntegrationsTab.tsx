@@ -220,6 +220,10 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
       setGscToken(existing?.access_token || "");
       setGscDialog(true);
     } else {
+      const existing = getIntegration("topvisor");
+      setTvApiKey(existing?.api_key || "");
+      setTvUserId(existing?.counter_id || "");
+      setTvProjectId(existing?.external_project_id || "");
       setTopvisorDialog(true);
     }
   };
@@ -324,6 +328,10 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
                         >
                           <RefreshCw className={`h-3.5 w-3.5 ${syncingId === integration!.id ? "animate-spin" : ""}`} />
                           {t("integrations.sync")}
+                        </Button>
+                        <Button variant="outline" size="sm" className="gap-1.5" onClick={() => handleConnect(meta)}>
+                          <KeyRound className="h-3.5 w-3.5" />
+                          Настроить
                         </Button>
                         <Button variant="outline" size="sm" className="gap-1.5 text-destructive hover:text-destructive" onClick={() => disconnectMutation.mutate(integration!.id)}>
                           <Unplug className="h-3.5 w-3.5" />
