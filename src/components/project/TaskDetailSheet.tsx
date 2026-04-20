@@ -496,16 +496,17 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                         {deadlineDate.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })}
                       </span>
                     ) : <span className="text-sm text-muted-foreground">Не задан</span>}
-                    {deadlineStatus === "overdue" && (
+                    {blocker.isBlocked ? (
+                      <FrozenDeadlineBadge />
+                    ) : deadlineStatus === "overdue" ? (
                       <Badge variant="destructive" className="text-[10px] h-5 gap-1">
                         <AlertTriangle className="h-3 w-3" /> Просрочено {overduePeriod}
                       </Badge>
-                    )}
-                    {deadlineStatus === "soon" && (
+                    ) : deadlineStatus === "soon" ? (
                       <Badge className={cn("text-[10px] h-5 gap-1 border-0", DEADLINE_STYLES.soon.bg, DEADLINE_STYLES.soon.text)}>
                         <Clock className="h-3 w-3" /> Скоро
                       </Badge>
-                    )}
+                    ) : null}
                   </div>
 
                   {/* Status */}
