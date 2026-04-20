@@ -149,14 +149,16 @@ export function LinkProfileTab({ projectId }: Props) {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const checkAll = async (linkIds?: string[]) => {
+  const checkAll = async () => {
     setChecking(true);
     try {
-      const { data, error } = await supabase.functions.invoke("check-link-profile", {
-        body: { project_id: projectId, ...(linkIds ? { link_ids: linkIds } : {}) },
-      });
-      if (error) throw error;
-      toast.success(`Проверено: ${(data as any)?.checked ?? 0}`);
+      const res = await fetch(
+        `http://155.212.221.64:8000/check-links/${projectId}?secret=3384233842`,
+        { method: "POST" },
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json().catch(() => ({}));
+      toast.success(`Проверка запущена${data?.checked != null ? `: ${data.checked}` : ""}`);
       qc.invalidateQueries({ queryKey: ["link-profile", projectId] });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Ошибка проверки");
