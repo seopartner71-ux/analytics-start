@@ -166,8 +166,10 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
           connected: true,
           [def.fieldKey]: mainVal,
         };
-        if (def.extraField && vals[def.extraField.key]) {
-          payload[def.extraField.key] = vals[def.extraField.key];
+        if ((def as any).extraFields) {
+          for (const ef of (def as any).extraFields as Array<{ key: string }>) {
+            if (vals[ef.key]) payload[ef.key] = vals[ef.key];
+          }
         }
 
         const existing = integrations.find(i => i.service_name === def.key);
