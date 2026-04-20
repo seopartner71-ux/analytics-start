@@ -25,6 +25,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import { TaskTimeManual } from "@/components/project/TaskTimeManual";
 import { CompleteTaskDialog } from "@/components/project/CompleteTaskDialog";
 import { CreateSubtaskDialog, type SubtaskFormValues } from "@/components/project/CreateSubtaskDialog";
+import { TaskBlockerSection, FrozenDeadlineBadge, useTaskBlocker } from "@/components/project/TaskBlocker";
 
 export type CrmTask = Tables<"crm_tasks"> & {
   creator?: Tables<"team_members"> | null;
@@ -61,6 +62,7 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
   const resultFileRef = useRef<HTMLInputElement>(null);
   const [completeOpen, setCompleteOpen] = useState(false);
   const [completing, setCompleting] = useState(false);
+  const blocker = useTaskBlocker();
 
   useEffect(() => {
     if (!task) return;
@@ -403,10 +405,17 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
   return (
     <Sheet open={open} onOpenChange={onClose}>
       <SheetContent className="w-full md:w-[88vw] md:max-w-[88vw] p-0 overflow-hidden border-l-0 shadow-2xl" side="right">
-        <div className="px-6 py-4 border-b border-border/60 bg-gradient-to-r from-primary/[0.04] to-transparent">
+        <div className="px-6 py-4 border-b border-border/60 bg-gradient-to-r from-primary/[0.04] to-transparent space-y-3">
           <SheetTitle className="text-lg font-bold text-foreground leading-tight tracking-tight">
             {task.title}
           </SheetTitle>
+          <TaskBlockerSection
+            isBlocked={blocker.isBlocked}
+            blockReason={blocker.blockReason}
+            problemType={blocker.problemType}
+            onBlock={blocker.block}
+            onUnblock={blocker.unblock}
+          />
         </div>
 
         <div className="flex flex-col md:flex-row h-[calc(100vh-72px)]">
@@ -487,16 +496,17 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                         {deadlineDate.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })}
                       </span>
                     ) : <span className="text-sm text-muted-foreground">Не задан</span>}
-                    {deadlineStatus === "overdue" && (
+                    {blocker.isBlocked ? (
+                      <FrozenDeadlineBadge />
+                    ) : deadlineStatus === "overdue" ? (
                       <Badge variant="destructive" className="text-[10px] h-5 gap-1">
                         <AlertTriangle className="h-3 w-3" /> Просрочено {overduePeriod}
                       </Badge>
-                    )}
-                    {deadlineStatus === "soon" && (
+                    ) : deadlineStatus === "soon" ? (
                       <Badge className={cn("text-[10px] h-5 gap-1 border-0", DEADLINE_STYLES.soon.bg, DEADLINE_STYLES.soon.text)}>
                         <Clock className="h-3 w-3" /> Скоро
                       </Badge>
-                    )}
+                    ) : null}
                   </div>
 
                   {/* Status */}
