@@ -9,9 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Bell, BellOff, MoreHorizontal, Trash2, Plus, Users, UserPlus } from "lucide-react";
+import { Bell, BellOff, MoreHorizontal, Trash2, Plus, Users, UserPlus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const ROLES = [
   "SEO специалист",
@@ -22,7 +24,7 @@ const ROLES = [
 ] as const;
 type Role = (typeof ROLES)[number];
 
-const ROLE_STYLES: Record<Role, string> = {
+const ROLE_STYLES: Record<string, string> = {
   "SEO специалист": "bg-emerald-900/40 text-emerald-300 border-emerald-800/60",
   "Аккаунт-менеджер": "bg-violet-900/40 text-violet-300 border-violet-800/60",
   "Руководитель проекта": "bg-blue-900/50 text-blue-300 border-blue-800/60",
@@ -30,80 +32,106 @@ const ROLE_STYLES: Record<Role, string> = {
   "Соисполнитель": "bg-amber-900/40 text-amber-300 border-amber-800/60",
 };
 
-interface Member {
+interface ProjectMemberRow {
   id: string;
-  name: string;
-  avatar: string;
-  role: Role;
-  notificationsEnabled: boolean;
+  team_member_id: string;
+  role: string;
+  notifications_enabled: boolean;
+  team_member?: { id: string; full_name: string } | null;
 }
-
-const MOCK_CANDIDATES = [
-  "Лейсан Габдрахманова",
-  "Владимир Сорокин",
-  "Анна Иванова",
-  "Дмитрий Петров",
-  "Екатерина Смирнова",
-  "Артём Кузнецов",
-  "Мария Орлова",
-];
 
 const avatarFor = (name: string) => {
   const hash = name.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
   return `https://i.pravatar.cc/120?u=${hash}`;
 };
 
-const initialTeam: Member[] = [
-  { id: "u1", name: "Владимир Сорокин", avatar: avatarFor("Владимир Сорокин"), role: "Руководитель проекта", notificationsEnabled: true },
-  { id: "u2", name: "Лейсан Габдрахманова", avatar: avatarFor("Лейсан Габдрахманова"), role: "SEO специалист", notificationsEnabled: true },
-  { id: "u3", name: "Анна Иванова", avatar: avatarFor("Анна Иванова"), role: "Аккаунт-менеджер", notificationsEnabled: false },
-];
-
-export function ProjectTeamTab() {
-  const [projectTeam, setProjectTeam] = useState<Member[]>(initialTeam);
+export function ProjectTeamTab({ projectId }: { projectId: string }) {
+  const qc = useQueryClient();
   const [addOpen, setAddOpen] = useState(false);
-
-  // Add form state
-  const [newName, setNewName] = useState("");
+  const [newTeamMemberId, setNewTeamMemberId] = useState<string>("");
   const [newRole, setNewRole] = useState<Role>("SEO специалист");
   const [newNotify, setNewNotify] = useState(true);
 
-  const toggleNotifications = (id: string) => {
-    setProjectTeam((cur) =>
-      cur.map((m) => (m.id === id ? { ...m, notificationsEnabled: !m.notificationsEnabled } : m))
-    );
-    toast.success("Настройки уведомлений обновлены");
-  };
+  // Текущие участники проекта
+  const { data: members = [], isLoading } = useQuery<ProjectMemberRow[]>({
+    queryKey: ["project-members", projectId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("project_members")
+        .select("id, team_member_id, role, notifications_enabled, team_member:team_members(id, full_name)")
+        .eq("project_id", projectId)
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return (data || []) as any;
+    },
+  });
 
-  const removeMember = (id: string) => {
-    const m = projectTeam.find((x) => x.id === id);
-    setProjectTeam((cur) => cur.filter((x) => x.id !== id));
-    toast.success(`${m?.name ?? "Участник"} удалён из проекта`);
-  };
+  // Все сотрудники для выбора
+  const { data: allMembers = [] } = useQuery({
+    queryKey: ["team-members-all"],
+    queryFn: async () => {
+      const { data } = await supabase.from("team_members").select("id, full_name").order("full_name");
+      return data || [];
+    },
+  });
 
-  const handleAdd = () => {
-    if (!newName) {
-      toast.error("Выберите сотрудника");
-      return;
-    }
-    if (projectTeam.some((m) => m.name === newName)) {
-      toast.error("Этот сотрудник уже в проекте");
-      return;
-    }
-    const newMember: Member = {
-      id: crypto.randomUUID(),
-      name: newName,
-      avatar: avatarFor(newName),
-      role: newRole,
-      notificationsEnabled: newNotify,
-    };
-    setProjectTeam((cur) => [...cur, newMember]);
-    setAddOpen(false);
-    setNewName("");
-    setNewRole("SEO специалист");
-    setNewNotify(true);
-    toast.success(`${newMember.name} добавлен в проект`);
-  };
+  const availableCandidates = allMembers.filter(
+    (m) => !members.some((pm) => pm.team_member_id === m.id)
+  );
+
+  const addMember = useMutation({
+    mutationFn: async () => {
+      if (!newTeamMemberId) throw new Error("Выберите сотрудника");
+      const { error } = await supabase.from("project_members").insert({
+        project_id: projectId,
+        team_member_id: newTeamMemberId,
+        role: newRole,
+        notifications_enabled: newNotify,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["project-members", projectId] });
+      qc.invalidateQueries({ queryKey: ["project-messages", projectId] });
+      qc.invalidateQueries({ queryKey: ["project-chat-participants", projectId] });
+      const name = allMembers.find((m) => m.id === newTeamMemberId)?.full_name || "Сотрудник";
+      toast.success(`${name} добавлен(а) в проект и в чат`);
+      setAddOpen(false);
+      setNewTeamMemberId("");
+      setNewRole("SEO специалист");
+      setNewNotify(true);
+    },
+    onError: (e: any) => toast.error(e.message || "Не удалось добавить участника"),
+  });
+
+  const toggleNotifications = useMutation({
+    mutationFn: async (m: ProjectMemberRow) => {
+      const { error } = await supabase
+        .from("project_members")
+        .update({ notifications_enabled: !m.notifications_enabled })
+        .eq("id", m.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["project-members", projectId] });
+      toast.success("Настройки уведомлений обновлены");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const removeMember = useMutation({
+    mutationFn: async (m: ProjectMemberRow) => {
+      const { error } = await supabase.from("project_members").delete().eq("id", m.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["project-members", projectId] });
+      qc.invalidateQueries({ queryKey: ["project-messages", projectId] });
+      qc.invalidateQueries({ queryKey: ["project-chat-participants", projectId] });
+      toast.success("Участник удалён из проекта");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
 
   return (
     <div className="space-y-5 p-1">
@@ -117,7 +145,7 @@ export function ProjectTeamTab() {
             <h2 className="text-[18px] font-semibold tracking-tight">Команда проекта</h2>
           </div>
           <p className="text-[12.5px] text-muted-foreground max-w-xl">
-            Участники имеют доступ ко всем задачам данного проекта. Управляйте ролями и уведомлениями, чтобы избежать спама.
+            Участники имеют доступ ко всем задачам данного проекта и автоматически добавляются в чат проекта.
           </p>
         </div>
         <Button
@@ -131,81 +159,82 @@ export function ProjectTeamTab() {
 
       {/* Team list */}
       <Card className="bg-card border-border/60 divide-y divide-border/50 overflow-hidden">
-        {projectTeam.length === 0 && (
+        {isLoading ? (
+          <div className="p-10 text-center text-sm text-muted-foreground">
+            <Loader2 className="h-5 w-5 mx-auto mb-2 animate-spin opacity-50" />
+            Загрузка...
+          </div>
+        ) : members.length === 0 ? (
           <div className="p-10 text-center text-sm text-muted-foreground">
             <Users className="h-8 w-8 mx-auto mb-3 opacity-40" />
             В проекте пока нет участников
           </div>
-        )}
+        ) : (
+          members.map((m) => {
+            const name = m.team_member?.full_name || "Без имени";
+            return (
+              <div
+                key={m.id}
+                className="flex items-center gap-3 px-4 py-3 hover:bg-muted/20 transition-colors"
+              >
+                <img
+                  src={avatarFor(name)}
+                  alt={name}
+                  className="h-10 w-10 rounded-full ring-1 ring-border/60 object-cover"
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="text-[13.5px] font-medium text-foreground truncate">{name}</div>
+                  <div className="text-[11.5px] text-muted-foreground truncate">
+                    {m.notifications_enabled ? "Получает уведомления" : "Уведомления отключены"}
+                  </div>
+                </div>
 
-        {projectTeam.map((m) => (
-          <div
-            key={m.id}
-            className="flex items-center gap-3 px-4 py-3 hover:bg-muted/20 transition-colors"
-          >
-            {/* Avatar + Name */}
-            <img
-              src={m.avatar}
-              alt={m.name}
-              className="h-10 w-10 rounded-full ring-1 ring-border/60 object-cover"
-            />
-            <div className="flex-1 min-w-0">
-              <div className="text-[13.5px] font-medium text-foreground truncate">{m.name}</div>
-              <div className="text-[11.5px] text-muted-foreground truncate">
-                {m.notificationsEnabled ? "Получает уведомления" : "Уведомления отключены"}
-              </div>
-            </div>
-
-            {/* Role badge */}
-            <Badge
-              variant="outline"
-              className={cn(
-                "text-[11.5px] px-2.5 py-1 font-medium border",
-                ROLE_STYLES[m.role]
-              )}
-            >
-              {m.role}
-            </Badge>
-
-            {/* Notification toggle */}
-            <button
-              onClick={() => toggleNotifications(m.id)}
-              className={cn(
-                "flex items-center gap-1.5 h-9 px-2.5 rounded-md border text-[12px] transition-colors",
-                m.notificationsEnabled
-                  ? "border-amber-500/40 text-amber-400 bg-amber-500/10 hover:bg-amber-500/15"
-                  : "border-border/60 text-muted-foreground hover:bg-muted/40"
-              )}
-              title={m.notificationsEnabled ? "Уведомления включены" : "Без звука"}
-            >
-              {m.notificationsEnabled ? (
-                <Bell className="h-4 w-4" />
-              ) : (
-                <BellOff className="h-4 w-4" />
-              )}
-              <span className="hidden md:inline">
-                {m.notificationsEnabled ? "Уведомления включены" : "Без звука"}
-              </span>
-            </button>
-
-            {/* Actions */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-44">
-                <DropdownMenuItem
-                  onClick={() => removeMember(m.id)}
-                  className="text-destructive focus:text-destructive gap-2"
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    "text-[11.5px] px-2.5 py-1 font-medium border",
+                    ROLE_STYLES[m.role] || ROLE_STYLES["Наблюдатель"]
+                  )}
                 >
-                  <Trash2 className="h-3.5 w-3.5" /> Удалить из проекта
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        ))}
+                  {m.role}
+                </Badge>
+
+                <button
+                  onClick={() => toggleNotifications.mutate(m)}
+                  disabled={toggleNotifications.isPending}
+                  className={cn(
+                    "flex items-center gap-1.5 h-9 px-2.5 rounded-md border text-[12px] transition-colors",
+                    m.notifications_enabled
+                      ? "border-amber-500/40 text-amber-400 bg-amber-500/10 hover:bg-amber-500/15"
+                      : "border-border/60 text-muted-foreground hover:bg-muted/40"
+                  )}
+                  title={m.notifications_enabled ? "Уведомления включены" : "Без звука"}
+                >
+                  {m.notifications_enabled ? <Bell className="h-4 w-4" /> : <BellOff className="h-4 w-4" />}
+                  <span className="hidden md:inline">
+                    {m.notifications_enabled ? "Уведомления включены" : "Без звука"}
+                  </span>
+                </button>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-44">
+                    <DropdownMenuItem
+                      onClick={() => removeMember.mutate(m)}
+                      className="text-destructive focus:text-destructive gap-2"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" /> Удалить из проекта
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            );
+          })
+        )}
       </Card>
 
       {/* Add member modal */}
@@ -219,21 +248,21 @@ export function ProjectTeamTab() {
               Добавление в проект
             </DialogTitle>
             <DialogDescription className="text-[12px] text-muted-foreground">
-              Выберите сотрудника, его роль и настройте уведомления.
+              Сотрудник появится в команде и автоматически будет добавлен в чат проекта.
             </DialogDescription>
           </DialogHeader>
 
           <div className="px-6 py-5 space-y-4">
             <div className="space-y-1.5">
               <Label className="text-[12px] font-medium text-foreground/80">Сотрудник</Label>
-              <Select value={newName} onValueChange={setNewName}>
+              <Select value={newTeamMemberId} onValueChange={setNewTeamMemberId}>
                 <SelectTrigger className="h-9 text-[13px]">
-                  <SelectValue placeholder="Выберите сотрудника" />
+                  <SelectValue placeholder={availableCandidates.length ? "Выберите сотрудника" : "Все сотрудники уже в проекте"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {MOCK_CANDIDATES.map((n) => (
-                    <SelectItem key={n} value={n} className="text-[13px]">
-                      {n}
+                  {availableCandidates.map((m) => (
+                    <SelectItem key={m.id} value={m.id} className="text-[13px]">
+                      {m.full_name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -268,16 +297,23 @@ export function ProjectTeamTab() {
           </div>
 
           <div className="px-6 py-4 border-t border-border/60 bg-muted/30 flex items-center justify-end gap-2">
-            <Button variant="ghost" size="sm" className="h-9 text-[13px]" onClick={() => setAddOpen(false)}>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9 text-[13px]"
+              onClick={() => setAddOpen(false)}
+              disabled={addMember.isPending}
+            >
               Отмена
             </Button>
             <Button
               size="sm"
               className="h-9 text-[13px] bg-amber-500 hover:bg-amber-500/90 text-white gap-1.5"
-              onClick={handleAdd}
-              disabled={!newName}
+              onClick={() => addMember.mutate()}
+              disabled={!newTeamMemberId || addMember.isPending}
             >
-              <Plus className="h-4 w-4" /> Добавить
+              {addMember.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+              Добавить
             </Button>
           </div>
         </DialogContent>
