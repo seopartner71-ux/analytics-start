@@ -60,6 +60,9 @@ export default function BanksTab({ ownerId }: { ownerId: string | null }) {
   const [connectOpen, setConnectOpen] = useState(false);
   const [provider, setProvider] = useState("tochka");
   const [syncingId, setSyncingId] = useState<string | null>(null);
+  const [importingId, setImportingId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [csvTargetAccount, setCsvTargetAccount] = useState<string | null>(null);
 
   const integrationsQ = useQuery({
     queryKey: ["bank_integrations", ownerId],
