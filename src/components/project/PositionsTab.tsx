@@ -108,26 +108,32 @@ function TopvisorSetupForm({ projectId, onConnected }: { projectId: string; onCo
   const [testing, setTesting] = useState(false);
 
   const handleTest = async () => {
-    if (!apiKey.trim() || !userId.trim()) {
+    const normalizedUserId = userId.trim();
+    if (!apiKey.trim() || !normalizedUserId) {
       toast.error(isRu ? "Заполните оба поля" : "Fill in both fields");
+      return;
+    }
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailPattern.test(normalizedUserId)) {
+      toast.error(isRu ? "Для Topvisor в поле User ID нужно указать email аккаунта" : "Use your Topvisor account email in the User ID field");
       return;
     }
     setTesting(true);
     try {
-      await callTopvisor("test-connection", apiKey.trim(), userId.trim());
+      await callTopvisor("test-connection", apiKey.trim(), normalizedUserId);
       await supabase.from("projects").update({
         topvisor_api_key: apiKey.trim(),
-        topvisor_user_id: userId.trim(),
+        topvisor_user_id: normalizedUserId,
       } as any).eq("id", projectId);
       const existing = await supabase.from("integrations").select("id").eq("project_id", projectId).eq("service_name", "topvisor").maybeSingle();
       if (existing.data) {
         await supabase.from("integrations").update({
-          api_key: apiKey.trim(), counter_id: userId.trim(), connected: true, last_sync: new Date().toISOString(),
+          api_key: apiKey.trim(), counter_id: normalizedUserId, connected: true, last_sync: new Date().toISOString(),
         }).eq("id", existing.data.id);
       } else {
         await supabase.from("integrations").insert({
           project_id: projectId, service_name: "topvisor", api_key: apiKey.trim(),
-          counter_id: userId.trim(), connected: true, last_sync: new Date().toISOString(),
+          counter_id: normalizedUserId, connected: true, last_sync: new Date().toISOString(),
         });
       }
       toast.success(isRu ? "Topvisor подключен!" : "Topvisor connected!");
@@ -155,8 +161,9 @@ function TopvisorSetupForm({ projectId, onConnected }: { projectId: string; onCo
       <GlassCard className="w-full max-w-md">
         <CardContent className="p-6 space-y-4">
           <div className="space-y-2">
-            <Label>User ID *</Label>
-            <Input value={userId} onChange={(e) => setUserId(e.target.value)} placeholder="12345" />
+            <Label>Email аккаунта Topvisor *</Label>
+            <Input value={userId} onChange={(e) => setUserId(e.target.value)} placeholder="user@example.com" />
+            <p className="text-xs text-muted-foreground">{isRu ? "Нужен именно email аккаунта, а не числовой ID" : "Use your account email, not a numeric ID"}</p>
           </div>
           <div className="space-y-2">
             <Label>API Key *</Label>
