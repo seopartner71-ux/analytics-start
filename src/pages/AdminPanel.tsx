@@ -16,10 +16,12 @@ import {
 } from "@/components/ui/dialog";
 import {
   Shield, FolderOpen, Key, Users, Save, Eye, EyeOff,
-  CheckCircle2, XCircle, Settings2, Rocket,
+  CheckCircle2, XCircle, Settings2, Rocket, Wallet, Building,
 } from "lucide-react";
 import { OnboardingTaskTemplateEditor } from "@/components/admin/OnboardingTaskTemplateEditor";
 import { AiAssistantSettings } from "@/components/admin/AiAssistantSettings";
+import { CompanyRequisitesEditor } from "@/components/admin/CompanyRequisitesEditor";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Bot } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
