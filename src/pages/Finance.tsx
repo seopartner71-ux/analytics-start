@@ -471,7 +471,7 @@ export default function Finance() {
 }
 
 /* ────────── KPI Tile ────────── */
-function KpiTile({ label, value, color, icon }: { label: string; value: string; color: "emerald" | "red" | "blue" | "amber"; icon: React.ReactNode }) {
+function KpiTile({ label, value, color, icon, hint }: { label: string; value: string; color: "emerald" | "red" | "blue" | "amber"; icon: React.ReactNode; hint?: string }) {
   const colorMap = {
     emerald: "from-emerald-500/20 to-emerald-500/5 border-emerald-500/30 text-emerald-400",
     red: "from-red-500/20 to-red-500/5 border-red-500/30 text-red-400",
@@ -486,6 +486,7 @@ function KpiTile({ label, value, color, icon }: { label: string; value: string; 
           <span className="opacity-70">{icon}</span>
         </div>
         <div className="text-2xl font-bold">{value}</div>
+        {hint && <div className="text-xs text-muted-foreground mt-1 truncate">{hint}</div>}
       </CardContent>
     </Card>
   );
