@@ -574,40 +574,6 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
               </div>
             </div>
           </div>
-
-            {/* Sticky bottom action bar */}
-            <div className="border-t border-border/60 bg-card px-5 py-3 flex items-center gap-2 shrink-0 flex-wrap">
-              {(editStage === "Новые" || editStage === "Возвращена") && (
-                <Button size="sm" className="gap-1.5 shadow-sm bg-primary hover:bg-primary/90" onClick={startTask}>
-                  <Play className="h-3.5 w-3.5" /> Начать
-                </Button>
-              )}
-              {(editStage === "В работе" || editStage === "Возвращена") && (
-                <Button size="sm" className="gap-1.5 shadow-sm" onClick={sendForReview}>
-                  <Eye className="h-3.5 w-3.5" /> На проверку
-                </Button>
-              )}
-              {editStage === "На проверке" && (
-                <>
-                  <Button size="sm" className="gap-1.5 shadow-sm bg-emerald-600 hover:bg-emerald-700 text-white" onClick={acceptTask}>
-                    <ThumbsUp className="h-3.5 w-3.5" /> Принять
-                  </Button>
-                  <Button size="sm" variant="outline" className="gap-1.5 border-destructive/30 text-destructive hover:bg-destructive/5" onClick={returnTask}>
-                    <ThumbsDown className="h-3.5 w-3.5" /> Вернуть
-                  </Button>
-                </>
-              )}
-              {(editStage === "Принята" || editStage === "Завершена") && (
-                <Button variant="outline" size="sm" className="gap-1.5 border-primary/30 text-primary hover:bg-primary/5" onClick={resumeTask}>
-                  <RotateCcw className="h-3.5 w-3.5" /> Возобновить
-                </Button>
-              )}
-              <Badge className="ml-auto text-[10px]" style={{ backgroundColor: `${task.stage_color || '#3b82f6'}20`, color: task.stage_color || '#3b82f6' }}>
-                {editStage || task.stage}
-              </Badge>
-            </div>
-          </div>
-
           {/* RIGHT COLUMN: Chat */}
           <div className="flex-1 flex flex-col min-h-0">
             <div className="px-5 py-3 border-b border-border/60 bg-card flex items-center justify-between shrink-0">
