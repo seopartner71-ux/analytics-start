@@ -245,10 +245,10 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
     toast.success("Задача принята");
   };
 
-  const returnTask = async () => {
+  const returnTask = async (reasonArg?: string) => {
     if (!task) return;
-    const reason = window.prompt("Причина возврата (комментарий для исполнителя):");
-    if (!reason || !reason.trim()) return;
+    const reason = reasonArg ?? window.prompt("Причина возврата (комментарий для исполнителя):") ?? "";
+    if (!reason.trim()) return;
     await supabase.from("crm_tasks").update({
       stage: "Возвращена",
       stage_color: STAGE_COLORS["Возвращена"],
