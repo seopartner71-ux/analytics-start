@@ -220,6 +220,10 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
       setGscToken(existing?.access_token || "");
       setGscDialog(true);
     } else {
+      const existing = getIntegration("topvisor");
+      setTvApiKey(existing?.api_key || "");
+      setTvUserId(existing?.counter_id || "");
+      setTvProjectId(existing?.external_project_id || "");
       setTopvisorDialog(true);
     }
   };
