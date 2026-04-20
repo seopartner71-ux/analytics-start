@@ -62,6 +62,7 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
   const resultFileRef = useRef<HTMLInputElement>(null);
   const [completeOpen, setCompleteOpen] = useState(false);
   const [completing, setCompleting] = useState(false);
+  const blocker = useTaskBlocker();
 
   useEffect(() => {
     if (!task) return;
