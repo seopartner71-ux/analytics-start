@@ -229,7 +229,6 @@ export default function Finance() {
     });
   }, [today, invoices, payments, expenses]);
 
-
   const expenseByCat = useMemo(() => {
     const map: Record<string, number> = {};
     expenses.forEach(e => { map[e.category] = (map[e.category] || 0) + Number(e.amount); });
@@ -330,7 +329,6 @@ export default function Finance() {
           <BanksTab ownerId={ownerId} />
         </TabsContent>
       </Tabs>
-
 
       {/* Динамика выручки и прибыли за 6 месяцев */}
       <ChartCard title="Динамика выручки и прибыли · последние 6 месяцев">
@@ -459,7 +457,7 @@ function PaymentsTab({ payments, clients, ownerId, onChange }: { payments: Payme
   const save = async () => {
     if (!editing) return;
     const payload = {
-      owner_id: ownerId,
+      
       client_id: editing.client_id && !String(editing.client_id).startsWith("crm:") ? editing.client_id : null,
       client_name: editing.client_name || "",
       service: editing.service || "",
@@ -612,7 +610,7 @@ function InvoicesTab({ invoices, clients, ownerId, onChange }: { invoices: Invoi
   const save = async () => {
     if (!editing) return;
     const payload = {
-      owner_id: ownerId,
+      
       invoice_number: editing.invoice_number || nextNumber,
       client_id: editing.client_id && !String(editing.client_id).startsWith("crm:") ? editing.client_id : null,
       client_name: editing.client_name || "",
@@ -732,7 +730,7 @@ function ExpensesTab({ expenses, ownerId, onChange }: { expenses: Expense[]; own
   const save = async () => {
     if (!editing) return;
     const payload = {
-      owner_id: ownerId,
+      
       category: editing.category || "other",
       amount: Number(editing.amount || 0),
       expense_date: editing.expense_date || format(new Date(), "yyyy-MM-dd"),
