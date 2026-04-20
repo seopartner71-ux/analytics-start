@@ -354,10 +354,50 @@ export default function BanksTab({ ownerId }: { ownerId: string | null }) {
         </div>
       )}
 
+      {/* Hidden file input для CSV-импорта */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".csv,text/csv"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f && csvTargetAccount) handleCsvImport(f, csvTargetAccount);
+        }}
+      />
+
       {/* Лента операций */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex-row items-center justify-between">
           <CardTitle className="text-base">Последние операции</CardTitle>
+          {accounts.length > 0 && (
+            <div className="flex items-center gap-2">
+              <Select
+                value={csvTargetAccount ?? ""}
+                onValueChange={(v) => setCsvTargetAccount(v)}
+              >
+                <SelectTrigger className="h-8 w-48 text-xs">
+                  <SelectValue placeholder="Счёт для импорта" />
+                </SelectTrigger>
+                <SelectContent>
+                  {accounts.map((a) => (
+                    <SelectItem key={a.id} value={a.id}>
+                      {a.bank_name || "Банк"} · {a.account_number.slice(-4)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={!csvTargetAccount || !!importingId}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload className={cn("h-3.5 w-3.5 mr-1", importingId && "animate-pulse")} />
+                Импорт CSV
+              </Button>
+            </div>
+          )}
         </CardHeader>
         <CardContent>
           {transactions.length === 0 ? (
