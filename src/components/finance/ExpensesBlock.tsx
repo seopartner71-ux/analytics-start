@@ -33,6 +33,7 @@ const CATEGORY_LABEL: Record<string, string> = {
   ...Object.fromEntries(CATEGORIES.map((c) => [c.value, c.label])),
   cash_reserve: "Резерв 7% в Кассу",
   bank_expense: "Расход с банка",
+  owner_withdrawal: "Вывод прибыли (на карту)",
   transfer_in: "Перевод (вход)",
   transfer_out: "Перевод (выход)",
   invoice: "Оплата по счёту",
@@ -42,6 +43,7 @@ const CATEGORY_LABEL: Record<string, string> = {
 const CATEGORY_TONE: Record<string, string> = {
   cash_reserve: "border-violet-500/40 text-violet-500 bg-violet-500/10",
   bank_expense: "border-red-500/40 text-red-500 bg-red-500/10",
+  owner_withdrawal: "border-fuchsia-500/40 text-fuchsia-500 bg-fuchsia-500/10",
   transfer_in: "border-emerald-500/40 text-emerald-500 bg-emerald-500/10",
   transfer_out: "border-amber-500/40 text-amber-500 bg-amber-500/10",
   invoice: "border-emerald-500/40 text-emerald-500 bg-emerald-500/10",

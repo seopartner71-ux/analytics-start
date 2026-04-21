@@ -180,12 +180,16 @@ export function BankImportBlock() {
           const key = r.inn || `name:${r.counterparty.toLowerCase()}`;
           clientName = newClientsMap.get(key)?.name || r.counterparty;
         }
+        const category =
+          r.direction === "income"
+            ? "invoice"
+            : isOwnerWithdrawal(r) ? "owner_withdrawal" : "bank_expense";
         return {
           account_id: accountId,
           type: r.direction,
           amount: r.amount,
           date: r.date,
-          category: r.direction === "income" ? "invoice" : "bank_expense",
+          category,
           description: `${r.counterparty}${r.purpose ? " · " + r.purpose : ""}`.slice(0, 500),
         };
       });
@@ -579,6 +583,23 @@ function parseAmount(v: any): number {
   const s = String(v).replace(/\s/g, "").replace(/[₽руб.]/gi, "").replace(",", ".");
   const n = parseFloat(s);
   return isNaN(n) ? 0 : Math.abs(n);
+}
+
+// Перевод на карту физлица / себе → вывод прибыли владельцу
+function isOwnerWithdrawal(r: { counterparty: string; purpose: string; inn: string | null }): boolean {
+  const text = `${r.counterparty} ${r.purpose}`.toLowerCase();
+  const isPhysical = !!r.inn && r.inn.replace(/\D/g, "").length === 12;
+  const keywords = [
+    "перевод на карт", "перевод средств на карт", "на карту физ", "на карту физическ",
+    "на счёт физ", "на счет физ", "перечисление на карт",
+    "перевод собственных средств", "вывод средств", "снятие наличных",
+    "выдача наличных", "пополнение счёта физ", "пополнение счета физ",
+    "card2card", "c2c",
+  ];
+  if (keywords.some((k) => text.includes(k))) return true;
+  const looksLikeFio = /[а-яё]+\s+[а-яё]\.\s*[а-яё]\.|[а-яё]{3,}\s+[а-яё]{3,}\s+[а-яё]{3,}/i.test(r.counterparty);
+  if (isPhysical && looksLikeFio) return true;
+  return false;
 }
 
 function matchClient(
