@@ -75,9 +75,14 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
     setIsCreateSubtaskModalOpen(false);
   }, [task?.id, open]);
 
-  const isAdmin = true;
-  const isCreator = task?.owner_id === user?.id;
-  const canEditFields = isAdmin || isCreator;
+  const { isAdmin, role } = useAuth();
+  const isDirector = role === "director";
+  // Постановщик: creator_id ссылается на team_members; связываем через owner_id team_member → auth user
+  const isCreator = !!user && (
+    task?.creator?.owner_id === user.id ||
+    task?.owner_id === user.id
+  );
+  const canEditFields = isAdmin || isDirector || isCreator;
 
   const { data: comments = [] } = useQuery({
     queryKey: ["task-comments", task?.id],
