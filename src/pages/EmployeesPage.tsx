@@ -23,14 +23,20 @@ function getInitials(name: string) {
   return name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
 }
 
-function AvatarCircle({ initials, status }: { initials: string; status?: string }) {
+function AvatarCircle({ initials, status, avatarUrl }: { initials: string; status?: string; avatarUrl?: string | null }) {
   const statusColor = status === "online" ? "bg-emerald-500" : status === "away" ? "bg-amber-500" : "bg-muted-foreground/30";
   return (
     <div className="relative">
-      <div className="h-9 w-9 rounded-full bg-primary/15 flex items-center justify-center text-xs font-bold text-primary avatar-ring">
-        {initials}
+      <div className="h-9 w-9 rounded-full overflow-hidden bg-primary/15 flex items-center justify-center text-xs font-bold text-primary avatar-ring">
+        {avatarUrl ? (
+          <img src={avatarUrl} alt={initials} className="h-full w-full object-cover" />
+        ) : (
+          initials
+        )}
       </div>
-      <span className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-card ${statusColor} ${status === "online" ? "status-online" : ""}`} />
+      {status && (
+        <span className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-card ${statusColor} ${status === "online" ? "status-online" : ""}`} />
+      )}
     </div>
   );
 }
