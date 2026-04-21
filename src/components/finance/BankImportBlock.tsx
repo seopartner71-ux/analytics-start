@@ -49,6 +49,7 @@ export function BankImportBlock() {
   const [accountId, setAccountId] = useState<string>("");
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [parsing, setParsing] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const { data: accounts = [] } = useQuery({
