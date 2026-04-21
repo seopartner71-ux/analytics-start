@@ -23,14 +23,20 @@ function getInitials(name: string) {
   return name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
 }
 
-function AvatarCircle({ initials, status }: { initials: string; status?: string }) {
+function AvatarCircle({ initials, status, avatarUrl }: { initials: string; status?: string; avatarUrl?: string | null }) {
   const statusColor = status === "online" ? "bg-emerald-500" : status === "away" ? "bg-amber-500" : "bg-muted-foreground/30";
   return (
     <div className="relative">
-      <div className="h-9 w-9 rounded-full bg-primary/15 flex items-center justify-center text-xs font-bold text-primary avatar-ring">
-        {initials}
+      <div className="h-9 w-9 rounded-full overflow-hidden bg-primary/15 flex items-center justify-center text-xs font-bold text-primary avatar-ring">
+        {avatarUrl ? (
+          <img src={avatarUrl} alt={initials} className="h-full w-full object-cover" />
+        ) : (
+          initials
+        )}
       </div>
-      <span className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-card ${statusColor} ${status === "online" ? "status-online" : ""}`} />
+      {status && (
+        <span className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-card ${statusColor} ${status === "online" ? "status-online" : ""}`} />
+      )}
     </div>
   );
 }
@@ -278,9 +284,10 @@ function SystemUsersTab() {
               >
                 <td>
                   <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-full bg-primary/15 flex items-center justify-center text-xs font-bold text-primary">
-                      {u.full_name ? getInitials(u.full_name) : u.email.charAt(0).toUpperCase()}
-                    </div>
+                    <AvatarCircle
+                      initials={u.full_name ? getInitials(u.full_name) : u.email.charAt(0).toUpperCase()}
+                      avatarUrl={u.avatar_url}
+                    />
                     <div>
                       <p className="text-sm font-semibold text-foreground">{u.full_name || "—"}</p>
                     </div>
@@ -339,35 +346,37 @@ export default function EmployeesPage() {
     },
   });
 
-  // Live presence: соединяем team_members → profiles (по email) → user_time_logs.updated_at
+  // Live presence + avatar: соединяем team_members → profiles (по email) → user_time_logs.updated_at
   const { data: presenceMap = {} } = useQuery({
     queryKey: ["team-presence"],
     queryFn: async () => {
       const today = new Date().toISOString().slice(0, 10);
       const [{ data: profiles }, { data: logs }] = await Promise.all([
-        supabase.from("profiles").select("user_id, email"),
+        supabase.from("profiles").select("user_id, email, avatar_url"),
         supabase.from("user_time_logs").select("user_id, updated_at, active_seconds").eq("log_date", today),
       ]);
-      const userIdToEmail = new Map<string, string>();
-      (profiles || []).forEach((p: any) => p.email && userIdToEmail.set(p.user_id, p.email.toLowerCase()));
-      const map: Record<string, { updated_at: string; active_seconds: number }> = {};
+      const userIdToProfile = new Map<string, { email: string; avatar_url: string | null }>();
+      (profiles || []).forEach((p: any) => p.email && userIdToProfile.set(p.user_id, { email: p.email.toLowerCase(), avatar_url: p.avatar_url }));
+      const map: Record<string, { updated_at?: string; active_seconds?: number; avatar_url?: string | null }> = {};
+      userIdToProfile.forEach((p) => { map[p.email] = { avatar_url: p.avatar_url }; });
       (logs || []).forEach((l: any) => {
-        const email = userIdToEmail.get(l.user_id);
-        if (email) map[email] = { updated_at: l.updated_at, active_seconds: l.active_seconds };
+        const p = userIdToProfile.get(l.user_id);
+        if (p) map[p.email] = { ...map[p.email], updated_at: l.updated_at, active_seconds: l.active_seconds };
       });
       return map;
     },
     refetchInterval: 30_000,
-    enabled: canSeeTime,
   });
 
   const getPresence = (email: string | null) => {
-    if (!email) return { status: "offline" as const, activeSeconds: 0 };
+    if (!email) return { status: "offline" as const, activeSeconds: 0, avatarUrl: null as string | null, updatedAt: undefined as string | undefined };
     const entry = presenceMap[email.toLowerCase()];
-    if (!entry) return { status: "offline" as const, activeSeconds: 0 };
+    if (!entry) return { status: "offline" as const, activeSeconds: 0, avatarUrl: null, updatedAt: undefined };
+    const avatarUrl = entry.avatar_url ?? null;
+    if (!entry.updated_at) return { status: "offline" as const, activeSeconds: 0, avatarUrl, updatedAt: undefined };
     const ageSec = (Date.now() - new Date(entry.updated_at).getTime()) / 1000;
     const status = ageSec < 180 ? "online" : ageSec < 900 ? "away" : "offline";
-    return { status: status as "online" | "away" | "offline", activeSeconds: entry.active_seconds, updatedAt: entry.updated_at };
+    return { status: status as "online" | "away" | "offline", activeSeconds: entry.active_seconds || 0, updatedAt: entry.updated_at, avatarUrl };
   };
 
   const filtered = employees.filter(e =>
@@ -483,7 +492,7 @@ export default function EmployeesPage() {
                         >
                           <td>
                             <div className="flex items-center gap-3">
-                              <AvatarCircle initials={getInitials(e.full_name)} status={presence.status} />
+                              <AvatarCircle initials={getInitials(e.full_name)} status={presence.status} avatarUrl={presence.avatarUrl} />
                               <div>
                                 <p className="text-sm font-semibold text-foreground">{e.full_name}</p>
                                 <p className="text-[11px] text-muted-foreground">{ROLE_LABELS[e.role] || e.role}</p>
