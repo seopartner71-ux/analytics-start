@@ -29,7 +29,7 @@ const allNav = [
   { title: "План-факт", url: "/plan-fact", icon: Scale, minRole: "manager" as const },
   { title: "Клиенты", url: "/companies", icon: Building2, minRole: "admin" as const },
   { title: "Календарь", url: "/content", icon: CalendarDays, minRole: "manager" as const },
-  { title: "Сотрудники", url: "/employees", icon: Users, minRole: "admin" as const },
+  { title: "Сотрудники", url: "/employees", icon: Users, minRole: "manager" as const, managerPlus: true },
   { title: "Отчёты", url: "/reports", icon: FileText, minRole: "manager" as const },
   { title: "База знаний", url: "/knowledge", icon: BookOpen, minRole: "viewer" as const },
   { title: "📚 Книги для AI", url: "/knowledge-books", icon: BookOpen, minRole: "admin" as const },
@@ -37,7 +37,6 @@ const allNav = [
   { title: "Финансы", url: "/finance", icon: Wallet, minRole: "viewer" as const, requireFinance: true },
   { title: "Интеграции", url: "/admin?tab=keys", icon: Plug, minRole: "admin" as const },
   { title: "Пользователи", url: "/users", icon: Shield, minRole: "admin" as const, adminOnly: true },
-  { title: "Учёт времени", url: "/admin/time-stats", icon: Clock, minRole: "admin" as const, adminOnly: true },
 ];
 
 const analyticsNav = [
@@ -59,10 +58,12 @@ export function AppSidebar({ activeTab, onTabChange, projectName, projectLogo }:
   const { user, role, isAdmin, isManager, hasFinanceAccess } = useAuth();
   const ROLE_LEVELS = { viewer: 0, junior: 0, seo: 1, manager: 1, director: 2, admin: 2 } as const;
   const userLevel = ROLE_LEVELS[role as keyof typeof ROLE_LEVELS] ?? 0;
+  const isDirector = role === "director";
   const mainNav = allNav.filter(item => {
     if (userLevel < ROLE_LEVELS[item.minRole]) return false;
     if ((item as any).requireFinance && !hasFinanceAccess) return false;
     if ((item as any).adminOnly && !isAdmin) return false;
+    if ((item as any).managerPlus && !(isAdmin || isDirector)) return false;
     return true;
   });
   const { id: projectId } = useParams<{ id: string }>();
