@@ -3,6 +3,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { PageHeader } from "@/components/PageHeader";
 import { AiAssistantFab } from "@/components/ai/AiAssistantFab";
+import { useSilentTimeTracker } from "@/hooks/useSilentTimeTracker";
 
 export function CrmLayout({ children }: { children: ReactNode }) {
   return (
