@@ -90,8 +90,9 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
     setName(project.name || "");
     setUrl(project.url || "");
     setDeadline(project.deadline ? format(new Date(project.deadline), "yyyy-MM-dd") : "");
-    setPeriodFrom("");
-    setPeriodTo("");
+    setStartDate(project.start_date ? format(new Date(project.start_date), "yyyy-MM-dd") : "");
+    setReportPeriod((project.report_period as any) || "monthly");
+    setReportDay(typeof project.report_day === "number" ? project.report_day : 1);
     setSeoSpecialistId(project.seo_specialist_id || "");
     setAccountManagerId(project.account_manager_id || "");
     setCoExecutors([]);
