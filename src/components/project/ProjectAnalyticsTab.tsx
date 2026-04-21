@@ -615,10 +615,18 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     return result;
   }, [dailyData, appliedCompRange]);
 
-  // ── Channel ratios for splitting ──
+  // ── Channel ratios for splitting (prefer live traffic sources) ──
   const channelRatios = useMemo(() => {
-    if (!metrikaStats?.traffic_sources) return {} as Record<string, number>;
-    const sources = metrikaStats.traffic_sources as { source: string; visits: number }[];
+    // Prefer live data
+    let sources: { source: string; visits: number }[] = [];
+    if (liveMetrikaData?.trafficSources?.data) {
+      sources = liveMetrikaData.trafficSources.data.map((row: any) => ({
+        source: row.dimensions?.[0]?.name || row.dimensions?.[0]?.id || "unknown",
+        visits: Math.round(row.metrics?.[0] || 0),
+      }));
+    } else if (metrikaStats?.traffic_sources) {
+      sources = metrikaStats.traffic_sources as { source: string; visits: number }[];
+    }
     const totalAll = sources.reduce((s, src) => s + (src.visits || 0), 0);
     if (totalAll === 0) return {} as Record<string, number>;
     const ratios: Record<string, number> = { organic: 0, direct: 0, referral: 0, social: 0, ad: 0 };
@@ -628,7 +636,13 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     }
     for (const k of Object.keys(ratios)) ratios[k] = ratios[k] / totalAll;
     return ratios;
-  }, [metrikaStats]);
+  }, [metrikaStats, liveMetrikaData]);
+
+  // ── Channel-filtered ratio ──
+  const channelVisitRatio = useMemo(() => {
+    if (channel === "all") return 1;
+    return channelRatios[channel] || 0;
+  }, [channel, channelRatios]);
 
   // ── Channel-filtered ratio ──
   const channelVisitRatio = useMemo(() => {
