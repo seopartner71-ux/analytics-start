@@ -1,5 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
-import { useParams } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,43 +6,44 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { Calendar } from "@/components/ui/calendar";
 import {
-  User, Mail, Briefcase, Building2, Globe, Phone, Edit3, Save,
+  User, Mail, Briefcase, Building2, Globe, Edit3, Save,
   X, Camera, ThumbsUp, Gift, Trophy, Crown, Star, Heart,
   Award, Smile, Flag, Hash, Bookmark, Target, Zap,
   Smartphone, Monitor, Loader2, Lock, Eye, EyeOff,
+  CalendarDays, ListTodo, Newspaper, Pin, Clock,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { ru } from "date-fns/locale";
+import { format, isSameDay, parseISO } from "date-fns";
 
 const BADGE_ICONS = [
   ThumbsUp, Gift, Trophy, Crown, Star, Heart, Award, Smile,
   Flag, Bookmark, Hash, Target, Zap, Globe, Briefcase, Building2,
 ];
 
-function getAvatarUrl(name: string, size = 200) {
+function getDefaultAvatar(name: string, size = 200) {
   const hash = name.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
   return `https://i.pravatar.cc/${size}?u=${hash}`;
 }
 
 export default function ProfilePage() {
-  const { user, profile, isAdmin, role, refreshProfile } = useAuth();
+  const { user, profile, role, refreshProfile } = useAuth();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("profile");
   const [editing, setEditing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   // Editable fields
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [agencyName, setAgencyName] = useState("");
-  const [bio, setBio] = useState("");
-  const [phone, setPhone] = useState("");
-  const [patronymic, setPatronymic] = useState("");
-  const [interests, setInterests] = useState<string[]>([]);
-  const [newInterest, setNewInterest] = useState("");
 
   useEffect(() => {
     if (profile) {
@@ -52,6 +52,8 @@ export default function ProfilePage() {
       setAgencyName(profile.agency_name || "");
     }
   }, [profile]);
+
+  const avatarUrl = profile?.avatar_url || getDefaultAvatar(fullName || "User", 200);
 
   // Task stats for efficiency
   const { data: taskStats } = useQuery({
@@ -67,6 +69,35 @@ export default function ProfilePage() {
       return { total, completed, pct: total > 0 ? Math.round((completed / total) * 100) : 0 };
     },
     enabled: !!user,
+  });
+
+  // My tasks
+  const { data: myTasks = [] } = useQuery({
+    queryKey: ["profile-my-tasks", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("crm_tasks")
+        .select("id, title, stage, priority, deadline, project_id")
+        .eq("owner_id", user!.id)
+        .order("deadline", { ascending: true, nullsFirst: false })
+        .limit(50);
+      return data || [];
+    },
+    enabled: !!user,
+  });
+
+  // Company news (feed)
+  const { data: news = [] } = useQuery({
+    queryKey: ["profile-news"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("company_news")
+        .select("id, title, body, type, pinned, created_at")
+        .order("pinned", { ascending: false })
+        .order("created_at", { ascending: false })
+        .limit(20);
+      return data || [];
+    },
   });
 
   const saveProfile = useMutation({
@@ -88,6 +119,39 @@ export default function ProfilePage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const handleAvatarUpload = async (file: File) => {
+    if (!user) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Можно загружать только изображения");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Размер файла не должен превышать 5 МБ");
+      return;
+    }
+    setUploadingAvatar(true);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `${user.id}/avatar-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("avatars")
+        .upload(path, file, { upsert: true, cacheControl: "3600" });
+      if (upErr) throw upErr;
+      const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
+      const { error: updErr } = await supabase
+        .from("profiles")
+        .update({ avatar_url: pub.publicUrl })
+        .eq("user_id", user.id);
+      if (updErr) throw updErr;
+      await refreshProfile();
+      toast.success("Аватар обновлён");
+    } catch (e: any) {
+      toast.error(e.message || "Не удалось загрузить");
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
   const nameParts = fullName.split(" ");
   const firstName = nameParts[0] || "";
   const lastName = nameParts.slice(1).join(" ") || "";
@@ -98,7 +162,7 @@ export default function ProfilePage() {
   const profileTabs = [
     { key: "profile", label: "Профиль" },
     { key: "security", label: "Безопасность" },
-    { key: "tasks", label: "Задачи" },
+    { key: "tasks", label: "Задачи", badge: myTasks.length ? String(myTasks.length) : undefined },
     { key: "calendar", label: "Календарь" },
     { key: "feed", label: "Лента" },
     { key: "efficiency", label: `Эффективность`, badge: `${efficiency}%` },
@@ -106,6 +170,18 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-0">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) handleAvatarUpload(f);
+          e.target.value = "";
+        }}
+      />
+
       {/* Profile Header */}
       <div className="relative overflow-hidden rounded-t-xl mb-0">
         <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/5" />
@@ -132,14 +208,14 @@ export default function ProfilePage() {
 
       {/* Profile Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <div className="border-b border-border bg-card/50 px-6">
+        <div className="border-b border-border bg-card/50 px-6 overflow-x-auto">
           <TabsList className="h-auto bg-transparent p-0 gap-0">
             {profileTabs.map(tab => (
               <TabsTrigger
                 key={tab.key}
                 value={tab.key}
                 className={cn(
-                  "rounded-none border-b-2 border-transparent px-4 py-3 text-[13px] font-medium transition-colors",
+                  "rounded-none border-b-2 border-transparent px-4 py-3 text-[13px] font-medium transition-colors whitespace-nowrap",
                   "data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none",
                   "text-muted-foreground hover:text-foreground"
                 )}
@@ -159,27 +235,44 @@ export default function ProfilePage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* LEFT COLUMN */}
             <div className="space-y-5">
-              {/* Identity Card */}
               <Card className="bg-card/80 backdrop-blur-sm border-border/60 shadow-sm overflow-hidden">
                 <CardContent className="p-6 flex flex-col items-center">
-                  <div className="relative mb-4">
+                  <div className="relative mb-4 group">
                     <img
-                      src={getAvatarUrl(fullName || "User", 200)}
+                      src={avatarUrl}
                       alt={fullName}
                       className="h-32 w-32 rounded-full object-cover ring-4 ring-primary/20 shadow-lg"
                     />
                     <div className="absolute bottom-1 right-1 h-5 w-5 rounded-full bg-green-500 border-[3px] border-card" title="В сети" />
-                    {editing && (
-                      <button className="absolute bottom-0 left-0 h-8 w-8 rounded-full bg-card/90 border border-border flex items-center justify-center hover:bg-muted transition-colors">
-                        <Camera className="h-4 w-4 text-muted-foreground" />
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploadingAvatar}
+                      className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white"
+                    >
+                      {uploadingAvatar ? <Loader2 className="h-6 w-6 animate-spin" /> : (
+                        <div className="flex flex-col items-center gap-1">
+                          <Camera className="h-6 w-6" />
+                          <span className="text-[10px]">Изменить фото</span>
+                        </div>
+                      )}
+                    </button>
                   </div>
                   <span className="text-xs text-green-500 font-medium mb-2">● В сети</span>
                   <h2 className="text-lg font-bold text-foreground text-center">{fullName || "Имя не указано"}</h2>
                   <span className="text-sm text-muted-foreground">{roleLabel}</span>
 
-                  {/* Download apps */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-4 text-[12px] gap-1.5"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingAvatar}
+                  >
+                    {uploadingAvatar ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
+                    Загрузить фото
+                  </Button>
+
                   <div className="mt-5 pt-4 border-t border-border/40 w-full">
                     <div className="flex items-center justify-center gap-6 text-muted-foreground">
                       <div className="flex flex-col items-center gap-1.5">
@@ -195,7 +288,6 @@ export default function ProfilePage() {
                 </CardContent>
               </Card>
 
-              {/* Badges / Gratitude */}
               <Card className="bg-card/80 backdrop-blur-sm border-border/60 shadow-sm">
                 <CardContent className="p-5">
                   <h3 className="text-sm font-semibold text-foreground mb-4">Благодарности</h3>
@@ -215,7 +307,6 @@ export default function ProfilePage() {
 
             {/* RIGHT COLUMN */}
             <div className="lg:col-span-2 space-y-5">
-              {/* Contact Information */}
               <Card className="bg-card/80 backdrop-blur-sm border-border/60 shadow-sm">
                 <CardContent className="p-5">
                   <h3 className="text-sm font-semibold text-foreground mb-5">Контактная информация</h3>
@@ -241,90 +332,8 @@ export default function ProfilePage() {
                       onChange={setAgencyName}
                       icon={<Building2 className="h-4 w-4" />}
                     />
-                    <ProfileField label="Отчество" value={patronymic || "не заполнено"} editing={editing} onChange={setPatronymic} />
                     <ProfileField label="Язык уведомлений" value="Русский" editing={false} icon={<Globe className="h-4 w-4" />} />
                   </div>
-                </CardContent>
-              </Card>
-
-              {/* About Me */}
-              <Card className="bg-card/80 backdrop-blur-sm border-border/60 shadow-sm">
-                <CardContent className="p-5">
-                  <h3 className="text-sm font-semibold text-foreground mb-4">Обо мне</h3>
-                  {editing ? (
-                    <Textarea
-                      value={bio}
-                      onChange={e => setBio(e.target.value)}
-                      placeholder="Расскажите о себе..."
-                      className="min-h-[100px] text-sm"
-                    />
-                  ) : bio ? (
-                    <p className="text-sm text-foreground leading-relaxed">{bio}</p>
-                  ) : (
-                    <div className="flex flex-col items-center py-8 text-center">
-                      <div className="h-16 w-16 rounded-2xl bg-muted/40 flex items-center justify-center mb-3">
-                        <FileIcon className="h-8 w-8 text-muted-foreground/30" />
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-3">
-                        Делитесь интересными историями, загружайте фотографии памятных событий
-                      </p>
-                      <Button variant="outline" size="sm" className="text-[13px]" onClick={() => setEditing(true)}>
-                        Рассказать о себе
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Interests */}
-              <Card className="bg-card/80 backdrop-blur-sm border-border/60 shadow-sm">
-                <CardContent className="p-5">
-                  <h3 className="text-sm font-semibold text-foreground mb-4">Мои интересы</h3>
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {interests.length === 0 && !editing && (
-                      <p className="text-sm text-muted-foreground">Не указаны</p>
-                    )}
-                    {interests.map((tag, i) => (
-                      <Badge key={i} variant="secondary" className="text-xs px-3 py-1 bg-primary/10 text-primary border-0">
-                        {tag}
-                        {editing && (
-                          <button
-                            className="ml-1.5 hover:text-destructive"
-                            onClick={() => setInterests(interests.filter((_, idx) => idx !== i))}
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        )}
-                      </Badge>
-                    ))}
-                  </div>
-                  {editing && (
-                    <div className="flex gap-2">
-                      <Input
-                        value={newInterest}
-                        onChange={e => setNewInterest(e.target.value)}
-                        placeholder="Добавить интерес..."
-                        className="h-8 text-sm"
-                        onKeyDown={e => {
-                          if (e.key === "Enter" && newInterest.trim()) {
-                            setInterests([...interests, newInterest.trim()]);
-                            setNewInterest("");
-                          }
-                        }}
-                      />
-                      <Button
-                        size="sm"
-                        className="h-8 text-xs"
-                        disabled={!newInterest.trim()}
-                        onClick={() => {
-                          setInterests([...interests, newInterest.trim()]);
-                          setNewInterest("");
-                        }}
-                      >
-                        Добавить
-                      </Button>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             </div>
@@ -334,6 +343,21 @@ export default function ProfilePage() {
         {/* Security Tab */}
         <TabsContent value="security" className="mt-0 p-6">
           <ChangePasswordCard email={email} />
+        </TabsContent>
+
+        {/* Tasks Tab */}
+        <TabsContent value="tasks" className="mt-0 p-6">
+          <TasksList tasks={myTasks} />
+        </TabsContent>
+
+        {/* Calendar Tab */}
+        <TabsContent value="calendar" className="mt-0 p-6">
+          <TaskCalendar tasks={myTasks} />
+        </TabsContent>
+
+        {/* Feed Tab */}
+        <TabsContent value="feed" className="mt-0 p-6">
+          <FeedList items={news} />
         </TabsContent>
 
         {/* Efficiency Tab */}
@@ -361,17 +385,6 @@ export default function ProfilePage() {
             </CardContent>
           </Card>
         </TabsContent>
-
-        {/* Placeholder tabs */}
-        {["tasks", "calendar", "feed"].map(tab => (
-          <TabsContent key={tab} value={tab} className="mt-0 p-6">
-            <Card className="bg-card/80 backdrop-blur-sm border-border/60 shadow-sm">
-              <CardContent className="p-12 text-center">
-                <p className="text-sm text-muted-foreground">Раздел в разработке</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        ))}
       </Tabs>
     </div>
   );
@@ -379,11 +392,7 @@ export default function ProfilePage() {
 
 /* ─── Profile Field Row ─── */
 function ProfileField({
-  label,
-  value,
-  editing,
-  onChange,
-  icon,
+  label, value, editing, onChange, icon,
 }: {
   label: string;
   value: string;
@@ -397,15 +406,139 @@ function ProfileField({
       <span className="text-xs text-muted-foreground w-32 shrink-0">{label}</span>
       {editing && onChange ? (
         <Input
-          value={value === "не заполнено" ? "" : value}
+          value={value}
           onChange={e => onChange(e.target.value)}
           className="h-8 text-sm flex-1"
         />
       ) : (
-        <span className={cn("text-sm font-medium", value && value !== "не заполнено" ? "text-foreground" : "text-muted-foreground/50")}>
+        <span className={cn("text-sm font-medium", value ? "text-foreground" : "text-muted-foreground/50")}>
           {value || "—"}
         </span>
       )}
+    </div>
+  );
+}
+
+/* ─── Tasks List ─── */
+function TasksList({ tasks }: { tasks: Array<{ id: string; title: string; stage: string; priority: string; deadline: string | null }> }) {
+  if (!tasks.length) {
+    return (
+      <Card className="bg-card/80 border-border/60">
+        <CardContent className="p-12 text-center">
+          <ListTodo className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
+          <p className="text-sm text-muted-foreground">У вас пока нет задач</p>
+        </CardContent>
+      </Card>
+    );
+  }
+  return (
+    <Card className="bg-card/80 border-border/60">
+      <CardContent className="p-4">
+        <div className="space-y-2">
+          {tasks.map(t => (
+            <div key={t.id} className="flex items-center gap-3 p-3 rounded-lg border border-border/40 hover:bg-muted/30 transition-colors">
+              <div className={cn(
+                "h-2 w-2 rounded-full shrink-0",
+                t.priority === "high" ? "bg-destructive" : t.priority === "low" ? "bg-muted-foreground" : "bg-primary"
+              )} />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground truncate">{t.title}</p>
+                <div className="flex items-center gap-3 mt-0.5">
+                  <Badge variant="secondary" className="text-[10px] h-4 px-1.5">{t.stage}</Badge>
+                  {t.deadline && (
+                    <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {format(parseISO(t.deadline), "d MMM yyyy", { locale: ru })}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ─── Task Calendar ─── */
+function TaskCalendar({ tasks }: { tasks: Array<{ id: string; title: string; deadline: string | null; stage: string }> }) {
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const tasksWithDeadline = tasks.filter(t => t.deadline);
+  const deadlineDates = tasksWithDeadline.map(t => parseISO(t.deadline!));
+  const tasksOnDay = selectedDate
+    ? tasksWithDeadline.filter(t => isSameDay(parseISO(t.deadline!), selectedDate))
+    : [];
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <Card className="bg-card/80 border-border/60">
+        <CardContent className="p-4 flex justify-center">
+          <Calendar
+            mode="single"
+            selected={selectedDate}
+            onSelect={setSelectedDate}
+            locale={ru}
+            modifiers={{ hasTask: deadlineDates }}
+            modifiersClassNames={{ hasTask: "bg-primary/15 font-bold text-primary" }}
+            className="rounded-md"
+          />
+        </CardContent>
+      </Card>
+      <Card className="bg-card/80 border-border/60">
+        <CardContent className="p-5">
+          <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+            <CalendarDays className="h-4 w-4" />
+            {selectedDate ? format(selectedDate, "d MMMM yyyy", { locale: ru }) : "Выберите дату"}
+          </h3>
+          {tasksOnDay.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">На этот день задач нет</p>
+          ) : (
+            <div className="space-y-2">
+              {tasksOnDay.map(t => (
+                <div key={t.id} className="p-3 rounded-lg border border-border/40">
+                  <p className="text-sm font-medium text-foreground">{t.title}</p>
+                  <Badge variant="secondary" className="mt-1 text-[10px] h-4 px-1.5">{t.stage}</Badge>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+/* ─── Feed (Company News) ─── */
+function FeedList({ items }: { items: Array<{ id: string; title: string; body: string; type: string; pinned: boolean; created_at: string }> }) {
+  if (!items.length) {
+    return (
+      <Card className="bg-card/80 border-border/60">
+        <CardContent className="p-12 text-center">
+          <Newspaper className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
+          <p className="text-sm text-muted-foreground">Новостей пока нет</p>
+        </CardContent>
+      </Card>
+    );
+  }
+  return (
+    <div className="space-y-3 max-w-3xl">
+      {items.map(item => (
+        <Card key={item.id} className={cn("bg-card/80 border-border/60", item.pinned && "border-primary/40 bg-primary/[0.02]")}>
+          <CardContent className="p-5">
+            <div className="flex items-start gap-2 mb-2">
+              {item.pinned && <Pin className="h-3.5 w-3.5 text-primary mt-1 shrink-0" />}
+              <div className="flex-1">
+                <h3 className="text-base font-bold text-foreground">{item.title}</h3>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  {format(parseISO(item.created_at), "d MMMM yyyy 'в' HH:mm", { locale: ru })}
+                </p>
+              </div>
+            </div>
+            {item.body && <p className="text-sm text-foreground/80 whitespace-pre-wrap leading-relaxed">{item.body}</p>}
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 }
@@ -434,7 +567,6 @@ function ChangePasswordCard({ email }: { email: string }) {
     }
     setLoading(true);
     try {
-      // Verify current password by re-authenticating
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password: currentPassword,
@@ -444,7 +576,6 @@ function ChangePasswordCard({ email }: { email: string }) {
         setLoading(false);
         return;
       }
-      // Update password
       const { error: updateError } = await supabase.auth.updateUser({
         password: newPassword,
       });
@@ -543,17 +674,5 @@ function PasswordInput({
       </div>
       {hint && <p className="text-xs text-destructive">{hint}</p>}
     </div>
-  );
-}
-
-/* ─── Placeholder icon for bio ─── */
-function FileIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
-      <path d="M14 2v6h6" />
-      <path d="M12 18v-6" />
-      <path d="m9 15 3-3 3 3" />
-    </svg>
   );
 }
