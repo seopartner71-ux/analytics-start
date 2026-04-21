@@ -2309,37 +2309,70 @@ export type Database = {
       profiles: {
         Row: {
           agency_name: string | null
+          all_projects_access: boolean
           avatar_url: string | null
+          confirmed_at: string | null
+          confirmed_by: string | null
           created_at: string
           email: string
           finance_access: boolean
+          first_name: string | null
           full_name: string | null
           id: string
+          knowledge_edit_access: boolean
+          last_name: string | null
+          onboarding_access: boolean
+          phone: string | null
+          position: string | null
           preferred_language: string
+          status: string
+          telegram: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           agency_name?: string | null
+          all_projects_access?: boolean
           avatar_url?: string | null
+          confirmed_at?: string | null
+          confirmed_by?: string | null
           created_at?: string
           email: string
           finance_access?: boolean
+          first_name?: string | null
           full_name?: string | null
           id?: string
+          knowledge_edit_access?: boolean
+          last_name?: string | null
+          onboarding_access?: boolean
+          phone?: string | null
+          position?: string | null
           preferred_language?: string
+          status?: string
+          telegram?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           agency_name?: string | null
+          all_projects_access?: boolean
           avatar_url?: string | null
+          confirmed_at?: string | null
+          confirmed_by?: string | null
           created_at?: string
           email?: string
           finance_access?: boolean
+          first_name?: string | null
           full_name?: string | null
           id?: string
+          knowledge_edit_access?: boolean
+          last_name?: string | null
+          onboarding_access?: boolean
+          phone?: string | null
+          position?: string | null
           preferred_language?: string
+          status?: string
+          telegram?: string | null
           updated_at?: string
           user_id?: string
         }
