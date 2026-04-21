@@ -39,6 +39,7 @@ import OnboardingPage from "./pages/OnboardingPage";
 import KnowledgeBasePage from "./pages/KnowledgeBasePage";
 import KnowledgeBooksPage from "./pages/KnowledgeBooksPage";
 import UsersAdminPage from "./pages/UsersAdminPage";
+import AdminTimeStatsPage from "./pages/AdminTimeStatsPage";
 import { CrmLayout } from "./components/CrmLayout";
 
 const queryClient = new QueryClient();
