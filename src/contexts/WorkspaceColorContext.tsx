@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { WORKSPACE_COLORS } from "@/data/crm-mock";
+import { WORKSPACE_COLORS } from "@/data/workspace-colors";
 
 interface WorkspaceColorContextType {
   colorHsl: string;

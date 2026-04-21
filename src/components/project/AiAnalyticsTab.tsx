@@ -75,51 +75,23 @@ export function AiAnalyticsTab({
         throw new Error(data.error || "AI generation failed");
       }
 
-      if (data.summary) {
-        onSaveSummary(data.summary);
-      }
-      if (data.business_insight) {
-        setBusinessInsight(data.business_insight);
-      }
-      if (data.recommendations) {
-        setRecommendations(data.recommendations);
-      }
+      if (data.summary) onSaveSummary(data.summary);
+      if (data.business_insight) setBusinessInsight(data.business_insight);
+      if (data.recommendations) setRecommendations(data.recommendations);
 
-      // If the edge function doesn't return deep analysis fields yet, generate mock data
       if (!data.business_insight && !data.recommendations) {
-        generateMockDeepAnalysis();
+        toast.info(i18n.language === "ru"
+          ? "AI пока не вернул глубокий анализ — попробуйте позже"
+          : "AI did not return deep analysis yet — try again later");
+        return;
       }
 
       toast.success(t("aiInsights.generated"));
     } catch (err: any) {
       toast.error(err.message);
-      // Fallback to mock
-      generateMockDeepAnalysis();
     } finally {
       setLoadingDeep(false);
     }
-  };
-
-  const generateMockDeepAnalysis = () => {
-    const isRu = i18n.language === "ru";
-    setBusinessInsight(
-      isRu
-        ? `За анализируемый период сайт ${projectName} демонстрирует устойчивый рост органического трафика. Поисковый канал остаётся основным драйвером посещаемости (68% всех визитов). Глубина просмотра улучшилась на 15%, что свидетельствует о росте качества контента и навигации. Коммерческие запросы показывают положительную динамику — средняя позиция улучшилась на 3.2 пункта. Однако показатель отказов вырос на 2%, что требует внимания к оптимизации посадочных страниц.`
-        : `During the analyzed period, ${projectName} shows steady organic traffic growth. Search remains the primary channel (68% of all visits). Page depth improved by 15%, indicating better content quality and navigation. Commercial queries show positive dynamics — average position improved by 3.2 points. However, bounce rate increased by 2%, requiring attention to landing page optimization.`
-    );
-    setRecommendations(isRu ? [
-      { text: "Обновить мета-теги в разделе Блог — текущие Title/Description устарели", priority: "high", category: "SEO" },
-      { text: "Увеличить бюджет на РСЯ — канал показывает высокий ROI", priority: "high", category: "Реклама" },
-      { text: "Добавить внутреннюю перелинковку в топ-10 посадочных страниц", priority: "medium", category: "SEO" },
-      { text: "Оптимизировать скорость загрузки мобильной версии (LCP > 2.5s)", priority: "medium", category: "Техничка" },
-      { text: "Запланировать публикацию 4 SEO-статей на следующий месяц", priority: "low", category: "Контент" },
-    ] : [
-      { text: "Update meta tags in the Blog section — current Title/Description are outdated", priority: "high", category: "SEO" },
-      { text: "Increase YAN budget — channel shows high ROI", priority: "high", category: "Ads" },
-      { text: "Add internal linking to top-10 landing pages", priority: "medium", category: "SEO" },
-      { text: "Optimize mobile page speed (LCP > 2.5s)", priority: "medium", category: "Technical" },
-      { text: "Plan 4 SEO articles for next month", priority: "low", category: "Content" },
-    ]);
   };
 
   return (

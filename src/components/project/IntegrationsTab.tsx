@@ -63,15 +63,19 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
     mutationFn: async ({ serviceName, apiKey, externalProjectId, counterId, accessToken }: {
       serviceName: string; apiKey?: string; externalProjectId?: string; counterId?: string; accessToken?: string;
     }) => {
+      // Validate that real credentials were provided — never write mock tokens
+      if (!accessToken && !apiKey) {
+        throw new Error("Не передан токен или API-ключ для подключения интеграции");
+      }
       const existing = getIntegration(serviceName);
       if (existing) {
         const { error } = await supabase.from("integrations").update({
           connected: true,
           last_sync: new Date().toISOString(),
-          access_token: accessToken || existing.access_token || "mock_token_" + Date.now(),
-          api_key: apiKey || existing.api_key || null,
-          external_project_id: externalProjectId || existing.external_project_id || null,
-          counter_id: counterId || existing.counter_id || null,
+          access_token: accessToken ?? existing.access_token ?? null,
+          api_key: apiKey ?? existing.api_key ?? null,
+          external_project_id: externalProjectId ?? existing.external_project_id ?? null,
+          counter_id: counterId ?? existing.counter_id ?? null,
         }).eq("id", existing.id);
         if (error) throw error;
       } else {
@@ -80,10 +84,10 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
           service_name: serviceName,
           connected: true,
           last_sync: new Date().toISOString(),
-          access_token: accessToken || "mock_token_" + Date.now(),
-          api_key: apiKey || null,
-          external_project_id: externalProjectId || null,
-          counter_id: counterId || null,
+          access_token: accessToken ?? null,
+          api_key: apiKey ?? null,
+          external_project_id: externalProjectId ?? null,
+          counter_id: counterId ?? null,
         });
         if (error) throw error;
       }
