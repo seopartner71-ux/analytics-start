@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { ExpensesBlock } from "@/components/finance/ExpensesBlock";
 import { InvoicesBlock } from "@/components/finance/InvoicesBlock";
 import { CashTransferBlock } from "@/components/finance/CashTransferBlock";
+import { ReconciliationBlock } from "@/components/finance/ReconciliationBlock";
 
 const RUB = (n: number) =>
   new Intl.NumberFormat("ru-RU", { style: "currency", currency: "RUB", maximumFractionDigits: 0 }).format(n || 0);
@@ -217,6 +218,9 @@ export default function Finance() {
 
       {/* Блок 6: Документы */}
       <InvoicesBlock />
+
+      {/* Блок 7: Акт сверки */}
+      <ReconciliationBlock />
     </div>
   );
 }
