@@ -663,6 +663,44 @@ export function BankImportBlock() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Откат последнего импорта */}
+      <AlertDialog open={undoOpen} onOpenChange={setUndoOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+              <Undo2 className="h-4 w-4" /> Откатить последний импорт?
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>Будут удалены данные, созданные при последнем импорте:</p>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>Транзакций: <span className="font-semibold text-foreground">{lastImport?.txIds.length || 0}</span></li>
+                  <li>Новых клиентов (финансы): <span className="font-semibold text-foreground">{lastImport?.newClientIds.length || 0}</span></li>
+                  <li>Новых компаний (CRM): <span className="font-semibold text-foreground">{lastImport?.newCompanyIds.length || 0}</span></li>
+                  <li>Счетов вернётся в «Выставлен»: <span className="font-semibold text-foreground">{lastImport?.invoiceIds.length || 0}</span></li>
+                </ul>
+                {lastImport?.at && (
+                  <p className="text-xs text-muted-foreground pt-1">
+                    Импорт был выполнен: {new Date(lastImport.at).toLocaleString("ru-RU")}
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground">Действие необратимо.</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={undoMut.isPending}>Отмена</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); undoMut.mutate(); }}
+              disabled={undoMut.isPending}
+              className="bg-amber-600 hover:bg-amber-600/90"
+            >
+              {undoMut.isPending ? "Откат..." : "Да, откатить"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
