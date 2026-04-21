@@ -3567,6 +3567,7 @@ export type Database = {
         Returns: undefined
       }
       is_active_user: { Args: { _user_id: string }; Returns: boolean }
+      is_admin_or_director: { Args: { _user_id: string }; Returns: boolean }
       is_project_participant: {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
