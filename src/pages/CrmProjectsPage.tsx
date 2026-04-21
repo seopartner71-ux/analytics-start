@@ -443,6 +443,10 @@ export default function CrmProjectsPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                     {items.map(p => {
                       const manager = getManagerName(p.seo_specialist_id) || p.seo_specialist;
+                      const stageTag = getProjectStage(p.id);
+                      const metrics = getSeoMetrics(p.id);
+                      const sparkData = buildSparkData(p.id);
+                      const trafficUp = metrics.trafficDelta >= 0;
                       return (
                         <div
                           key={p.id}
@@ -450,45 +454,96 @@ export default function CrmProjectsPage() {
                           onDragStart={e => handleDragStart(e, p.id)}
                           onDragEnd={handleDragEnd}
                           onClick={() => navigate(`/crm-projects/${p.id}`)}
-                          className="bg-card rounded-md border border-border p-3 cursor-grab active:cursor-grabbing transition-all hover:shadow-md hover:-translate-y-0.5 group"
-                          style={{ borderLeftWidth: 3, borderLeftColor: col.color }}
+                          className="bg-card/80 rounded-lg border border-border/60 p-3.5 cursor-grab active:cursor-grabbing transition-all hover:border-border hover:bg-card hover:shadow-lg hover:shadow-black/20 hover:-translate-y-0.5 group space-y-2.5"
                         >
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent/10 text-accent font-medium uppercase">SEO</span>
+                          {/* Header: stage tag + grip */}
+                          <div className="flex items-center justify-between">
+                            <span className={cn("text-[10px] px-1.5 py-0.5 rounded border font-medium", stageTag.color)}>
+                              {stageTag.key}
+                            </span>
                             <GripVertical className="h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors" />
                           </div>
 
-                          <p className="text-[14px] font-semibold text-foreground leading-tight mb-1.5 truncate">
-                            {p.company?.name || p.name}
-                          </p>
-
-                          {p.url && (
-                            <div className="flex items-center gap-1.5 mb-1.5">
-                              <Globe className="h-3 w-3 text-muted-foreground shrink-0" />
-                              <span className="text-[12px] text-muted-foreground truncate">{p.url}</span>
-                            </div>
-                          )}
-
-                          <div className="flex items-center gap-1.5 mb-1.5">
-                            <CalendarDays className="h-3 w-3 text-muted-foreground shrink-0" />
-                            <span className={cn("text-[12px]", getDeadlineColor(p.updated_at))}>
-                              {format(parseISO(p.created_at), "dd.MM.yyyy")}
-                            </span>
+                          {/* Title + URL */}
+                          <div>
+                            <p className="text-[15px] font-semibold text-foreground leading-tight truncate tracking-tight">
+                              {p.company?.name || p.name}
+                            </p>
+                            {p.url && (
+                              <div className="flex items-center gap-1 mt-0.5">
+                                <Globe className="h-2.5 w-2.5 text-muted-foreground/40 shrink-0" />
+                                <span className="text-[11px] text-muted-foreground/60 truncate">{p.url}</span>
+                              </div>
+                            )}
                           </div>
 
-                          {manager && (
-                            <div className="flex items-center gap-1.5">
-                              <AvatarCircle name={manager} />
-                              <span className="text-[12px] text-muted-foreground truncate">{manager}</span>
+                          {/* SEO metrics row */}
+                          <div className="flex items-center gap-2 py-1.5 px-2 rounded-md bg-muted/30">
+                            <div className="flex items-center gap-1 flex-1 min-w-0">
+                              {trafficUp ? (
+                                <TrendingUp className="h-3 w-3 text-emerald-400 shrink-0" />
+                              ) : (
+                                <TrendingDown className="h-3 w-3 text-rose-400 shrink-0" />
+                              )}
+                              <span className={cn("text-[11px] font-semibold tabular-nums", trafficUp ? "text-emerald-400" : "text-rose-400")}>
+                                {trafficUp ? "+" : ""}{metrics.trafficDelta}%
+                              </span>
                             </div>
-                          )}
+                            <div className="w-px h-3 bg-border/50" />
+                            <div className="flex flex-col items-center flex-1 min-w-0">
+                              <span className="text-[9px] uppercase tracking-wider text-muted-foreground/60 leading-none">ТОП-10</span>
+                              <span className="text-[11px] font-semibold text-foreground tabular-nums leading-tight">{metrics.top10}</span>
+                            </div>
+                            <div className="w-px h-3 bg-border/50" />
+                            <div className="flex flex-col items-center flex-1 min-w-0">
+                              <span className="text-[9px] uppercase tracking-wider text-muted-foreground/60 leading-none">ИКС</span>
+                              <span className="text-[11px] font-semibold text-foreground tabular-nums leading-tight">{metrics.iks}</span>
+                            </div>
+                          </div>
+
+                          {/* Sparkline */}
+                          <Sparkline data={sparkData} positive={trafficUp} />
+
+                          {/* Progress */}
+                          <div>
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-[10px] text-muted-foreground/70">Прогресс задач</span>
+                              <span className="text-[10px] font-medium text-muted-foreground tabular-nums">{metrics.progress}%</span>
+                            </div>
+                            <div className="h-1 rounded-full bg-muted/50 overflow-hidden">
+                              <div
+                                className="h-full rounded-full transition-all"
+                                style={{
+                                  width: `${metrics.progress}%`,
+                                  background: "linear-gradient(90deg, hsl(var(--primary)), hsl(var(--primary) / 0.7))",
+                                }}
+                              />
+                            </div>
+                          </div>
+
+                          {/* Footer: avatar + neutral date */}
+                          <div className="flex items-center justify-between pt-1 border-t border-border/40">
+                            {manager ? (
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <AvatarCircle name={manager} />
+                                <span className="text-[11px] text-muted-foreground/80 truncate">{manager}</span>
+                              </div>
+                            ) : <span />}
+                            <div className="flex items-center gap-1 shrink-0">
+                              <CalendarDays className="h-2.5 w-2.5 text-muted-foreground/40" />
+                              <span className={cn("text-[11px] tabular-nums", getDeadlineColor(p.updated_at))}>
+                                {format(parseISO(p.created_at), "dd.MM.yyyy")}
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       );
                     })}
                   </div>
                 ) : (
-                  <div className="flex items-center justify-center h-16 text-[12px] text-muted-foreground/50 border border-dashed border-border rounded-md">
-                    Перетащите сюда
+                  <div className="flex flex-col items-center justify-center h-32 gap-2 border-2 border-dashed border-border/50 rounded-lg bg-muted/10">
+                    <Moon className="h-6 w-6 text-muted-foreground/30" />
+                    <p className="text-[12px] text-muted-foreground/50">Перетащите проект сюда</p>
                   </div>
                 )}
               </div>
