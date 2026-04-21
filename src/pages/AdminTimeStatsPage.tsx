@@ -185,6 +185,7 @@ export default function AdminTimeStatsPage({ embedded = false }: { embedded?: bo
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>
