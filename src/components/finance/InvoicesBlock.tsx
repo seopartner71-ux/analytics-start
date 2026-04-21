@@ -166,8 +166,13 @@ export function InvoicesBlock() {
     onError: (e: any) => toast.error(e.message || "Ошибка"),
   });
 
-  const downloadDoc = (inv: Invoice, kind: "invoice" | "act") => {
-    const html = renderDocumentHtml(inv, kind);
+  const downloadDoc = async (inv: Invoice, kind: "invoice" | "act") => {
+    const { data: req } = await supabase
+      .from("company_requisites")
+      .select("*")
+      .limit(1)
+      .maybeSingle();
+    const html = renderDocumentHtml(inv, kind, req as Requisites | null);
     const w = window.open("", "_blank");
     if (!w) {
       toast.error("Разрешите всплывающие окна");
