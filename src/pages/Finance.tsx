@@ -71,7 +71,7 @@ export default function Finance() {
       const exps = txYear.filter((t) => t.type === "expense" && inMonth(t.date, s, e));
       const revenue = incs.reduce((sum, t) => sum + Number(t.amount), 0);
       const expenses = exps
-        .filter((t) => t.category !== "tax" && t.category !== "cash_reserve")
+        .filter((t) => t.category !== "tax" && t.category !== "cash_reserve" && t.category !== "owner_withdrawal")
         .reduce((sum, t) => sum + Number(t.amount), 0);
       const tax = revenue * TAX_RATE;
       const cash = revenue * CASH_RATE;
