@@ -416,7 +416,12 @@ export function BankImportBlock() {
             Точка-Банк · Excel · автораспознавание клиентов и автосоздание новых
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {lastImport && (
+            <Button size="sm" variant="outline" onClick={() => setUndoOpen(true)} className="border-amber-500/40 text-amber-600 dark:text-amber-400">
+              <Undo2 className="h-4 w-4 mr-1" /> Откатить последний импорт ({lastImport.txIds.length})
+            </Button>
+          )}
           <Button size="sm" variant="outline" onClick={() => setResetOpen(true)}>
             <Trash2 className="h-4 w-4 mr-1" /> Очистить финансы
           </Button>
