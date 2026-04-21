@@ -195,15 +195,13 @@ export default function CredentialsPage() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Доступы"
-        description="Хостинг, CMS, FTP, CRM и другие учётные данные по проектам"
-        icon={KeyRound}
-      >
-        <Button onClick={openCreate}>
-          <Plus className="h-4 w-4 mr-2" />
-          Добавить доступ
-        </Button>
-      </PageHeader>
+        actions={
+          <Button onClick={openCreate} size="sm" className="h-8">
+            <Plus className="h-4 w-4 mr-2" />
+            Добавить доступ
+          </Button>
+        }
+      />
 
       <Card>
         <CardContent className="p-4 flex flex-wrap gap-3 items-center">
