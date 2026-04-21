@@ -418,7 +418,7 @@ export function BankImportBlock() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Закрыть</Button>
             <Button
-              onClick={() => importMut.mutate()}
+              onClick={handleImportClick}
               disabled={importMut.isPending || rows.length === 0 || !accountId}
             >
               {importMut.isPending ? "Импорт..." : `Импортировать ${rows.filter((r) => r.selected && !r.duplicate).length} операций`}
@@ -426,6 +426,59 @@ export function BankImportBlock() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Подтверждение создания новых клиентов */}
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent className="max-w-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <UserPlus className="h-5 w-5 text-blue-500" />
+              Подтвердите создание новых клиентов
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              При импорте будет создано <span className="font-semibold text-foreground">{newClientsPreview.length}</span>{" "}
+              {newClientsPreview.length === 1 ? "новый клиент" : "новых клиентов"}. Проверьте список перед подтверждением.
+              Привязку к проектам можно будет добавить позже вручную.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="max-h-[50vh] overflow-auto border rounded-md">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50 sticky top-0">
+                <tr>
+                  <th className="text-left p-2">Клиент</th>
+                  <th className="text-left p-2">ИНН</th>
+                  <th className="text-right p-2">Операций</th>
+                  <th className="text-right p-2">Сумма</th>
+                </tr>
+              </thead>
+              <tbody>
+                {newClientsPreview.map((c, i) => (
+                  <tr key={i} className="border-t">
+                    <td className="p-2 font-medium">{c.name}</td>
+                    <td className="p-2 font-mono text-xs text-muted-foreground">{c.inn || "—"}</td>
+                    <td className="p-2 text-right">{c.count}</td>
+                    <td className="p-2 text-right font-semibold text-emerald-500">{RUB(c.sum)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={importMut.isPending}>Отмена</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                importMut.mutate();
+              }}
+              disabled={importMut.isPending}
+            >
+              {importMut.isPending ? "Импорт..." : `Создать ${newClientsPreview.length} и импортировать`}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
