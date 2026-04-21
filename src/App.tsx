@@ -83,8 +83,8 @@ const App = () => (
                 <Route path="/onboarding" element={<ProtectedRoute><CrmLayout><OnboardingPage /></CrmLayout></ProtectedRoute>} />
                 <Route path="/knowledge" element={<ProtectedRoute><CrmLayout><KnowledgeBasePage /></CrmLayout></ProtectedRoute>} />
                 <Route path="/knowledge-books" element={<ProtectedRoute><CrmLayout><KnowledgeBooksPage /></CrmLayout></ProtectedRoute>} />
-                <Route path="/users" element={<ProtectedRoute><CrmLayout><UsersAdminPage /></CrmLayout></ProtectedRoute>} />
-                <Route path="/admin/time-stats" element={<ProtectedRoute><CrmLayout><AdminTimeStatsPage /></CrmLayout></ProtectedRoute>} />
+                <Route path="/users" element={<ProtectedRoute><CrmLayout><EmployeesPage /></CrmLayout></ProtectedRoute>} />
+                <Route path="/admin/time-stats" element={<ProtectedRoute><CrmLayout><EmployeesPage /></CrmLayout></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>

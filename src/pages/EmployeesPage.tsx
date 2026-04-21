@@ -468,8 +468,8 @@ export default function EmployeesPage() {
         )}
 
         {isAdmin && (
-          <TabsContent value="access" className="mt-4">
-            <SystemUsersTab />
+          <TabsContent value="access" className="mt-4 -mx-6 lg:-mx-8">
+            <UsersAdminPage />
           </TabsContent>
         )}
       </Tabs>
