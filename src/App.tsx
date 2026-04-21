@@ -86,6 +86,7 @@ const App = () => (
                 <Route path="/knowledge-books" element={<ProtectedRoute><CrmLayout><KnowledgeBooksPage /></CrmLayout></ProtectedRoute>} />
                 <Route path="/users" element={<ProtectedRoute><CrmLayout><EmployeesPage /></CrmLayout></ProtectedRoute>} />
                 <Route path="/admin/time-stats" element={<ProtectedRoute><CrmLayout><EmployeesPage /></CrmLayout></ProtectedRoute>} />
+                <Route path="/admin/deletion-log" element={<ProtectedRoute><CrmLayout><DeletionLogPage /></CrmLayout></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
