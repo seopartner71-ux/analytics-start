@@ -239,6 +239,7 @@ export default function CrmProjectsPage() {
     queryClient.invalidateQueries({ queryKey: ["crm-projects"] });
   };
 
+  const getManagerName = (id: string | null) => {
     if (!id) return null;
     return members.find(m => m.id === id)?.full_name || null;
   };
