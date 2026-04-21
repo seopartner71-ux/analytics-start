@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, GripVertical, Globe, CalendarDays, MessageSquare, Loader2, FolderKanban, LayoutList, Kanban } from "lucide-react";
+import { Plus, Search, GripVertical, Globe, CalendarDays, MessageSquare, Loader2, FolderKanban, LayoutList, Kanban, TrendingUp, TrendingDown, Moon } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
