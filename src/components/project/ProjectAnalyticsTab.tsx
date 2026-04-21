@@ -680,9 +680,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
       : (liveVisits ?? metrikaStats?.total_visits ?? 0)) * channelVisitRatio
   );
   const totalUsers = Math.round((liveUsers ?? metrikaStats?.total_users ?? 0) * channelVisitRatio);
-  const bounceRate = Number(((liveBounce ?? metrikaStats?.bounce_rate) ?? 0)).toFixed
-    ? Number(Number(liveBounce ?? metrikaStats?.bounce_rate ?? 0).toFixed(2))
-    : 0;
+  const bounceRate = Number(Number(liveBounce ?? metrikaStats?.bounce_rate ?? 0).toFixed(2));
   const avgDuration = Math.round(liveAvgDuration ?? metrikaStats?.avg_duration_seconds ?? 0);
   const pageDepth = Number(Number(livePageDepth ?? metrikaStats?.page_depth ?? 0).toFixed(2));
 
