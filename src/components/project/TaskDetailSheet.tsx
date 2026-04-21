@@ -820,6 +820,40 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
         </div>
       </SheetContent>
 
+      <AlertDialog open={confirmSaveOpen} onOpenChange={setConfirmSaveOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Подтвердите сохранение изменений</AlertDialogTitle>
+            <AlertDialogDescription>
+              Вы изменяете сразу <strong>{changedFields.length}</strong> {changedFields.length === 1 ? "поле" : changedFields.length < 5 ? "поля" : "полей"} в задаче. Все правки будут применены и записаны в журнал задачи.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <ul className="text-sm space-y-1.5 my-2 px-4 py-3 rounded-lg bg-muted/40 border border-border/60">
+            {changedFields.map((f) => (
+              <li key={f} className="flex items-center gap-2 text-foreground">
+                <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+                <span>{f}</span>
+              </li>
+            ))}
+          </ul>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={saveAll.isPending}>Отмена</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                saveAll.mutate(undefined, {
+                  onSettled: () => setConfirmSaveOpen(false),
+                });
+              }}
+              disabled={saveAll.isPending}
+            >
+              {saveAll.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Применить все изменения
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <CompleteTaskDialog
         open={completeOpen}
         onOpenChange={setCompleteOpen}
