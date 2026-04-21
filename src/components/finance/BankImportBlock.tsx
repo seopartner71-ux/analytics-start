@@ -145,6 +145,25 @@ export function BankImportBlock() {
     }
   };
 
+  const LAST_IMPORT_KEY = "fin-last-bank-import";
+  const [lastImport, setLastImport] = useState<null | {
+    at: string;
+    txIds: string[];
+    invoiceIds: string[];
+    newClientIds: string[];
+    newCompanyIds: string[];
+    accountId: string;
+  }>(() => {
+    try {
+      const raw = localStorage.getItem(LAST_IMPORT_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  });
+  useEffect(() => {
+    if (lastImport) localStorage.setItem(LAST_IMPORT_KEY, JSON.stringify(lastImport));
+    else localStorage.removeItem(LAST_IMPORT_KEY);
+  }, [lastImport]);
+
   const importMut = useMutation({
     mutationFn: async () => {
       if (!accountId) throw new Error("Выберите банковский счёт");
@@ -163,6 +182,8 @@ export function BankImportBlock() {
         if (!uniqMap.has(key)) uniqMap.set(key, { name: r.counterparty, inn: r.inn });
       }
       const newClientsMap = new Map<string, { id: string; name: string }>();
+      const newClientIds: string[] = [];
+      const newCompanyIds: string[] = [];
       if (uniqMap.size > 0) {
         const insertData = Array.from(uniqMap.values()).map((c) => ({ name: c.name, inn: c.inn }));
         const { data: created, error: cErr } = await supabase
@@ -173,6 +194,7 @@ export function BankImportBlock() {
         (created || []).forEach((c: any) => {
           const key = c.inn || `name:${(c.name || "").toLowerCase()}`;
           newClientsMap.set(key, { id: c.id, name: c.name });
+          newClientIds.push(c.id);
         });
 
         // Дублируем в CRM-таблицу companies (страница "Компании")
@@ -190,7 +212,8 @@ export function BankImportBlock() {
           .filter((c) => !(c.inn && innSet.has(c.inn)) && !nameSet.has(c.name.toLowerCase()))
           .map((c) => ({ name: c.name, inn: c.inn, type: "Клиент", owner_id: ownerId }));
         if (compRows.length > 0) {
-          await supabase.from("companies").insert(compRows);
+          const { data: createdComp } = await supabase.from("companies").insert(compRows).select("id");
+          (createdComp || []).forEach((c: any) => newCompanyIds.push(c.id));
         }
       }
 
@@ -209,8 +232,12 @@ export function BankImportBlock() {
           description: `${r.counterparty}${r.purpose ? " · " + r.purpose : ""}`.slice(0, 500),
         };
       });
-      const { error: txErr } = await supabase.from("transactions").insert(txInsert);
+      const { data: createdTx, error: txErr } = await supabase
+        .from("transactions")
+        .insert(txInsert)
+        .select("id");
       if (txErr) throw txErr;
+      const txIds = (createdTx || []).map((t: any) => t.id);
 
       // 3) Закрываем счета
       const invoiceIds = selected.map((r) => r.matchedInvoiceId).filter((x): x is string => !!x);
@@ -220,13 +247,19 @@ export function BankImportBlock() {
           .update({ status: "paid", date_paid: format(new Date(), "yyyy-MM-dd"), paid_to_account_id: accountId })
           .in("id", invoiceIds);
       }
-      return { count: selected.length, closed: invoiceIds.length, created: uniqMap.size };
+      return {
+        count: selected.length,
+        closed: invoiceIds.length,
+        created: uniqMap.size,
+        snapshot: { at: new Date().toISOString(), txIds, invoiceIds, newClientIds, newCompanyIds, accountId },
+      };
     },
-    onSuccess: ({ count, closed, created }) => {
+    onSuccess: ({ count, closed, created, snapshot }) => {
       const parts = [`Импортировано: ${count}`];
       if (created > 0) parts.push(`новых клиентов: ${created}`);
       if (closed > 0) parts.push(`закрыто счетов: ${closed}`);
       toast.success(parts.join(" · "));
+      setLastImport(snapshot);
       qc.invalidateQueries({ queryKey: ["fin-accounts"] });
       qc.invalidateQueries({ queryKey: ["fin-tx-year"] });
       qc.invalidateQueries({ queryKey: ["fin-invoices"] });
@@ -238,6 +271,49 @@ export function BankImportBlock() {
       setRows([]);
     },
     onError: (e: any) => toast.error(e.message || "Ошибка импорта"),
+  });
+
+  // Откат последнего импорта
+  const [undoOpen, setUndoOpen] = useState(false);
+  const undoMut = useMutation({
+    mutationFn: async () => {
+      if (!lastImport) throw new Error("Нет данных для отката");
+      const { txIds, invoiceIds, newClientIds, newCompanyIds } = lastImport;
+      if (txIds.length > 0) {
+        const { error } = await supabase.from("transactions").delete().in("id", txIds);
+        if (error) throw error;
+      }
+      if (invoiceIds.length > 0) {
+        await supabase
+          .from("invoices")
+          .update({ status: "sent", date_paid: null, paid_to_account_id: null })
+          .in("id", invoiceIds);
+      }
+      if (newCompanyIds.length > 0) {
+        await supabase.from("companies").delete().in("id", newCompanyIds);
+      }
+      if (newClientIds.length > 0) {
+        await supabase.from("financial_clients").delete().in("id", newClientIds);
+      }
+      return { txIds, newClientIds, newCompanyIds, invoiceIds };
+    },
+    onSuccess: ({ txIds, newClientIds, newCompanyIds, invoiceIds }) => {
+      toast.success(
+        `Откат выполнен · удалено транзакций: ${txIds.length}` +
+        (newClientIds.length ? ` · клиентов: ${newClientIds.length}` : "") +
+        (newCompanyIds.length ? ` · компаний: ${newCompanyIds.length}` : "") +
+        (invoiceIds.length ? ` · счетов возвращено в "Выставлен": ${invoiceIds.length}` : ""),
+      );
+      setLastImport(null);
+      setUndoOpen(false);
+      qc.invalidateQueries({ queryKey: ["fin-accounts"] });
+      qc.invalidateQueries({ queryKey: ["fin-tx-year"] });
+      qc.invalidateQueries({ queryKey: ["fin-invoices"] });
+      qc.invalidateQueries({ queryKey: ["fin-import-clients"] });
+      qc.invalidateQueries({ queryKey: ["financial-clients"] });
+      qc.invalidateQueries({ queryKey: ["companies"] });
+    },
+    onError: (e: any) => toast.error(e.message || "Не удалось откатить импорт"),
   });
 
   // Очистка финансов (транзакции + балансы + откат оплат счетов; клиенты — опционально)
