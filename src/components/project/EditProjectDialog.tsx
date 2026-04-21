@@ -41,8 +41,9 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
   const [name, setName] = useState("");
   const [url, setUrl] = useState("");
   const [deadline, setDeadline] = useState("");
-  const [periodFrom, setPeriodFrom] = useState("");
-  const [periodTo, setPeriodTo] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [reportPeriod, setReportPeriod] = useState<"monthly" | "weekly" | "quarterly" | "custom">("monthly");
+  const [reportDay, setReportDay] = useState<number>(1);
   const [seoSpecialistId, setSeoSpecialistId] = useState("");
   const [accountManagerId, setAccountManagerId] = useState("");
   const [coExecutors, setCoExecutors] = useState<string[]>([]);
