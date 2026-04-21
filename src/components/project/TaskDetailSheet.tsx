@@ -179,8 +179,8 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
   });
 
   const saveDescription = () => {
-    if (!canEditFields || editDesc === (task?.description || "")) { setEditingField(null); return; }
-    updateField.mutate({ field: "description", value: editDesc, logMsg: `Описание задачи обновлено` });
+    // локально — закрываем поле, изменения уйдут по общей кнопке «Сохранить»
+    setEditingField(null);
   };
 
   const saveDeadline = () => {
