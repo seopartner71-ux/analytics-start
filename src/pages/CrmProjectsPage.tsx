@@ -220,7 +220,25 @@ export default function CrmProjectsPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const getManagerName = (id: string | null) => {
+  const isAdmin = role === "admin";
+  const isDirector = role === "director";
+  const canDeleteProject = isAdmin || isDirector;
+
+  const deleteProject = async (p: Project) => {
+    const { error } = await supabase
+      .from("projects")
+      .update({ archived_at: new Date().toISOString(), archived_by: user!.id })
+      .eq("id", p.id);
+    if (error) throw error;
+    await logDeletion({
+      entityType: "project",
+      entityId: p.id,
+      entityName: p.name,
+      context: { url: p.url, company: p.company?.name || null },
+    });
+    queryClient.invalidateQueries({ queryKey: ["crm-projects"] });
+  };
+
     if (!id) return null;
     return members.find(m => m.id === id)?.full_name || null;
   };
