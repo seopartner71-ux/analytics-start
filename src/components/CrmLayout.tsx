@@ -6,6 +6,7 @@ import { AiAssistantFab } from "@/components/ai/AiAssistantFab";
 import { useSilentTimeTracker } from "@/hooks/useSilentTimeTracker";
 
 export function CrmLayout({ children }: { children: ReactNode }) {
+  useSilentTimeTracker();
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
