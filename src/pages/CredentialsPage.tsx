@@ -359,12 +359,12 @@ export default function CredentialsPage() {
       )}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{form.id ? "Редактировать доступ" : "Новый доступ"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <Label>Проект</Label>
                 <Select value={form.project_id} onValueChange={(v) => setForm({ ...form, project_id: v })}>
@@ -405,7 +405,7 @@ export default function CredentialsPage() {
                 placeholder="https://..."
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <Label>Логин</Label>
                 <Input value={form.login} onChange={(e) => setForm({ ...form, login: e.target.value })} />
@@ -450,11 +450,12 @@ export default function CredentialsPage() {
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Отмена</Button>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => setDialogOpen(false)} className="w-full sm:w-auto">Отмена</Button>
             <Button
               onClick={() => saveMutation.mutate(form)}
               disabled={!form.title.trim() || saveMutation.isPending}
+              className="w-full sm:w-auto"
             >
               Сохранить
             </Button>
