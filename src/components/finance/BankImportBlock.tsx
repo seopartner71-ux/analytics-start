@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2, X, UserPlus, ArrowDownLeft, ArrowUpRight } from "lucide-react";
+import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2, X, UserPlus, ArrowDownLeft, ArrowUpRight, Trash2 } from "lucide-react";
 import * as XLSX from "xlsx";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -151,15 +151,18 @@ export function BankImportBlock() {
       const selected = rows.filter((r) => r.selected && !r.duplicate);
       if (selected.length === 0) throw new Error("Нет выбранных операций");
 
+      const { data: userRes } = await supabase.auth.getUser();
+      const ownerId = userRes.user?.id;
+      if (!ownerId) throw new Error("Не авторизован");
+
       // 1) Создаём отсутствующих клиентов и обновляем матчинг
       const toCreate = selected.filter((r) => r.willCreateClient && !r.matchedClient);
-      // Группировка по ИНН (или по нормализованному имени, если ИНН нет) — чтобы не плодить дубликаты в рамках одного импорта
       const uniqMap = new Map<string, { name: string; inn: string | null }>();
       for (const r of toCreate) {
         const key = r.inn || `name:${r.counterparty.toLowerCase()}`;
         if (!uniqMap.has(key)) uniqMap.set(key, { name: r.counterparty, inn: r.inn });
       }
-      const newClientsMap = new Map<string, { id: string; name: string }>(); // key -> client
+      const newClientsMap = new Map<string, { id: string; name: string }>();
       if (uniqMap.size > 0) {
         const insertData = Array.from(uniqMap.values()).map((c) => ({ name: c.name, inn: c.inn }));
         const { data: created, error: cErr } = await supabase
@@ -171,15 +174,28 @@ export function BankImportBlock() {
           const key = c.inn || `name:${(c.name || "").toLowerCase()}`;
           newClientsMap.set(key, { id: c.id, name: c.name });
         });
+
+        // Дублируем в CRM-таблицу companies (страница "Компании")
+        const innList = insertData.map((c) => c.inn).filter((x): x is string => !!x);
+        const { data: existingCompByInn } = innList.length > 0
+          ? await supabase.from("companies").select("inn").in("inn", innList)
+          : { data: [] as any[] };
+        const { data: existingCompByName } = await supabase
+          .from("companies")
+          .select("name")
+          .in("name", insertData.map((c) => c.name));
+        const innSet = new Set((existingCompByInn || []).map((c: any) => c.inn));
+        const nameSet = new Set((existingCompByName || []).map((c: any) => (c.name || "").toLowerCase()));
+        const compRows = insertData
+          .filter((c) => !(c.inn && innSet.has(c.inn)) && !nameSet.has(c.name.toLowerCase()))
+          .map((c) => ({ name: c.name, inn: c.inn, type: "Клиент", owner_id: ownerId }));
+        if (compRows.length > 0) {
+          await supabase.from("companies").insert(compRows);
+        }
       }
 
       // 2) Создаём транзакции
       const txInsert = selected.map((r) => {
-        let clientName = r.matchedClient?.name || null;
-        if (!clientName && r.willCreateClient) {
-          const key = r.inn || `name:${r.counterparty.toLowerCase()}`;
-          clientName = newClientsMap.get(key)?.name || r.counterparty;
-        }
         const category =
           r.direction === "income"
             ? "invoice"
@@ -216,11 +232,58 @@ export function BankImportBlock() {
       qc.invalidateQueries({ queryKey: ["fin-invoices"] });
       qc.invalidateQueries({ queryKey: ["fin-import-clients"] });
       qc.invalidateQueries({ queryKey: ["financial-clients"] });
+      qc.invalidateQueries({ queryKey: ["companies"] });
       setOpen(false);
       setConfirmOpen(false);
       setRows([]);
     },
     onError: (e: any) => toast.error(e.message || "Ошибка импорта"),
+  });
+
+  // Очистка финансов (транзакции + балансы + откат оплат счетов; клиенты — опционально)
+  const [resetOpen, setResetOpen] = useState(false);
+  const [alsoClients, setAlsoClients] = useState(false);
+  const resetMut = useMutation({
+    mutationFn: async () => {
+      const { error: e1 } = await supabase.from("transactions").delete().not("id", "is", null);
+      if (e1) throw e1;
+      const { error: e2 } = await supabase
+        .from("financial_accounts")
+        .update({ balance: 0 })
+        .not("id", "is", null);
+      if (e2) throw e2;
+      const { error: e3 } = await supabase
+        .from("invoices")
+        .update({ status: "sent", date_paid: null, paid_to_account_id: null })
+        .eq("status", "paid");
+      if (e3) throw e3;
+
+      let removedClients = 0;
+      if (alsoClients) {
+        const { count } = await supabase
+          .from("financial_clients")
+          .select("id", { count: "exact", head: true });
+        const { error: e4 } = await supabase.from("financial_clients").delete().not("id", "is", null);
+        if (e4) throw e4;
+        removedClients = count || 0;
+      }
+      return { removedClients };
+    },
+    onSuccess: ({ removedClients }) => {
+      toast.success(
+        removedClients > 0
+          ? `Финансы очищены · клиентов удалено: ${removedClients}`
+          : "Финансы очищены: транзакции, оплаты счетов и балансы сброшены",
+      );
+      qc.invalidateQueries({ queryKey: ["fin-accounts"] });
+      qc.invalidateQueries({ queryKey: ["fin-tx-year"] });
+      qc.invalidateQueries({ queryKey: ["fin-invoices"] });
+      qc.invalidateQueries({ queryKey: ["fin-import-clients"] });
+      qc.invalidateQueries({ queryKey: ["financial-clients"] });
+      setResetOpen(false);
+      setAlsoClients(false);
+    },
+    onError: (e: any) => toast.error(e.message || "Не удалось очистить финансы"),
   });
 
   const stats = useMemo(() => {
@@ -277,9 +340,14 @@ export function BankImportBlock() {
             Точка-Банк · Excel · автораспознавание клиентов и автосоздание новых
           </p>
         </div>
-        <Button size="sm" onClick={() => setOpen(true)}>
-          <Upload className="h-4 w-4 mr-1" /> Загрузить выписку
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => setResetOpen(true)}>
+            <Trash2 className="h-4 w-4 mr-1" /> Очистить финансы
+          </Button>
+          <Button size="sm" onClick={() => setOpen(true)}>
+            <Upload className="h-4 w-4 mr-1" /> Загрузить выписку
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <p className="text-sm text-muted-foreground">
@@ -480,6 +548,36 @@ export function BankImportBlock() {
               disabled={importMut.isPending}
             >
               {importMut.isPending ? "Импорт..." : `Создать ${newClientsPreview.length} и импортировать`}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Диалог очистки финансов */}
+      <AlertDialog open={resetOpen} onOpenChange={setResetOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-red-500 flex items-center gap-2">
+              <Trash2 className="h-4 w-4" /> Очистить финансовые данные?
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>Это действие удалит все транзакции, обнулит балансы счетов и откатит оплаты по счетам в статус «Выставлен». Действие необратимо.</p>
+                <label className="flex items-center gap-2 mt-3 cursor-pointer">
+                  <Checkbox checked={alsoClients} onCheckedChange={(v) => setAlsoClients(!!v)} />
+                  <span>Также удалить всех клиентов из справочника финансов</span>
+                </label>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={resetMut.isPending}>Отмена</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); resetMut.mutate(); }}
+              disabled={resetMut.isPending}
+              className="bg-red-500 hover:bg-red-500/90"
+            >
+              {resetMut.isPending ? "Очистка..." : "Да, очистить"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
