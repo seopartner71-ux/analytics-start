@@ -410,6 +410,142 @@ function ProfileField({
   );
 }
 
+/* ─── Change Password Card ─── */
+function ChangePasswordCard({ email }: { email: string }) {
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const passwordsMatch = newPassword.length > 0 && newPassword === confirmPassword;
+  const passwordValid = newPassword.length >= 6;
+
+  const handleSubmit = async () => {
+    if (!passwordValid) {
+      toast.error("Пароль должен содержать минимум 6 символов");
+      return;
+    }
+    if (!passwordsMatch) {
+      toast.error("Пароли не совпадают");
+      return;
+    }
+    setLoading(true);
+    try {
+      // Verify current password by re-authenticating
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password: currentPassword,
+      });
+      if (signInError) {
+        toast.error("Текущий пароль неверный");
+        setLoading(false);
+        return;
+      }
+      // Update password
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+      if (updateError) throw updateError;
+      toast.success("Пароль успешно изменён");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (e: any) {
+      toast.error(e.message || "Не удалось изменить пароль");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Card className="bg-card/80 backdrop-blur-sm border-border/60 shadow-sm max-w-2xl">
+      <CardContent className="p-6">
+        <div className="flex items-center gap-3 mb-1">
+          <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+            <Lock className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-foreground">Смена пароля</h3>
+            <p className="text-xs text-muted-foreground">Минимум 6 символов</p>
+          </div>
+        </div>
+
+        <div className="space-y-4 mt-6">
+          <PasswordInput
+            label="Текущий пароль"
+            value={currentPassword}
+            onChange={setCurrentPassword}
+            show={showCurrent}
+            onToggle={() => setShowCurrent(s => !s)}
+          />
+          <PasswordInput
+            label="Новый пароль"
+            value={newPassword}
+            onChange={setNewPassword}
+            show={showNew}
+            onToggle={() => setShowNew(s => !s)}
+            hint={newPassword.length > 0 && !passwordValid ? "Минимум 6 символов" : undefined}
+          />
+          <PasswordInput
+            label="Подтвердите новый пароль"
+            value={confirmPassword}
+            onChange={setConfirmPassword}
+            show={showConfirm}
+            onToggle={() => setShowConfirm(s => !s)}
+            hint={confirmPassword.length > 0 && !passwordsMatch ? "Пароли не совпадают" : undefined}
+          />
+
+          <Button
+            onClick={handleSubmit}
+            disabled={loading || !currentPassword || !passwordValid || !passwordsMatch}
+            className="w-full sm:w-auto gap-2"
+          >
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
+            Изменить пароль
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function PasswordInput({
+  label, value, onChange, show, onToggle, hint,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  show: boolean;
+  onToggle: () => void;
+  hint?: string;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-xs font-medium text-muted-foreground">{label}</label>
+      <div className="relative">
+        <Input
+          type={show ? "text" : "password"}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          className="pr-10 h-10"
+          autoComplete="new-password"
+        />
+        <button
+          type="button"
+          onClick={onToggle}
+          className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+        >
+          {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+        </button>
+      </div>
+      {hint && <p className="text-xs text-destructive">{hint}</p>}
+    </div>
+  );
+}
+
 /* ─── Placeholder icon for bio ─── */
 function FileIcon({ className }: { className?: string }) {
   return (
