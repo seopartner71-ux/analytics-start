@@ -75,9 +75,14 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
     setIsCreateSubtaskModalOpen(false);
   }, [task?.id, open]);
 
-  const isAdmin = true;
-  const isCreator = task?.owner_id === user?.id;
-  const canEditFields = isAdmin || isCreator;
+  const { isAdmin, role } = useAuth();
+  const isDirector = role === "director";
+  // Постановщик: creator_id ссылается на team_members; связываем через owner_id team_member → auth user
+  const isCreator = !!user && (
+    task?.creator?.owner_id === user.id ||
+    task?.owner_id === user.id
+  );
+  const canEditFields = isAdmin || isDirector || isCreator;
 
   const { data: comments = [] } = useQuery({
     queryKey: ["task-comments", task?.id],
@@ -174,27 +179,72 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
   });
 
   const saveDescription = () => {
-    if (!canEditFields || editDesc === (task?.description || "")) { setEditingField(null); return; }
-    updateField.mutate({ field: "description", value: editDesc, logMsg: `Описание задачи обновлено` });
+    // локально — закрываем поле, изменения уйдут по общей кнопке «Сохранить»
+    setEditingField(null);
   };
 
   const saveDeadline = () => {
-    const newVal = editDeadline || null;
-    const formatted = newVal ? new Date(newVal).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" }) : "снят";
-    updateField.mutate({ field: "deadline", value: newVal, logMsg: `Крайний срок изменён на ${formatted}` });
+    // локально — будет сохранено по кнопке «Сохранить»
   };
 
   const saveProject = (projectId: string) => {
-    const pName = projects.find(p => p.id === projectId)?.name || "—";
     setEditProjectId(projectId);
-    updateField.mutate({ field: "project_id", value: projectId || null, logMsg: `Проект изменён на «${pName}»` });
   };
 
   const saveAssignee = (assigneeId: string) => {
-    const mName = members.find(m => m.id === assigneeId)?.full_name || "снят";
     setEditAssigneeId(assigneeId);
-    updateField.mutate({ field: "assignee_id", value: assigneeId || null, logMsg: `Исполнитель изменён на ${mName}` });
   };
+
+  // Единая кнопка «Сохранить» — применяет все изменения батчем
+  const isDirty = !!task && (
+    editDesc !== (task.description || "") ||
+    editDeadline !== (task.deadline ? new Date(task.deadline).toISOString().slice(0, 16) : "") ||
+    editProjectId !== (task.project_id || "") ||
+    editAssigneeId !== (task.assignee_id || "")
+  );
+
+  const saveAll = useMutation({
+    mutationFn: async () => {
+      if (!task || !canEditFields) return;
+      const updates: Record<string, any> = {};
+      const logs: string[] = [];
+
+      if (editDesc !== (task.description || "")) {
+        updates.description = editDesc;
+        logs.push("Описание задачи обновлено");
+      }
+      const currentDeadline = task.deadline ? new Date(task.deadline).toISOString().slice(0, 16) : "";
+      if (editDeadline !== currentDeadline) {
+        updates.deadline = editDeadline || null;
+        const formatted = editDeadline
+          ? new Date(editDeadline).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })
+          : "снят";
+        logs.push(`Крайний срок изменён на ${formatted}`);
+      }
+      if (editProjectId !== (task.project_id || "")) {
+        updates.project_id = editProjectId || null;
+        const pName = projects.find(p => p.id === editProjectId)?.name || "—";
+        logs.push(`Проект изменён на «${pName}»`);
+      }
+      if (editAssigneeId !== (task.assignee_id || "")) {
+        updates.assignee_id = editAssigneeId || null;
+        const mName = members.find(m => m.id === editAssigneeId)?.full_name || "снят";
+        logs.push(`Исполнитель изменён на ${mName}`);
+      }
+      if (Object.keys(updates).length === 0) return;
+
+      const { error } = await supabase.from("crm_tasks").update(updates as any).eq("id", task.id);
+      if (error) throw error;
+      for (const l of logs) await addSystemLog(l);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["crm-tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["project-tasks"] });
+      setEditingField(null);
+      toast.success("Изменения сохранены");
+    },
+    onError: (e: Error) => toast.error(e.message || "Не удалось сохранить"),
+  });
 
   const startTask = () => {
     updateField.mutate({ field: "stage", value: "В работе", logMsg: `Статус изменён на «В работе»` });
@@ -487,9 +537,6 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                     {canEditFields ? (
                       <div className="flex items-center gap-2">
                         <Input type="datetime-local" value={editDeadline} onChange={e => setEditDeadline(e.target.value)} className="h-8 text-sm border-0 bg-transparent shadow-none p-0 w-auto" />
-                        {editDeadline !== (task.deadline ? new Date(task.deadline).toISOString().slice(0, 16) : "") && (
-                          <Button size="sm" className="h-6 text-[10px] px-2" onClick={saveDeadline}>✓</Button>
-                        )}
                       </div>
                     ) : deadlineDate ? (
                       <span className={cn("text-sm font-medium", DEADLINE_STYLES[deadlineStatus].text)}>
@@ -634,6 +681,23 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
 
             {/* Sticky bottom action bar — primary CTA */}
             <div className="border-t border-border/60 bg-card px-5 py-3 shrink-0 space-y-2">
+              {canEditFields && isDirty && (
+                <Button
+                  size="lg"
+                  className="w-full h-11 gap-2 text-sm font-semibold shadow-md"
+                  onClick={() => saveAll.mutate()}
+                  disabled={saveAll.isPending}
+                  variant="default"
+                >
+                  {saveAll.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                  Сохранить изменения
+                </Button>
+              )}
+              {!canEditFields && (
+                <p className="text-[11px] text-muted-foreground text-center py-1">
+                  Редактировать задачу может только постановщик, администратор или директор
+                </p>
+              )}
               <Button
                 size="lg"
                 className="w-full h-11 gap-2 text-sm font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-md"
