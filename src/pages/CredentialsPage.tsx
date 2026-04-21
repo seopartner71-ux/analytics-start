@@ -84,6 +84,7 @@ export default function CredentialsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
+  const [showFormPassword, setShowFormPassword] = useState(false);
 
   const { data: projects = [] } = useQuery({
     queryKey: ["projects-for-credentials"],
@@ -160,11 +161,13 @@ export default function CredentialsPage() {
       notes: c.notes ?? "",
       tags: c.tags.join(", "),
     });
+    setShowFormPassword(false);
     setDialogOpen(true);
   };
 
   const openCreate = () => {
     setForm(emptyForm);
+    setShowFormPassword(false);
     setDialogOpen(true);
   };
 
@@ -409,11 +412,24 @@ export default function CredentialsPage() {
               </div>
               <div>
                 <Label>Пароль</Label>
-                <Input
-                  type="text"
-                  value={form.password}
-                  onChange={(e) => setForm({ ...form, password: e.target.value })}
-                />
+                <div className="relative">
+                  <Input
+                    type={showFormPassword ? "text" : "password"}
+                    value={form.password}
+                    onChange={(e) => setForm({ ...form, password: e.target.value })}
+                    className="pr-9 font-mono"
+                    autoComplete="new-password"
+                  />
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                    onClick={() => setShowFormPassword((v) => !v)}
+                  >
+                    {showFormPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                  </Button>
+                </div>
               </div>
             </div>
             <div>
