@@ -2601,6 +2601,59 @@ export type Database = {
           },
         ]
       }
+      project_credentials: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          login: string | null
+          notes: string | null
+          owner_id: string
+          password: string | null
+          project_id: string | null
+          tags: string[]
+          title: string
+          updated_at: string
+          url: string | null
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          id?: string
+          login?: string | null
+          notes?: string | null
+          owner_id: string
+          password?: string | null
+          project_id?: string | null
+          tags?: string[]
+          title: string
+          updated_at?: string
+          url?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          login?: string | null
+          notes?: string | null
+          owner_id?: string
+          password?: string | null
+          project_id?: string | null
+          tags?: string[]
+          title?: string
+          updated_at?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_credentials_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_files: {
         Row: {
           created_at: string
