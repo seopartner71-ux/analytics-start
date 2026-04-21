@@ -453,34 +453,52 @@ export default function EmployeesPage() {
                 </thead>
                 <tbody>
                   <AnimatePresence>
-                    {filtered.map((e, i) => (
-                      <motion.tr
-                        key={e.id}
-                        initial={{ opacity: 0, y: 4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.03, duration: 0.2 }}
-                      >
-                        <td>
-                          <div className="flex items-center gap-3">
-                            <AvatarCircle initials={getInitials(e.full_name)} status={e.status || "offline"} />
-                            <div>
-                              <p className="text-sm font-semibold text-foreground">{e.full_name}</p>
-                              <p className="text-[11px] text-muted-foreground">{ROLE_LABELS[e.role] || e.role}</p>
+                    {filtered.map((e, i) => {
+                      const presence = getPresence(e.email);
+                      const lastSeen = presence.updatedAt
+                        ? new Date(presence.updatedAt)
+                        : e.last_active
+                        ? new Date(e.last_active)
+                        : null;
+                      const lastSeenLabel = (() => {
+                        if (presence.status === "online") return "сейчас в сети";
+                        if (!lastSeen) return "—";
+                        const ageMin = Math.floor((Date.now() - lastSeen.getTime()) / 60000);
+                        if (ageMin < 60) return `${ageMin} мин назад`;
+                        const sameDay = lastSeen.toDateString() === new Date().toDateString();
+                        return sameDay
+                          ? lastSeen.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })
+                          : lastSeen.toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
+                      })();
+                      const statusClass =
+                        presence.status === "online" ? "text-emerald-500 font-medium"
+                        : presence.status === "away" ? "text-amber-500"
+                        : "text-muted-foreground";
+                      return (
+                        <motion.tr
+                          key={e.id}
+                          initial={{ opacity: 0, y: 4 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: i * 0.03, duration: 0.2 }}
+                        >
+                          <td>
+                            <div className="flex items-center gap-3">
+                              <AvatarCircle initials={getInitials(e.full_name)} status={presence.status} />
+                              <div>
+                                <p className="text-sm font-semibold text-foreground">{e.full_name}</p>
+                                <p className="text-[11px] text-muted-foreground">{ROLE_LABELS[e.role] || e.role}</p>
+                              </div>
                             </div>
-                          </div>
-                        </td>
-                        <td>
-                          <Badge variant="secondary" className="text-[10px] font-medium">{e.department || "Общий"}</Badge>
-                        </td>
-                        <td className="text-sm text-muted-foreground">{e.email || "—"}</td>
-                        <td className="text-sm text-muted-foreground">{e.phone || "—"}</td>
-                        <td className="text-sm text-muted-foreground">
-                          {e.last_active
-                            ? new Date(e.last_active).toLocaleDateString("ru-RU", { day: "numeric", month: "short" })
-                            : "—"}
-                        </td>
-                      </motion.tr>
-                    ))}
+                          </td>
+                          <td>
+                            <Badge variant="secondary" className="text-[10px] font-medium">{e.department || "Общий"}</Badge>
+                          </td>
+                          <td className="text-sm text-muted-foreground">{e.email || "—"}</td>
+                          <td className="text-sm text-muted-foreground">{e.phone || "—"}</td>
+                          <td className={`text-sm ${statusClass}`}>{lastSeenLabel}</td>
+                        </motion.tr>
+                      );
+                    })}
                   </AnimatePresence>
                 </tbody>
               </table>
