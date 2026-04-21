@@ -14,6 +14,8 @@ import { format, isPast, differenceInDays, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import type { Tables } from "@/integrations/supabase/types";
+import { DeleteButton } from "@/components/common/DeleteButton";
+import { logDeletion } from "@/lib/deletion-log";
 
 type Project = Tables<"projects"> & {
   company?: Tables<"companies"> | null;
@@ -144,6 +146,7 @@ export default function CrmProjectsPage() {
       const { data, error } = await supabase
         .from("projects")
         .select("*, company:companies(*)")
+        .is("archived_at", null)
         .order("created_at", { ascending: false });
       if (error) throw error;
 
@@ -216,6 +219,25 @@ export default function CrmProjectsPage() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const isAdmin = role === "admin";
+  const isDirector = role === "director";
+  const canDeleteProject = isAdmin || isDirector;
+
+  const deleteProject = async (p: Project) => {
+    const { error } = await supabase
+      .from("projects")
+      .update({ archived_at: new Date().toISOString(), archived_by: user!.id })
+      .eq("id", p.id);
+    if (error) throw error;
+    await logDeletion({
+      entityType: "project",
+      entityId: p.id,
+      entityName: p.name,
+      context: { url: p.url, company: p.company?.name || null },
+    });
+    queryClient.invalidateQueries({ queryKey: ["crm-projects"] });
+  };
 
   const getManagerName = (id: string | null) => {
     if (!id) return null;
@@ -483,6 +505,16 @@ export default function CrmProjectsPage() {
                                 {isSelected && <div className="h-1.5 w-1.5 rounded-full bg-primary-foreground" />}
                               </button>
                               <GripVertical className="h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors" />
+                              <div onClick={e => e.stopPropagation()} className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                <DeleteButton
+                                  visible={canDeleteProject}
+                                  entityName={p.name}
+                                  entityLabel="проект"
+                                  doubleConfirm
+                                  cascadeInfo={<>Будут архивированы проект «{p.name}» и связанные данные. Восстановить может только администратор.</>}
+                                  onConfirm={() => deleteProject(p)}
+                                />
+                              </div>
                             </div>
                           </div>
 
@@ -583,6 +615,7 @@ export default function CrmProjectsPage() {
                 <th>Этап</th>
                 <th>Эффективность</th>
                 <th>SEO-специалист</th>
+                <th className="w-10"></th>
               </tr>
             </thead>
             <tbody>
@@ -625,6 +658,16 @@ export default function CrmProjectsPage() {
                       ) : (
                         <span className="text-[13px] text-muted-foreground">—</span>
                       )}
+                    </td>
+                    <td onClick={e => e.stopPropagation()} className="text-right">
+                      <DeleteButton
+                        visible={canDeleteProject}
+                        entityName={p.name}
+                        entityLabel="проект"
+                        doubleConfirm
+                        cascadeInfo={<>Будут архивированы проект «{p.name}» и связанные данные.</>}
+                        onConfirm={() => deleteProject(p)}
+                      />
                     </td>
                   </tr>
                 );

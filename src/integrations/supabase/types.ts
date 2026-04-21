@@ -811,6 +811,8 @@ export type Database = {
       }
       crm_tasks: {
         Row: {
+          archived_at: string | null
+          archived_by: string | null
           assignee_id: string | null
           created_at: string
           creator_id: string | null
@@ -829,6 +831,8 @@ export type Database = {
           week_year: number | null
         }
         Insert: {
+          archived_at?: string | null
+          archived_by?: string | null
           assignee_id?: string | null
           created_at?: string
           creator_id?: string | null
@@ -847,6 +851,8 @@ export type Database = {
           week_year?: number | null
         }
         Update: {
+          archived_at?: string | null
+          archived_by?: string | null
           assignee_id?: string | null
           created_at?: string
           creator_id?: string | null
@@ -928,6 +934,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      deletion_log: {
+        Row: {
+          action: string
+          actor_email: string
+          actor_id: string
+          actor_name: string
+          context: Json
+          created_at: string
+          entity_id: string | null
+          entity_name: string
+          entity_type: string
+          id: string
+        }
+        Insert: {
+          action?: string
+          actor_email?: string
+          actor_id: string
+          actor_name?: string
+          context?: Json
+          created_at?: string
+          entity_id?: string | null
+          entity_name?: string
+          entity_type: string
+          id?: string
+        }
+        Update: {
+          action?: string
+          actor_email?: string
+          actor_id?: string
+          actor_name?: string
+          context?: Json
+          created_at?: string
+          entity_id?: string | null
+          entity_name?: string
+          entity_type?: string
+          id?: string
+        }
+        Relationships: []
       }
       finance_clients: {
         Row: {
@@ -2310,6 +2355,8 @@ export type Database = {
         Row: {
           agency_name: string | null
           all_projects_access: boolean
+          archived_at: string | null
+          archived_by: string | null
           avatar_url: string | null
           confirmed_at: string | null
           confirmed_by: string | null
@@ -2333,6 +2380,8 @@ export type Database = {
         Insert: {
           agency_name?: string | null
           all_projects_access?: boolean
+          archived_at?: string | null
+          archived_by?: string | null
           avatar_url?: string | null
           confirmed_at?: string | null
           confirmed_by?: string | null
@@ -2356,6 +2405,8 @@ export type Database = {
         Update: {
           agency_name?: string | null
           all_projects_access?: boolean
+          archived_at?: string | null
+          archived_by?: string | null
           avatar_url?: string | null
           confirmed_at?: string | null
           confirmed_by?: string | null
@@ -2738,6 +2789,8 @@ export type Database = {
         Row: {
           account_manager: string | null
           account_manager_id: string | null
+          archived_at: string | null
+          archived_by: string | null
           client_email: string | null
           company_id: string | null
           created_at: string
@@ -2771,6 +2824,8 @@ export type Database = {
         Insert: {
           account_manager?: string | null
           account_manager_id?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
           client_email?: string | null
           company_id?: string | null
           created_at?: string
@@ -2804,6 +2859,8 @@ export type Database = {
         Update: {
           account_manager?: string | null
           account_manager_id?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
           client_email?: string | null
           company_id?: string | null
           created_at?: string
@@ -3501,6 +3558,8 @@ export type Database = {
         Returns: {
           account_manager: string | null
           account_manager_id: string | null
+          archived_at: string | null
+          archived_by: string | null
           client_email: string | null
           company_id: string | null
           created_at: string
