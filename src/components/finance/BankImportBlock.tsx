@@ -83,7 +83,8 @@ export function BankImportBlock() {
       const buf = await file.arrayBuffer();
       const wb = XLSX.read(buf, { type: "array", cellDates: true });
       const sheet = wb.Sheets[wb.SheetNames[0]];
-      const raw: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: "" });
+      // raw: true — сохраняем Date-объекты (иначе xlsx форматирует их в локальные строки и ломает порядок дд/мм/гг)
+      const raw: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: "" });
 
       const parsed = parseTochkaStatement(raw);
       // Фильтруем только приходы и обогащаем матчингом
