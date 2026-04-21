@@ -127,6 +127,7 @@ export default function CrmProjectsPage() {
   const [search, setSearch] = useState("");
   const [view, setView] = useState<"kanban" | "list">("kanban");
   const [filter, setFilter] = useState<"all" | "my" | "overdue">("all");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [newUrl, setNewUrl] = useState("");
@@ -447,6 +448,7 @@ export default function CrmProjectsPage() {
                       const metrics = getSeoMetrics(p.id);
                       const sparkData = buildSparkData(p.id);
                       const trafficUp = metrics.trafficDelta >= 0;
+                      const isSelected = selectedId === p.id;
                       return (
                         <div
                           key={p.id}
@@ -454,14 +456,34 @@ export default function CrmProjectsPage() {
                           onDragStart={e => handleDragStart(e, p.id)}
                           onDragEnd={handleDragEnd}
                           onClick={() => navigate(`/crm-projects/${p.id}`)}
-                          className="bg-card/80 rounded-lg border border-border/60 p-3.5 cursor-grab active:cursor-grabbing transition-all hover:border-border hover:bg-card hover:shadow-lg hover:shadow-black/20 hover:-translate-y-0.5 group space-y-2.5"
+                          className={cn(
+                            "relative bg-card/80 rounded-lg border p-3.5 cursor-grab active:cursor-grabbing transition-all hover:bg-card hover:shadow-lg hover:shadow-black/20 hover:-translate-y-0.5 group space-y-2.5",
+                            isSelected
+                              ? "border-primary ring-2 ring-primary/30 bg-card"
+                              : "border-border/60 hover:border-border"
+                          )}
                         >
-                          {/* Header: stage tag + grip */}
+                          {/* Header: stage tag + select + grip */}
                           <div className="flex items-center justify-between">
                             <span className={cn("text-[10px] px-1.5 py-0.5 rounded border font-medium", stageTag.color)}>
                               {stageTag.key}
                             </span>
-                            <GripVertical className="h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors" />
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={e => { e.stopPropagation(); setSelectedId(isSelected ? null : p.id); }}
+                                title={isSelected ? "Снять выбор" : "Выбрать проект"}
+                                className={cn(
+                                  "h-4 w-4 rounded-full border flex items-center justify-center transition-all",
+                                  isSelected
+                                    ? "bg-primary border-primary"
+                                    : "border-muted-foreground/40 hover:border-primary opacity-0 group-hover:opacity-100"
+                                )}
+                              >
+                                {isSelected && <div className="h-1.5 w-1.5 rounded-full bg-primary-foreground" />}
+                              </button>
+                              <GripVertical className="h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors" />
+                            </div>
                           </div>
 
                           {/* Title + URL */}
