@@ -208,8 +208,8 @@ export default function Finance() {
       </Card>
 
       {/* Блок 4: Расходы */}
-      <ExpensesBlock>
-      </Card>
+      <ExpensesBlock />
+    </div>
   );
 }
 
