@@ -172,9 +172,19 @@ function KanbanView({ tasks, onSelect, onDelete, canDelete }: { tasks: CrmTask[]
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: i * 0.05, duration: 0.2 }}
                   >
-                    <Card className="cursor-pointer card-glow" onClick={() => onSelect(t)}>
+                    <Card className="cursor-pointer card-glow group relative" onClick={() => onSelect(t)}>
                       <CardContent className="p-3.5 space-y-2.5">
-                        <p className="text-sm font-medium text-foreground line-clamp-2 leading-snug">{t.title}</p>
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-sm font-medium text-foreground line-clamp-2 leading-snug flex-1">{t.title}</p>
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                            <DeleteButton
+                              visible={canDelete(t)}
+                              entityName={t.title}
+                              entityLabel="задачу"
+                              onConfirm={() => onDelete(t)}
+                            />
+                          </div>
+                        </div>
                         <div className="flex items-center justify-between">
                           <span className={cn("text-[11px] font-medium flex items-center gap-1", dlStyle.text)}>
                             {dlStatus === "overdue" && <AlertTriangle className="h-3 w-3" />}
@@ -201,6 +211,9 @@ function KanbanView({ tasks, onSelect, onDelete, canDelete }: { tasks: CrmTask[]
 
 /* ─── Main Tasks Page ─── */
 export default function CrmTasksPage() {
+  const { user, isAdmin, role } = useAuth();
+  const isDirector = role === "director";
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [selectedTask, setSelectedTask] = useState<CrmTask | null>(null);
   const [view, setView] = useState<"list" | "kanban">("list");
@@ -215,11 +228,30 @@ export default function CrmTasksPage() {
       const { data, error } = await supabase
         .from("crm_tasks")
         .select("*, creator:team_members!crm_tasks_creator_id_fkey(*), assignee:team_members!crm_tasks_assignee_id_fkey(*), project:projects(*)")
+        .is("archived_at", null)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as CrmTask[];
     },
   });
+
+  const canDeleteTask = (t: CrmTask) =>
+    !!user && (isAdmin || isDirector || t.owner_id === user.id);
+
+  const deleteTask = async (t: CrmTask) => {
+    const { error } = await supabase
+      .from("crm_tasks")
+      .update({ archived_at: new Date().toISOString(), archived_by: user!.id })
+      .eq("id", t.id);
+    if (error) throw error;
+    await logDeletion({
+      entityType: "task",
+      entityId: t.id,
+      entityName: t.title,
+      context: { project_name: t.project?.name || null, assignee: t.assignee?.full_name || null },
+    });
+    queryClient.invalidateQueries({ queryKey: ["crm-tasks"] });
+  };
 
   // Unique projects & assignees for filter dropdowns
   const uniqueProjects = Array.from(new Map(tasks.filter(t => t.project).map(t => [t.project!.id, t.project!.name])).entries());
