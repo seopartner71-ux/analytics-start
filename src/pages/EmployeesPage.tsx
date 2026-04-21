@@ -6,8 +6,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Loader2, Plus, Users, Shield, Mail, Copy, Check, Award } from "lucide-react";
+import { Search, Loader2, Plus, Users, Shield, Mail, Copy, Check, Award, Clock } from "lucide-react";
 import ReliabilityLeaderboard from "@/components/employees/ReliabilityLeaderboard";
+import AdminTimeStatsPage from "@/pages/AdminTimeStatsPage";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -321,7 +322,9 @@ function SystemUsersTab() {
 /* ───────── Main Page ───────── */
 export default function EmployeesPage() {
   const [search, setSearch] = useState("");
-  const { isAdmin } = useAuth();
+  const { isAdmin, role } = useAuth();
+  const isDirector = role === "director";
+  const canSeeTime = isAdmin || isDirector;
 
   const { data: employees = [], isLoading } = useQuery({
     queryKey: ["team-members"],
@@ -366,6 +369,11 @@ export default function EmployeesPage() {
           <TabsTrigger value="reliability" className="gap-1.5">
             <Award className="h-3.5 w-3.5" /> Надёжность
           </TabsTrigger>
+          {canSeeTime && (
+            <TabsTrigger value="time" className="gap-1.5">
+              <Clock className="h-3.5 w-3.5" /> Учёт времени
+            </TabsTrigger>
+          )}
           {isAdmin && (
             <TabsTrigger value="access" className="gap-1.5">
               <Shield className="h-3.5 w-3.5" /> Доступ к системе
@@ -451,6 +459,12 @@ export default function EmployeesPage() {
         <TabsContent value="reliability" className="mt-4">
           <ReliabilityLeaderboard />
         </TabsContent>
+
+        {canSeeTime && (
+          <TabsContent value="time" className="mt-4">
+            <AdminTimeStatsPage embedded />
+          </TabsContent>
+        )}
 
         {isAdmin && (
           <TabsContent value="access" className="mt-4">
