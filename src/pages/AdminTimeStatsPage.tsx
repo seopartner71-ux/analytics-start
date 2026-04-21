@@ -26,16 +26,18 @@ function formatSeconds(total: number): string {
   return `${String(h).padStart(2, "0")} ч ${String(m).padStart(2, "0")} мин`;
 }
 
-export default function AdminTimeStatsPage() {
-  const { isAdmin, loading: authLoading } = useAuth();
+export default function AdminTimeStatsPage({ embedded = false }: { embedded?: boolean } = {}) {
+  const { isAdmin, role, loading: authLoading } = useAuth();
+  const isDirector = role === "director";
+  const allowed = isAdmin || isDirector;
   const navigate = useNavigate();
   const [date, setDate] = useState<Date>(new Date());
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!authLoading && !isAdmin) navigate("/", { replace: true });
-  }, [authLoading, isAdmin, navigate]);
+    if (!authLoading && !allowed && !embedded) navigate("/", { replace: true });
+  }, [authLoading, allowed, embedded, navigate]);
 
   useEffect(() => {
     let cancelled = false;
@@ -94,17 +96,19 @@ export default function AdminTimeStatsPage() {
     return { sum, count: rows.length };
   }, [rows]);
 
-  if (authLoading || !isAdmin) return null;
+  if (!embedded && (authLoading || !allowed)) return null;
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Учёт времени</h1>
-          <p className="text-sm text-muted-foreground">
-            Реальное активное время сотрудников за выбранный день
-          </p>
-        </div>
+        {!embedded && (
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">Учёт времени</h1>
+            <p className="text-sm text-muted-foreground">
+              Реальное активное время сотрудников за выбранный день
+            </p>
+          </div>
+        )}
         <Popover>
           <PopoverTrigger asChild>
             <Button variant="outline" className={cn("w-[240px] justify-start text-left font-normal")}>

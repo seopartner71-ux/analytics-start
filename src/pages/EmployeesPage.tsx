@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, Loader2, Plus, Users, Shield, Mail, Copy, Check, Award, Clock } from "lucide-react";
 import ReliabilityLeaderboard from "@/components/employees/ReliabilityLeaderboard";
 import AdminTimeStatsPage from "@/pages/AdminTimeStatsPage";
+import UsersAdminPage from "@/pages/UsersAdminPage";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -467,8 +468,8 @@ export default function EmployeesPage() {
         )}
 
         {isAdmin && (
-          <TabsContent value="access" className="mt-4">
-            <SystemUsersTab />
+          <TabsContent value="access" className="mt-4 -mx-6 lg:-mx-8">
+            <UsersAdminPage />
           </TabsContent>
         )}
       </Tabs>
