@@ -15,6 +15,7 @@ import { ExpensesBlock } from "@/components/finance/ExpensesBlock";
 import { InvoicesBlock } from "@/components/finance/InvoicesBlock";
 import { CashTransferBlock } from "@/components/finance/CashTransferBlock";
 import { ReconciliationBlock } from "@/components/finance/ReconciliationBlock";
+import { BankImportBlock } from "@/components/finance/BankImportBlock";
 
 const RUB = (n: number) =>
   new Intl.NumberFormat("ru-RU", { style: "currency", currency: "RUB", maximumFractionDigits: 0 }).format(n || 0);
