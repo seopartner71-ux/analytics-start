@@ -161,11 +161,13 @@ export default function CredentialsPage() {
       notes: c.notes ?? "",
       tags: c.tags.join(", "),
     });
+    setShowFormPassword(false);
     setDialogOpen(true);
   };
 
   const openCreate = () => {
     setForm(emptyForm);
+    setShowFormPassword(false);
     setDialogOpen(true);
   };
 
