@@ -62,6 +62,7 @@ export function AppSidebar({ activeTab, onTabChange, projectName, projectLogo }:
   const mainNav = allNav.filter(item => {
     if (userLevel < ROLE_LEVELS[item.minRole]) return false;
     if ((item as any).requireFinance && !hasFinanceAccess) return false;
+    if ((item as any).adminOnly && !isAdmin) return false;
     return true;
   });
   const { id: projectId } = useParams<{ id: string }>();
