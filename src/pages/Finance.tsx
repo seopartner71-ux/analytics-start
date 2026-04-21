@@ -38,6 +38,8 @@ import DirectorDashboard from "@/components/finance/DirectorDashboard";
 import ProfitabilityReport from "@/components/finance/ProfitabilityReport";
 import RevenueAnalytics from "@/components/finance/RevenueAnalytics";
 import { generateInvoicePdf, type RequisitesData } from "@/lib/invoice-pdf";
+import { DeleteButton } from "@/components/common/DeleteButton";
+import { logDeletion } from "@/lib/deletion-log";
 
 /* ────────── Types ────────── */
 type Client = { id: string; name: string; email: string | null; phone: string | null; notes: string | null; source?: "finance" | "crm" };
