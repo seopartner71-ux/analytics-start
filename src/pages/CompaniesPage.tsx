@@ -66,7 +66,7 @@ function AddCompanyDialog() {
           <Plus className="h-4 w-4" /> Создать
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Новая компания</DialogTitle>
         </DialogHeader>
