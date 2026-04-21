@@ -1,0 +1,1 @@
+DELETE FROM public.transactions; UPDATE public.financial_accounts SET balance = 0;
