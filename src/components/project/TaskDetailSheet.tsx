@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import {
   Send, MessageSquare, User, CalendarDays, Hourglass, FolderOpen,
   Paperclip, Copy, Video, UserPlus, Search as SearchIcon, Edit3, Play,
@@ -196,12 +197,15 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
   };
 
   // Единая кнопка «Сохранить» — применяет все изменения батчем
-  const isDirty = !!task && (
-    editDesc !== (task.description || "") ||
-    editDeadline !== (task.deadline ? new Date(task.deadline).toISOString().slice(0, 16) : "") ||
-    editProjectId !== (task.project_id || "") ||
-    editAssigneeId !== (task.assignee_id || "")
-  );
+  const changedFields: string[] = task ? [
+    editDesc !== (task.description || "") ? "Описание" : null,
+    editDeadline !== (task.deadline ? new Date(task.deadline).toISOString().slice(0, 16) : "") ? "Крайний срок" : null,
+    editProjectId !== (task.project_id || "") ? "Проект" : null,
+    editAssigneeId !== (task.assignee_id || "") ? "Исполнитель" : null,
+  ].filter(Boolean) as string[] : [];
+  const isDirty = changedFields.length > 0;
+  const needsConfirm = changedFields.length >= 3;
+  const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
 
   const saveAll = useMutation({
     mutationFn: async () => {
@@ -685,12 +689,12 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                 <Button
                   size="lg"
                   className="w-full h-11 gap-2 text-sm font-semibold shadow-md"
-                  onClick={() => saveAll.mutate()}
+                  onClick={() => needsConfirm ? setConfirmSaveOpen(true) : saveAll.mutate()}
                   disabled={saveAll.isPending}
                   variant="default"
                 >
                   {saveAll.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                  Сохранить изменения
+                  Сохранить изменения{changedFields.length > 0 ? ` (${changedFields.length})` : ""}
                 </Button>
               )}
               {!canEditFields && (
@@ -815,6 +819,40 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
           </div>
         </div>
       </SheetContent>
+
+      <AlertDialog open={confirmSaveOpen} onOpenChange={setConfirmSaveOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Подтвердите сохранение изменений</AlertDialogTitle>
+            <AlertDialogDescription>
+              Вы изменяете сразу <strong>{changedFields.length}</strong> {changedFields.length === 1 ? "поле" : changedFields.length < 5 ? "поля" : "полей"} в задаче. Все правки будут применены и записаны в журнал задачи.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <ul className="text-sm space-y-1.5 my-2 px-4 py-3 rounded-lg bg-muted/40 border border-border/60">
+            {changedFields.map((f) => (
+              <li key={f} className="flex items-center gap-2 text-foreground">
+                <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+                <span>{f}</span>
+              </li>
+            ))}
+          </ul>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={saveAll.isPending}>Отмена</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                saveAll.mutate(undefined, {
+                  onSettled: () => setConfirmSaveOpen(false),
+                });
+              }}
+              disabled={saveAll.isPending}
+            >
+              {saveAll.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Применить все изменения
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <CompleteTaskDialog
         open={completeOpen}
