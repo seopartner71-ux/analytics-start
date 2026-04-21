@@ -56,7 +56,7 @@ export function AppSidebar({ activeTab, onTabChange, projectName, projectLogo }:
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const { user, role, isAdmin, isManager, hasFinanceAccess } = useAuth();
-  const ROLE_LEVELS = { viewer: 0, manager: 1, admin: 2 } as const;
+  const ROLE_LEVELS = { viewer: 0, junior: 0, seo: 1, manager: 1, director: 2, admin: 2 } as const;
   const userLevel = ROLE_LEVELS[role as keyof typeof ROLE_LEVELS] ?? 0;
   const mainNav = allNav.filter(item => {
     if (userLevel < ROLE_LEVELS[item.minRole]) return false;
