@@ -46,8 +46,7 @@ export function useSilentTimeTracker() {
       if (seconds <= 0) return;
       bufferRef.current = 0;
       try {
-        // @ts-expect-error — RPC появится в типах после регенерации
-        const { error } = await supabase.rpc("increment_time", { p_seconds: seconds });
+        const { error } = await (supabase as any).rpc("increment_time", { p_seconds: seconds });
         if (error) {
           // вернём секунды в буфер, чтобы не потерять
           bufferRef.current += seconds;
