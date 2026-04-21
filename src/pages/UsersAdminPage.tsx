@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -204,8 +204,8 @@ function UserEditSheet({
   const [linkedProjects, setLinkedProjects] = useState<Set<string>>(new Set());
 
   // Hydrate when user changes
-  useState(() => {});
-  if (user && firstName === "" && lastName === "" && !position && role === "seo" && linkedProjects.size === 0 && !user._hydrated) {
+  useEffect(() => {
+    if (!user) return;
     setFirstName(user.first_name ?? "");
     setLastName(user.last_name ?? "");
     setPhone(user.phone ?? "");
@@ -216,8 +216,7 @@ function UserEditSheet({
     setOnboardingAccess(!!user.onboarding_access);
     setKnowledgeEdit(!!user.knowledge_edit_access);
     setAllProjects(!!user.all_projects_access);
-    (user as any)._hydrated = true;
-    // Load existing project memberships
+    setLinkedProjects(new Set());
     supabase
       .from("project_members")
       .select("project_id")
@@ -225,13 +224,12 @@ function UserEditSheet({
       .then(({ data }) => {
         if (data) setLinkedProjects(new Set(data.map((r) => r.project_id)));
       });
-  }
+  }, [user?.user_id]);
 
   const reset = () => {
     setFirstName(""); setLastName(""); setPhone(""); setTelegram(""); setPosition("");
     setRole("seo"); setFinanceAccess(false); setOnboardingAccess(false);
     setKnowledgeEdit(false); setAllProjects(false); setLinkedProjects(new Set());
-    if (user) delete (user as any)._hydrated;
   };
 
   const save = useMutation({
