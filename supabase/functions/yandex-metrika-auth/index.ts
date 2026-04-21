@@ -142,7 +142,7 @@ Deno.serve(async (req) => {
       const endDate = date2 || new Date().toISOString().split("T")[0];
 
       // Common params for data accuracy: exclude robots, full accuracy, cross-device attribution
-      const accuracyParams = "robot_less=1&accuracy=full&attribution=cross_device_last_significant";
+      const accuracyParams = "robot_less=1&accuracy=full&attribution=lastsign";
 
       // Fetch visits by day
       const visitsResp = await fetch(
@@ -212,7 +212,7 @@ Deno.serve(async (req) => {
 
       const startDate = date1 || new Date(Date.now() - 30 * 86400000).toISOString().split("T")[0];
       const endDate = date2 || new Date().toISOString().split("T")[0];
-      const accuracyParams = "robot_less=1&accuracy=full&attribution=cross_device_last_significant";
+      const accuracyParams = "robot_less=1&accuracy=full&attribution=lastsign";
 
       // Map channel to Metrika traffic source filter
       const channelFilterMap: Record<string, string> = {
@@ -271,7 +271,7 @@ Deno.serve(async (req) => {
 
       const startDate = date1 || new Date(Date.now() - 30 * 86400000).toISOString().split("T")[0];
       const endDate = date2 || new Date().toISOString().split("T")[0];
-      let accuracyParams = "robot_less=1&accuracy=full&attribution=cross_device_last_significant";
+      let accuracyParams = "robot_less=1&accuracy=full&attribution=lastsign";
       
       // Add traffic source filter if specified
       if (traffic_source === "organic") {
@@ -406,10 +406,10 @@ Deno.serve(async (req) => {
 
       const startDate = date1 || new Date(Date.now() - 30 * 86400000).toISOString().split("T")[0];
       const endDate = date2 || new Date().toISOString().split("T")[0];
-      const accuracyParams = "robot_less=1&accuracy=full&attribution=cross_device_last_significant";
+      const accuracyParams = "robot_less=1&accuracy=full&attribution=lastsign";
 
       // Fetch search phrases with engine breakdown using lastSign* dimensions
-      // (required for cross_device_last_significant attribution to match Metrika UI)
+      // (required for lastsign attribution to match Metrika UI defaults)
       const phrasesResp = await fetch(
         `https://api-metrika.yandex.net/stat/v1/data?id=${counterId}&metrics=ym:s:visits,ym:s:users,ym:s:bounceRate,ym:s:pageDepth,ym:s:avgVisitDurationSeconds&dimensions=ym:s:lastSignSearchEngineRoot,ym:s:lastSignSearchPhrase&date1=${startDate}&date2=${endDate}&limit=10000&sort=-ym:s:visits&${accuracyParams}`,
         { headers: { Authorization: `OAuth ${accessToken}` } }
@@ -462,7 +462,7 @@ Deno.serve(async (req) => {
 
       const startDate = date1 || new Date(Date.now() - 30 * 86400000).toISOString().split("T")[0];
       const endDate = date2 || new Date().toISOString().split("T")[0];
-      const accuracyParams = "robot_less=1&accuracy=full&attribution=cross_device_last_significant";
+      const accuracyParams = "robot_less=1&accuracy=full&attribution=lastsign";
 
       // Fetch visits by day broken down by traffic source
       const resp = await fetch(
