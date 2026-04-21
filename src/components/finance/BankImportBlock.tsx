@@ -1,7 +1,7 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2, X, UserPlus, ArrowDownLeft, ArrowUpRight, Trash2 } from "lucide-react";
+import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2, X, UserPlus, ArrowDownLeft, ArrowUpRight, Trash2, Undo2 } from "lucide-react";
 import * as XLSX from "xlsx";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -145,6 +145,25 @@ export function BankImportBlock() {
     }
   };
 
+  const LAST_IMPORT_KEY = "fin-last-bank-import";
+  const [lastImport, setLastImport] = useState<null | {
+    at: string;
+    txIds: string[];
+    invoiceIds: string[];
+    newClientIds: string[];
+    newCompanyIds: string[];
+    accountId: string;
+  }>(() => {
+    try {
+      const raw = localStorage.getItem(LAST_IMPORT_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  });
+  useEffect(() => {
+    if (lastImport) localStorage.setItem(LAST_IMPORT_KEY, JSON.stringify(lastImport));
+    else localStorage.removeItem(LAST_IMPORT_KEY);
+  }, [lastImport]);
+
   const importMut = useMutation({
     mutationFn: async () => {
       if (!accountId) throw new Error("Выберите банковский счёт");
@@ -163,6 +182,8 @@ export function BankImportBlock() {
         if (!uniqMap.has(key)) uniqMap.set(key, { name: r.counterparty, inn: r.inn });
       }
       const newClientsMap = new Map<string, { id: string; name: string }>();
+      const newClientIds: string[] = [];
+      const newCompanyIds: string[] = [];
       if (uniqMap.size > 0) {
         const insertData = Array.from(uniqMap.values()).map((c) => ({ name: c.name, inn: c.inn }));
         const { data: created, error: cErr } = await supabase
@@ -173,6 +194,7 @@ export function BankImportBlock() {
         (created || []).forEach((c: any) => {
           const key = c.inn || `name:${(c.name || "").toLowerCase()}`;
           newClientsMap.set(key, { id: c.id, name: c.name });
+          newClientIds.push(c.id);
         });
 
         // Дублируем в CRM-таблицу companies (страница "Компании")
@@ -190,7 +212,8 @@ export function BankImportBlock() {
           .filter((c) => !(c.inn && innSet.has(c.inn)) && !nameSet.has(c.name.toLowerCase()))
           .map((c) => ({ name: c.name, inn: c.inn, type: "Клиент", owner_id: ownerId }));
         if (compRows.length > 0) {
-          await supabase.from("companies").insert(compRows);
+          const { data: createdComp } = await supabase.from("companies").insert(compRows).select("id");
+          (createdComp || []).forEach((c: any) => newCompanyIds.push(c.id));
         }
       }
 
@@ -209,8 +232,12 @@ export function BankImportBlock() {
           description: `${r.counterparty}${r.purpose ? " · " + r.purpose : ""}`.slice(0, 500),
         };
       });
-      const { error: txErr } = await supabase.from("transactions").insert(txInsert);
+      const { data: createdTx, error: txErr } = await supabase
+        .from("transactions")
+        .insert(txInsert)
+        .select("id");
       if (txErr) throw txErr;
+      const txIds = (createdTx || []).map((t: any) => t.id);
 
       // 3) Закрываем счета
       const invoiceIds = selected.map((r) => r.matchedInvoiceId).filter((x): x is string => !!x);
@@ -220,13 +247,19 @@ export function BankImportBlock() {
           .update({ status: "paid", date_paid: format(new Date(), "yyyy-MM-dd"), paid_to_account_id: accountId })
           .in("id", invoiceIds);
       }
-      return { count: selected.length, closed: invoiceIds.length, created: uniqMap.size };
+      return {
+        count: selected.length,
+        closed: invoiceIds.length,
+        created: uniqMap.size,
+        snapshot: { at: new Date().toISOString(), txIds, invoiceIds, newClientIds, newCompanyIds, accountId },
+      };
     },
-    onSuccess: ({ count, closed, created }) => {
+    onSuccess: ({ count, closed, created, snapshot }) => {
       const parts = [`Импортировано: ${count}`];
       if (created > 0) parts.push(`новых клиентов: ${created}`);
       if (closed > 0) parts.push(`закрыто счетов: ${closed}`);
       toast.success(parts.join(" · "));
+      setLastImport(snapshot);
       qc.invalidateQueries({ queryKey: ["fin-accounts"] });
       qc.invalidateQueries({ queryKey: ["fin-tx-year"] });
       qc.invalidateQueries({ queryKey: ["fin-invoices"] });
@@ -238,6 +271,49 @@ export function BankImportBlock() {
       setRows([]);
     },
     onError: (e: any) => toast.error(e.message || "Ошибка импорта"),
+  });
+
+  // Откат последнего импорта
+  const [undoOpen, setUndoOpen] = useState(false);
+  const undoMut = useMutation({
+    mutationFn: async () => {
+      if (!lastImport) throw new Error("Нет данных для отката");
+      const { txIds, invoiceIds, newClientIds, newCompanyIds } = lastImport;
+      if (txIds.length > 0) {
+        const { error } = await supabase.from("transactions").delete().in("id", txIds);
+        if (error) throw error;
+      }
+      if (invoiceIds.length > 0) {
+        await supabase
+          .from("invoices")
+          .update({ status: "sent", date_paid: null, paid_to_account_id: null })
+          .in("id", invoiceIds);
+      }
+      if (newCompanyIds.length > 0) {
+        await supabase.from("companies").delete().in("id", newCompanyIds);
+      }
+      if (newClientIds.length > 0) {
+        await supabase.from("financial_clients").delete().in("id", newClientIds);
+      }
+      return { txIds, newClientIds, newCompanyIds, invoiceIds };
+    },
+    onSuccess: ({ txIds, newClientIds, newCompanyIds, invoiceIds }) => {
+      toast.success(
+        `Откат выполнен · удалено транзакций: ${txIds.length}` +
+        (newClientIds.length ? ` · клиентов: ${newClientIds.length}` : "") +
+        (newCompanyIds.length ? ` · компаний: ${newCompanyIds.length}` : "") +
+        (invoiceIds.length ? ` · счетов возвращено в "Выставлен": ${invoiceIds.length}` : ""),
+      );
+      setLastImport(null);
+      setUndoOpen(false);
+      qc.invalidateQueries({ queryKey: ["fin-accounts"] });
+      qc.invalidateQueries({ queryKey: ["fin-tx-year"] });
+      qc.invalidateQueries({ queryKey: ["fin-invoices"] });
+      qc.invalidateQueries({ queryKey: ["fin-import-clients"] });
+      qc.invalidateQueries({ queryKey: ["financial-clients"] });
+      qc.invalidateQueries({ queryKey: ["companies"] });
+    },
+    onError: (e: any) => toast.error(e.message || "Не удалось откатить импорт"),
   });
 
   // Очистка финансов (транзакции + балансы + откат оплат счетов; клиенты — опционально)
@@ -340,7 +416,12 @@ export function BankImportBlock() {
             Точка-Банк · Excel · автораспознавание клиентов и автосоздание новых
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {lastImport && (
+            <Button size="sm" variant="outline" onClick={() => setUndoOpen(true)} className="border-amber-500/40 text-amber-600 dark:text-amber-400">
+              <Undo2 className="h-4 w-4 mr-1" /> Откатить последний импорт ({lastImport.txIds.length})
+            </Button>
+          )}
           <Button size="sm" variant="outline" onClick={() => setResetOpen(true)}>
             <Trash2 className="h-4 w-4 mr-1" /> Очистить финансы
           </Button>
@@ -578,6 +659,44 @@ export function BankImportBlock() {
               className="bg-red-500 hover:bg-red-500/90"
             >
               {resetMut.isPending ? "Очистка..." : "Да, очистить"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Откат последнего импорта */}
+      <AlertDialog open={undoOpen} onOpenChange={setUndoOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+              <Undo2 className="h-4 w-4" /> Откатить последний импорт?
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>Будут удалены данные, созданные при последнем импорте:</p>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>Транзакций: <span className="font-semibold text-foreground">{lastImport?.txIds.length || 0}</span></li>
+                  <li>Новых клиентов (финансы): <span className="font-semibold text-foreground">{lastImport?.newClientIds.length || 0}</span></li>
+                  <li>Новых компаний (CRM): <span className="font-semibold text-foreground">{lastImport?.newCompanyIds.length || 0}</span></li>
+                  <li>Счетов вернётся в «Выставлен»: <span className="font-semibold text-foreground">{lastImport?.invoiceIds.length || 0}</span></li>
+                </ul>
+                {lastImport?.at && (
+                  <p className="text-xs text-muted-foreground pt-1">
+                    Импорт был выполнен: {new Date(lastImport.at).toLocaleString("ru-RU")}
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground">Действие необратимо.</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={undoMut.isPending}>Отмена</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); undoMut.mutate(); }}
+              disabled={undoMut.isPending}
+              className="bg-amber-600 hover:bg-amber-600/90"
+            >
+              {undoMut.isPending ? "Откат..." : "Да, откатить"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
