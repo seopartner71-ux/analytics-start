@@ -666,15 +666,25 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     return result;
   }, [filteredData, filteredCompData, metrikaHistory, showComparison, channelVisitRatio, channel, channelRatios]);
 
+  // Live totals from Metrika API: [visits, users, bounceRate, pageDepth, avgDuration]
+  const liveTotals = (liveMetrikaData?.totals?.data?.[0]?.metrics || []) as number[];
+  const liveVisits = liveTotals[0];
+  const liveUsers = liveTotals[1];
+  const liveBounce = liveTotals[2];
+  const livePageDepth = liveTotals[3];
+  const liveAvgDuration = liveTotals[4];
+
   const totalVisits = Math.round(
     (filteredData.length > 0
       ? filteredData.reduce((s, d) => s + d.visits, 0)
-      : (metrikaStats?.total_visits || 0)) * channelVisitRatio
+      : (liveVisits ?? metrikaStats?.total_visits ?? 0)) * channelVisitRatio
   );
-  const totalUsers = Math.round((metrikaStats?.total_users || 0) * channelVisitRatio);
-  const bounceRate = metrikaStats ? Number(metrikaStats.bounce_rate) : 0;
-  const avgDuration = metrikaStats ? metrikaStats.avg_duration_seconds : 0;
-  const pageDepth = metrikaStats ? Number(metrikaStats.page_depth) : 0;
+  const totalUsers = Math.round((liveUsers ?? metrikaStats?.total_users ?? 0) * channelVisitRatio);
+  const bounceRate = Number(((liveBounce ?? metrikaStats?.bounce_rate) ?? 0)).toFixed
+    ? Number(Number(liveBounce ?? metrikaStats?.bounce_rate ?? 0).toFixed(2))
+    : 0;
+  const avgDuration = Math.round(liveAvgDuration ?? metrikaStats?.avg_duration_seconds ?? 0);
+  const pageDepth = Number(Number(livePageDepth ?? metrikaStats?.page_depth ?? 0).toFixed(2));
 
   const compTotalVisits = Math.round(filteredCompData.reduce((s, d) => s + d.visits, 0) * channelVisitRatio);
   const visitsChange = showComparison && compTotalVisits > 0
