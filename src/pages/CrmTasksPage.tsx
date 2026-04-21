@@ -422,6 +422,7 @@ export default function CrmTasksPage() {
                   <th>Постановщик</th>
                   <th>Исполнитель</th>
                   <th>Проект</th>
+                  <th className="w-10"></th>
                 </tr>
               </thead>
               <tbody>
@@ -502,6 +503,14 @@ export default function CrmTasksPage() {
                               <span className="text-sm text-muted-foreground">{t.project.name}</span>
                             </div>
                           ) : <span className="text-sm text-muted-foreground">—</span>}
+                        </td>
+                        <td onClick={e => e.stopPropagation()} className="text-right">
+                          <DeleteButton
+                            visible={canDeleteTask(t)}
+                            entityName={t.title}
+                            entityLabel="задачу"
+                            onConfirm={() => deleteTask(t)}
+                          />
                         </td>
                       </motion.tr>
                     );
