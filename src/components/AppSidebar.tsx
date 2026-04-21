@@ -36,7 +36,8 @@ const allNav = [
   { title: "Чат", url: "/chat", icon: MessageSquare, minRole: "viewer" as const },
   { title: "Финансы", url: "/finance", icon: Wallet, minRole: "viewer" as const, requireFinance: true },
   { title: "Интеграции", url: "/admin?tab=keys", icon: Plug, minRole: "admin" as const },
-  { title: "Пользователи", url: "/users", icon: Shield, minRole: "admin" as const },
+  { title: "Пользователи", url: "/users", icon: Shield, minRole: "admin" as const, adminOnly: true },
+  { title: "Учёт времени", url: "/admin/time-stats", icon: Clock, minRole: "admin" as const, adminOnly: true },
 ];
 
 const analyticsNav = [
