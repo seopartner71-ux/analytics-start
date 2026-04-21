@@ -644,11 +644,6 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     return channelRatios[channel] || 0;
   }, [channel, channelRatios]);
 
-  // ── Channel-filtered ratio ──
-  const channelVisitRatio = useMemo(() => {
-    if (channel === "all" || !metrikaStats?.traffic_sources) return 1;
-    return channelRatios[channel] || 0;
-  }, [metrikaStats, channel, channelRatios]);
 
   const ALL_CHANNELS = ["organic", "direct", "social", "referral", "ad"] as const;
 
