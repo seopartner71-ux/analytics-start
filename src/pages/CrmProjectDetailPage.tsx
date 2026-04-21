@@ -73,7 +73,7 @@ export default function CrmProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user, canEdit, isViewer } = useAuth();
+  const { user, canEdit, isViewer, role } = useAuth();
   const queryClient = useQueryClient();
   const defaultTab = searchParams.get("tab") === "analytics" ? "analytics" : searchParams.get("tab") === "health" ? "health" : "checklist";
 
