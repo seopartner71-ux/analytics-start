@@ -407,20 +407,24 @@ function parseTochkaStatement(rows: any[][]): Omit<ParsedRow, "selected" | "matc
 }
 
 function parseDate(v: any): string | null {
-  if (!v) return null;
-  if (v instanceof Date) return format(v, "yyyy-MM-dd");
+  if (v === null || v === undefined || v === "") return null;
+  if (v instanceof Date && !isNaN(v.getTime())) return format(v, "yyyy-MM-dd");
+  // Excel serial number (дни с 1899-12-30)
+  if (typeof v === "number" && isFinite(v)) {
+    const d = new Date(Math.round((v - 25569) * 86400 * 1000));
+    if (!isNaN(d.getTime())) return format(d, "yyyy-MM-dd");
+  }
   const s = String(v).trim();
-  // dd.MM.yyyy или dd/MM/yyyy
-  const m = s.match(/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{2,4})$/);
+  // ISO yyyy-MM-dd[ ...]
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+  // dd.MM.yyyy / dd/MM/yyyy / dd-MM-yyyy
+  const m = s.match(/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{2,4})/);
   if (m) {
     const [, d, mo, y] = m;
     const year = y.length === 2 ? `20${y}` : y;
     return `${year}-${mo.padStart(2, "0")}-${d.padStart(2, "0")}`;
   }
-  // ISO
-  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
-  const d = new Date(s);
-  if (!isNaN(d.getTime())) return format(d, "yyyy-MM-dd");
   return null;
 }
 
