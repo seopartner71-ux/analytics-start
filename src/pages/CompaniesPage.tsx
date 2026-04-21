@@ -270,6 +270,31 @@ export default function CompaniesPage() {
     },
   });
 
+  // Финансовые "сделки": оплаченные счета + платежи по имени клиента
+  const { data: finance } = useQuery({
+    queryKey: ["companies-finance-stats"],
+    queryFn: async () => {
+      const [inv, pay] = await Promise.all([
+        supabase.from("invoices").select("client_name, amount, status"),
+        supabase.from("financial_payments").select("client_name, contract_amount, paid_amount, status"),
+      ]);
+      return { invoices: inv.data || [], payments: pay.data || [] };
+    },
+  });
+
+  const statsByName = new Map<string, { count: number; sum: number; status: string }>();
+  const addStat = (name: string, sum: number, status: string) => {
+    const k = (name || "").trim().toLowerCase();
+    if (!k) return;
+    const cur = statsByName.get(k) || { count: 0, sum: 0, status };
+    cur.count += 1;
+    cur.sum += Number(sum) || 0;
+    cur.status = status || cur.status;
+    statsByName.set(k, cur);
+  };
+  (finance?.invoices || []).forEach((i: any) => addStat(i.client_name, i.amount, i.status));
+  (finance?.payments || []).forEach((p: any) => addStat(p.client_name, p.paid_amount || p.contract_amount, p.status));
+
   const filtered = companies.filter(c =>
     c.name.toLowerCase().includes(search.toLowerCase()) ||
     (c.responsible?.full_name || "").toLowerCase().includes(search.toLowerCase())
@@ -323,8 +348,10 @@ export default function CompaniesPage() {
             <tbody>
               <AnimatePresence>
                 {filtered.map((c, i) => {
-                  const dealCount = c.deals?.length || 0;
-                  const latestStatus = c.deals?.[0]?.status || "—";
+                  const finStat = statsByName.get(c.name.trim().toLowerCase());
+                  const dealCount = (c.deals?.length || 0) + (finStat?.count || 0);
+                  const totalSum = (c.deals?.reduce((s, d) => s + (d.amount || 0), 0) || 0) + (finStat?.sum || 0);
+                  const latestStatus = c.deals?.[0]?.status || finStat?.status || "—";
                   return (
                     <motion.tr
                       key={c.id}
@@ -349,7 +376,12 @@ export default function CompaniesPage() {
                       </td>
                       <td>
                         <div className="space-y-1">
-                          <p className="text-sm text-foreground font-medium">{dealCount} сделок</p>
+                          <p className="text-sm text-foreground font-medium">
+                            {dealCount} {dealCount === 1 ? "сделка" : dealCount >= 2 && dealCount <= 4 ? "сделки" : "сделок"}
+                          </p>
+                          {totalSum > 0 && (
+                            <p className="text-[11px] text-muted-foreground">{totalSum.toLocaleString("ru-RU")} ₽</p>
+                          )}
                           <Badge variant="secondary" className="text-[10px] font-medium">{latestStatus}</Badge>
                         </div>
                       </td>
