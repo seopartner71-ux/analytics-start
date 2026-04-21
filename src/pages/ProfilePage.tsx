@@ -331,6 +331,11 @@ export default function ProfilePage() {
           </div>
         </TabsContent>
 
+        {/* Security Tab */}
+        <TabsContent value="security" className="mt-0 p-6">
+          <ChangePasswordCard email={email} />
+        </TabsContent>
+
         {/* Efficiency Tab */}
         <TabsContent value="efficiency" className="mt-0 p-6">
           <Card className="bg-card/80 backdrop-blur-sm border-border/60 shadow-sm">
