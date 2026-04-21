@@ -39,6 +39,8 @@ import { OnboardingTasksTab } from "@/components/onboarding/OnboardingTasksTab";
 import { WeeklyReportsTab } from "@/components/project/WeeklyReportsTab";
 import { ProjectTeamTab } from "@/components/project/ProjectTeamTab";
 import { PeriodsTab } from "@/components/project/PeriodsTab";
+import { DeleteButton } from "@/components/common/DeleteButton";
+import { logDeletion } from "@/lib/deletion-log";
 
 type TaskComment = Tables<"task_comments"> & {
   author?: Tables<"team_members"> | null;
