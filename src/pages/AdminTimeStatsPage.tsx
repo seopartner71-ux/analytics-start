@@ -26,16 +26,18 @@ function formatSeconds(total: number): string {
   return `${String(h).padStart(2, "0")} ч ${String(m).padStart(2, "0")} мин`;
 }
 
-export default function AdminTimeStatsPage() {
-  const { isAdmin, loading: authLoading } = useAuth();
+export default function AdminTimeStatsPage({ embedded = false }: { embedded?: boolean } = {}) {
+  const { isAdmin, role, loading: authLoading } = useAuth();
+  const isDirector = role === "director";
+  const allowed = isAdmin || isDirector;
   const navigate = useNavigate();
   const [date, setDate] = useState<Date>(new Date());
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!authLoading && !isAdmin) navigate("/", { replace: true });
-  }, [authLoading, isAdmin, navigate]);
+    if (!authLoading && !allowed && !embedded) navigate("/", { replace: true });
+  }, [authLoading, allowed, embedded, navigate]);
 
   useEffect(() => {
     let cancelled = false;
