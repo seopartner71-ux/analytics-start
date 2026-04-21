@@ -455,7 +455,7 @@ function SortableTaskRow(props: {
         </div>
         <div className="flex items-center gap-2 mt-0.5">
           {task.required && (
-            <Badge variant="outline" className="h-4 text-[9px] px-1 border-amber-500/40 text-amber-600">
+            <Badge variant="outline" className="h-4 text-[9px] px-1">
               Обязат.
             </Badge>
           )}
