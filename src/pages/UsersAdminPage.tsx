@@ -305,7 +305,7 @@ function UserEditSheet({
         </SheetHeader>
 
         <div className="space-y-5 mt-6">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Label className="text-xs">Имя</Label>
               <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} />
@@ -316,7 +316,7 @@ function UserEditSheet({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Label className="text-xs"><Phone className="inline h-3 w-3 mr-1" />Телефон</Label>
               <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+7..." />

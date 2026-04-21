@@ -287,7 +287,7 @@ export default function CompanyNewsWidget() {
                 placeholder="Подробности..."
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <Label className="text-[12px]">Тип</Label>
                 <Select value={form.type} onValueChange={(v: NewsType) => setForm(f => ({ ...f, type: v }))}>

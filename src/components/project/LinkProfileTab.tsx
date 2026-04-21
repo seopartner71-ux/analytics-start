@@ -265,7 +265,7 @@ export function LinkProfileTab({ projectId }: Props) {
             <div><Label className="text-xs">URL донора *</Label><Input value={form.donor_url} onChange={(e) => setForm({ ...form, donor_url: e.target.value })} placeholder="https://example.com/page" /></div>
             <div><Label className="text-xs">Анкор</Label><Input value={form.anchor} onChange={(e) => setForm({ ...form, anchor: e.target.value })} placeholder="купить ..." /></div>
             <div><Label className="text-xs">URL акцептора *</Label><Input value={form.acceptor_url} onChange={(e) => setForm({ ...form, acceptor_url: e.target.value })} placeholder="https://mysite.ru/page" /></div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <Label className="text-xs">Тип</Label>
                 <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v as Link["type"] })}>

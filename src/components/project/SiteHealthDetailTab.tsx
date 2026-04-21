@@ -407,7 +407,7 @@ export default function SiteHealthDetailTab({ projectId }: Props) {
             <h3 className="text-sm font-semibold text-foreground">Яндекс Вебмастер</h3>
           </div>
           <div className="p-4 space-y-4">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="rounded-lg bg-muted/40 p-3">
                 <p className="text-[10px] text-muted-foreground uppercase mb-1">Индексация</p>
                 <p className="text-lg font-bold text-foreground">{Number(yIndexed).toLocaleString("ru-RU")} стр.</p>
@@ -468,7 +468,7 @@ export default function SiteHealthDetailTab({ projectId }: Props) {
             <h3 className="text-sm font-semibold text-foreground">Google Search Console</h3>
           </div>
           <div className="p-4 space-y-4">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="rounded-lg bg-muted/40 p-3">
                 <p className="text-[10px] text-muted-foreground uppercase mb-1">Клики (28 дн.)</p>
                 <p className="text-lg font-bold text-foreground">{Number(gClicks).toLocaleString("ru-RU")}</p>
@@ -478,7 +478,7 @@ export default function SiteHealthDetailTab({ projectId }: Props) {
                 <p className="text-lg font-bold text-foreground">{Number(gImpressions).toLocaleString("ru-RU")}</p>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="rounded-lg bg-muted/40 p-3">
                 <p className="text-[10px] text-muted-foreground uppercase mb-1">Средний CTR</p>
                 <p className="text-lg font-bold text-foreground">{Number(gCtr).toFixed(1)}%</p>

@@ -96,7 +96,7 @@ function AddTaskDialog() {
         <DialogHeader><DialogTitle>Новая задача</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <div><Label className="text-xs">Название *</Label><Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} /></div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div><Label className="text-xs">Стадия</Label>
               <Select value={form.stage} onValueChange={v => setForm(f => ({ ...f, stage: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -116,7 +116,7 @@ function AddTaskDialog() {
               </Select>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div><Label className="text-xs">Крайний срок</Label><Input type="datetime-local" value={form.deadline} onChange={e => setForm(f => ({ ...f, deadline: e.target.value }))} /></div>
             <div><Label className="text-xs">Проект *</Label>
               <Select value={projectId} onValueChange={setProjectId}>

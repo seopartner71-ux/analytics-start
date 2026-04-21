@@ -393,7 +393,7 @@ export default function CrmProjectsPage() {
                   <Label className="text-[13px]">Домен</Label>
                   <Input value={newUrl} onChange={e => setNewUrl(e.target.value)} placeholder="example.ru" className="mt-1" />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <Label className="text-[13px]">Статус</Label>
                     <Select value={newStage} onValueChange={setNewStage}>
