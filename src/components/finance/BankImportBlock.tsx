@@ -329,58 +329,75 @@ export function BankImportBlock() {
 }
 
 // ===== Парсер выписки Точка-Банка =====
+// Формат файла Точки (xlsx, экспорт из ЛК):
+// Заголовки (обычно строка 2): [Номер документа | Дата документа | Дата операции | Счёт |
+//   Контрагент | ИНН контрагента | БИК банка контрагента | Корр.счёт банка контрагента |
+//   Наименование банка контрагента | Счёт контрагента | Списание | Зачисление | Назначение платежа]
 
 function parseTochkaStatement(rows: any[][]): Omit<ParsedRow, "selected" | "matchedClient" | "matchedInvoiceId" | "duplicate">[] {
-  // Ищем строку с заголовками: ищем первую строку, где есть "Дата операции" / "Сумма" и т.п.
+  // Ищем строку заголовка — она должна содержать "зачисление" и "списание" (Точка),
+  // либо как fallback — "дата" и "сумма".
   let headerIdx = -1;
   let headers: string[] = [];
   for (let i = 0; i < Math.min(rows.length, 30); i++) {
-    const r = (rows[i] || []).map((c) => String(c || "").trim().toLowerCase());
+    const r = (rows[i] || []).map((c) => String(c ?? "").trim().toLowerCase());
     const joined = r.join("|");
-    if ((joined.includes("дата") && joined.includes("сумма")) || joined.includes("дата операции")) {
+    if (joined.includes("зачислен") && joined.includes("списан")) {
       headerIdx = i;
       headers = r;
       break;
     }
+    if (headerIdx === -1 && joined.includes("дата") && joined.includes("сумма")) {
+      headerIdx = i;
+      headers = r;
+    }
   }
-  if (headerIdx === -1) {
-    // Fallback: пробуем как обычную таблицу с первой строкой
-    headerIdx = 0;
-    headers = (rows[0] || []).map((c) => String(c || "").trim().toLowerCase());
-  }
+  if (headerIdx === -1) return [];
 
   const findCol = (...keys: string[]) =>
     headers.findIndex((h) => keys.some((k) => h.includes(k)));
 
-  const colDate = findCol("дата операции", "дата");
-  const colAmountIn = findCol("приход", "поступлен", "кредит");
-  const colAmountOut = findCol("расход", "списан", "дебет");
+  // Точка: "Дата операции" приоритетнее "Даты документа"
+  const colDateOp = headers.findIndex((h) => h.includes("дата операции"));
+  const colDateDoc = headers.findIndex((h) => h.includes("дата документа"));
+  const colDate = colDateOp >= 0 ? colDateOp : (colDateDoc >= 0 ? colDateDoc : findCol("дата"));
+
+  const colCredit = findCol("зачислен", "приход", "кредит"); // приход
+  const colDebit = findCol("списан", "расход", "дебет");     // расход
   const colAmount = findCol("сумма");
-  const colCounterparty = findCol("контраген", "плательщик", "получатель", "наименование");
-  const colInn = findCol("инн");
+
+  // ИНН контрагента (а не нашей компании)
+  const colInn = headers.findIndex((h) => h.includes("инн контрагент"));
+  const colInnFallback = findCol("инн");
+
+  const colCounterparty = findCol("контраген", "плательщик", "получатель");
   const colPurpose = findCol("назначен", "основание", "комментар");
 
   const result: Omit<ParsedRow, "selected" | "matchedClient" | "matchedInvoiceId" | "duplicate">[] = [];
 
   for (let i = headerIdx + 1; i < rows.length; i++) {
     const row = rows[i] || [];
-    if (row.every((c) => !String(c || "").trim())) continue;
+    if (row.every((c) => !String(c ?? "").trim())) continue;
 
-    const dateRaw = colDate >= 0 ? row[colDate] : null;
-    const date = parseDate(dateRaw);
+    const date = parseDate(colDate >= 0 ? row[colDate] : null);
     if (!date) continue;
 
     let amount = 0;
-    if (colAmountIn >= 0) amount = parseAmount(row[colAmountIn]);
-    if (amount === 0 && colAmount >= 0) amount = parseAmount(row[colAmount]);
-    if (colAmountOut >= 0 && parseAmount(row[colAmountOut]) > 0) {
-      amount = -parseAmount(row[colAmountOut]); // расход → отрицательная
+    if (colCredit >= 0) {
+      const credit = parseAmount(row[colCredit]);
+      if (credit > 0) amount = credit;
     }
+    if (amount === 0 && colDebit >= 0) {
+      const debit = parseAmount(row[colDebit]);
+      if (debit > 0) amount = -debit;
+    }
+    if (amount === 0 && colAmount >= 0) amount = parseAmount(row[colAmount]);
     if (amount === 0) continue;
 
-    const counterparty = colCounterparty >= 0 ? String(row[colCounterparty] || "").trim() : "";
-    const inn = colInn >= 0 ? String(row[colInn] || "").trim().replace(/\D/g, "") || null : null;
-    const purpose = colPurpose >= 0 ? String(row[colPurpose] || "").trim() : "";
+    const counterparty = colCounterparty >= 0 ? String(row[colCounterparty] ?? "").replace(/\s+/g, " ").trim() : "";
+    const innRaw = colInn >= 0 ? row[colInn] : (colInnFallback >= 0 ? row[colInnFallback] : null);
+    const inn = innRaw ? String(innRaw).trim().replace(/\D/g, "") || null : null;
+    const purpose = colPurpose >= 0 ? String(row[colPurpose] ?? "").replace(/\s+/g, " ").trim() : "";
 
     result.push({ date, amount, counterparty, inn, purpose });
   }
@@ -419,15 +436,23 @@ function matchClient(
   clients: Client[],
 ): { id: string; name: string } | null {
   if (clients.length === 0) return null;
-  const hay = `${row.counterparty} ${row.purpose}`.toLowerCase();
-  // Сначала попытка по полному имени клиента
+  const normalize = (s: string) =>
+    s.toLowerCase()
+      .replace(/[«»"'`]/g, "")
+      .replace(/\b(ооо|оао|пао|зао|ип|индивидуальный предприниматель|общество с ограниченной ответственностью|гкфх)\b/gi, "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+  const hay = normalize(`${row.counterparty} ${row.purpose}`);
+  const STOP = new Set(["ооо", "оао", "пао", "зао", "иип", "общество", "ограниченной", "ответственностью", "индивидуальный", "предприниматель"]);
+
   for (const c of clients) {
-    const nm = c.name.toLowerCase().trim();
+    const nm = normalize(c.name);
     if (!nm) continue;
     if (hay.includes(nm)) return c;
-    // Извлечь существенное слово (>=4 символов, не "ооо/ип/...")
-    const words = nm.split(/[\s,."'«»()]+/).filter((w) => w.length >= 4 && !["ооо", "иип", "оао", "пао", "зао"].includes(w));
-    if (words.some((w) => hay.includes(w))) return c;
+    const words = nm.split(/[\s,.()]+/).filter((w) => w.length >= 4 && !STOP.has(w));
+    if (words.length > 0 && words.every((w) => hay.includes(w))) return c;
+    if (words.some((w) => w.length >= 6 && hay.includes(w))) return c;
   }
   return null;
 }
