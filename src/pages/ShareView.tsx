@@ -303,7 +303,7 @@ const ShareView = () => {
         )}
 
         <footer className="border-t border-border/60 pt-8 mt-12 text-center">
-          <p className="text-xs text-muted-foreground/60">Powered by StatPulse</p>
+          <p className="text-xs text-muted-foreground/60">Powered by СЕО - Модуль 2</p>
         </footer>
       </div>
     </div>

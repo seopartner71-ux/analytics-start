@@ -157,7 +157,7 @@ export function generateWebmasterPdf(checks: WmCheck[], meta: PdfMeta) {
   // Footer on cover
   pdf.setFontSize(8);
   pdf.setTextColor(170, 170, 190);
-  pdf.text("StatPulse SEO Platform", pw / 2, ph - 15, { align: "center" });
+  pdf.text("СЕО - Модуль 2", pw / 2, ph - 15, { align: "center" });
 
   // ========== PAGE 2 — TABLE OF CONTENTS ==========
   pdf.addPage();

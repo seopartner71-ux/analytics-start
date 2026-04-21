@@ -101,7 +101,7 @@ const Auth = () => {
                 <BarChart3 className="h-5 w-5 text-accent-foreground" />
               </div>
             </div>
-            <span className="text-xl font-bold tracking-tight">StatPulse</span>
+            <span className="text-xl font-bold tracking-tight">СЕО - Модуль 2</span>
           </div>
 
           <div className="space-y-8 max-w-lg">
@@ -141,7 +141,7 @@ const Auth = () => {
           </div>
 
           <div className="flex items-center gap-6 text-xs text-muted-foreground">
-            <span>© 2026 StatPulse</span>
+            <span>© 2026 СЕО - Модуль 2</span>
             <span>•</span>
             <span>Сделано для агентств</span>
           </div>
@@ -155,7 +155,7 @@ const Auth = () => {
               <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-accent to-accent/70 flex items-center justify-center shadow-lg">
                 <BarChart3 className="h-5 w-5 text-accent-foreground" />
               </div>
-              <span className="text-xl font-bold tracking-tight">StatPulse</span>
+              <span className="text-xl font-bold tracking-tight">СЕО - Модуль 2</span>
             </div>
 
             <div className="relative">

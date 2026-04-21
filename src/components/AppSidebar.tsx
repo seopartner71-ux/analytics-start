@@ -160,7 +160,7 @@ export function AppSidebar({ activeTab, onTabChange, projectName, projectLogo }:
           </div>
           {!collapsed && (
             <span className="text-[15px] font-semibold tracking-tight text-sidebar-accent-foreground">
-              StatPulse
+              СЕО - Модуль 2
             </span>
           )}
         </div>
