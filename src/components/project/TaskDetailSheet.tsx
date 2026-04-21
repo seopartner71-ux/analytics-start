@@ -681,6 +681,23 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
 
             {/* Sticky bottom action bar — primary CTA */}
             <div className="border-t border-border/60 bg-card px-5 py-3 shrink-0 space-y-2">
+              {canEditFields && isDirty && (
+                <Button
+                  size="lg"
+                  className="w-full h-11 gap-2 text-sm font-semibold shadow-md"
+                  onClick={() => saveAll.mutate()}
+                  disabled={saveAll.isPending}
+                  variant="default"
+                >
+                  {saveAll.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                  Сохранить изменения
+                </Button>
+              )}
+              {!canEditFields && (
+                <p className="text-[11px] text-muted-foreground text-center py-1">
+                  Редактировать задачу может только постановщик, администратор или директор
+                </p>
+              )}
               <Button
                 size="lg"
                 className="w-full h-11 gap-2 text-sm font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-md"
