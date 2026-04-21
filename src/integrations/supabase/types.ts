@@ -1185,6 +1185,42 @@ export type Database = {
         }
         Relationships: []
       }
+      financial_accounts: {
+        Row: {
+          balance: number
+          created_at: string
+          currency: string
+          id: string
+          is_active: boolean
+          kind: string
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          is_active?: boolean
+          kind?: string
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          is_active?: boolean
+          kind?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       financial_clients: {
         Row: {
           created_at: string
@@ -1636,6 +1672,65 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          amount: number
+          client_id: string | null
+          client_name: string
+          comment: string | null
+          created_at: string
+          created_by: string | null
+          date_created: string
+          date_paid: string | null
+          id: string
+          invoice_number: string
+          paid_to_account_id: string | null
+          service: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          client_id?: string | null
+          client_name?: string
+          comment?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_created?: string
+          date_paid?: string | null
+          id?: string
+          invoice_number: string
+          paid_to_account_id?: string | null
+          service?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          client_id?: string | null
+          client_name?: string
+          comment?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_created?: string
+          date_paid?: string | null
+          id?: string
+          invoice_number?: string
+          paid_to_account_id?: string | null
+          service?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_paid_to_account_id_fkey"
+            columns: ["paid_to_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_accounts"
             referencedColumns: ["id"]
           },
         ]
@@ -3271,6 +3366,66 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      transactions: {
+        Row: {
+          account_id: string
+          amount: number
+          category: string
+          client_id: string | null
+          created_at: string
+          created_by: string | null
+          date: string
+          description: string
+          id: string
+          invoice_id: string | null
+          related_account_id: string | null
+          type: string
+        }
+        Insert: {
+          account_id: string
+          amount: number
+          category?: string
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          description?: string
+          id?: string
+          invoice_id?: string | null
+          related_account_id?: string | null
+          type: string
+        }
+        Update: {
+          account_id?: string
+          amount?: number
+          category?: string
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          description?: string
+          id?: string
+          invoice_id?: string | null
+          related_account_id?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_related_account_id_fkey"
+            columns: ["related_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
