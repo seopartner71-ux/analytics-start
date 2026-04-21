@@ -97,6 +97,7 @@ export default function ProfilePage() {
 
   const profileTabs = [
     { key: "profile", label: "Профиль" },
+    { key: "security", label: "Безопасность" },
     { key: "tasks", label: "Задачи" },
     { key: "calendar", label: "Календарь" },
     { key: "feed", label: "Лента" },
