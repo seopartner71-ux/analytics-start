@@ -104,7 +104,7 @@ export default function Finance() {
       };
       const revenue = txYear.filter((t) => t.type === "income" && inRange(t)).reduce((a, t) => a + Number(t.amount), 0);
       const expenses = txYear
-        .filter((t) => t.type === "expense" && inRange(t) && t.category !== "tax" && t.category !== "cash_reserve")
+        .filter((t) => t.type === "expense" && inRange(t) && t.category !== "tax" && t.category !== "cash_reserve" && t.category !== "owner_withdrawal")
         .reduce((a, t) => a + Number(t.amount), 0);
       const net = revenue - revenue * TAX_RATE - revenue * CASH_RATE - expenses;
       return { month: label, "Выручка": Math.round(revenue), "Чистая прибыль": Math.round(net) };
