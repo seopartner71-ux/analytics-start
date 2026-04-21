@@ -512,6 +512,8 @@ function ChartCard({ title, children }: { title: string; children: React.ReactNo
 
 /* ────────── Payments Tab ────────── */
 function PaymentsTab({ payments, clients, ownerId, onChange }: { payments: Payment[]; clients: Client[]; ownerId: string; onChange: () => void }) {
+  const { isAdmin, role } = useAuth();
+  const canDelete = isAdmin || role === "director";
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterClient, setFilterClient] = useState<string>("all");
   const [editing, setEditing] = useState<Partial<Payment> | null>(null);
@@ -563,9 +565,9 @@ function PaymentsTab({ payments, clients, ownerId, onChange }: { payments: Payme
     onChange();
   };
 
-  const remove = async (id: string) => {
-    if (!confirm("Удалить платёж?")) return;
-    await supabase.from("financial_payments").delete().eq("id", id);
+  const remove = async (p: Payment) => {
+    await supabase.from("financial_payments").delete().eq("id", p.id);
+    await logDeletion({ entityType: "payment", entityId: p.id, entityName: `${p.client_name} · ${p.service}`, action: "hard_delete", context: { contract_amount: p.contract_amount } });
     onChange();
   };
 
@@ -685,7 +687,7 @@ function PaymentsTab({ payments, clients, ownerId, onChange }: { payments: Payme
                     )}
                     <Button size="icon" variant="ghost" title="История" onClick={() => setHistoryClient(p.client_name)}><History className="h-3.5 w-3.5" /></Button>
                     <Button size="icon" variant="ghost" onClick={() => { setEditing(p); setOpen(true); }}><Pencil className="h-3.5 w-3.5" /></Button>
-                    <Button size="icon" variant="ghost" onClick={() => remove(p.id)}><Trash2 className="h-3.5 w-3.5 text-red-400" /></Button>
+                    <DeleteButton visible={canDelete} variant="icon" entityLabel="платёж" entityName={`${p.client_name} · ${p.service}`} onConfirm={() => remove(p)} />
                   </div>
                 </TableCell>
               </TableRow>
