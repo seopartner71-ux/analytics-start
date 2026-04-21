@@ -491,7 +491,7 @@ export default function EmployeesPage() {
                         >
                           <td>
                             <div className="flex items-center gap-3">
-                              <AvatarCircle initials={getInitials(e.full_name)} status={presence.status} />
+                              <AvatarCircle initials={getInitials(e.full_name)} status={presence.status} avatarUrl={presence.avatarUrl} />
                               <div>
                                 <p className="text-sm font-semibold text-foreground">{e.full_name}</p>
                                 <p className="text-[11px] text-muted-foreground">{ROLE_LABELS[e.role] || e.role}</p>
