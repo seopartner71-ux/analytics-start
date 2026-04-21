@@ -552,6 +552,36 @@ export function BankImportBlock() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Диалог очистки финансов */}
+      <AlertDialog open={resetOpen} onOpenChange={setResetOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-red-500 flex items-center gap-2">
+              <Trash2 className="h-4 w-4" /> Очистить финансовые данные?
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>Это действие удалит все транзакции, обнулит балансы счетов и откатит оплаты по счетам в статус «Выставлен». Действие необратимо.</p>
+                <label className="flex items-center gap-2 mt-3 cursor-pointer">
+                  <Checkbox checked={alsoClients} onCheckedChange={(v) => setAlsoClients(!!v)} />
+                  <span>Также удалить всех клиентов из справочника финансов</span>
+                </label>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={resetMut.isPending}>Отмена</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); resetMut.mutate(); }}
+              disabled={resetMut.isPending}
+              className="bg-red-500 hover:bg-red-500/90"
+            >
+              {resetMut.isPending ? "Очистка..." : "Да, очистить"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
