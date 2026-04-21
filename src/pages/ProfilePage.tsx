@@ -11,7 +11,7 @@ import {
   User, Mail, Briefcase, Building2, Globe, Phone, Edit3, Save,
   X, Camera, ThumbsUp, Gift, Trophy, Crown, Star, Heart,
   Award, Smile, Flag, Hash, Bookmark, Target, Zap,
-  Smartphone, Monitor, Loader2,
+  Smartphone, Monitor, Loader2, Lock, Eye, EyeOff,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
