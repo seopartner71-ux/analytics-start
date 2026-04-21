@@ -348,8 +348,10 @@ export default function CompaniesPage() {
             <tbody>
               <AnimatePresence>
                 {filtered.map((c, i) => {
-                  const dealCount = c.deals?.length || 0;
-                  const latestStatus = c.deals?.[0]?.status || "—";
+                  const finStat = statsByName.get(c.name.trim().toLowerCase());
+                  const dealCount = (c.deals?.length || 0) + (finStat?.count || 0);
+                  const totalSum = (c.deals?.reduce((s, d) => s + (d.amount || 0), 0) || 0) + (finStat?.sum || 0);
+                  const latestStatus = c.deals?.[0]?.status || finStat?.status || "—";
                   return (
                     <motion.tr
                       key={c.id}
@@ -358,6 +360,31 @@ export default function CompaniesPage() {
                       transition={{ delay: i * 0.03, duration: 0.2 }}
                       onClick={() => setSelectedCompany(c)}
                     >
+                      <td onClick={e => e.stopPropagation()}>
+                        <Checkbox checked={selected.has(c.id)} onCheckedChange={() => toggle(c.id)} />
+                      </td>
+                      <td>
+                        <div className="flex items-center gap-3">
+                          <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0 ring-1 ring-primary/10">
+                            {c.logo || getInitials(c.name)}
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-foreground">{c.name}</p>
+                            <p className="text-[11px] text-muted-foreground">{c.type}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="space-y-1">
+                          <p className="text-sm text-foreground font-medium">
+                            {dealCount} {dealCount === 1 ? "сделка" : dealCount >= 2 && dealCount <= 4 ? "сделки" : "сделок"}
+                          </p>
+                          {totalSum > 0 && (
+                            <p className="text-[11px] text-muted-foreground">{totalSum.toLocaleString("ru-RU")} ₽</p>
+                          )}
+                          <Badge variant="secondary" className="text-[10px] font-medium">{latestStatus}</Badge>
+                        </div>
+                      </td>
                       <td onClick={e => e.stopPropagation()}>
                         <Checkbox checked={selected.has(c.id)} onCheckedChange={() => toggle(c.id)} />
                       </td>
