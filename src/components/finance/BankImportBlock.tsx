@@ -232,6 +232,35 @@ export function BankImportBlock() {
     };
   }, [rows]);
 
+  // Уникальный список новых клиентов, которых нужно создать (для подтверждения)
+  const newClientsPreview = useMemo(() => {
+    const map = new Map<string, { name: string; inn: string | null; sum: number; count: number }>();
+    for (const r of rows) {
+      if (!r.willCreateClient || !r.selected || r.duplicate) continue;
+      const key = r.inn || `name:${r.counterparty.toLowerCase()}`;
+      const existing = map.get(key);
+      if (existing) {
+        existing.sum += r.amount;
+        existing.count += 1;
+      } else {
+        map.set(key, { name: r.counterparty, inn: r.inn, sum: r.amount, count: 1 });
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => b.sum - a.sum);
+  }, [rows]);
+
+  const handleImportClick = () => {
+    if (!accountId) {
+      toast.error("Выберите банковский счёт");
+      return;
+    }
+    if (newClientsPreview.length > 0) {
+      setConfirmOpen(true);
+    } else {
+      importMut.mutate();
+    }
+  };
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between gap-2 pb-3">
