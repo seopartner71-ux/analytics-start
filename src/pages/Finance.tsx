@@ -206,7 +206,10 @@ export default function Finance() {
           </ResponsiveContainer>
         </CardContent>
       </Card>
-    </div>
+
+      {/* Блок 4: Расходы */}
+      <ExpensesBlock>
+      </Card>
   );
 }
 
