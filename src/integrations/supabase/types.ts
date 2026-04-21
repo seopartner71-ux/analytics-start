@@ -2236,6 +2236,76 @@ export type Database = {
           },
         ]
       }
+      period_tasks: {
+        Row: {
+          assignee_id: string | null
+          category: string
+          completed: boolean
+          completed_at: string | null
+          created_at: string
+          deadline: string | null
+          id: string
+          instruction_article_id: string | null
+          period_id: string
+          required: boolean
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assignee_id?: string | null
+          category?: string
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          deadline?: string | null
+          id?: string
+          instruction_article_id?: string | null
+          period_id: string
+          required?: boolean
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assignee_id?: string | null
+          category?: string
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          deadline?: string | null
+          id?: string
+          instruction_article_id?: string | null
+          period_id?: string
+          required?: boolean
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "period_tasks_assignee_id_fkey"
+            columns: ["assignee_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "period_tasks_instruction_article_id_fkey"
+            columns: ["instruction_article_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "period_tasks_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "project_periods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           agency_name: string | null
@@ -2577,6 +2647,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "project_messages_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_periods: {
+        Row: {
+          created_at: string
+          id: string
+          month: number
+          owner_id: string
+          project_id: string
+          status: string
+          title: string
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          month: number
+          owner_id: string
+          project_id: string
+          status?: string
+          title?: string
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          month?: number
+          owner_id?: string
+          project_id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_periods_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
