@@ -3227,6 +3227,30 @@ export type Database = {
         }
         Relationships: []
       }
+      user_time_logs: {
+        Row: {
+          active_seconds: number
+          id: string
+          log_date: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active_seconds?: number
+          id?: string
+          log_date: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active_seconds?: number
+          id?: string
+          log_date?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       weekly_reports: {
         Row: {
           created_at: string
@@ -3566,6 +3590,7 @@ export type Database = {
         Args: { p_article_id: string }
         Returns: undefined
       }
+      increment_time: { Args: { p_seconds: number }; Returns: undefined }
       is_active_user: { Args: { _user_id: string }; Returns: boolean }
       is_admin_or_director: { Args: { _user_id: string }; Returns: boolean }
       is_project_participant: {
