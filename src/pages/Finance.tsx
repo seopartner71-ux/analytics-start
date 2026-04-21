@@ -11,7 +11,6 @@ import { Wallet, TrendingUp, TrendingDown, Landmark, PiggyBank, Receipt, ArrowUp
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { PageHeader } from "@/components/PageHeader";
 
 const RUB = (n: number) =>
   new Intl.NumberFormat("ru-RU", { style: "currency", currency: "RUB", maximumFractionDigits: 0 }).format(n || 0);
