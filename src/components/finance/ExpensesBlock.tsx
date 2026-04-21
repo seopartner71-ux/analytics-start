@@ -28,7 +28,29 @@ const CATEGORIES = [
   { value: "other", label: "Прочее" },
 ] as const;
 
-const CATEGORY_LABEL: Record<string, string> = Object.fromEntries(CATEGORIES.map((c) => [c.value, c.label]));
+// Человекочитаемые подписи для всех категорий, включая системные (триггеры/импорт)
+const CATEGORY_LABEL: Record<string, string> = {
+  ...Object.fromEntries(CATEGORIES.map((c) => [c.value, c.label])),
+  cash_reserve: "Резерв 7% в Кассу",
+  bank_expense: "Расход с банка",
+  transfer_in: "Перевод (вход)",
+  transfer_out: "Перевод (выход)",
+  invoice: "Оплата по счёту",
+};
+
+// Цветовая схема badge по категории
+const CATEGORY_TONE: Record<string, string> = {
+  cash_reserve: "border-violet-500/40 text-violet-500 bg-violet-500/10",
+  bank_expense: "border-red-500/40 text-red-500 bg-red-500/10",
+  transfer_in: "border-emerald-500/40 text-emerald-500 bg-emerald-500/10",
+  transfer_out: "border-amber-500/40 text-amber-500 bg-amber-500/10",
+  invoice: "border-emerald-500/40 text-emerald-500 bg-emerald-500/10",
+  tax: "border-amber-500/40 text-amber-500 bg-amber-500/10",
+  salary: "border-blue-500/40 text-blue-500 bg-blue-500/10",
+  services: "border-sky-500/40 text-sky-500 bg-sky-500/10",
+  office: "border-teal-500/40 text-teal-500 bg-teal-500/10",
+  other: "border-muted-foreground/40 text-muted-foreground bg-muted/30",
+};
 
 type Tx = {
   id: string;
