@@ -180,12 +180,16 @@ export function BankImportBlock() {
           const key = r.inn || `name:${r.counterparty.toLowerCase()}`;
           clientName = newClientsMap.get(key)?.name || r.counterparty;
         }
+        const category =
+          r.direction === "income"
+            ? "invoice"
+            : isOwnerWithdrawal(r) ? "owner_withdrawal" : "bank_expense";
         return {
           account_id: accountId,
           type: r.direction,
           amount: r.amount,
           date: r.date,
-          category: r.direction === "income" ? "invoice" : "bank_expense",
+          category,
           description: `${r.counterparty}${r.purpose ? " · " + r.purpose : ""}`.slice(0, 500),
         };
       });
