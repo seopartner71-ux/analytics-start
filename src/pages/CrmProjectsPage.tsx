@@ -36,18 +36,88 @@ function canAddProject(role: string | null): boolean {
 function getDeadlineColor(deadline: string | null) {
   if (!deadline) return "text-muted-foreground";
   const d = parseISO(deadline);
-  if (isPast(d)) return "text-destructive font-medium";
-  if (differenceInDays(d, new Date()) <= 3) return "text-amber-500 font-medium";
+  const days = differenceInDays(d, new Date());
+  if (isPast(d) && days < 0) return "text-destructive font-medium";
+  if (days <= 7 && days >= 0) return "text-amber-500 font-medium";
   return "text-muted-foreground";
+}
+
+// Stable color per name for avatars (so managers visually differ)
+const AVATAR_COLORS = [
+  { bg: "bg-blue-500/15", text: "text-blue-400" },
+  { bg: "bg-emerald-500/15", text: "text-emerald-400" },
+  { bg: "bg-violet-500/15", text: "text-violet-400" },
+  { bg: "bg-amber-500/15", text: "text-amber-400" },
+  { bg: "bg-rose-500/15", text: "text-rose-400" },
+  { bg: "bg-cyan-500/15", text: "text-cyan-400" },
+  { bg: "bg-fuchsia-500/15", text: "text-fuchsia-400" },
+  { bg: "bg-lime-500/15", text: "text-lime-400" },
+];
+
+function hashString(s: string) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h;
 }
 
 function AvatarCircle({ name }: { name: string }) {
   const initials = name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+  const c = AVATAR_COLORS[hashString(name) % AVATAR_COLORS.length];
   return (
-    <div className="h-6 w-6 rounded-full bg-primary/15 text-primary text-[10px] font-bold flex items-center justify-center shrink-0">
+    <div className={cn("h-6 w-6 rounded-full text-[10px] font-bold flex items-center justify-center shrink-0", c.bg, c.text)}>
       {initials}
     </div>
   );
+}
+
+// Project stage tag (Аудит / Семантика / Линкбилдинг / Поддержка) — derived deterministically.
+const PROJECT_STAGES = [
+  { key: "Аудит", color: "text-violet-400 bg-violet-500/10 border-violet-500/20" },
+  { key: "Семантика", color: "text-cyan-400 bg-cyan-500/10 border-cyan-500/20" },
+  { key: "Линкбилдинг", color: "text-amber-400 bg-amber-500/10 border-amber-500/20" },
+  { key: "Поддержка", color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20" },
+];
+
+function getProjectStage(id: string) {
+  return PROJECT_STAGES[hashString(id) % PROJECT_STAGES.length];
+}
+
+// Mini sparkline — синтетика по id, чтобы линии отличались
+function buildSparkData(seed: string, points = 14) {
+  const base = hashString(seed) % 50 + 30;
+  const arr: number[] = [];
+  let v = base;
+  for (let i = 0; i < points; i++) {
+    v = Math.max(10, v + ((hashString(seed + i) % 21) - 8));
+    arr.push(v);
+  }
+  return arr;
+}
+
+function Sparkline({ data, positive }: { data: number[]; positive: boolean }) {
+  const max = Math.max(...data);
+  const min = Math.min(...data);
+  const range = max - min || 1;
+  const w = 100, h = 22;
+  const points = data
+    .map((v, i) => `${(i / (data.length - 1)) * w},${h - ((v - min) / range) * (h - 2) - 1}`)
+    .join(" ");
+  const stroke = positive ? "hsl(142 71% 45%)" : "hsl(0 70% 55%)";
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-5" preserveAspectRatio="none">
+      <polyline points={points} fill="none" stroke={stroke} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+// Pseudo SEO metrics derived from project id, until live integration data is available
+function getSeoMetrics(id: string) {
+  const h = hashString(id);
+  const trafficDelta = ((h % 41) - 15); // -15..+25
+  const top10 = (h % 80) + 10;
+  const iks = ((h >> 3) % 600) + 50;
+  const progress = ((h >> 5) % 90) + 10;
+  return { trafficDelta, top10, iks, progress };
 }
 
 export default function CrmProjectsPage() {
