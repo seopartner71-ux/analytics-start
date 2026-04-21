@@ -220,7 +220,10 @@ export default function Finance() {
       {/* Блок 6: Документы */}
       <InvoicesBlock />
 
-      {/* Блок 7: Акт сверки */}
+      {/* Блок 7: Импорт банковской выписки */}
+      <BankImportBlock />
+
+      {/* Блок 8: Акт сверки */}
       <ReconciliationBlock />
     </div>
   );
