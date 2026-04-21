@@ -339,13 +339,44 @@ export default function EmployeesPage() {
     },
   });
 
+  // Live presence: соединяем team_members → profiles (по email) → user_time_logs.updated_at
+  const { data: presenceMap = {} } = useQuery({
+    queryKey: ["team-presence"],
+    queryFn: async () => {
+      const today = new Date().toISOString().slice(0, 10);
+      const [{ data: profiles }, { data: logs }] = await Promise.all([
+        supabase.from("profiles").select("user_id, email"),
+        supabase.from("user_time_logs").select("user_id, updated_at, active_seconds").eq("log_date", today),
+      ]);
+      const userIdToEmail = new Map<string, string>();
+      (profiles || []).forEach((p: any) => p.email && userIdToEmail.set(p.user_id, p.email.toLowerCase()));
+      const map: Record<string, { updated_at: string; active_seconds: number }> = {};
+      (logs || []).forEach((l: any) => {
+        const email = userIdToEmail.get(l.user_id);
+        if (email) map[email] = { updated_at: l.updated_at, active_seconds: l.active_seconds };
+      });
+      return map;
+    },
+    refetchInterval: 30_000,
+    enabled: canSeeTime,
+  });
+
+  const getPresence = (email: string | null) => {
+    if (!email) return { status: "offline" as const, activeSeconds: 0 };
+    const entry = presenceMap[email.toLowerCase()];
+    if (!entry) return { status: "offline" as const, activeSeconds: 0 };
+    const ageSec = (Date.now() - new Date(entry.updated_at).getTime()) / 1000;
+    const status = ageSec < 180 ? "online" : ageSec < 900 ? "away" : "offline";
+    return { status: status as "online" | "away" | "offline", activeSeconds: entry.active_seconds, updatedAt: entry.updated_at };
+  };
+
   const filtered = employees.filter(e =>
     e.full_name.toLowerCase().includes(search.toLowerCase()) ||
     e.role.toLowerCase().includes(search.toLowerCase()) ||
     (e.email || "").toLowerCase().includes(search.toLowerCase())
   );
 
-  const onlineCount = employees.filter(e => e.status === "online").length;
+  const onlineCount = employees.filter(e => getPresence(e.email).status === "online").length;
 
   return (
     <div className="space-y-5">
