@@ -689,12 +689,12 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                 <Button
                   size="lg"
                   className="w-full h-11 gap-2 text-sm font-semibold shadow-md"
-                  onClick={() => saveAll.mutate()}
+                  onClick={() => needsConfirm ? setConfirmSaveOpen(true) : saveAll.mutate()}
                   disabled={saveAll.isPending}
                   variant="default"
                 >
                   {saveAll.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                  Сохранить изменения
+                  Сохранить изменения{changedFields.length > 0 ? ` (${changedFields.length})` : ""}
                 </Button>
               )}
               {!canEditFields && (
