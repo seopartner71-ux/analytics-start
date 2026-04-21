@@ -99,7 +99,7 @@ export function PageHeader({
   return (
     <header className="sticky top-0 z-30 bg-card border-b border-border">
       {/* Main header row - 56px */}
-      <div className="h-14 flex items-center justify-between px-4 gap-4">
+      <div className="h-14 flex items-center justify-between px-2 sm:px-4 gap-2 sm:gap-4">
         {/* Left: trigger + title */}
         <div className="flex items-center gap-3 min-w-0">
           <SidebarTrigger className="text-muted-foreground" />
@@ -152,7 +152,7 @@ export function PageHeader({
             <LogOut className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Выход</span>
           </Button>
-          <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-[11px] font-semibold text-primary-foreground ml-1 cursor-default">
+          <div className="hidden sm:flex h-8 w-8 rounded-full bg-primary items-center justify-center text-[11px] font-semibold text-primary-foreground ml-1 cursor-default">
             {initials}
           </div>
         </div>
@@ -160,7 +160,7 @@ export function PageHeader({
 
       {/* Date picker row */}
       {showDatePicker && dateRange && onDateRangeChange && onApply && (
-        <div className="h-11 flex items-center gap-2 px-4 border-t border-border/50 overflow-x-auto">
+        <div className="h-11 flex items-center gap-2 px-2 sm:px-4 border-t border-border/50 overflow-x-auto">
           <div className="flex items-center gap-1">
             {(["7d", "30d", "thisMonth", "lastMonth"] as const).map((p) => {
               const labels: Record<string, string> = { "7d": "7 дней", "30d": "30 дней", "thisMonth": "Этот месяц", "lastMonth": "Прошлый месяц" };
