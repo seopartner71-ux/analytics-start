@@ -14,6 +14,8 @@ import { format, isPast, differenceInDays, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import type { Tables } from "@/integrations/supabase/types";
+import { DeleteButton } from "@/components/common/DeleteButton";
+import { logDeletion } from "@/lib/deletion-log";
 
 type Project = Tables<"projects"> & {
   company?: Tables<"companies"> | null;
@@ -144,6 +146,7 @@ export default function CrmProjectsPage() {
       const { data, error } = await supabase
         .from("projects")
         .select("*, company:companies(*)")
+        .is("archived_at", null)
         .order("created_at", { ascending: false });
       if (error) throw error;
 
