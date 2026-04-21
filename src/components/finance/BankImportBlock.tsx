@@ -436,15 +436,23 @@ function matchClient(
   clients: Client[],
 ): { id: string; name: string } | null {
   if (clients.length === 0) return null;
-  const hay = `${row.counterparty} ${row.purpose}`.toLowerCase();
-  // Сначала попытка по полному имени клиента
+  const normalize = (s: string) =>
+    s.toLowerCase()
+      .replace(/[«»"'`]/g, "")
+      .replace(/\b(ооо|оао|пао|зао|ип|индивидуальный предприниматель|общество с ограниченной ответственностью|гкфх)\b/gi, "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+  const hay = normalize(`${row.counterparty} ${row.purpose}`);
+  const STOP = new Set(["ооо", "оао", "пао", "зао", "иип", "общество", "ограниченной", "ответственностью", "индивидуальный", "предприниматель"]);
+
   for (const c of clients) {
-    const nm = c.name.toLowerCase().trim();
+    const nm = normalize(c.name);
     if (!nm) continue;
     if (hay.includes(nm)) return c;
-    // Извлечь существенное слово (>=4 символов, не "ооо/ип/...")
-    const words = nm.split(/[\s,."'«»()]+/).filter((w) => w.length >= 4 && !["ооо", "иип", "оао", "пао", "зао"].includes(w));
-    if (words.some((w) => hay.includes(w))) return c;
+    const words = nm.split(/[\s,.()]+/).filter((w) => w.length >= 4 && !STOP.has(w));
+    if (words.length > 0 && words.every((w) => hay.includes(w))) return c;
+    if (words.some((w) => w.length >= 6 && hay.includes(w))) return c;
   }
   return null;
 }
