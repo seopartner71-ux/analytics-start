@@ -9,6 +9,8 @@ import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Rocket, Lock } from "lucide-react";
 import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
+import { DeleteButton } from "@/components/common/DeleteButton";
+import { logDeletion } from "@/lib/deletion-log";
 
 type OnbRow = {
   id: string;
@@ -122,7 +124,26 @@ export default function OnboardingPage() {
                       <TableCell>
                         <Badge variant="secondary" className={`text-[11px] ${st.color} border-0`}>{st.label}</Badge>
                       </TableCell>
-                      <TableCell></TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <DeleteButton
+                          visible={isAdmin}
+                          variant="icon"
+                          entityLabel="онбординг"
+                          entityName={r.projects?.name || r.tariff_code}
+                          onConfirm={async () => {
+                            const { error } = await supabase.from("onboarding_projects").delete().eq("id", r.id);
+                            if (error) throw new Error(error.message);
+                            await logDeletion({
+                              entityType: "onboarding",
+                              entityId: r.id,
+                              entityName: r.projects?.name || r.tariff_code,
+                              context: { tariff: r.tariff_code, budget: r.contract_budget },
+                              action: "hard_delete",
+                            });
+                            load();
+                          }}
+                        />
+                      </TableCell>
                     </TableRow>
                   );
                 })}

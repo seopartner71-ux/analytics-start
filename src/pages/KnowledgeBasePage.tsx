@@ -5,10 +5,12 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, Plus, Search, Edit, Trash2, Eye } from "lucide-react";
+import { BookOpen, Plus, Search, Edit, Eye } from "lucide-react";
 import { KNOWLEDGE_CATEGORIES, getCategoryMeta } from "@/lib/knowledge-categories";
 import { ArticleSheet } from "@/components/knowledge/ArticleSheet";
 import { ArticleEditor } from "@/components/knowledge/ArticleEditor";
+import { DeleteButton } from "@/components/common/DeleteButton";
+import { logDeletion } from "@/lib/deletion-log";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -54,11 +56,16 @@ export default function KnowledgeBasePage() {
 
   const canEditArticle = (a: any) => isAdmin || (isManager && a.author_id === user?.id);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Удалить статью?")) return;
-    const { error } = await supabase.from("knowledge_articles").delete().eq("id", id);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Удалено");
+  const handleDelete = async (article: any) => {
+    const { error } = await supabase.from("knowledge_articles").delete().eq("id", article.id);
+    if (error) throw new Error(error.message);
+    await logDeletion({
+      entityType: "knowledge_article",
+      entityId: article.id,
+      entityName: article.title,
+      context: { category: article.category },
+      action: "hard_delete",
+    });
     load();
   };
 
@@ -128,11 +135,15 @@ export default function KnowledgeBasePage() {
                         <Edit className="h-3 w-3" />
                       </Button>
                     )}
-                    {isAdmin && (
-                      <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive" onClick={() => handleDelete(a.id)}>
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    )}
+                    <DeleteButton
+                      visible={isAdmin}
+                      variant="icon"
+                      entityLabel="статью"
+                      entityName={a.title}
+                      onConfirm={() => handleDelete(a)}
+                      className="h-6 w-6"
+                    />
+
                   </div>
                 </div>
                 <button onClick={() => setOpenId(a.id)} className="text-left w-full">
