@@ -537,9 +537,6 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                     {canEditFields ? (
                       <div className="flex items-center gap-2">
                         <Input type="datetime-local" value={editDeadline} onChange={e => setEditDeadline(e.target.value)} className="h-8 text-sm border-0 bg-transparent shadow-none p-0 w-auto" />
-                        {editDeadline !== (task.deadline ? new Date(task.deadline).toISOString().slice(0, 16) : "") && (
-                          <Button size="sm" className="h-6 text-[10px] px-2" onClick={saveDeadline}>✓</Button>
-                        )}
                       </div>
                     ) : deadlineDate ? (
                       <span className={cn("text-sm font-medium", DEADLINE_STYLES[deadlineStatus].text)}>
