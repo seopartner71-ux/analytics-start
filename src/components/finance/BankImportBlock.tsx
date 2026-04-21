@@ -585,6 +585,23 @@ function parseAmount(v: any): number {
   return isNaN(n) ? 0 : Math.abs(n);
 }
 
+// Перевод на карту физлица / себе → вывод прибыли владельцу
+function isOwnerWithdrawal(r: { counterparty: string; purpose: string; inn: string | null }): boolean {
+  const text = `${r.counterparty} ${r.purpose}`.toLowerCase();
+  const isPhysical = !!r.inn && r.inn.replace(/\D/g, "").length === 12;
+  const keywords = [
+    "перевод на карт", "перевод средств на карт", "на карту физ", "на карту физическ",
+    "на счёт физ", "на счет физ", "перечисление на карт",
+    "перевод собственных средств", "вывод средств", "снятие наличных",
+    "выдача наличных", "пополнение счёта физ", "пополнение счета физ",
+    "card2card", "c2c",
+  ];
+  if (keywords.some((k) => text.includes(k))) return true;
+  const looksLikeFio = /[а-яё]+\s+[а-яё]\.\s*[а-яё]\.|[а-яё]{3,}\s+[а-яё]{3,}\s+[а-яё]{3,}/i.test(r.counterparty);
+  if (isPhysical && looksLikeFio) return true;
+  return false;
+}
+
 function matchClient(
   row: { counterparty: string; inn: string | null; purpose: string },
   clients: Client[],
