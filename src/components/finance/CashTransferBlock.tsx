@@ -193,15 +193,13 @@ export function CashTransferBlock() {
             </div>
             <div className="text-2xl font-bold">{RUB(Number(cashAccount?.balance || 0))}</div>
           </div>
-          <div className={`rounded-lg border p-4 ${cashDebt > 0 ? "bg-gradient-to-br from-amber-500/10 to-amber-500/5 border-amber-500/30" : "bg-muted/30"}`}>
+          <div className="rounded-lg border bg-muted/30 p-4">
             <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground mb-2">
-              <AlertCircle className="h-3.5 w-3.5" /> Долг банков перед Кассой (7%)
+              <AlertCircle className="h-3.5 w-3.5" /> Резерв 7% от выручки
             </div>
-            <div className="text-2xl font-bold">{RUB(cashDebt)}</div>
+            <div className="text-2xl font-bold">{RUB(incomeTotal * CASH_RATE)}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {cashDebt > 0
-                ? "Снимите с банка и переведите в Кассу"
-                : "Касса в балансе"}
+              Начисляется автоматически при каждом приходе на банк
             </p>
           </div>
         </div>
