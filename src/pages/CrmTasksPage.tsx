@@ -25,6 +25,8 @@ import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 import { cn } from "@/lib/utils";
 import { TASK_STAGES, STAGE_COLORS, STAGE_PROGRESS, getDeadlineStatus, DEADLINE_STYLES } from "@/lib/task-helpers";
+import { DeleteButton } from "@/components/common/DeleteButton";
+import { logDeletion } from "@/lib/deletion-log";
 
 import { TaskDetailSheet, CrmTask, getAvatarUrl } from "@/components/project/TaskDetailSheet";
 
@@ -146,7 +148,7 @@ function PropertyRow({ label, children }: { label: string; children: React.React
 }
 
 /* ─── Kanban ─── */
-function KanbanView({ tasks, onSelect }: { tasks: CrmTask[]; onSelect: (t: CrmTask) => void }) {
+function KanbanView({ tasks, onSelect, onDelete, canDelete }: { tasks: CrmTask[]; onSelect: (t: CrmTask) => void; onDelete: (t: CrmTask) => Promise<void>; canDelete: (t: CrmTask) => boolean }) {
   const stages = ["Новые", "В работе", "На проверке", "Возвращена", "Принята"] as const;
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
