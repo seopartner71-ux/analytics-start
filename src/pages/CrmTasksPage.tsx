@@ -406,7 +406,7 @@ export default function CrmTasksPage() {
           <p className="text-muted-foreground">Нет задач. Создайте первую!</p>
         </div>
       ) : view === "kanban" ? (
-        <KanbanView tasks={filtered} onSelect={setSelectedTask} />
+        <KanbanView tasks={filtered} onSelect={setSelectedTask} onDelete={deleteTask} canDelete={canDeleteTask} />
       ) : (
         <>
           <div className="overflow-x-auto rounded-xl border border-border/60 bg-card shadow-sm">
