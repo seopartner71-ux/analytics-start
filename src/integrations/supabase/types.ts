@@ -3226,6 +3226,8 @@ export type Database = {
       }
       team_members: {
         Row: {
+          archived_at: string | null
+          archived_by: string | null
           created_at: string
           department: string | null
           email: string | null
@@ -3239,6 +3241,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          archived_at?: string | null
+          archived_by?: string | null
           created_at?: string
           department?: string | null
           email?: string | null
@@ -3252,6 +3256,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          archived_at?: string | null
+          archived_by?: string | null
           created_at?: string
           department?: string | null
           email?: string | null

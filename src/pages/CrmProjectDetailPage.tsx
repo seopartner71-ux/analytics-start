@@ -39,6 +39,8 @@ import { OnboardingTasksTab } from "@/components/onboarding/OnboardingTasksTab";
 import { WeeklyReportsTab } from "@/components/project/WeeklyReportsTab";
 import { ProjectTeamTab } from "@/components/project/ProjectTeamTab";
 import { PeriodsTab } from "@/components/project/PeriodsTab";
+import { DeleteButton } from "@/components/common/DeleteButton";
+import { logDeletion } from "@/lib/deletion-log";
 
 type TaskComment = Tables<"task_comments"> & {
   author?: Tables<"team_members"> | null;
@@ -71,7 +73,7 @@ export default function CrmProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user, canEdit, isViewer } = useAuth();
+  const { user, canEdit, isViewer, role } = useAuth();
   const queryClient = useQueryClient();
   const defaultTab = searchParams.get("tab") === "analytics" ? "analytics" : searchParams.get("tab") === "health" ? "health" : "checklist";
 
@@ -332,6 +334,40 @@ export default function CrmProjectDetailPage() {
             <XCircle className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Закрыть проект</span>
           </Button>
+          {(role === "admin" || role === "director") && (
+            <DeleteButton
+              variant="outlined"
+              label="Удалить"
+              entityName={project.name}
+              entityLabel="проект"
+              doubleConfirm
+              cascadeInfo={
+                <div className="space-y-1">
+                  <div>Проект будет помечен как удалённый. Будут скрыты:</div>
+                  <ul className="list-disc list-inside text-xs">
+                    <li>Все задачи проекта</li>
+                    <li>Периоды и чек-листы</li>
+                    <li>Отчёты, история чата, ссылки</li>
+                  </ul>
+                  <div className="pt-1 text-xs">Введите название проекта для подтверждения.</div>
+                </div>
+              }
+              onConfirm={async () => {
+                const { error } = await supabase
+                  .from("projects")
+                  .update({ archived_at: new Date().toISOString() } as any)
+                  .eq("id", id!);
+                if (error) throw error;
+                await logDeletion({
+                  entityType: "project",
+                  entityId: id!,
+                  entityName: project.name,
+                  context: { url: project.url },
+                });
+                navigate("/projects");
+              }}
+            />
+          )}
         </div>
       </div>
 

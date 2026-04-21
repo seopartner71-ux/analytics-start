@@ -16,6 +16,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
+import { DeleteButton } from "@/components/common/DeleteButton";
+import { logDeletion } from "@/lib/deletion-log";
 
 type TeamMember = Tables<"team_members">;
 
@@ -334,17 +336,34 @@ export default function EmployeesPage() {
   const isDirector = role === "director";
   const canSeeTime = isAdmin || isDirector;
 
+  const queryClient = useQueryClient();
   const { data: employees = [], isLoading } = useQuery({
     queryKey: ["team-members"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("team_members")
         .select("*")
+        .is("archived_at", null)
         .order("full_name");
       if (error) throw error;
       return data as TeamMember[];
     },
   });
+
+  const archiveEmployee = async (member: TeamMember) => {
+    const { error } = await supabase
+      .from("team_members")
+      .update({ archived_at: new Date().toISOString() } as any)
+      .eq("id", member.id);
+    if (error) throw error;
+    await logDeletion({
+      entityType: "employee",
+      entityId: member.id,
+      entityName: member.full_name,
+      context: { email: member.email, role: member.role },
+    });
+    queryClient.invalidateQueries({ queryKey: ["team-members"] });
+  };
 
   // Live presence + avatar: соединяем team_members → profiles (по email) → user_time_logs.updated_at
   const { data: presenceMap = {} } = useQuery({
@@ -458,6 +477,7 @@ export default function EmployeesPage() {
                     <th>E-Mail</th>
                     <th>Мобильный телефон</th>
                     <th>Дата активности</th>
+                    {isAdmin && <th className="w-12"></th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -505,6 +525,19 @@ export default function EmployeesPage() {
                           <td className="text-sm text-muted-foreground">{e.email || "—"}</td>
                           <td className="text-sm text-muted-foreground">{e.phone || "—"}</td>
                           <td className={`text-sm ${statusClass}`}>{lastSeenLabel}</td>
+                          {isAdmin && (
+                            <td className="text-right">
+                              <DeleteButton
+                                entityName={e.full_name}
+                                entityLabel="сотрудника"
+                                doubleConfirm
+                                cascadeInfo={
+                                  <div>Сотрудник будет архивирован. Связанные задачи останутся, но без исполнителя.</div>
+                                }
+                                onConfirm={() => archiveEmployee(e)}
+                              />
+                            </td>
+                          )}
                         </motion.tr>
                       );
                     })}
