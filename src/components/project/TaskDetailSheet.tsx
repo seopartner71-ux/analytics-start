@@ -184,22 +184,67 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
   };
 
   const saveDeadline = () => {
-    const newVal = editDeadline || null;
-    const formatted = newVal ? new Date(newVal).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" }) : "снят";
-    updateField.mutate({ field: "deadline", value: newVal, logMsg: `Крайний срок изменён на ${formatted}` });
+    // локально — будет сохранено по кнопке «Сохранить»
   };
 
   const saveProject = (projectId: string) => {
-    const pName = projects.find(p => p.id === projectId)?.name || "—";
     setEditProjectId(projectId);
-    updateField.mutate({ field: "project_id", value: projectId || null, logMsg: `Проект изменён на «${pName}»` });
   };
 
   const saveAssignee = (assigneeId: string) => {
-    const mName = members.find(m => m.id === assigneeId)?.full_name || "снят";
     setEditAssigneeId(assigneeId);
-    updateField.mutate({ field: "assignee_id", value: assigneeId || null, logMsg: `Исполнитель изменён на ${mName}` });
   };
+
+  // Единая кнопка «Сохранить» — применяет все изменения батчем
+  const isDirty = !!task && (
+    editDesc !== (task.description || "") ||
+    editDeadline !== (task.deadline ? new Date(task.deadline).toISOString().slice(0, 16) : "") ||
+    editProjectId !== (task.project_id || "") ||
+    editAssigneeId !== (task.assignee_id || "")
+  );
+
+  const saveAll = useMutation({
+    mutationFn: async () => {
+      if (!task || !canEditFields) return;
+      const updates: Record<string, any> = {};
+      const logs: string[] = [];
+
+      if (editDesc !== (task.description || "")) {
+        updates.description = editDesc;
+        logs.push("Описание задачи обновлено");
+      }
+      const currentDeadline = task.deadline ? new Date(task.deadline).toISOString().slice(0, 16) : "";
+      if (editDeadline !== currentDeadline) {
+        updates.deadline = editDeadline || null;
+        const formatted = editDeadline
+          ? new Date(editDeadline).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })
+          : "снят";
+        logs.push(`Крайний срок изменён на ${formatted}`);
+      }
+      if (editProjectId !== (task.project_id || "")) {
+        updates.project_id = editProjectId || null;
+        const pName = projects.find(p => p.id === editProjectId)?.name || "—";
+        logs.push(`Проект изменён на «${pName}»`);
+      }
+      if (editAssigneeId !== (task.assignee_id || "")) {
+        updates.assignee_id = editAssigneeId || null;
+        const mName = members.find(m => m.id === editAssigneeId)?.full_name || "снят";
+        logs.push(`Исполнитель изменён на ${mName}`);
+      }
+      if (Object.keys(updates).length === 0) return;
+
+      const { error } = await supabase.from("crm_tasks").update(updates as any).eq("id", task.id);
+      if (error) throw error;
+      for (const l of logs) await addSystemLog(l);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["crm-tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["project-tasks"] });
+      setEditingField(null);
+      toast.success("Изменения сохранены");
+    },
+    onError: (e: Error) => toast.error(e.message || "Не удалось сохранить"),
+  });
 
   const startTask = () => {
     updateField.mutate({ field: "stage", value: "В работе", logMsg: `Статус изменён на «В работе»` });
