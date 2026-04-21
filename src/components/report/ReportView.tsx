@@ -594,7 +594,7 @@ export const ReportView = forwardRef<HTMLDivElement, ReportViewProps>(
           {/* Footer */}
           <footer className={cn("border-t pt-6 mt-12 flex items-center justify-between text-xs", borderColor, mutedText)}>
             <span>Сгенерировано {format(new Date(), "dd.MM.yyyy HH:mm")}</span>
-            <span>Powered by StatPulse</span>
+            <span>Powered by СЕО - Модуль 2</span>
           </footer>
         </div>
       </div>

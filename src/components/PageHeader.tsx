@@ -69,7 +69,7 @@ export function PageHeader({
   const navigate = useNavigate();
   const location = useLocation();
 
-  const pageTitle = PAGE_TITLES[location.pathname] || breadcrumbs || "StatPulse";
+  const pageTitle = PAGE_TITLES[location.pathname] || breadcrumbs || "СЕО - Модуль 2";
 
   const { data: projects = [] } = useQuery({
     queryKey: ["projects-list"],

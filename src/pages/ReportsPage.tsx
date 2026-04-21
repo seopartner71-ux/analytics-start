@@ -581,7 +581,7 @@ export default function ReportsPage() {
 
     // ===== FOOTER =====
     html += `<div style="margin-top:40px;padding-top:20px;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;">`;
-    html += `<div style="font-size:10px;color:#94a3b8;">Сгенерировано StatPulse · ${format(new Date(), "dd.MM.yyyy HH:mm")}</div>`;
+    html += `<div style="font-size:10px;color:#94a3b8;">Сгенерировано СЕО - Модуль 2 · ${format(new Date(), "dd.MM.yyyy HH:mm")}</div>`;
     html += `<div style="font-size:10px;color:#94a3b8;">Конфиденциально</div>`;
     html += `</div>`;
 
