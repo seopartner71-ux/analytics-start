@@ -2538,6 +2538,7 @@ export type Database = {
           role: string
           team_member_id: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           added_by?: string | null
@@ -2548,6 +2549,7 @@ export type Database = {
           role?: string
           team_member_id: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           added_by?: string | null
@@ -2558,6 +2560,7 @@ export type Database = {
           role?: string
           team_member_id?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -3457,6 +3460,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_view_project: {
+        Args: { _project_id: string; _user_id: string }
+        Returns: boolean
+      }
       claim_next_crawl_job: {
         Args: never
         Returns: {
@@ -3546,6 +3553,7 @@ export type Database = {
           week_year: number
         }[]
       }
+      has_all_projects_access: { Args: { _user_id: string }; Returns: boolean }
       has_finance_access: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
@@ -3558,6 +3566,7 @@ export type Database = {
         Args: { p_article_id: string }
         Returns: undefined
       }
+      is_active_user: { Args: { _user_id: string }; Returns: boolean }
       is_project_participant: {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
