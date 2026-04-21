@@ -196,21 +196,21 @@ export default function CredentialsPage() {
   };
 
   return (
-    <div className="space-y-4 p-4">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 p-2 sm:p-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold">Доступы</h1>
-          <p className="text-sm text-muted-foreground">Хостинг, CMS, FTP, CRM и другие учётные данные по проектам</p>
+          <h1 className="text-lg sm:text-xl font-semibold">Доступы</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">Хостинг, CMS, FTP, CRM и другие учётные данные по проектам</p>
         </div>
-        <Button onClick={openCreate} size="sm">
+        <Button onClick={openCreate} size="sm" className="w-full sm:w-auto">
           <Plus className="h-4 w-4 mr-2" />
           Добавить доступ
         </Button>
       </div>
 
       <Card>
-        <CardContent className="p-4 flex flex-wrap gap-3 items-center">
-          <div className="relative flex-1 min-w-[220px]">
+        <CardContent className="p-3 sm:p-4 flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-3 sm:items-center">
+          <div className="relative flex-1 min-w-0 sm:min-w-[220px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Поиск по названию, логину, URL, тегам..."
@@ -220,7 +220,7 @@ export default function CredentialsPage() {
             />
           </div>
           <Select value={filterProject} onValueChange={setFilterProject}>
-            <SelectTrigger className="w-[200px]">
+            <SelectTrigger className="w-full sm:w-[200px]">
               <SelectValue placeholder="Проект" />
             </SelectTrigger>
             <SelectContent>
@@ -232,7 +232,7 @@ export default function CredentialsPage() {
             </SelectContent>
           </Select>
           <Select value={filterCategory} onValueChange={setFilterCategory}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue placeholder="Категория" />
             </SelectTrigger>
             <SelectContent>
