@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2, X } from "lucide-react";
+import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2, X, UserPlus, ArrowDownLeft, ArrowUpRight } from "lucide-react";
 import * as XLSX from "xlsx";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -18,20 +18,25 @@ import { toast } from "sonner";
 const RUB = (n: number) =>
   new Intl.NumberFormat("ru-RU", { style: "currency", currency: "RUB", maximumFractionDigits: 0 }).format(n || 0);
 
+type Direction = "income" | "expense";
+
 type ParsedRow = {
   selected: boolean;
-  date: string;          // yyyy-MM-dd
-  amount: number;        // > 0 = приход
-  counterparty: string;  // плательщик
+  date: string;
+  direction: Direction;       // income = приход, expense = расход
+  amount: number;             // всегда положительная
+  counterparty: string;       // очищенное имя плательщика/получателя
+  rawCounterparty: string;    // как в файле
   inn: string | null;
-  purpose: string;       // назначение
-  matchedClient: { id: string; name: string } | null;
+  purpose: string;
+  matchedClient: { id: string; name: string } | null;  // только для приходов
   matchedInvoiceId: string | null;
+  willCreateClient: boolean;  // создадим нового клиента при импорте
   duplicate: boolean;
 };
 
 type Account = { id: string; name: string };
-type Client = { id: string; name: string };
+type Client = { id: string; name: string; inn: string | null };
 type Invoice = { id: string; invoice_number: string; client_name: string; amount: number; status: string; date_created: string };
 
 export function BankImportBlock() {
@@ -58,7 +63,7 @@ export function BankImportBlock() {
   const { data: clients = [] } = useQuery({
     queryKey: ["fin-import-clients"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("financial_clients").select("id, name");
+      const { data, error } = await supabase.from("financial_clients").select("id, name, inn");
       if (error) throw error;
       return (data || []) as Client[];
     },
@@ -83,36 +88,35 @@ export function BankImportBlock() {
       const buf = await file.arrayBuffer();
       const wb = XLSX.read(buf, { type: "array", cellDates: true });
       const sheet = wb.Sheets[wb.SheetNames[0]];
-      // raw: true — сохраняем Date-объекты (иначе xlsx форматирует их в локальные строки и ломает порядок дд/мм/гг)
       const raw: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: "" });
 
       const parsed = parseTochkaStatement(raw);
-      // Фильтруем только приходы и обогащаем матчингом
-      const enriched: ParsedRow[] = parsed
-        .filter((r) => r.amount > 0)
-        .map((r) => {
-          const matchedClient = matchClient(r, clients);
-          const matchedInvoice = matchInvoice(r, openInvoices, matchedClient);
-          return {
-            ...r,
-            selected: true,
-            matchedClient,
-            matchedInvoiceId: matchedInvoice?.id || null,
-            duplicate: false,
-          };
-        });
+      const enriched: ParsedRow[] = parsed.map((r) => {
+        const matchedClient = r.direction === "income" ? matchClient(r, clients) : null;
+        const matchedInvoice = matchInvoice(r, openInvoices, matchedClient);
+        return {
+          ...r,
+          selected: true,
+          matchedClient,
+          matchedInvoiceId: matchedInvoice?.id || null,
+          willCreateClient: r.direction === "income" && !matchedClient && !!r.counterparty,
+          duplicate: false,
+        };
+      });
 
-      // Проверка дубликатов: по дате+сумме за последние 90 дней
+      // Дубликаты по дате+сумме+направлению (последние 90 дней)
       if (enriched.length > 0) {
         const minDate = enriched.reduce((m, r) => r.date < m ? r.date : m, enriched[0].date);
         const { data: existing } = await supabase
           .from("transactions")
-          .select("date, amount")
-          .eq("type", "income")
+          .select("date, amount, type")
           .gte("date", minDate);
-        const set = new Set((existing || []).map((t: any) => `${t.date}|${Number(t.amount).toFixed(2)}`));
+        const set = new Set((existing || []).map((t: any) =>
+          `${t.date}|${t.type}|${Number(t.amount).toFixed(2)}`
+        ));
         enriched.forEach((r) => {
-          if (set.has(`${r.date}|${r.amount.toFixed(2)}`)) {
+          const key = `${r.date}|${r.direction}|${r.amount.toFixed(2)}`;
+          if (set.has(key)) {
             r.duplicate = true;
             r.selected = false;
           }
@@ -121,9 +125,11 @@ export function BankImportBlock() {
 
       setRows(enriched);
       if (enriched.length === 0) {
-        toast.warning("В файле не найдено приходных операций");
+        toast.warning("В файле не найдено операций");
       } else {
-        toast.success(`Распознано ${enriched.length} приходов`);
+        const inc = enriched.filter((r) => r.direction === "income").length;
+        const exp = enriched.filter((r) => r.direction === "expense").length;
+        toast.success(`Распознано: ${inc} приходов, ${exp} расходов`);
       }
     } catch (e: any) {
       console.error(e);
@@ -140,19 +146,48 @@ export function BankImportBlock() {
       const selected = rows.filter((r) => r.selected && !r.duplicate);
       if (selected.length === 0) throw new Error("Нет выбранных операций");
 
-      // 1) Создаём транзакции (триггер обновит баланс)
-      const txInsert = selected.map((r) => ({
-        account_id: accountId,
-        type: "income" as const,
-        amount: r.amount,
-        date: r.date,
-        category: "invoice",
-        description: `${r.counterparty}${r.purpose ? " · " + r.purpose : ""}`.slice(0, 500),
-      }));
+      // 1) Создаём отсутствующих клиентов и обновляем матчинг
+      const toCreate = selected.filter((r) => r.willCreateClient && !r.matchedClient);
+      // Группировка по ИНН (или по нормализованному имени, если ИНН нет) — чтобы не плодить дубликаты в рамках одного импорта
+      const uniqMap = new Map<string, { name: string; inn: string | null }>();
+      for (const r of toCreate) {
+        const key = r.inn || `name:${r.counterparty.toLowerCase()}`;
+        if (!uniqMap.has(key)) uniqMap.set(key, { name: r.counterparty, inn: r.inn });
+      }
+      const newClientsMap = new Map<string, { id: string; name: string }>(); // key -> client
+      if (uniqMap.size > 0) {
+        const insertData = Array.from(uniqMap.values()).map((c) => ({ name: c.name, inn: c.inn }));
+        const { data: created, error: cErr } = await supabase
+          .from("financial_clients")
+          .insert(insertData)
+          .select("id, name, inn");
+        if (cErr) throw cErr;
+        (created || []).forEach((c: any) => {
+          const key = c.inn || `name:${(c.name || "").toLowerCase()}`;
+          newClientsMap.set(key, { id: c.id, name: c.name });
+        });
+      }
+
+      // 2) Создаём транзакции
+      const txInsert = selected.map((r) => {
+        let clientName = r.matchedClient?.name || null;
+        if (!clientName && r.willCreateClient) {
+          const key = r.inn || `name:${r.counterparty.toLowerCase()}`;
+          clientName = newClientsMap.get(key)?.name || r.counterparty;
+        }
+        return {
+          account_id: accountId,
+          type: r.direction,
+          amount: r.amount,
+          date: r.date,
+          category: r.direction === "income" ? "invoice" : "bank_expense",
+          description: `${r.counterparty}${r.purpose ? " · " + r.purpose : ""}`.slice(0, 500),
+        };
+      });
       const { error: txErr } = await supabase.from("transactions").insert(txInsert);
       if (txErr) throw txErr;
 
-      // 2) Закрываем счета, которые удалось замэтчить
+      // 3) Закрываем счета
       const invoiceIds = selected.map((r) => r.matchedInvoiceId).filter((x): x is string => !!x);
       if (invoiceIds.length > 0) {
         await supabase
@@ -160,13 +195,18 @@ export function BankImportBlock() {
           .update({ status: "paid", date_paid: format(new Date(), "yyyy-MM-dd"), paid_to_account_id: accountId })
           .in("id", invoiceIds);
       }
-      return { count: selected.length, closed: invoiceIds.length };
+      return { count: selected.length, closed: invoiceIds.length, created: uniqMap.size };
     },
-    onSuccess: ({ count, closed }) => {
-      toast.success(`Импортировано приходов: ${count}. Закрыто счетов: ${closed}`);
+    onSuccess: ({ count, closed, created }) => {
+      const parts = [`Импортировано: ${count}`];
+      if (created > 0) parts.push(`новых клиентов: ${created}`);
+      if (closed > 0) parts.push(`закрыто счетов: ${closed}`);
+      toast.success(parts.join(" · "));
       qc.invalidateQueries({ queryKey: ["fin-accounts"] });
       qc.invalidateQueries({ queryKey: ["fin-tx-year"] });
       qc.invalidateQueries({ queryKey: ["fin-invoices"] });
+      qc.invalidateQueries({ queryKey: ["fin-import-clients"] });
+      qc.invalidateQueries({ queryKey: ["financial-clients"] });
       setOpen(false);
       setRows([]);
     },
@@ -177,9 +217,13 @@ export function BankImportBlock() {
     const sel = rows.filter((r) => r.selected && !r.duplicate);
     return {
       total: rows.length,
+      incomes: rows.filter((r) => r.direction === "income").length,
+      expenses: rows.filter((r) => r.direction === "expense").length,
       duplicates: rows.filter((r) => r.duplicate).length,
       matched: rows.filter((r) => r.matchedClient).length,
-      sum: sel.reduce((s, r) => s + r.amount, 0),
+      willCreate: rows.filter((r) => r.willCreateClient && r.selected && !r.duplicate).length,
+      sumIn: sel.filter((r) => r.direction === "income").reduce((s, r) => s + r.amount, 0),
+      sumOut: sel.filter((r) => r.direction === "expense").reduce((s, r) => s + r.amount, 0),
     };
   }, [rows]);
 
@@ -191,7 +235,7 @@ export function BankImportBlock() {
             <FileSpreadsheet className="h-4 w-4" /> Импорт банковской выписки
           </CardTitle>
           <p className="text-xs text-muted-foreground mt-1">
-            Точка-Банк · CSV или Excel · автораспознавание клиентов и закрытие счетов
+            Точка-Банк · Excel · автораспознавание клиентов и автосоздание новых
           </p>
         </div>
         <Button size="sm" onClick={() => setOpen(true)}>
@@ -200,24 +244,24 @@ export function BankImportBlock() {
       </CardHeader>
       <CardContent>
         <p className="text-sm text-muted-foreground">
-          Скачайте выписку из Точки в формате Excel (.xlsx) и загрузите сюда — система найдёт приходы,
-          сопоставит с клиентами по ИНН и названию, и автоматически закроет совпавшие счета.
+          Скачайте выписку из Точки в формате Excel (.xlsx) и загрузите сюда. Система найдёт приходы и расходы,
+          сопоставит плательщиков с клиентами по ИНН, а новых клиентов создаст автоматически.
         </p>
       </CardContent>
 
       <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setRows([]); }}>
-        <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col">
+        <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Импорт выписки из Точка-Банка</DialogTitle>
             <DialogDescription>
-              Поддерживаются .xlsx и .csv. Дубликаты по дате и сумме отмечены автоматически.
+              Дубликаты по дате+сумме+направлению отмечены автоматически. Новые клиенты создадутся при импорте.
             </DialogDescription>
           </DialogHeader>
 
           <div className="flex items-center gap-3 py-2">
             <Select value={accountId} onValueChange={setAccountId}>
               <SelectTrigger className="w-[280px]">
-                <SelectValue placeholder="Счёт зачисления" />
+                <SelectValue placeholder="Счёт зачисления / списания" />
               </SelectTrigger>
               <SelectContent>
                 {accounts.map((a) => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
@@ -246,22 +290,31 @@ export function BankImportBlock() {
               <div className="flex flex-wrap gap-2 text-xs">
                 <Badge variant="outline">Всего: {stats.total}</Badge>
                 <Badge variant="outline" className="border-emerald-500/40 text-emerald-500">
-                  Распознано клиентов: {stats.matched}
+                  ↓ Приходов: {stats.incomes} ({RUB(stats.sumIn)})
                 </Badge>
+                <Badge variant="outline" className="border-red-500/40 text-red-500">
+                  ↑ Расходов: {stats.expenses} ({RUB(stats.sumOut)})
+                </Badge>
+                <Badge variant="outline" className="border-primary/40">
+                  Узнано клиентов: {stats.matched}
+                </Badge>
+                {stats.willCreate > 0 && (
+                  <Badge variant="outline" className="border-blue-500/40 text-blue-500">
+                    <UserPlus className="h-3 w-3 mr-1" /> Будет создано клиентов: {stats.willCreate}
+                  </Badge>
+                )}
                 {stats.duplicates > 0 && (
                   <Badge variant="outline" className="border-amber-500/40 text-amber-500">
                     Дубликатов: {stats.duplicates}
                   </Badge>
                 )}
-                <Badge variant="outline" className="border-primary/40">
-                  К импорту: {RUB(stats.sum)}
-                </Badge>
               </div>
 
               <div className="overflow-auto flex-1 border rounded-md mt-2">
                 <table className="w-full text-xs">
                   <thead className="bg-muted/50 sticky top-0">
                     <tr>
+                      <th className="text-left p-2 w-8"></th>
                       <th className="text-left p-2 w-8"></th>
                       <th className="text-left p-2">Дата</th>
                       <th className="text-left p-2">Контрагент</th>
@@ -274,6 +327,7 @@ export function BankImportBlock() {
                   <tbody>
                     {rows.map((r, idx) => {
                       const matchedInv = openInvoices.find((i) => i.id === r.matchedInvoiceId);
+                      const isIncome = r.direction === "income";
                       return (
                         <tr key={idx} className={`border-t ${r.duplicate ? "opacity-50 bg-amber-500/5" : ""}`}>
                           <td className="p-2">
@@ -285,12 +339,19 @@ export function BankImportBlock() {
                               }}
                             />
                           </td>
+                          <td className="p-2">
+                            {isIncome
+                              ? <ArrowDownLeft className="h-3.5 w-3.5 text-emerald-500" />
+                              : <ArrowUpRight className="h-3.5 w-3.5 text-red-500" />}
+                          </td>
                           <td className="p-2 whitespace-nowrap">{r.date}</td>
-                          <td className="p-2 max-w-[200px] truncate" title={r.counterparty}>{r.counterparty}</td>
+                          <td className="p-2 max-w-[220px] truncate" title={r.rawCounterparty}>{r.counterparty}</td>
                           <td className="p-2 font-mono">{r.inn || "—"}</td>
                           <td className="p-2 max-w-[260px] truncate text-muted-foreground" title={r.purpose}>{r.purpose}</td>
                           <td className="p-2">
-                            {r.duplicate ? (
+                            {!isIncome ? (
+                              <span className="text-muted-foreground">—</span>
+                            ) : r.duplicate ? (
                               <span className="flex items-center gap-1 text-amber-500">
                                 <AlertCircle className="h-3 w-3" /> Дубликат
                               </span>
@@ -300,11 +361,17 @@ export function BankImportBlock() {
                               </span>
                             ) : r.matchedClient ? (
                               <span className="text-primary">{r.matchedClient.name}</span>
+                            ) : r.willCreateClient ? (
+                              <span className="flex items-center gap-1 text-blue-500">
+                                <UserPlus className="h-3 w-3" /> Создать: {r.counterparty}
+                              </span>
                             ) : (
                               <span className="text-muted-foreground">Не сопоставлено</span>
                             )}
                           </td>
-                          <td className="p-2 text-right font-semibold whitespace-nowrap">{RUB(r.amount)}</td>
+                          <td className={`p-2 text-right font-semibold whitespace-nowrap ${isIncome ? "text-emerald-500" : "text-red-500"}`}>
+                            {isIncome ? "+" : "−"}{RUB(r.amount)}
+                          </td>
                         </tr>
                       );
                     })}
@@ -330,27 +397,18 @@ export function BankImportBlock() {
 }
 
 // ===== Парсер выписки Точка-Банка =====
-// Формат файла Точки (xlsx, экспорт из ЛК):
-// Заголовки (обычно строка 2): [Номер документа | Дата документа | Дата операции | Счёт |
-//   Контрагент | ИНН контрагента | БИК банка контрагента | Корр.счёт банка контрагента |
-//   Наименование банка контрагента | Счёт контрагента | Списание | Зачисление | Назначение платежа]
+// Заголовки на строке 2: [Номер документа | Дата документа | Дата операции | Счёт |
+//   Контрагент | ИНН контрагента | БИК | Корр.счёт | Наим.банка | Счёт контрагента |
+//   Списание | Зачисление | Назначение платежа]
 
-function parseTochkaStatement(rows: any[][]): Omit<ParsedRow, "selected" | "matchedClient" | "matchedInvoiceId" | "duplicate">[] {
-  // Ищем строку заголовка — она должна содержать "зачисление" и "списание" (Точка),
-  // либо как fallback — "дата" и "сумма".
+function parseTochkaStatement(rows: any[][]): Omit<ParsedRow, "selected" | "matchedClient" | "matchedInvoiceId" | "willCreateClient" | "duplicate">[] {
   let headerIdx = -1;
   let headers: string[] = [];
   for (let i = 0; i < Math.min(rows.length, 30); i++) {
     const r = (rows[i] || []).map((c) => String(c ?? "").trim().toLowerCase());
     const joined = r.join("|");
     if (joined.includes("зачислен") && joined.includes("списан")) {
-      headerIdx = i;
-      headers = r;
-      break;
-    }
-    if (headerIdx === -1 && joined.includes("дата") && joined.includes("сумма")) {
-      headerIdx = i;
-      headers = r;
+      headerIdx = i; headers = r; break;
     }
   }
   if (headerIdx === -1) return [];
@@ -358,23 +416,19 @@ function parseTochkaStatement(rows: any[][]): Omit<ParsedRow, "selected" | "matc
   const findCol = (...keys: string[]) =>
     headers.findIndex((h) => keys.some((k) => h.includes(k)));
 
-  // Точка: "Дата операции" приоритетнее "Даты документа"
   const colDateOp = headers.findIndex((h) => h.includes("дата операции"));
   const colDateDoc = headers.findIndex((h) => h.includes("дата документа"));
   const colDate = colDateOp >= 0 ? colDateOp : (colDateDoc >= 0 ? colDateDoc : findCol("дата"));
 
-  const colCredit = findCol("зачислен", "приход", "кредит"); // приход
-  const colDebit = findCol("списан", "расход", "дебет");     // расход
-  const colAmount = findCol("сумма");
+  const colCredit = findCol("зачислен");  // приход (L)
+  const colDebit = findCol("списан");     // расход (K)
 
-  // ИНН контрагента (а не нашей компании)
   const colInn = headers.findIndex((h) => h.includes("инн контрагент"));
   const colInnFallback = findCol("инн");
-
   const colCounterparty = findCol("контраген", "плательщик", "получатель");
   const colPurpose = findCol("назначен", "основание", "комментар");
 
-  const result: Omit<ParsedRow, "selected" | "matchedClient" | "matchedInvoiceId" | "duplicate">[] = [];
+  const result: Omit<ParsedRow, "selected" | "matchedClient" | "matchedInvoiceId" | "willCreateClient" | "duplicate">[] = [];
 
   for (let i = headerIdx + 1; i < rows.length; i++) {
     const row = rows[i] || [];
@@ -383,42 +437,45 @@ function parseTochkaStatement(rows: any[][]): Omit<ParsedRow, "selected" | "matc
     const date = parseDate(colDate >= 0 ? row[colDate] : null);
     if (!date) continue;
 
-    let amount = 0;
-    if (colCredit >= 0) {
-      const credit = parseAmount(row[colCredit]);
-      if (credit > 0) amount = credit;
-    }
-    if (amount === 0 && colDebit >= 0) {
-      const debit = parseAmount(row[colDebit]);
-      if (debit > 0) amount = -debit;
-    }
-    if (amount === 0 && colAmount >= 0) amount = parseAmount(row[colAmount]);
-    if (amount === 0) continue;
+    const credit = colCredit >= 0 ? parseAmount(row[colCredit]) : 0;
+    const debit = colDebit >= 0 ? parseAmount(row[colDebit]) : 0;
 
-    const counterparty = colCounterparty >= 0 ? String(row[colCounterparty] ?? "").replace(/\s+/g, " ").trim() : "";
+    let direction: Direction;
+    let amount: number;
+    if (credit > 0) { direction = "income"; amount = credit; }
+    else if (debit > 0) { direction = "expense"; amount = debit; }
+    else continue;
+
+    const rawCounterparty = colCounterparty >= 0 ? String(row[colCounterparty] ?? "") : "";
+    const counterparty = cleanCounterparty(rawCounterparty);
     const innRaw = colInn >= 0 ? row[colInn] : (colInnFallback >= 0 ? row[colInnFallback] : null);
-    const inn = innRaw ? String(innRaw).trim().replace(/\D/g, "") || null : null;
+    const inn = innRaw ? (String(innRaw).trim().replace(/\D/g, "") || null) : null;
     const purpose = colPurpose >= 0 ? String(row[colPurpose] ?? "").replace(/\s+/g, " ").trim() : "";
 
-    result.push({ date, amount, counterparty, inn, purpose });
+    result.push({ date, direction, amount, counterparty, rawCounterparty: rawCounterparty.trim(), inn, purpose });
   }
 
   return result;
 }
 
+// Очистка имени: убираем переносы строк, лишние кавычки и пробелы
+function cleanCounterparty(s: string): string {
+  return s
+    .replace(/\s+/g, " ")
+    .replace(/^["«»\s]+|["«»\s]+$/g, "")
+    .trim();
+}
+
 function parseDate(v: any): string | null {
   if (v === null || v === undefined || v === "") return null;
   if (v instanceof Date && !isNaN(v.getTime())) return format(v, "yyyy-MM-dd");
-  // Excel serial number (дни с 1899-12-30)
   if (typeof v === "number" && isFinite(v)) {
     const d = new Date(Math.round((v - 25569) * 86400 * 1000));
     if (!isNaN(d.getTime())) return format(d, "yyyy-MM-dd");
   }
   const s = String(v).trim();
-  // ISO yyyy-MM-dd[ ...]
   const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
-  // dd.MM.yyyy / dd/MM/yyyy / dd-MM-yyyy
   const m = s.match(/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{2,4})/);
   if (m) {
     const [, d, mo, y] = m;
@@ -441,40 +498,46 @@ function matchClient(
   clients: Client[],
 ): { id: string; name: string } | null {
   if (clients.length === 0) return null;
+
+  // 1) Точное совпадение по ИНН — приоритет
+  if (row.inn) {
+    const byInn = clients.find((c) => c.inn && c.inn.replace(/\D/g, "") === row.inn);
+    if (byInn) return { id: byInn.id, name: byInn.name };
+  }
+
+  // 2) По имени (нечёткое)
   const normalize = (s: string) =>
     s.toLowerCase()
       .replace(/[«»"'`]/g, "")
-      .replace(/\b(ооо|оао|пао|зао|ип|индивидуальный предприниматель|общество с ограниченной ответственностью|гкфх)\b/gi, "")
+      .replace(/\b(ооо|оао|пао|зао|ип|индивидуальный предприниматель|общество с ограниченной ответственностью|гкфх|филиал)\b/gi, "")
       .replace(/\s+/g, " ")
       .trim();
 
   const hay = normalize(`${row.counterparty} ${row.purpose}`);
-  const STOP = new Set(["ооо", "оао", "пао", "зао", "иип", "общество", "ограниченной", "ответственностью", "индивидуальный", "предприниматель"]);
+  const STOP = new Set(["ооо", "оао", "пао", "зао", "ип", "общество", "ограниченной", "ответственностью", "индивидуальный", "предприниматель", "банк", "точка"]);
 
   for (const c of clients) {
     const nm = normalize(c.name);
     if (!nm) continue;
-    if (hay.includes(nm)) return c;
+    if (hay.includes(nm) && nm.length >= 4) return { id: c.id, name: c.name };
     const words = nm.split(/[\s,.()]+/).filter((w) => w.length >= 4 && !STOP.has(w));
-    if (words.length > 0 && words.every((w) => hay.includes(w))) return c;
-    if (words.some((w) => w.length >= 6 && hay.includes(w))) return c;
+    if (words.length > 0 && words.every((w) => hay.includes(w))) return { id: c.id, name: c.name };
+    if (words.some((w) => w.length >= 6 && hay.includes(w))) return { id: c.id, name: c.name };
   }
   return null;
 }
 
 function matchInvoice(
-  row: { amount: number; date: string },
+  row: { amount: number; date: string; direction: Direction },
   invoices: Invoice[],
   client: { id: string; name: string } | null,
 ): Invoice | null {
-  if (!client) return null;
-  // Совпадение по клиенту + сумме (±1₽)
+  if (!client || row.direction !== "income") return null;
   const candidates = invoices.filter(
     (i) => i.client_name.toLowerCase().trim() === client.name.toLowerCase().trim() &&
            Math.abs(Number(i.amount) - row.amount) < 1,
   );
   if (candidates.length === 0) return null;
-  // Ближайший по дате
   candidates.sort((a, b) =>
     Math.abs(new Date(a.date_created).getTime() - new Date(row.date).getTime()) -
     Math.abs(new Date(b.date_created).getTime() - new Date(row.date).getTime()),
