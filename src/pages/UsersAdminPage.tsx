@@ -171,7 +171,7 @@ function UserListRow({ user, onSelect }: { user: UserRow; onSelect: () => void }
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {user.role && <Badge variant="secondary">{roleLabel}</Badge>}
-          {user.status === "pending" && <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-400">Ожидает</Badge>}
+          {user.status === "pending" && <Badge variant="outline" className="border-warning/40 text-warning">Ожидает</Badge>}
           {user.status === "blocked" && <Badge variant="destructive">Заблокирован</Badge>}
           <Button size="sm" variant="outline" onClick={onSelect}>Настроить</Button>
         </div>
