@@ -963,8 +963,6 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
         goals={goalsData}
       />
 
-      {/* Topvisor summary panel */}
-      {hasTopvisor && renderTopvisorPanel()}
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -1291,7 +1289,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
           )}
         </Card>
       )}
-      {hasTopvisor && renderTopvisorPanel()}
+      
       <Card className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
         <div className="flex items-center gap-2 p-4 border-b border-border">
           <Search className="h-4 w-4 text-muted-foreground" />
