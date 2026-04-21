@@ -505,6 +505,16 @@ export default function CrmProjectsPage() {
                                 {isSelected && <div className="h-1.5 w-1.5 rounded-full bg-primary-foreground" />}
                               </button>
                               <GripVertical className="h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors" />
+                              <div onClick={e => e.stopPropagation()} className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                <DeleteButton
+                                  visible={canDeleteProject}
+                                  entityName={p.name}
+                                  entityLabel="проект"
+                                  doubleConfirm
+                                  cascadeInfo={<>Будут архивированы проект «{p.name}» и связанные данные. Восстановить может только администратор.</>}
+                                  onConfirm={() => deleteProject(p)}
+                                />
+                              </div>
                             </div>
                           </div>
 
@@ -605,6 +615,7 @@ export default function CrmProjectsPage() {
                 <th>Этап</th>
                 <th>Эффективность</th>
                 <th>SEO-специалист</th>
+                <th className="w-10"></th>
               </tr>
             </thead>
             <tbody>
