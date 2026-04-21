@@ -156,7 +156,13 @@ export default function ProfilePage() {
   const firstName = nameParts[0] || "";
   const lastName = nameParts.slice(1).join(" ") || "";
 
-  const roleLabel = role === "admin" ? "Администратор" : role === "manager" ? "Менеджер" : "Наблюдатель";
+  const roleLabel =
+    role === "admin" ? "Администратор" :
+    role === "director" ? "Директор" :
+    role === "manager" ? "Менеджер" :
+    role === "seo" ? "SEO-специалист" :
+    role === "junior" ? "Junior-специалист" :
+    "Наблюдатель";
   const efficiency = taskStats?.pct ?? 0;
 
   const profileTabs = [
