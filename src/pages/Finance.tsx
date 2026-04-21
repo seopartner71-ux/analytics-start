@@ -210,6 +210,9 @@ export default function Finance() {
 
       {/* Блок 4: Расходы */}
       <ExpensesBlock />
+
+      {/* Блок 5: Документы */}
+      <InvoicesBlock />
     </div>
   );
 }
