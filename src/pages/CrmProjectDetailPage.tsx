@@ -481,7 +481,7 @@ export default function CrmProjectDetailPage() {
                       <Label className="text-[12px]">Название</Label>
                       <Input value={newTask.title} onChange={e => setNewTask(f => ({ ...f, title: e.target.value }))} placeholder="Название задачи" className="mt-1" />
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <Label className="text-[12px]">Приоритет</Label>
                         <Select value={newTask.priority} onValueChange={v => setNewTask(f => ({ ...f, priority: v }))}>

@@ -166,6 +166,7 @@ export default function AdminTimeStatsPage({ embedded = false }: { embedded?: bo
               За этот день нет данных об активности.
             </p>
           ) : (
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -184,6 +185,7 @@ export default function AdminTimeStatsPage({ embedded = false }: { embedded?: bo
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>

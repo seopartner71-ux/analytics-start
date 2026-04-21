@@ -640,7 +640,7 @@ function CreatePeriodDialog(props: {
 
   return (
     <Dialog open={props.open} onOpenChange={(v) => { props.onOpenChange(v); if (!v) reset(); }}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {step === "select" ? "Создание периода" : `Задачи на ${MONTH_NAMES[month - 1]} ${year}`}
@@ -649,7 +649,7 @@ function CreatePeriodDialog(props: {
 
         {step === "select" ? (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <Label>Месяц</Label>
                 <Select value={String(month)} onValueChange={(v) => setMonth(Number(v))}>

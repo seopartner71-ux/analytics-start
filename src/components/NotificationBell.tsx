@@ -1,13 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Bell, AlertCircle, Check } from "lucide-react";
+import { Bell, AlertCircle, Check, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
+import { useNotificationSound } from "@/hooks/useNotificationSound";
 
 interface Notification {
   id: string;
@@ -24,8 +25,12 @@ interface Notification {
 export function NotificationBell() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
+  const sound = useNotificationSound();
+  const seenNotifIds = useRef<Set<string>>(new Set());
+  const initialNotifLoad = useRef(true);
 
   const { data: notifications = [] } = useQuery({
     queryKey: ["notifications", user?.id],
@@ -43,7 +48,25 @@ export function NotificationBell() {
     refetchInterval: 30_000,
   });
 
-  // Realtime subscription
+  // Track seen notification IDs and beep on truly new ones
+  useEffect(() => {
+    if (!notifications.length) return;
+    if (initialNotifLoad.current) {
+      notifications.forEach((n) => seenNotifIds.current.add(n.id));
+      initialNotifLoad.current = false;
+      return;
+    }
+    let hasNew = false;
+    notifications.forEach((n) => {
+      if (!seenNotifIds.current.has(n.id)) {
+        seenNotifIds.current.add(n.id);
+        hasNew = true;
+      }
+    });
+    if (hasNew) sound.play();
+  }, [notifications, sound]);
+
+  // Realtime subscription for notifications
   useEffect(() => {
     if (!user?.id) return;
     const channelName = `notifications-${user.id}-${Date.now()}`;
@@ -64,6 +87,26 @@ export function NotificationBell() {
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [user?.id, queryClient]);
+
+  // Realtime: chat_messages — beep when not on /chat page and message is from another user
+  useEffect(() => {
+    if (!user?.id) return;
+    const channelName = `chat-sound-${user.id}-${Date.now()}`;
+    const channel = supabase
+      .channel(channelName)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "chat_messages" },
+        (payload) => {
+          const row = payload.new as { user_id?: string };
+          if (!row || row.user_id === user.id) return;
+          if (location.pathname.startsWith("/chat")) return;
+          sound.play();
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user?.id, location.pathname, sound]);
 
   const unreadCount = notifications.filter(n => !n.is_read).length;
 
@@ -118,19 +161,36 @@ export function NotificationBell() {
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[360px] p-0" align="end">
-        <div className="flex items-center justify-between p-3 border-b border-border">
+      <PopoverContent className="w-[min(360px,calc(100vw-1rem))] p-0" align="end">
+        <div className="flex items-center justify-between p-3 border-b border-border gap-2">
           <h4 className="text-sm font-semibold text-foreground">Уведомления</h4>
-          {unreadCount > 0 && (
+          <div className="flex items-center gap-1">
             <Button
               variant="ghost"
-              size="sm"
-              className="h-6 text-[11px] text-muted-foreground hover:text-foreground gap-1"
-              onClick={() => markAllRead.mutate()}
+              size="icon"
+              className="h-7 w-7 text-muted-foreground hover:text-foreground"
+              onClick={() => {
+                sound.toggle();
+                if (!sound.enabled) {
+                  // Will become enabled — play a sample beep so user hears it
+                  setTimeout(() => sound.play(), 0);
+                }
+              }}
+              title={sound.enabled ? "Выключить звук уведомлений" : "Включить звук уведомлений"}
             >
-              <Check className="h-3 w-3" /> Прочитать все
+              {sound.enabled ? <Volume2 className="h-3.5 w-3.5" /> : <VolumeX className="h-3.5 w-3.5" />}
             </Button>
-          )}
+            {unreadCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-[11px] text-muted-foreground hover:text-foreground gap-1 px-2"
+                onClick={() => markAllRead.mutate()}
+              >
+                <Check className="h-3 w-3" /> Прочитать все
+              </Button>
+            )}
+          </div>
         </div>
         <div className="max-h-[400px] overflow-y-auto">
           {notifications.length === 0 ? (

@@ -224,7 +224,7 @@ export function OnboardingWizard({ open, onOpenChange, onCreated }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) reset(); }}>
-      <DialogContent className="max-w-xl">
+      <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Новый клиент — Шаг {step}/3</DialogTitle>
         </DialogHeader>
@@ -250,7 +250,7 @@ export function OnboardingWizard({ open, onOpenChange, onCreated }: Props) {
               <Label className="text-[12px]">Дата старта *</Label>
               <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <Label className="text-[12px]">SEO-специалист *</Label>
                 <Select value={seoId} onValueChange={setSeoId}>
@@ -296,7 +296,7 @@ export function OnboardingWizard({ open, onOpenChange, onCreated }: Props) {
                 <Input type="number" value={budget} onChange={(e) => setBudget(e.target.value)} placeholder="120000" />
               </div>
             )}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <Label className="text-[12px]">Дата первой оплаты</Label>
                 <Input type="date" value={firstPayment} onChange={(e) => setFirstPayment(e.target.value)} />
@@ -321,7 +321,7 @@ export function OnboardingWizard({ open, onOpenChange, onCreated }: Props) {
               <Label className="text-[12px]">Контактное лицо</Label>
               <Input value={contactName} onChange={(e) => setContactName(e.target.value)} placeholder="Иван Иванов" />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <Label className="text-[12px]">Телефон</Label>
                 <Input value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} placeholder="+7 ..." />
@@ -331,7 +331,7 @@ export function OnboardingWizard({ open, onOpenChange, onCreated }: Props) {
                 <Input type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="client@example.com" />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <Label className="text-[12px]">Telegram</Label>
                 <Input value={contactTg} onChange={(e) => setContactTg(e.target.value)} placeholder="@username" />

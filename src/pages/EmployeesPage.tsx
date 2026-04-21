@@ -189,7 +189,7 @@ function AddEmployeeDialog() {
         <DialogHeader><DialogTitle>Новый сотрудник</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <div><Label className="text-xs">ФИО *</Label><Input value={form.full_name} onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))} /></div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div><Label className="text-xs">Должность</Label>
               <Select value={form.role} onValueChange={v => setForm(f => ({ ...f, role: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -205,7 +205,7 @@ function AddEmployeeDialog() {
             </div>
             <div><Label className="text-xs">Подразделение</Label><Input value={form.department} onChange={e => setForm(f => ({ ...f, department: e.target.value }))} /></div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div><Label className="text-xs">E-Mail</Label><Input value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} /></div>
             <div><Label className="text-xs">Телефон</Label><Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} /></div>
           </div>

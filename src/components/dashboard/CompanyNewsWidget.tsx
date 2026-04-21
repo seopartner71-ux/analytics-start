@@ -265,7 +265,7 @@ export default function CompanyNewsWidget() {
 
       {/* Create / Edit dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editing ? "Редактировать новость" : "Новая новость"}</DialogTitle>
           </DialogHeader>
@@ -287,7 +287,7 @@ export default function CompanyNewsWidget() {
                 placeholder="Подробности..."
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <Label className="text-[12px]">Тип</Label>
                 <Select value={form.type} onValueChange={(v: NewsType) => setForm(f => ({ ...f, type: v }))}>
