@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { PageHeader } from "@/components/PageHeader";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -193,15 +193,17 @@ export default function CredentialsPage() {
   };
 
   return (
-    <div className="space-y-4">
-      <PageHeader
-        actions={
-          <Button onClick={openCreate} size="sm" className="h-8">
-            <Plus className="h-4 w-4 mr-2" />
-            Добавить доступ
-          </Button>
-        }
-      />
+    <div className="space-y-4 p-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold">Доступы</h1>
+          <p className="text-sm text-muted-foreground">Хостинг, CMS, FTP, CRM и другие учётные данные по проектам</p>
+        </div>
+        <Button onClick={openCreate} size="sm">
+          <Plus className="h-4 w-4 mr-2" />
+          Добавить доступ
+        </Button>
+      </div>
 
       <Card>
         <CardContent className="p-4 flex flex-wrap gap-3 items-center">
