@@ -34,7 +34,7 @@ const allNav = [
   { title: "База знаний", url: "/knowledge", icon: BookOpen, minRole: "viewer" as const },
   { title: "📚 Книги для AI", url: "/knowledge-books", icon: BookOpen, minRole: "admin" as const },
   { title: "Чат", url: "/chat", icon: MessageSquare, minRole: "viewer" as const },
-  { title: "Финансы", url: "/finance", icon: Wallet, minRole: "viewer" as const, requireFinance: true },
+  { title: "Финансы", url: "/finance", icon: Wallet, minRole: "manager" as const, managerPlus: true },
   { title: "Интеграции", url: "/admin?tab=keys", icon: Plug, minRole: "admin" as const },
   { title: "Журнал удалений", url: "/admin/deletion-log", icon: History, minRole: "manager" as const, managerPlus: true },
 ];
