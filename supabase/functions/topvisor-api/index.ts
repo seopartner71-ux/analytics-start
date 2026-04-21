@@ -108,6 +108,95 @@ serve(async (req) => {
         });
         break;
 
+      case "summary": {
+        const sumProjectId = Number((body as JsonRecord).project_id);
+        if (!Number.isFinite(sumProjectId)) {
+          return new Response(JSON.stringify({ error: "project_id must be a number" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        const today = new Date();
+        const toStr = (d: Date) => d.toISOString().slice(0, 10);
+        const date2 = toStr(today);
+        const past = new Date(today);
+        past.setDate(past.getDate() - 30);
+        const date1 = toStr(past);
+
+        const sumRegions = await resolveRegionIndexes(sumProjectId, headers);
+        const sumBody: JsonRecord = {
+          project_id: String(sumProjectId),
+          date1,
+          date2,
+          show_headers: 1,
+          show_exists_dates: 1,
+          positions_fields: ["position"],
+        };
+        if (sumRegions.length > 0) {
+          sumBody.regions_indexes = sumRegions.map((idx) => String(idx));
+        }
+
+        const sumResp = await fetch(`${TV_BASE}/get/positions_2/history`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(sumBody),
+        });
+        const sumData = await sumResp.json();
+
+        if (!sumResp.ok || sumData?.errors?.length) {
+          const err = sumData?.errors?.[0]?.string || "Topvisor summary error";
+          return new Response(
+            JSON.stringify({ error: err, top3: 0, top10: 0, top30: 0, outside: 0, topGrowth: [] }),
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
+
+        const buckets = { top3: 0, top10: 0, top30: 0, outside: 0 };
+        const growth: Array<{ keyword: string; from: number; to: number }> = [];
+        const keywordsArr = Array.isArray(sumData?.result?.keywords) ? sumData.result.keywords : [];
+
+        for (const kw of keywordsArr) {
+          const name = String(kw?.name ?? kw?.title ?? "");
+          const positions: Array<{ date: string; pos: number }> = [];
+          const walk = (n: unknown, dateHint?: string) => {
+            if (!isRecord(n)) return;
+            for (const [k, v] of Object.entries(n)) {
+              if (isRecord(v)) {
+                const maybeDate = /^\d{4}-\d{2}-\d{2}$/.test(k) ? k : dateHint;
+                if ("position" in v) {
+                  const p = Number((v as JsonRecord).position);
+                  if (Number.isFinite(p) && p > 0 && maybeDate) {
+                    positions.push({ date: maybeDate, pos: p });
+                  }
+                }
+                walk(v, maybeDate);
+              }
+            }
+          };
+          walk(kw?.positionsData ?? kw);
+
+          if (positions.length === 0) continue;
+          positions.sort((a, b) => a.date.localeCompare(b.date));
+          const last = positions[positions.length - 1].pos;
+          const first = positions[0].pos;
+
+          if (last <= 3) buckets.top3++;
+          else if (last <= 10) buckets.top10++;
+          else if (last <= 30) buckets.top30++;
+          else buckets.outside++;
+
+          if (name && first > last) growth.push({ keyword: name, from: first, to: last });
+        }
+
+        const topGrowth = growth.sort((a, b) => (b.from - b.to) - (a.from - a.to)).slice(0, 5);
+
+        return new Response(
+          JSON.stringify({ ...buckets, topGrowth }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
       case "get-positions": {
         if (!isRecord(payload)) {
           return new Response(JSON.stringify({ error: "payload is required for get-positions" }), {
