@@ -448,7 +448,6 @@ function SortableTaskRow(props: {
       <Checkbox
         checked={task.completed}
         onCheckedChange={(v) => props.onUpdate({ completed: !!v })}
-        className="data-[state=checked]:bg-success data-[state=checked]:border-success"
       />
       <div className="flex-1 min-w-0">
         <div className={cn("text-sm truncate", task.completed && "line-through text-muted-foreground")}>

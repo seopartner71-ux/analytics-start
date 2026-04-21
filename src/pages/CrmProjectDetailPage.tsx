@@ -38,6 +38,7 @@ import { LinkProfileTab } from "@/components/project/LinkProfileTab";
 import { OnboardingTasksTab } from "@/components/onboarding/OnboardingTasksTab";
 import { WeeklyReportsTab } from "@/components/project/WeeklyReportsTab";
 import { ProjectTeamTab } from "@/components/project/ProjectTeamTab";
+import { PeriodsTab } from "@/components/project/PeriodsTab";
 
 type TaskComment = Tables<"task_comments"> & {
   author?: Tables<"team_members"> | null;
@@ -361,6 +362,9 @@ export default function CrmProjectDetailPage() {
           <TabsTrigger value="links" className="gap-1.5 text-[13px]">
             <Link2 className="h-3.5 w-3.5" /> Ссылочный профиль
           </TabsTrigger>
+          <TabsTrigger value="periods" className="gap-1.5 text-[13px]">
+            <CalendarDays className="h-3.5 w-3.5" /> Периоды
+          </TabsTrigger>
           <TabsTrigger value="weekly" className="gap-1.5 text-[13px]">
             <FileBarChart className="h-3.5 w-3.5" /> Недельные отчёты
           </TabsTrigger>
@@ -374,6 +378,10 @@ export default function CrmProjectDetailPage() {
 
         <TabsContent value="team">
           <ProjectTeamTab projectId={id!} />
+        </TabsContent>
+
+        <TabsContent value="periods">
+          <PeriodsTab projectId={id!} />
         </TabsContent>
 
         <TabsContent value="weekly">
