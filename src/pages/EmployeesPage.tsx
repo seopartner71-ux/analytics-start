@@ -284,9 +284,10 @@ function SystemUsersTab() {
               >
                 <td>
                   <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-full bg-primary/15 flex items-center justify-center text-xs font-bold text-primary">
-                      {u.full_name ? getInitials(u.full_name) : u.email.charAt(0).toUpperCase()}
-                    </div>
+                    <AvatarCircle
+                      initials={u.full_name ? getInitials(u.full_name) : u.email.charAt(0).toUpperCase()}
+                      avatarUrl={u.avatar_url}
+                    />
                     <div>
                       <p className="text-sm font-semibold text-foreground">{u.full_name || "—"}</p>
                     </div>
