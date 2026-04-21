@@ -477,6 +477,7 @@ export default function EmployeesPage() {
                     <th>E-Mail</th>
                     <th>Мобильный телефон</th>
                     <th>Дата активности</th>
+                    {isAdmin && <th className="w-12"></th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -524,6 +525,19 @@ export default function EmployeesPage() {
                           <td className="text-sm text-muted-foreground">{e.email || "—"}</td>
                           <td className="text-sm text-muted-foreground">{e.phone || "—"}</td>
                           <td className={`text-sm ${statusClass}`}>{lastSeenLabel}</td>
+                          {isAdmin && (
+                            <td className="text-right">
+                              <DeleteButton
+                                entityName={e.full_name}
+                                entityLabel="сотрудника"
+                                doubleConfirm
+                                cascadeInfo={
+                                  <div>Сотрудник будет архивирован. Связанные задачи останутся, но без исполнителя.</div>
+                                }
+                                onConfirm={() => archiveEmployee(e)}
+                              />
+                            </td>
+                          )}
                         </motion.tr>
                       );
                     })}
