@@ -20,35 +20,33 @@ export function TopvisorWidget({ projectId }: TopvisorWidgetProps) {
   const { t, i18n } = useTranslation();
   const isRu = i18n.language === "ru";
 
-  // Check Topvisor integration
-  const { data: integration, isLoading } = useQuery({
-    queryKey: ["integration-topvisor", projectId],
+  // Load Topvisor credentials: prefer integrations table, fallback to project columns
+  const { data: creds, isLoading } = useQuery({
+    queryKey: ["topvisor-creds", projectId],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("integrations").select("*")
-        .eq("project_id", projectId!).eq("service_name", "topvisor").eq("connected", true).maybeSingle();
-      return data;
-    },
-    enabled: !!projectId,
-  });
+      const [{ data: integ }, { data: proj }] = await Promise.all([
+        supabase
+          .from("integrations").select("api_key, external_project_id, counter_id, connected")
+          .eq("project_id", projectId!).eq("service_name", "topvisor").maybeSingle(),
+        supabase
+          .from("projects").select("topvisor_project_id, topvisor_api_key, topvisor_user_id")
+          .eq("id", projectId!).maybeSingle(),
+      ]);
 
-  // Fetch Topvisor summary from project fields
-  const { data: project } = useQuery({
-    queryKey: ["project-topvisor-data", projectId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("projects").select("topvisor_project_id, topvisor_api_key, topvisor_user_id")
-        .eq("id", projectId!).maybeSingle();
-      return data;
+      const api_key = integ?.api_key || proj?.topvisor_api_key || null;
+      const project_id = integ?.external_project_id || proj?.topvisor_project_id || null;
+      const user_id = integ?.counter_id || proj?.topvisor_user_id || null;
+      const connected = integ?.connected ?? false;
+      return { api_key, project_id, user_id, connected };
     },
     enabled: !!projectId,
   });
 
   // Fetch real position summary from Topvisor API
   const { data: posData } = useQuery({
-    queryKey: ["topvisor-summary-widget", projectId, project?.topvisor_project_id],
+    queryKey: ["topvisor-summary-widget", projectId, creds?.project_id],
     queryFn: async () => {
-      if (!project?.topvisor_api_key || !project?.topvisor_project_id) return null;
+      if (!creds?.api_key || !creds?.project_id) return null;
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return null;
 
@@ -62,9 +60,9 @@ export function TopvisorWidget({ projectId }: TopvisorWidgetProps) {
             apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
           body: JSON.stringify({
-            api_key: project.topvisor_api_key,
-            user_id: project.topvisor_user_id,
-            project_id: project.topvisor_project_id,
+            api_key: creds.api_key,
+            user_id: creds.user_id,
+            project_id: creds.project_id,
             action: "summary",
           }),
         }
@@ -72,9 +70,11 @@ export function TopvisorWidget({ projectId }: TopvisorWidgetProps) {
       if (!r.ok) return null;
       return r.json();
     },
-    enabled: !!project?.topvisor_api_key && !!project?.topvisor_project_id,
+    enabled: !!creds?.api_key && !!creds?.project_id,
     staleTime: 10 * 60_000,
   });
+
+  const integration = creds?.connected ? creds : null;
 
   if (isLoading) {
     return (
