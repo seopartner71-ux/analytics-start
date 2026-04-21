@@ -96,17 +96,19 @@ export default function AdminTimeStatsPage({ embedded = false }: { embedded?: bo
     return { sum, count: rows.length };
   }, [rows]);
 
-  if (authLoading || !isAdmin) return null;
+  if (!embedded && (authLoading || !allowed)) return null;
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Учёт времени</h1>
-          <p className="text-sm text-muted-foreground">
-            Реальное активное время сотрудников за выбранный день
-          </p>
-        </div>
+        {!embedded && (
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">Учёт времени</h1>
+            <p className="text-sm text-muted-foreground">
+              Реальное активное время сотрудников за выбранный день
+            </p>
+          </div>
+        )}
         <Popover>
           <PopoverTrigger asChild>
             <Button variant="outline" className={cn("w-[240px] justify-start text-left font-normal")}>
