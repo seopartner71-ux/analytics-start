@@ -213,6 +213,7 @@ export function BankImportBlock() {
       qc.invalidateQueries({ queryKey: ["fin-import-clients"] });
       qc.invalidateQueries({ queryKey: ["financial-clients"] });
       setOpen(false);
+      setConfirmOpen(false);
       setRows([]);
     },
     onError: (e: any) => toast.error(e.message || "Ошибка импорта"),
