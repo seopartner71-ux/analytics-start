@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ExpensesBlock } from "@/components/finance/ExpensesBlock";
 import { InvoicesBlock } from "@/components/finance/InvoicesBlock";
+import { CashTransferBlock } from "@/components/finance/CashTransferBlock";
 
 const RUB = (n: number) =>
   new Intl.NumberFormat("ru-RU", { style: "currency", currency: "RUB", maximumFractionDigits: 0 }).format(n || 0);
@@ -208,10 +209,13 @@ export default function Finance() {
         </CardContent>
       </Card>
 
-      {/* Блок 4: Расходы */}
+      {/* Блок 4: Касса и переводы */}
+      <CashTransferBlock />
+
+      {/* Блок 5: Расходы */}
       <ExpensesBlock />
 
-      {/* Блок 5: Документы */}
+      {/* Блок 6: Документы */}
       <InvoicesBlock />
     </div>
   );
