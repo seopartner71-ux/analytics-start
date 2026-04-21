@@ -2604,10 +2604,13 @@ export type Database = {
           owner_id: string
           planned_hours: number
           privacy: string | null
+          report_day: number
+          report_period: string
           seo_specialist: string | null
           seo_specialist_id: string | null
           share_link_expires_at: string | null
           share_token: string | null
+          start_date: string | null
           topvisor_api_key: string | null
           topvisor_project_id: string | null
           topvisor_user_id: string | null
@@ -2634,10 +2637,13 @@ export type Database = {
           owner_id: string
           planned_hours?: number
           privacy?: string | null
+          report_day?: number
+          report_period?: string
           seo_specialist?: string | null
           seo_specialist_id?: string | null
           share_link_expires_at?: string | null
           share_token?: string | null
+          start_date?: string | null
           topvisor_api_key?: string | null
           topvisor_project_id?: string | null
           topvisor_user_id?: string | null
@@ -2664,10 +2670,13 @@ export type Database = {
           owner_id?: string
           planned_hours?: number
           privacy?: string | null
+          report_day?: number
+          report_period?: string
           seo_specialist?: string | null
           seo_specialist_id?: string | null
           share_link_expires_at?: string | null
           share_token?: string | null
+          start_date?: string | null
           topvisor_api_key?: string | null
           topvisor_project_id?: string | null
           topvisor_user_id?: string | null
@@ -3330,10 +3339,13 @@ export type Database = {
           owner_id: string
           planned_hours: number
           privacy: string | null
+          report_day: number
+          report_period: string
           seo_specialist: string | null
           seo_specialist_id: string | null
           share_link_expires_at: string | null
           share_token: string | null
+          start_date: string | null
           topvisor_api_key: string | null
           topvisor_project_id: string | null
           topvisor_user_id: string | null
