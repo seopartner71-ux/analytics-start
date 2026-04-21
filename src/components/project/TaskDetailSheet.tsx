@@ -196,12 +196,15 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
   };
 
   // Единая кнопка «Сохранить» — применяет все изменения батчем
-  const isDirty = !!task && (
-    editDesc !== (task.description || "") ||
-    editDeadline !== (task.deadline ? new Date(task.deadline).toISOString().slice(0, 16) : "") ||
-    editProjectId !== (task.project_id || "") ||
-    editAssigneeId !== (task.assignee_id || "")
-  );
+  const changedFields: string[] = task ? [
+    editDesc !== (task.description || "") ? "Описание" : null,
+    editDeadline !== (task.deadline ? new Date(task.deadline).toISOString().slice(0, 16) : "") ? "Крайний срок" : null,
+    editProjectId !== (task.project_id || "") ? "Проект" : null,
+    editAssigneeId !== (task.assignee_id || "") ? "Исполнитель" : null,
+  ].filter(Boolean) as string[] : [];
+  const isDirty = changedFields.length > 0;
+  const needsConfirm = changedFields.length >= 3;
+  const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
 
   const saveAll = useMutation({
     mutationFn: async () => {
