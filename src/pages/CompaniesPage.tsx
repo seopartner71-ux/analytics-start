@@ -385,26 +385,6 @@ export default function CompaniesPage() {
                           <Badge variant="secondary" className="text-[10px] font-medium">{latestStatus}</Badge>
                         </div>
                       </td>
-                      <td onClick={e => e.stopPropagation()}>
-                        <Checkbox checked={selected.has(c.id)} onCheckedChange={() => toggle(c.id)} />
-                      </td>
-                      <td>
-                        <div className="flex items-center gap-3">
-                          <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0 ring-1 ring-primary/10">
-                            {c.logo || getInitials(c.name)}
-                          </div>
-                          <div>
-                            <p className="text-sm font-semibold text-foreground">{c.name}</p>
-                            <p className="text-[11px] text-muted-foreground">{c.type}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td>
-                        <div className="space-y-1">
-                          <p className="text-sm text-foreground font-medium">{dealCount} сделок</p>
-                          <Badge variant="secondary" className="text-[10px] font-medium">{latestStatus}</Badge>
-                        </div>
-                      </td>
                       <td>
                         {c.responsible ? (
                           <div className="flex items-center gap-2">
