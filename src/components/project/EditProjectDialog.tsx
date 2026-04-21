@@ -352,21 +352,62 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
 
             <Separator />
 
-            <div className="space-y-1.5">
-              <Label className="text-[12px] text-muted-foreground flex items-center gap-1.5">
-                <CalendarDays className="h-3 w-3" /> Дедлайн проекта
-              </Label>
-              <Input type="date" value={deadline} onChange={e => setDeadline(e.target.value)} className="h-9 text-[13px] w-full sm:w-56" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-[12px] text-muted-foreground flex items-center gap-1.5">
+                  <CalendarDays className="h-3 w-3" /> Дата начала работ
+                </Label>
+                <Input
+                  type="date"
+                  value={startDate}
+                  onChange={e => setStartDate(e.target.value)}
+                  className="h-9 text-[13px]"
+                />
+                <p className="text-[11px] text-muted-foreground/70">
+                  От этой даты считаются план-факт, недельные отчёты и онбординг
+                </p>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-[12px] text-muted-foreground flex items-center gap-1.5">
+                  <CalendarDays className="h-3 w-3" /> Дедлайн проекта
+                </Label>
+                <Input type="date" value={deadline} onChange={e => setDeadline(e.target.value)} className="h-9 text-[13px]" />
+              </div>
             </div>
 
             <div className="space-y-1.5">
               <Label className="text-[12px] text-muted-foreground flex items-center gap-1.5">
                 <CalendarDays className="h-3 w-3" /> Отчётный период
               </Label>
-              <div className="flex items-center gap-2">
-                <Input type="date" value={periodFrom} onChange={e => setPeriodFrom(e.target.value)} className="h-9 text-[13px] flex-1" />
-                <span className="text-[12px] text-muted-foreground">—</span>
-                <Input type="date" value={periodTo} onChange={e => setPeriodTo(e.target.value)} className="h-9 text-[13px] flex-1" />
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                <Select value={reportPeriod} onValueChange={(v) => setReportPeriod(v as any)}>
+                  <SelectTrigger className="h-9 text-[13px] w-full sm:w-56">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="monthly">Ежемесячно (1-го числа)</SelectItem>
+                    <SelectItem value="weekly">Еженедельно (по понедельникам)</SelectItem>
+                    <SelectItem value="quarterly">Ежеквартально</SelectItem>
+                    <SelectItem value="custom">Индивидуально</SelectItem>
+                  </SelectContent>
+                </Select>
+                {reportPeriod === "monthly" && (
+                  <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
+                    <span>Формировать</span>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={28}
+                      value={reportDay}
+                      onChange={(e) => {
+                        const n = Math.max(1, Math.min(28, Number(e.target.value) || 1));
+                        setReportDay(n);
+                      }}
+                      className="h-9 text-[13px] w-16 text-center"
+                    />
+                    <span>числа каждого месяца</span>
+                  </div>
+                )}
               </div>
             </div>
 
