@@ -350,7 +350,22 @@ export function InvoicesBlock() {
   );
 }
 
-function renderDocumentHtml(inv: Invoice, kind: "invoice" | "act"): string {
+type Requisites = {
+  legal_name: string;
+  inn: string | null;
+  kpp: string | null;
+  ogrn: string | null;
+  legal_address: string | null;
+  bank_name: string | null;
+  bik: string | null;
+  account_number: string | null;
+  correspondent_account: string | null;
+  director_name: string | null;
+  phone: string | null;
+  email: string | null;
+};
+
+function renderDocumentHtml(inv: Invoice, kind: "invoice" | "act", req: Requisites | null): string {
   const title = kind === "invoice"
     ? `Счёт на оплату № ${inv.invoice_number}`
     : `Акт выполненных работ № ${inv.invoice_number}`;
@@ -360,19 +375,35 @@ function renderDocumentHtml(inv: Invoice, kind: "invoice" | "act"): string {
     ? "Внимание! Оплата данного счёта означает согласие с условиями договора."
     : "Указанные ниже работы выполнены полностью и в срок. Заказчик претензий по объёму, качеству и срокам оказания услуг не имеет.";
 
+  const reqRows = req ? `
+    <table class="req">
+      <tr><td class="lbl">Наименование</td><td>${escapeHtml(req.legal_name || "—")}</td></tr>
+      ${req.inn ? `<tr><td class="lbl">ИНН / КПП</td><td>${escapeHtml(req.inn)}${req.kpp ? " / " + escapeHtml(req.kpp) : ""}</td></tr>` : ""}
+      ${req.ogrn ? `<tr><td class="lbl">ОГРН</td><td>${escapeHtml(req.ogrn)}</td></tr>` : ""}
+      ${req.legal_address ? `<tr><td class="lbl">Юр. адрес</td><td>${escapeHtml(req.legal_address)}</td></tr>` : ""}
+      ${req.bank_name ? `<tr><td class="lbl">Банк</td><td>${escapeHtml(req.bank_name)}</td></tr>` : ""}
+      ${req.account_number ? `<tr><td class="lbl">Расчётный счёт</td><td>${escapeHtml(req.account_number)}</td></tr>` : ""}
+      ${req.correspondent_account ? `<tr><td class="lbl">Корр. счёт</td><td>${escapeHtml(req.correspondent_account)}</td></tr>` : ""}
+      ${req.bik ? `<tr><td class="lbl">БИК</td><td>${escapeHtml(req.bik)}</td></tr>` : ""}
+      ${req.director_name ? `<tr><td class="lbl">Руководитель</td><td>${escapeHtml(req.director_name)}</td></tr>` : ""}
+      ${req.phone || req.email ? `<tr><td class="lbl">Контакты</td><td>${[req.phone, req.email].filter(Boolean).map(escapeHtml).join(" · ")}</td></tr>` : ""}
+    </table>` : `<p class="meta">⚠️ Реквизиты компании не заполнены. Перейдите в Админ-панель → Реквизиты компании.</p>`;
+
   return `<!DOCTYPE html>
 <html lang="ru"><head><meta charset="utf-8"><title>${title}</title>
 <style>
   * { box-sizing: border-box; }
-  body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #111; max-width: 760px; margin: 32px auto; padding: 24px; font-size: 14px; line-height: 1.5; }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #111; max-width: 760px; margin: 32px auto; padding: 24px; font-size: 13px; line-height: 1.5; }
   h1 { font-size: 22px; margin: 0 0 4px; }
-  h2 { font-size: 16px; margin: 24px 0 8px; border-bottom: 1px solid #e5e7eb; padding-bottom: 6px; }
-  table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-  th, td { border: 1px solid #d1d5db; padding: 10px; text-align: left; }
+  h2 { font-size: 14px; margin: 22px 0 8px; border-bottom: 1px solid #e5e7eb; padding-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; color: #374151; }
+  table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  th, td { border: 1px solid #d1d5db; padding: 8px 10px; text-align: left; vertical-align: top; }
   th { background: #f3f4f6; font-weight: 600; }
   .right { text-align: right; }
-  .total { font-size: 16px; font-weight: 700; margin-top: 16px; }
-  .meta { color: #6b7280; font-size: 13px; }
+  .total { font-size: 16px; font-weight: 700; margin-top: 14px; }
+  .meta { color: #6b7280; font-size: 12px; }
+  .req td { border: none; padding: 4px 8px; font-size: 12px; }
+  .req td.lbl { color: #6b7280; width: 160px; }
   .sig { margin-top: 60px; display: flex; justify-content: space-between; gap: 40px; }
   .sig div { flex: 1; border-top: 1px solid #111; padding-top: 6px; font-size: 12px; }
   @media print { body { margin: 0; padding: 16px; } }
@@ -381,18 +412,17 @@ function renderDocumentHtml(inv: Invoice, kind: "invoice" | "act"): string {
   <h1>${title}</h1>
   <div class="meta">от ${dateStr}</div>
 
+  <h2>Исполнитель</h2>
+  ${reqRows}
+
   <h2>Заказчик</h2>
   <div>${escapeHtml(inv.client_name)}</div>
 
   <h2>${kind === "invoice" ? "К оплате" : "Выполненные работы"}</h2>
   <table>
-    <thead><tr><th>№</th><th>Наименование</th><th class="right">Сумма, ₽</th></tr></thead>
+    <thead><tr><th style="width:40px">№</th><th>Наименование</th><th class="right" style="width:140px">Сумма, ₽</th></tr></thead>
     <tbody>
-      <tr>
-        <td>1</td>
-        <td>${escapeHtml(inv.service)}</td>
-        <td class="right">${amountStr}</td>
-      </tr>
+      <tr><td>1</td><td>${escapeHtml(inv.service)}</td><td class="right">${amountStr}</td></tr>
     </tbody>
   </table>
 
@@ -400,8 +430,8 @@ function renderDocumentHtml(inv: Invoice, kind: "invoice" | "act"): string {
   <p class="meta">${intro}</p>
 
   <div class="sig">
-    <div>Исполнитель / подпись</div>
-    <div>Заказчик / подпись</div>
+    <div>Исполнитель${req?.director_name ? " · " + escapeHtml(req.director_name) : ""}<br/><span class="meta">подпись, печать</span></div>
+    <div>Заказчик<br/><span class="meta">подпись, печать</span></div>
   </div>
 </body></html>`;
 }
