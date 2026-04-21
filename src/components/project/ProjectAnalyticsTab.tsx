@@ -963,8 +963,6 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
         goals={goalsData}
       />
 
-      {/* Topvisor summary panel */}
-      {hasTopvisor && renderTopvisorPanel()}
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
