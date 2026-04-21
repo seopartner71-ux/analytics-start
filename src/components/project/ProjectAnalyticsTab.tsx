@@ -615,10 +615,18 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     return result;
   }, [dailyData, appliedCompRange]);
 
-  // ── Channel ratios for splitting ──
+  // ── Channel ratios for splitting (prefer live traffic sources) ──
   const channelRatios = useMemo(() => {
-    if (!metrikaStats?.traffic_sources) return {} as Record<string, number>;
-    const sources = metrikaStats.traffic_sources as { source: string; visits: number }[];
+    // Prefer live data
+    let sources: { source: string; visits: number }[] = [];
+    if (liveMetrikaData?.trafficSources?.data) {
+      sources = liveMetrikaData.trafficSources.data.map((row: any) => ({
+        source: row.dimensions?.[0]?.name || row.dimensions?.[0]?.id || "unknown",
+        visits: Math.round(row.metrics?.[0] || 0),
+      }));
+    } else if (metrikaStats?.traffic_sources) {
+      sources = metrikaStats.traffic_sources as { source: string; visits: number }[];
+    }
     const totalAll = sources.reduce((s, src) => s + (src.visits || 0), 0);
     if (totalAll === 0) return {} as Record<string, number>;
     const ratios: Record<string, number> = { organic: 0, direct: 0, referral: 0, social: 0, ad: 0 };
@@ -628,13 +636,14 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     }
     for (const k of Object.keys(ratios)) ratios[k] = ratios[k] / totalAll;
     return ratios;
-  }, [metrikaStats]);
+  }, [metrikaStats, liveMetrikaData]);
 
   // ── Channel-filtered ratio ──
   const channelVisitRatio = useMemo(() => {
-    if (channel === "all" || !metrikaStats?.traffic_sources) return 1;
+    if (channel === "all") return 1;
     return channelRatios[channel] || 0;
-  }, [metrikaStats, channel, channelRatios]);
+  }, [channel, channelRatios]);
+
 
   const ALL_CHANNELS = ["organic", "direct", "social", "referral", "ad"] as const;
 
@@ -666,15 +675,23 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     return result;
   }, [filteredData, filteredCompData, metrikaHistory, showComparison, channelVisitRatio, channel, channelRatios]);
 
+  // Live totals from Metrika API: [visits, users, bounceRate, pageDepth, avgDuration]
+  const liveTotals = (liveMetrikaData?.totals?.data?.[0]?.metrics || []) as number[];
+  const liveVisits = liveTotals[0];
+  const liveUsers = liveTotals[1];
+  const liveBounce = liveTotals[2];
+  const livePageDepth = liveTotals[3];
+  const liveAvgDuration = liveTotals[4];
+
   const totalVisits = Math.round(
     (filteredData.length > 0
       ? filteredData.reduce((s, d) => s + d.visits, 0)
-      : (metrikaStats?.total_visits || 0)) * channelVisitRatio
+      : (liveVisits ?? metrikaStats?.total_visits ?? 0)) * channelVisitRatio
   );
-  const totalUsers = Math.round((metrikaStats?.total_users || 0) * channelVisitRatio);
-  const bounceRate = metrikaStats ? Number(metrikaStats.bounce_rate) : 0;
-  const avgDuration = metrikaStats ? metrikaStats.avg_duration_seconds : 0;
-  const pageDepth = metrikaStats ? Number(metrikaStats.page_depth) : 0;
+  const totalUsers = Math.round((liveUsers ?? metrikaStats?.total_users ?? 0) * channelVisitRatio);
+  const bounceRate = Number(Number(liveBounce ?? metrikaStats?.bounce_rate ?? 0).toFixed(2));
+  const avgDuration = Math.round(liveAvgDuration ?? metrikaStats?.avg_duration_seconds ?? 0);
+  const pageDepth = Number(Number(livePageDepth ?? metrikaStats?.page_depth ?? 0).toFixed(2));
 
   const compTotalVisits = Math.round(filteredCompData.reduce((s, d) => s + d.visits, 0) * channelVisitRatio);
   const visitsChange = showComparison && compTotalVisits > 0
