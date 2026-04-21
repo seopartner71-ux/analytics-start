@@ -225,7 +225,12 @@ export function ExpensesBlock() {
                   <tr key={e.id} className="border-b last:border-0 hover:bg-muted/30">
                     <td className="py-2.5 whitespace-nowrap">{format(new Date(e.date), "dd MMM yyyy", { locale: ru })}</td>
                     <td className="py-2.5">
-                      <Badge variant="outline" className="text-[10px]">{CATEGORY_LABEL[e.category] || e.category}</Badge>
+                      <Badge
+                        variant="outline"
+                        className={`text-[10px] ${CATEGORY_TONE[e.category] || ""}`}
+                      >
+                        {CATEGORY_LABEL[e.category] || e.category}
+                      </Badge>
                     </td>
                     <td className="py-2.5 text-muted-foreground max-w-[280px] truncate">{e.description || "—"}</td>
                     <td className="py-2.5 text-right font-semibold text-red-500">−{RUB(Number(e.amount))}</td>
