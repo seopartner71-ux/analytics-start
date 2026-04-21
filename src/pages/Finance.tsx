@@ -109,7 +109,10 @@ export default function Finance() {
 
   return (
     <div className="space-y-6 pb-10">
-      <PageHeader title="Финансы" subtitle={`P&L · ${format(today, "LLLL yyyy", { locale: ru })}`} />
+      <div>
+        <h1 className="text-2xl font-bold">Финансы</h1>
+        <p className="text-sm text-muted-foreground">P&amp;L · {format(today, "LLLL yyyy", { locale: ru })}</p>
+      </div>
 
       {/* Блок 1: Балансы счетов */}
       <div>
