@@ -38,6 +38,8 @@ import DirectorDashboard from "@/components/finance/DirectorDashboard";
 import ProfitabilityReport from "@/components/finance/ProfitabilityReport";
 import RevenueAnalytics from "@/components/finance/RevenueAnalytics";
 import { generateInvoicePdf, type RequisitesData } from "@/lib/invoice-pdf";
+import { DeleteButton } from "@/components/common/DeleteButton";
+import { logDeletion } from "@/lib/deletion-log";
 
 /* ────────── Types ────────── */
 type Client = { id: string; name: string; email: string | null; phone: string | null; notes: string | null; source?: "finance" | "crm" };
@@ -510,6 +512,8 @@ function ChartCard({ title, children }: { title: string; children: React.ReactNo
 
 /* ────────── Payments Tab ────────── */
 function PaymentsTab({ payments, clients, ownerId, onChange }: { payments: Payment[]; clients: Client[]; ownerId: string; onChange: () => void }) {
+  const { isAdmin, role } = useAuth();
+  const canDelete = isAdmin || role === "director";
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterClient, setFilterClient] = useState<string>("all");
   const [editing, setEditing] = useState<Partial<Payment> | null>(null);
@@ -561,9 +565,9 @@ function PaymentsTab({ payments, clients, ownerId, onChange }: { payments: Payme
     onChange();
   };
 
-  const remove = async (id: string) => {
-    if (!confirm("Удалить платёж?")) return;
-    await supabase.from("financial_payments").delete().eq("id", id);
+  const remove = async (p: Payment) => {
+    await supabase.from("financial_payments").delete().eq("id", p.id);
+    await logDeletion({ entityType: "payment", entityId: p.id, entityName: `${p.client_name} · ${p.service}`, action: "hard_delete", context: { contract_amount: p.contract_amount } });
     onChange();
   };
 
@@ -683,7 +687,7 @@ function PaymentsTab({ payments, clients, ownerId, onChange }: { payments: Payme
                     )}
                     <Button size="icon" variant="ghost" title="История" onClick={() => setHistoryClient(p.client_name)}><History className="h-3.5 w-3.5" /></Button>
                     <Button size="icon" variant="ghost" onClick={() => { setEditing(p); setOpen(true); }}><Pencil className="h-3.5 w-3.5" /></Button>
-                    <Button size="icon" variant="ghost" onClick={() => remove(p.id)}><Trash2 className="h-3.5 w-3.5 text-red-400" /></Button>
+                    <DeleteButton visible={canDelete} variant="icon" entityLabel="платёж" entityName={`${p.client_name} · ${p.service}`} onConfirm={() => remove(p)} />
                   </div>
                 </TableCell>
               </TableRow>
@@ -723,6 +727,8 @@ function PaymentsTab({ payments, clients, ownerId, onChange }: { payments: Payme
 /* ────────── Invoices Tab ────────── */
 type InvoiceFull = Invoice & { vat_rate?: number; vat_included?: boolean; comment?: string | null };
 function InvoicesTab({ invoices, clients, ownerId, onChange }: { invoices: InvoiceFull[]; clients: Client[]; ownerId: string; onChange: () => void }) {
+  const { isAdmin, role } = useAuth();
+  const canDelete = isAdmin || role === "director";
   const [editing, setEditing] = useState<Partial<InvoiceFull> & { lines?: { name: string; qty: number; price: number }[] } | null>(null);
   const [open, setOpen] = useState(false);
 
@@ -768,9 +774,9 @@ function InvoicesTab({ invoices, clients, ownerId, onChange }: { invoices: Invoi
     else { toast({ title: "Сохранено" }); setOpen(false); setEditing(null); onChange(); }
   };
 
-  const remove = async (id: string) => {
-    if (!confirm("Удалить счёт?")) return;
-    await supabase.from("financial_invoices").delete().eq("id", id);
+  const remove = async (i: InvoiceFull) => {
+    await supabase.from("financial_invoices").delete().eq("id", i.id);
+    await logDeletion({ entityType: "invoice", entityId: i.id, entityName: `${i.invoice_number} · ${i.client_name}`, action: "hard_delete", context: { amount: i.amount } });
     onChange();
   };
 
@@ -949,7 +955,7 @@ function InvoicesTab({ invoices, clients, ownerId, onChange }: { invoices: Invoi
                     <Button size="icon" variant="ghost" onClick={() => duplicate(i)} title="Дублировать"><Copy className="h-3.5 w-3.5" /></Button>
                     {i.status !== "paid" && <Button size="icon" variant="ghost" onClick={() => markPaid(i)} title="Отметить оплаченным"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /></Button>}
                     <Button size="icon" variant="ghost" onClick={() => openEdit(i)}><Pencil className="h-3.5 w-3.5" /></Button>
-                    <Button size="icon" variant="ghost" onClick={() => remove(i.id)}><Trash2 className="h-3.5 w-3.5 text-red-400" /></Button>
+                    <DeleteButton visible={canDelete} variant="icon" entityLabel="счёт" entityName={`${i.invoice_number} · ${i.client_name}`} onConfirm={() => remove(i)} />
                   </div>
                 </TableCell>
               </TableRow>
@@ -963,6 +969,8 @@ function InvoicesTab({ invoices, clients, ownerId, onChange }: { invoices: Invoi
 
 /* ────────── Expenses Tab ────────── */
 function ExpensesTab({ expenses, ownerId, onChange }: { expenses: Expense[]; ownerId: string; onChange: () => void }) {
+  const { isAdmin, role } = useAuth();
+  const canDelete = isAdmin || role === "director";
   const [editing, setEditing] = useState<Partial<Expense> | null>(null);
   const [open, setOpen] = useState(false);
 
@@ -982,9 +990,9 @@ function ExpensesTab({ expenses, ownerId, onChange }: { expenses: Expense[]; own
     else { toast({ title: "Сохранено" }); setOpen(false); setEditing(null); onChange(); }
   };
 
-  const remove = async (id: string) => {
-    if (!confirm("Удалить расход?")) return;
-    await supabase.from("financial_expenses").delete().eq("id", id);
+  const remove = async (ex: Expense) => {
+    await supabase.from("financial_expenses").delete().eq("id", ex.id);
+    await logDeletion({ entityType: "expense", entityId: ex.id, entityName: `${EXPENSE_CATS[ex.category] || ex.category} · ${ex.amount}₽`, action: "hard_delete", context: { date: ex.expense_date } });
     onChange();
   };
 
@@ -1032,7 +1040,7 @@ function ExpensesTab({ expenses, ownerId, onChange }: { expenses: Expense[]; own
                 <TableCell>
                   <div className="flex gap-1">
                     <Button size="icon" variant="ghost" onClick={() => { setEditing(e); setOpen(true); }}><Pencil className="h-3.5 w-3.5" /></Button>
-                    <Button size="icon" variant="ghost" onClick={() => remove(e.id)}><Trash2 className="h-3.5 w-3.5 text-red-400" /></Button>
+                    <DeleteButton visible={canDelete} variant="icon" entityLabel="расход" entityName={`${EXPENSE_CATS[e.category] || e.category} · ${RUB(Number(e.amount))}`} onConfirm={() => remove(e)} />
                   </div>
                 </TableCell>
               </TableRow>

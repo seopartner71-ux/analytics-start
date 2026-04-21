@@ -10,6 +10,9 @@ import { Loader2, Plus, Send, Copy, RefreshCw, Trash2, Eye, EyeOff } from "lucid
 import { toast } from "sonner";
 import { formatWeekRange } from "@/lib/iso-week";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { DeleteButton } from "@/components/common/DeleteButton";
+import { logDeletion } from "@/lib/deletion-log";
 
 interface PlannedItem { id?: string; title: string; source: "crm_task" | "manual"; hidden: boolean; }
 interface DoneItem { title: string; status: "done" | "moved" | "in_progress"; source: string; }
@@ -33,6 +36,8 @@ interface WeeklyReport {
 }
 
 export function WeeklyReportsTab({ projectId }: { projectId: string }) {
+  const { isAdmin, role } = useAuth();
+  const canDelete = isAdmin || role === "director";
   const [reports, setReports] = useState<WeeklyReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -136,9 +141,15 @@ export function WeeklyReportsTab({ projectId }: { projectId: string }) {
 
   const deleteReport = async () => {
     if (!active) return;
-    if (!confirm("Удалить отчёт?")) return;
     const { error } = await supabase.from("weekly_reports").delete().eq("id", active.id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); throw error; }
+    await logDeletion({
+      entityType: "report",
+      entityId: active.id,
+      entityName: `Неделя ${active.week_number}, ${active.week_year}`,
+      action: "hard_delete",
+      context: { project_id: active.project_id },
+    });
     setActiveId(null);
     load();
   };
@@ -199,9 +210,13 @@ export function WeeklyReportsTab({ projectId }: { projectId: string }) {
                   <Button size="sm" className="h-8 gap-1.5" onClick={sendToClient} disabled={active.status === "sent"}>
                     <Send className="h-3.5 w-3.5" /> {active.status === "sent" ? "Отправлен" : "Отправить клиенту"}
                   </Button>
-                  <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive" onClick={deleteReport}>
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
+                  <DeleteButton
+                    visible={canDelete}
+                    variant="icon"
+                    entityLabel="отчёт"
+                    entityName={`Неделя ${active.week_number}`}
+                    onConfirm={deleteReport}
+                  />
                 </div>
               </div>
             </Card>
