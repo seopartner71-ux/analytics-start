@@ -11,6 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
@@ -45,6 +49,7 @@ export function BankImportBlock() {
   const [accountId, setAccountId] = useState<string>("");
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [parsing, setParsing] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const { data: accounts = [] } = useQuery({
@@ -208,6 +213,7 @@ export function BankImportBlock() {
       qc.invalidateQueries({ queryKey: ["fin-import-clients"] });
       qc.invalidateQueries({ queryKey: ["financial-clients"] });
       setOpen(false);
+      setConfirmOpen(false);
       setRows([]);
     },
     onError: (e: any) => toast.error(e.message || "Ошибка импорта"),
@@ -226,6 +232,35 @@ export function BankImportBlock() {
       sumOut: sel.filter((r) => r.direction === "expense").reduce((s, r) => s + r.amount, 0),
     };
   }, [rows]);
+
+  // Уникальный список новых клиентов, которых нужно создать (для подтверждения)
+  const newClientsPreview = useMemo(() => {
+    const map = new Map<string, { name: string; inn: string | null; sum: number; count: number }>();
+    for (const r of rows) {
+      if (!r.willCreateClient || !r.selected || r.duplicate) continue;
+      const key = r.inn || `name:${r.counterparty.toLowerCase()}`;
+      const existing = map.get(key);
+      if (existing) {
+        existing.sum += r.amount;
+        existing.count += 1;
+      } else {
+        map.set(key, { name: r.counterparty, inn: r.inn, sum: r.amount, count: 1 });
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => b.sum - a.sum);
+  }, [rows]);
+
+  const handleImportClick = () => {
+    if (!accountId) {
+      toast.error("Выберите банковский счёт");
+      return;
+    }
+    if (newClientsPreview.length > 0) {
+      setConfirmOpen(true);
+    } else {
+      importMut.mutate();
+    }
+  };
 
   return (
     <Card>
@@ -384,7 +419,7 @@ export function BankImportBlock() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Закрыть</Button>
             <Button
-              onClick={() => importMut.mutate()}
+              onClick={handleImportClick}
               disabled={importMut.isPending || rows.length === 0 || !accountId}
             >
               {importMut.isPending ? "Импорт..." : `Импортировать ${rows.filter((r) => r.selected && !r.duplicate).length} операций`}
@@ -392,6 +427,59 @@ export function BankImportBlock() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Подтверждение создания новых клиентов */}
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent className="max-w-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <UserPlus className="h-5 w-5 text-blue-500" />
+              Подтвердите создание новых клиентов
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              При импорте будет создано <span className="font-semibold text-foreground">{newClientsPreview.length}</span>{" "}
+              {newClientsPreview.length === 1 ? "новый клиент" : "новых клиентов"}. Проверьте список перед подтверждением.
+              Привязку к проектам можно будет добавить позже вручную.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="max-h-[50vh] overflow-auto border rounded-md">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50 sticky top-0">
+                <tr>
+                  <th className="text-left p-2">Клиент</th>
+                  <th className="text-left p-2">ИНН</th>
+                  <th className="text-right p-2">Операций</th>
+                  <th className="text-right p-2">Сумма</th>
+                </tr>
+              </thead>
+              <tbody>
+                {newClientsPreview.map((c, i) => (
+                  <tr key={i} className="border-t">
+                    <td className="p-2 font-medium">{c.name}</td>
+                    <td className="p-2 font-mono text-xs text-muted-foreground">{c.inn || "—"}</td>
+                    <td className="p-2 text-right">{c.count}</td>
+                    <td className="p-2 text-right font-semibold text-emerald-500">{RUB(c.sum)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={importMut.isPending}>Отмена</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                importMut.mutate();
+              }}
+              disabled={importMut.isPending}
+            >
+              {importMut.isPending ? "Импорт..." : `Создать ${newClientsPreview.length} и импортировать`}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
