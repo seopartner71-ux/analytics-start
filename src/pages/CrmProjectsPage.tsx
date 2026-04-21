@@ -659,6 +659,16 @@ export default function CrmProjectsPage() {
                         <span className="text-[13px] text-muted-foreground">—</span>
                       )}
                     </td>
+                    <td onClick={e => e.stopPropagation()} className="text-right">
+                      <DeleteButton
+                        visible={canDeleteProject}
+                        entityName={p.name}
+                        entityLabel="проект"
+                        doubleConfirm
+                        cascadeInfo={<>Будут архивированы проект «{p.name}» и связанные данные.</>}
+                        onConfirm={() => deleteProject(p)}
+                      />
+                    </td>
                   </tr>
                 );
               })}
