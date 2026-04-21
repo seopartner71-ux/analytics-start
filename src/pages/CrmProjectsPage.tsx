@@ -309,8 +309,8 @@ export default function CrmProjectsPage() {
                 className={cn(
                   "px-3 py-1.5 text-[13px] rounded-md border transition-colors",
                   filter === f
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-card text-muted-foreground border-border hover:border-primary/30"
+                    ? "bg-card text-foreground border-border shadow-sm"
+                    : "bg-transparent text-muted-foreground border-transparent hover:text-foreground hover:bg-card/50"
                 )}
               >
                 {labels[f]}
