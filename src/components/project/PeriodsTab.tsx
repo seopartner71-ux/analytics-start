@@ -92,6 +92,19 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
   const [createOpen, setCreateOpen] = useState(false);
   const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
 
+  const { data: project } = useQuery({
+    queryKey: ["period-project", projectId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("id, deadline")
+        .eq("id", projectId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const { data: periods = [] } = useQuery({
     queryKey: ["project-periods", projectId],
     queryFn: async () => {
@@ -571,6 +584,7 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
         onOpenChange={setCreateOpen}
         existingPeriods={periods}
         templates={templates as any[]}
+        projectDeadline={project?.deadline || null}
         onCreate={(payload) => createPeriod.mutate(payload)}
         creating={createPeriod.isPending}
         loadPastTasks={async (periodId) => {
