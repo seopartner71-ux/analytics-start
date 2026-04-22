@@ -118,7 +118,7 @@ function AddTaskDialog() {
               </Select>
             </div>
             <div><Label className="text-xs">Приоритет</Label>
-              <Select value={form.priority} onValueChange={v => setForm(f => ({ ...f, priority: v }))}>
+              <Select value={form.priority} onValueChange={v => setForm(f => ({ ...f, priority: v as "low" | "medium" | "high" }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="high">Высокий</SelectItem>
