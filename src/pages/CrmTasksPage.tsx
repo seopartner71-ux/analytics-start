@@ -63,7 +63,7 @@ function AddTaskDialog() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ title: "", stage: "Новые", priority: "medium", deadline: "" });
+  const [form, setForm] = useState<{ title: string; stage: string; priority: "low" | "medium" | "high"; deadline: string }>({ title: "", stage: "Новые", priority: "medium", deadline: "" });
 
   const { data: projects = [] } = useQuery({
     queryKey: ["projects-list-tasks"],

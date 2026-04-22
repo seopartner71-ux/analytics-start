@@ -162,7 +162,7 @@ export default function CrmProjectDetailPage() {
   const [commentText, setCommentText] = useState("");
   const [addTaskOpen, setAddTaskOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
-  const [newTask, setNewTask] = useState({ title: "", priority: "medium", deadline: "", assignee_id: "" });
+  const [newTask, setNewTask] = useState<{ title: string; priority: "low" | "medium" | "high"; deadline: string; assignee_id: string }>({ title: "", priority: "medium", deadline: "", assignee_id: "" });
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedTask, setSelectedTask] = useState<CrmTask | null>(null);
@@ -484,7 +484,7 @@ export default function CrmProjectDetailPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <Label className="text-[12px]">Приоритет</Label>
-                        <Select value={newTask.priority} onValueChange={v => setNewTask(f => ({ ...f, priority: v }))}>
+                        <Select value={newTask.priority} onValueChange={v => setNewTask(f => ({ ...f, priority: v as "low" | "medium" | "high" }))}>
                           <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="high">Высокий</SelectItem>
