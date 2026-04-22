@@ -235,7 +235,7 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
   // Дополнительно: дата начала пишется в description, наблюдатель — в task_members.
   const createChildCrmTaskFor = async (parentTaskId: string, t: Partial<PeriodTask> & { start_date?: string | null; watcher_id?: string | null }) => {
     if (!t.title) return null;
-    const startDate = t.start_date || null;
+    const startDate = toDateOnly(t.start_date);
     const description = startDate ? `Начало: ${format(new Date(startDate), "dd.MM.yyyy")}` : null;
     const { data, error } = await supabase
       .from("crm_tasks")
@@ -245,7 +245,7 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
         stage_color: t.completed ? "#10b981" : "#3b82f6",
         stage_progress: t.completed ? 100 : 0,
         priority: "medium",
-        deadline: t.deadline ? new Date(t.deadline).toISOString() : null,
+        deadline: toDeadlineIso(t.deadline),
         description,
         assignee_id: t.assignee_id || null,
         creator_id: t.assignee_id || null,
@@ -278,6 +278,13 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
       end_date: string;
       tasks: Partial<PeriodTask>[];
     }) => {
+      const periodDatesError = getTaskDateError({
+        startDate: vars.start_date,
+        deadline: vars.end_date,
+        projectDeadline: project?.deadline || null,
+      });
+      if (periodDatesError) throw new Error(periodDatesError);
+
       // 1) Главная CRM-задача периода
       const { data: parentTask, error: ptErr } = await supabase
         .from("crm_tasks")
@@ -286,7 +293,7 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
           stage: "В работе",
           stage_color: "#f59e0b",
           priority: "medium",
-          deadline: vars.end_date ? new Date(vars.end_date).toISOString() : null,
+          deadline: toDeadlineIso(vars.end_date),
           project_id: projectId,
           owner_id: user!.id,
         })
@@ -315,13 +322,21 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
         const rows: any[] = [];
         for (let i = 0; i < vars.tasks.length; i++) {
           const t = vars.tasks[i];
+          const taskDatesError = getTaskDateError({
+            startDate: (t as any).start_date,
+            deadline: t.deadline,
+            periodStart: vars.start_date,
+            periodEnd: vars.end_date,
+            projectDeadline: project?.deadline || null,
+          });
+          if (taskDatesError) throw new Error(`Задача «${t.title || `#${i + 1}`}»: ${taskDatesError}`);
           const childId = await createChildCrmTaskFor(parentTask.id, t);
           rows.push({
             period_id: p.id,
             title: t.title!,
             category: t.category || "general",
             assignee_id: t.assignee_id || null,
-            deadline: t.deadline || null,
+            deadline: toDateOnly(t.deadline),
             required: t.required || false,
             sort_order: i,
             crm_task_id: childId,
@@ -345,7 +360,7 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
 
   // Гарантирует наличие главной CRM-задачи у периода и синхронизирует её title/deadline с полями периода
   const ensurePeriodParentTask = async (period: Period): Promise<string> => {
-    const deadlineIso = period.end_date ? new Date(period.end_date).toISOString() : null;
+    const deadlineIso = toDeadlineIso(period.end_date);
     if (period.crm_task_id) {
       // Всегда подтягиваем актуальные title и deadline периода в главную CRM-задачу
       await supabase
@@ -396,9 +411,14 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
   const addTask = useMutation({
     mutationFn: async (vars: Partial<PeriodTask>) => {
       if (!activePeriod) throw new Error("Период не выбран");
-      if (vars.deadline && activePeriod.end_date && vars.deadline > activePeriod.end_date) {
-        throw new Error(`Срок задачи не может быть позже окончания периода (${format(new Date(activePeriod.end_date), "dd.MM.yyyy")})`);
-      }
+      const taskDatesError = getTaskDateError({
+        startDate: (vars as any).start_date,
+        deadline: vars.deadline,
+        periodStart: activePeriod.start_date,
+        periodEnd: activePeriod.end_date,
+        projectDeadline: project?.deadline || null,
+      });
+      if (taskDatesError) throw new Error(taskDatesError);
       const parentId = await ensurePeriodParentTask(activePeriod);
       const sort_order = tasks.length;
       const childId = await createChildCrmTaskFor(parentId, vars);
@@ -407,7 +427,7 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
         title: vars.title!,
         category: vars.category || "general",
         assignee_id: vars.assignee_id || null,
-        deadline: vars.deadline || null,
+        deadline: toDateOnly(vars.deadline),
         required: vars.required || false,
         sort_order,
         crm_task_id: childId,
@@ -436,7 +456,7 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
         if ("title" in vars.patch) subPatch.title = vars.patch.title;
         if ("assignee_id" in vars.patch) subPatch.assignee_id = vars.patch.assignee_id;
         if ("deadline" in vars.patch)
-          subPatch.deadline = vars.patch.deadline ? new Date(vars.patch.deadline as string).toISOString() : null;
+          subPatch.deadline = toDeadlineIso(vars.patch.deadline as string | null | undefined);
         if ("completed" in vars.patch) {
           subPatch.stage = vars.patch.completed ? "Завершена" : "Новые";
           subPatch.stage_color = vars.patch.completed ? "#10b981" : "#3b82f6";
@@ -519,7 +539,7 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
         const subPatch: any = {};
         if ("assignee_id" in vars.patch) subPatch.assignee_id = vars.patch.assignee_id;
         if ("deadline" in vars.patch)
-          subPatch.deadline = vars.patch.deadline ? new Date(vars.patch.deadline as string).toISOString() : null;
+          subPatch.deadline = toDeadlineIso(vars.patch.deadline as string | null | undefined);
         if ("completed" in vars.patch) {
           subPatch.stage = vars.patch.completed ? "Завершена" : "Новые";
           subPatch.stage_color = vars.patch.completed ? "#10b981" : "#3b82f6";
