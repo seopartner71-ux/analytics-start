@@ -325,6 +325,7 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
         crm_task_id: childId,
       });
       if (error) throw error;
+      await syncMainTaskStage(parentId);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["project-periods", projectId] });
