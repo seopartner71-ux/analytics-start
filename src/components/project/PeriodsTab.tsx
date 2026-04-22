@@ -62,6 +62,8 @@ type Period = {
   month: number;
   title: string;
   status: string;
+  start_date: string | null;
+  end_date: string | null;
 };
 
 type PeriodTask = {
@@ -74,6 +76,7 @@ type PeriodTask = {
   required: boolean;
   completed: boolean;
   sort_order: number;
+  crm_task_id: string | null;
 };
 
 type Member = { id: string; full_name: string };
