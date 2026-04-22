@@ -153,7 +153,7 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
       queryClient.invalidateQueries({ queryKey: ["integrations", projectId] });
       toast.success(t("integrations.connected"));
     },
-    onError: (err: Error) => toast.error(err.message),
+    onError: (err: Error) => toast.error(humanizePermissionError(err)),
   });
 
   const disconnectMutation = useMutation({
