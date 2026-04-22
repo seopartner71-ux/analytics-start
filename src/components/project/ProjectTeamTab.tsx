@@ -56,13 +56,43 @@ export function ProjectTeamTab({ projectId }: { projectId: string }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("project_members")
-        .select("id, team_member_id, role, notifications_enabled, team_member:team_members(id, full_name)")
+        .select("id, team_member_id, role, notifications_enabled, team_member:team_members(id, full_name, email, owner_id)")
         .eq("project_id", projectId)
         .order("created_at", { ascending: true });
       if (error) throw error;
       return (data || []) as any;
     },
   });
+
+  // Аватарки реальных пользователей: тянем profiles по email участников
+  const memberEmails = members.map((m) => m.team_member?.email).filter(Boolean) as string[];
+  const memberOwnerIds = members.map((m) => m.team_member?.owner_id).filter(Boolean) as string[];
+  const { data: avatarMap = {} } = useQuery<Record<string, string>>({
+    queryKey: ["project-members-avatars", projectId, memberEmails.join(","), memberOwnerIds.join(",")],
+    enabled: memberEmails.length > 0 || memberOwnerIds.length > 0,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("user_id, email, avatar_url")
+        .or([
+          memberEmails.length ? `email.in.(${memberEmails.map((e) => `"${e}"`).join(",")})` : "",
+          memberOwnerIds.length ? `user_id.in.(${memberOwnerIds.join(",")})` : "",
+        ].filter(Boolean).join(","));
+      const map: Record<string, string> = {};
+      (data || []).forEach((p: any) => {
+        if (!p.avatar_url) return;
+        if (p.email) map[`email:${p.email.toLowerCase()}`] = p.avatar_url;
+        if (p.user_id) map[`uid:${p.user_id}`] = p.avatar_url;
+      });
+      return map;
+    },
+  });
+
+  const avatarUrlFor = (m: ProjectMemberRow) => {
+    if (m.team_member?.owner_id && avatarMap[`uid:${m.team_member.owner_id}`]) return avatarMap[`uid:${m.team_member.owner_id}`];
+    if (m.team_member?.email && avatarMap[`email:${m.team_member.email.toLowerCase()}`]) return avatarMap[`email:${m.team_member.email.toLowerCase()}`];
+    return null;
+  };
 
   // Все сотрудники для выбора
   const { data: allMembers = [] } = useQuery({
