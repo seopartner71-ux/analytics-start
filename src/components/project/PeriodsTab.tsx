@@ -465,18 +465,54 @@ function PeriodTasksPanel(props: {
         </SortableContext>
       </DndContext>
 
-      {/* Quick add */}
-      <div className="flex gap-2 mt-3 pt-3 border-t border-border/60">
+      {/* Add task form (как в CRM) */}
+      <div className="mt-3 pt-3 border-t border-border/60 space-y-2">
         <Input
           value={newTitle}
           onChange={(e) => setNewTitle(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleQuickAdd()}
-          placeholder="+ Добавить задачу..."
+          placeholder="Название задачи..."
           className="h-9"
         />
-        <Button onClick={handleQuickAdd} disabled={!newTitle.trim()} size="sm">
-          Добавить
-        </Button>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <Select value={newAssignee} onValueChange={setNewAssignee}>
+            <SelectTrigger className="h-9 text-xs">
+              <SelectValue placeholder="Ответственный" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Не назначен</SelectItem>
+              {members.map((m) => (
+                <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={newCategory} onValueChange={setNewCategory}>
+            <SelectTrigger className="h-9 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {CATEGORIES.map((c) => (
+                <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Input
+            type="date"
+            value={newDeadline}
+            onChange={(e) => setNewDeadline(e.target.value)}
+            className="h-9 text-xs"
+            placeholder="Дедлайн"
+          />
+        </div>
+        <div className="flex items-center justify-between">
+          <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+            <Checkbox checked={newRequired} onCheckedChange={(v) => setNewRequired(!!v)} />
+            Обязательная
+          </label>
+          <Button onClick={handleQuickAdd} disabled={!newTitle.trim()} size="sm">
+            <Plus className="h-3.5 w-3.5 mr-1" /> Добавить задачу
+          </Button>
+        </div>
       </div>
     </Card>
   );
