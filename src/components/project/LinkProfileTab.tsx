@@ -102,7 +102,7 @@ export function LinkProfileTab({ projectId }: Props) {
       setAddOpen(false);
       qc.invalidateQueries({ queryKey: ["link-profile", projectId] });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(ruError(e, "Не удалось добавить ссылку")),
   });
 
   const deleteMutation = useMutation({
@@ -146,7 +146,7 @@ export function LinkProfileTab({ projectId }: Props) {
       setCsvOpen(false);
       qc.invalidateQueries({ queryKey: ["link-profile", projectId] });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(ruError(e, "Не удалось импортировать CSV")),
   });
 
   const checkAll = async () => {

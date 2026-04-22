@@ -36,7 +36,7 @@ export function AiAssistantSettings() {
       }
       toast.success("Системный промт сохранён");
     } catch (e: any) {
-      toast.error(e.message);
+      toast.error(ruError(e, "Не удалось сохранить настройки"));
     } finally {
       setSaving(false);
     }

@@ -126,7 +126,7 @@ export default function CompanyNewsWidget() {
 
   const upsertMutation = useMutation({
     mutationFn: async () => {
-      if (!user) throw new Error("no user");
+      if (!user) throw new Error("Вы не авторизованы");
       if (editing) {
         const { error } = await supabase.from("company_news").update({
           title: form.title, body: form.body, type: form.type, pinned: form.pinned,
@@ -145,7 +145,7 @@ export default function CompanyNewsWidget() {
       setForm({ title: "", body: "", type: "normal", pinned: false });
       toast.success(editing ? "Новость обновлена" : "Новость опубликована");
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(ruError(e, "Не удалось сохранить новость")),
   });
 
   const deleteMutation = useMutation({

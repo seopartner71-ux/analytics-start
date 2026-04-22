@@ -52,11 +52,11 @@ export function ArticleEditor({ open, onOpenChange, articleId, onSaved }: Props)
     if (articleId) {
       const { error } = await supabase.from("knowledge_articles")
         .update({ title, category, tags, content, updated_by: user.id }).eq("id", articleId);
-      if (error) { toast.error(error.message); setSaving(false); return; }
+      if (error) { toast.error(ruError(error, "Не удалось сохранить статью")); setSaving(false); return; }
     } else {
       const { error } = await supabase.from("knowledge_articles")
         .insert({ title, category, tags, content, author_id: user.id });
-      if (error) { toast.error(error.message); setSaving(false); return; }
+      if (error) { toast.error(ruError(error, "Не удалось создать статью")); setSaving(false); return; }
     }
     setSaving(false);
     toast.success("Сохранено");

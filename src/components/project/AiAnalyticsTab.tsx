@@ -88,7 +88,7 @@ export function AiAnalyticsTab({
 
       toast.success(t("aiInsights.generated"));
     } catch (err: any) {
-      toast.error(err.message);
+      toast.error(ruError(err, "Не удалось сгенерировать AI-анализ"));
     } finally {
       setLoadingDeep(false);
     }

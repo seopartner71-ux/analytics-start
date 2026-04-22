@@ -174,7 +174,7 @@ export function AiInsightsBlock({ projectId, summary: rawSummary, isAdmin, onSav
         toast.success(t("aiInsights.generated"));
       }
     } catch (err: any) {
-      toast.error(err.message || "AI generation failed");
+      toast.error(ruError(err, "Не удалось сгенерировать AI-выводы"));
     } finally {
       setGenerating(false);
     }

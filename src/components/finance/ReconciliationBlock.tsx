@@ -67,7 +67,7 @@ export function ReconciliationBlock() {
     q = isUuid ? q.eq("client_id", clientId) : q.eq("client_name", client.name);
     const { data: invs, error } = await q.order("date_created");
     if (error) {
-      toast.error(error.message);
+      toast.error(ruError(error, "Не удалось загрузить данные"));
       return;
     }
 
