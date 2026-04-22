@@ -392,13 +392,27 @@ function PeriodTasksPanel(props: {
 }) {
   const { period, tasks, members, selectedIds } = props;
   const [newTitle, setNewTitle] = useState("");
+  const [newAssignee, setNewAssignee] = useState<string>("none");
+  const [newDeadline, setNewDeadline] = useState<string>("");
+  const [newCategory, setNewCategory] = useState<string>("general");
+  const [newRequired, setNewRequired] = useState(false);
   const completed = tasks.filter((t) => t.completed).length;
 
   const handleQuickAdd = () => {
     const title = newTitle.trim();
     if (!title) return;
-    props.onAddTask({ title });
+    props.onAddTask({
+      title,
+      assignee_id: newAssignee === "none" ? null : newAssignee,
+      deadline: newDeadline || null,
+      category: newCategory,
+      required: newRequired,
+    });
     setNewTitle("");
+    setNewAssignee("none");
+    setNewDeadline("");
+    setNewCategory("general");
+    setNewRequired(false);
   };
 
   return (
