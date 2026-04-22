@@ -903,3 +903,63 @@ function PositionsDashboard({
     </div>
   );
 }
+
+/* ═══════════════════════════════════════════════════════
+   Inline status badge for live Topvisor positions
+   ═══════════════════════════════════════════════════════ */
+function PositionsLiveStatus({
+  isLoading,
+  isError,
+  errorMessage,
+  rowCount,
+  dateCount,
+}: {
+  isLoading: boolean;
+  isError: boolean;
+  errorMessage?: string;
+  rowCount: number;
+  dateCount: number;
+}) {
+  let cls = "border-muted-foreground/30 text-muted-foreground bg-muted/30";
+  let icon = <Loader2 className="h-3 w-3 animate-spin" />;
+  let short = "проверка…";
+  let tooltip = "Загружаем позиции из Topvisor…";
+
+  if (!isLoading) {
+    if (isError) {
+      cls = "border-destructive/40 text-destructive bg-destructive/10";
+      icon = <AlertCircle className="h-3 w-3" />;
+      short = "ошибка";
+      tooltip = errorMessage
+        ? `Не удалось получить данные из Topvisor: ${errorMessage}`
+        : "Не удалось получить данные из Topvisor.";
+    } else if (rowCount > 0 && dateCount > 0) {
+      cls = "border-emerald-500/40 text-emerald-500 bg-emerald-500/10";
+      icon = <CheckCircle2 className="h-3 w-3" />;
+      short = "есть данные";
+      tooltip = `Получено ${rowCount} запросов и ${dateCount} замеров из Topvisor.`;
+    } else {
+      cls = "border-amber-500/40 text-amber-500 bg-amber-500/10";
+      icon = <AlertCircle className="h-3 w-3" />;
+      short = "пусто";
+      tooltip =
+        "В проекте Topvisor нет ключевых слов или ещё ни разу не делался съём позиций. Нажмите «Обновить позиции в Topvisor».";
+    }
+  }
+
+  return (
+    <TooltipProvider delayDuration={150}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Badge variant="outline" className={cn("gap-1.5 text-[10.5px] font-medium px-2 py-0.5 h-6 cursor-help", cls)}>
+            {icon}
+            <span>Позиции: {short}</span>
+          </Badge>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" className="max-w-[280px] text-xs">
+          {tooltip}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
