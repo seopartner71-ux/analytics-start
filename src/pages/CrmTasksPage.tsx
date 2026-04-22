@@ -40,7 +40,7 @@ import {
   useDraggable,
   useDroppable,
 } from "@dnd-kit/core";
-import { STAGE_COLORS as _STAGE_COLORS_UNUSED } from "@/lib/task-helpers";
+
 
 type TaskComment = Tables<"task_comments"> & {
   author?: Tables<"team_members"> | null;
