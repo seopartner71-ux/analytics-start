@@ -392,6 +392,12 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
 
   const handleComplete = async ({ result, minutes }: { result: string; minutes: number }) => {
     if (!task || !user) return;
+    // Клиентская защита: запрещаем закрывать при открытых подзадачах
+    const openSubs = subtasks.filter((s: any) => !s.is_done).length;
+    if (openSubs > 0) {
+      toast.error(`Нельзя закрыть: есть ${openSubs} открытых подзадач`);
+      return;
+    }
     setCompleting(true);
     try {
       // 1. Log time
@@ -415,11 +421,12 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
 
       // 3. Update status -> Выполнено (green)
       const greenColor = "#10b981";
-      await supabase.from("crm_tasks").update({
+      const { error: updErr } = await supabase.from("crm_tasks").update({
         stage: "Выполнено",
         stage_color: greenColor,
         stage_progress: 100,
       } as any).eq("id", task.id);
+      if (updErr) throw updErr;
 
       await addSystemLog(`Задача завершена. Списано ${Math.floor(minutes / 60)}ч ${minutes % 60}м`);
 
