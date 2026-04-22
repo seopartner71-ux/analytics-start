@@ -57,7 +57,7 @@ interface AppSidebarProps {
 export function AppSidebar({ activeTab, onTabChange, projectName, projectLogo }: AppSidebarProps) {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
-  const { user, role, isAdmin, isManager, hasFinanceAccess } = useAuth();
+  const { user, profile, role, isAdmin, isManager, hasFinanceAccess } = useAuth();
   const ROLE_LEVELS = { viewer: 0, junior: 0, seo: 1, manager: 1, director: 2, admin: 2 } as const;
   const userLevel = ROLE_LEVELS[role as keyof typeof ROLE_LEVELS] ?? 0;
   const isDirector = role === "director";

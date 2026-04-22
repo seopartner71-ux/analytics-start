@@ -279,12 +279,13 @@ export function MessengerPanel() {
                   className="relative group"
                   title={e.full_name || e.email}
                 >
-                  <Avatar className="h-9 w-9 ring-1 ring-border group-hover:ring-primary/40 transition">
-                    <AvatarImage src={e.avatar_url || undefined} />
-                    <AvatarFallback className="text-[11px]">
-                      {(e.full_name || e.email).slice(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
+                  <UserAvatar
+                    avatarUrl={e.avatar_url}
+                    name={e.full_name || e.email}
+                    seed={e.user_id}
+                    className="h-9 w-9 ring-1 ring-border group-hover:ring-primary/40 transition"
+                    fallbackClassName="text-[11px]"
+                  />
                   <span
                     className={cn(
                       "absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-card",
@@ -477,12 +478,13 @@ export function MessengerPanel() {
                               className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-accent text-left"
                             >
                               <div className="relative">
-                                <Avatar className="h-9 w-9">
-                                  <AvatarImage src={other?.avatar_url || undefined} />
-                                  <AvatarFallback className="text-[11px]">
-                                    {(other?.full_name || other?.email || "?").slice(0, 2).toUpperCase()}
-                                  </AvatarFallback>
-                                </Avatar>
+                                <UserAvatar
+                                  avatarUrl={other?.avatar_url}
+                                  name={other?.full_name || other?.email}
+                                  seed={otherId || other?.email}
+                                  className="h-9 w-9"
+                                  fallbackClassName="text-[11px]"
+                                />
                                 <span
                                   className={cn(
                                     "absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-card",
@@ -525,12 +527,13 @@ export function MessengerPanel() {
                           className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-accent text-left"
                         >
                           <div className="relative">
-                            <Avatar className="h-9 w-9">
-                              <AvatarImage src={e.avatar_url || undefined} />
-                              <AvatarFallback className="text-[11px]">
-                                {(e.full_name || e.email).slice(0, 2).toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
+                            <UserAvatar
+                              avatarUrl={e.avatar_url}
+                              name={e.full_name || e.email}
+                              seed={e.user_id}
+                              className="h-9 w-9"
+                              fallbackClassName="text-[11px]"
+                            />
                             <span
                               className={cn(
                                 "absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-card",
