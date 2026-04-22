@@ -21,6 +21,7 @@ import {
 import { OnboardingTaskTemplateEditor } from "@/components/admin/OnboardingTaskTemplateEditor";
 import { AiAssistantSettings } from "@/components/admin/AiAssistantSettings";
 import { CompanyRequisitesEditor } from "@/components/admin/CompanyRequisitesEditor";
+import { DepartmentsEditor } from "@/components/admin/DepartmentsEditor";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Bot } from "lucide-react";
 import { toast } from "sonner";
@@ -181,11 +182,19 @@ export default function AdminPanel() {
                   <Rocket className="h-3.5 w-3.5" />
                   Шаблон онбординга
                 </TabsTrigger>
+                <TabsTrigger value="departments" className="gap-1.5">
+                  <Building className="h-3.5 w-3.5" />
+                  Отделы
+                </TabsTrigger>
                 <TabsTrigger value="ai-assistant" className="gap-1.5">
                   <Bot className="h-3.5 w-3.5" />
                   AI-ассистент
                 </TabsTrigger>
               </TabsList>
+
+              <TabsContent value="departments">
+                <DepartmentsEditor />
+              </TabsContent>
 
               {/* Projects tab */}
               <TabsContent value="projects">
