@@ -398,14 +398,17 @@ export default function EmployeesPage() {
     queryKey: ["team-presence"],
     queryFn: async () => {
       const today = new Date().toISOString().slice(0, 10);
-      const [{ data: profiles }, { data: logs }] = await Promise.all([
+      const [{ data: profiles }, { data: logs }, { data: roles }] = await Promise.all([
         supabase.from("profiles").select("user_id, email, avatar_url, status"),
         supabase.from("user_time_logs").select("user_id, updated_at, active_seconds").eq("log_date", today),
+        supabase.from("user_roles").select("user_id, role"),
       ]);
       const userIdToProfile = new Map<string, { email: string; avatar_url: string | null; status: string | null }>();
       (profiles || []).forEach((p: any) => p.email && userIdToProfile.set(p.user_id, { email: p.email.toLowerCase(), avatar_url: p.avatar_url, status: p.status }));
-      const map: Record<string, { updated_at?: string; active_seconds?: number; avatar_url?: string | null; profile_status?: string | null; has_profile?: boolean }> = {};
-      userIdToProfile.forEach((p) => { map[p.email] = { avatar_url: p.avatar_url, profile_status: p.status, has_profile: true }; });
+      const userIdToRole = new Map<string, string>();
+      (roles || []).forEach((r: any) => userIdToRole.set(r.user_id, r.role));
+      const map: Record<string, { updated_at?: string; active_seconds?: number; avatar_url?: string | null; profile_status?: string | null; has_profile?: boolean; app_role?: string | null }> = {};
+      userIdToProfile.forEach((p, uid) => { map[p.email] = { avatar_url: p.avatar_url, profile_status: p.status, has_profile: true, app_role: userIdToRole.get(uid) || null }; });
       (logs || []).forEach((l: any) => {
         const p = userIdToProfile.get(l.user_id);
         if (p) map[p.email] = { ...map[p.email], updated_at: l.updated_at, active_seconds: l.active_seconds };
