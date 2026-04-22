@@ -511,7 +511,7 @@ function PeriodTasksPanel(props: {
                 selected={selectedIds.has(t.id)}
                 onToggleSelect={() => props.onToggleSelect(t.id)}
                 onUpdate={(patch) => props.onUpdateTask(t.id, patch)}
-                onDelete={() => props.onUpdateTask(t.id, { completed: !t.completed })}
+                onDelete={() => props.onDeleteTask(t.id)}
               />
             ))}
           </div>
