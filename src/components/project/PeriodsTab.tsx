@@ -225,12 +225,12 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
         .select().single();
       if (error) throw error;
 
-      // 3) Пункты периода → подзадачи главной CRM-задачи
+      // 3) Пункты периода → дочерние CRM-задачи (видны во вкладке «Задачи»)
       if (vars.tasks.length > 0) {
         const rows: any[] = [];
         for (let i = 0; i < vars.tasks.length; i++) {
           const t = vars.tasks[i];
-          const subId = await createSubtaskFor(parentTask.id, t, i);
+          const childId = await createChildCrmTaskFor(parentTask.id, t);
           rows.push({
             period_id: p.id,
             title: t.title!,
@@ -239,7 +239,7 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
             deadline: t.deadline || null,
             required: t.required || false,
             sort_order: i,
-            crm_task_id: subId,
+            crm_task_id: childId,
           });
         }
         const { error: te } = await supabase.from("period_tasks").insert(rows);
