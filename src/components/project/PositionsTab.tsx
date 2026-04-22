@@ -81,7 +81,7 @@ interface SearcherTab {
    ═══════════════════════════════════════════════════════ */
 async function callTopvisor(action: string, apiKey: string, userId: string, payload?: Record<string, unknown>) {
   const { data: { session } } = await supabase.auth.getSession();
-  if (!session) throw new Error("Not authenticated");
+  if (!session) throw new Error("Вы не авторизованы");
 
   const projectRef = import.meta.env.VITE_SUPABASE_PROJECT_ID;
   const resp = await fetch(`https://${projectRef}.supabase.co/functions/v1/topvisor-api`, {

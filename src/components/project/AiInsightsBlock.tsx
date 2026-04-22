@@ -1,3 +1,4 @@
+import { ruError } from "@/lib/error-messages";
 import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
@@ -142,7 +143,7 @@ export function AiInsightsBlock({ projectId, summary: rawSummary, isAdmin, onSav
     setGenerating(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not authenticated");
+      if (!session) throw new Error("Вы не авторизованы");
 
       const resp = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-ai-summary`,
@@ -174,7 +175,7 @@ export function AiInsightsBlock({ projectId, summary: rawSummary, isAdmin, onSav
         toast.success(t("aiInsights.generated"));
       }
     } catch (err: any) {
-      toast.error(err.message || "AI generation failed");
+      toast.error(ruError(err, "Не удалось сгенерировать AI-выводы"));
     } finally {
       setGenerating(false);
     }

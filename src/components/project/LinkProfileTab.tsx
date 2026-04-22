@@ -1,3 +1,4 @@
+import { ruError } from "@/lib/error-messages";
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -102,7 +103,7 @@ export function LinkProfileTab({ projectId }: Props) {
       setAddOpen(false);
       qc.invalidateQueries({ queryKey: ["link-profile", projectId] });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(ruError(e, "Не удалось добавить ссылку")),
   });
 
   const deleteMutation = useMutation({
@@ -146,7 +147,7 @@ export function LinkProfileTab({ projectId }: Props) {
       setCsvOpen(false);
       qc.invalidateQueries({ queryKey: ["link-profile", projectId] });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(ruError(e, "Не удалось импортировать CSV")),
   });
 
   const checkAll = async () => {

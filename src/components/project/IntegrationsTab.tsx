@@ -183,7 +183,7 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
       setSyncingId(integration.id);
       if (integration.service_name === "yandexMetrika" && integration.access_token && integration.counter_id) {
         const { data: { session } } = await supabase.auth.getSession();
-        if (!session) throw new Error("Not authenticated");
+        if (!session) throw new Error("Вы не авторизованы");
 
         const projectRef = import.meta.env.VITE_SUPABASE_PROJECT_ID;
         const resp = await fetch(

@@ -141,7 +141,7 @@ function TrafficDynamicsChart({ appliedRange, appliedCompRange, showComparison, 
         }),
       }
     );
-    if (!r.ok) throw new Error("Failed to fetch traffic by source");
+    if (!r.ok) throw new Error("Не удалось загрузить источники трафика");
     return r.json();
   }, [integration]);
 
@@ -329,7 +329,7 @@ export function TrafficTab({ projectId, projectName, projectUrl }: TrafficTabPro
           }),
         }
       );
-      if (!r.ok) throw new Error("Failed to fetch stats");
+      if (!r.ok) throw new Error("Не удалось загрузить статистику");
       return await r.json();
     },
     enabled: !!integration?.access_token && !!integration?.counter_id,

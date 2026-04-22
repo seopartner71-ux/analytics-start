@@ -1,3 +1,4 @@
+import { ruError } from "@/lib/error-messages";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
@@ -49,7 +50,7 @@ export function AiAnalyticsTab({
     setLoadingDeep(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not authenticated");
+      if (!session) throw new Error("Вы не авторизованы");
 
       const resp = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-ai-summary`,
@@ -88,7 +89,7 @@ export function AiAnalyticsTab({
 
       toast.success(t("aiInsights.generated"));
     } catch (err: any) {
-      toast.error(err.message);
+      toast.error(ruError(err, "Не удалось сгенерировать AI-анализ"));
     } finally {
       setLoadingDeep(false);
     }

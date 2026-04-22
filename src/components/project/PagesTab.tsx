@@ -59,7 +59,7 @@ export function PagesTab({ projectId, projectName, projectUrl }: PagesTabProps) 
     queryKey: ["metrika-top-pages", projectId, integration?.counter_id, dateFrom, dateTo],
     queryFn: async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not authenticated");
+      if (!session) throw new Error("Вы не авторизованы");
       const r = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/yandex-metrika-auth?action=fetch-stats`,
         {
@@ -77,7 +77,7 @@ export function PagesTab({ projectId, projectName, projectUrl }: PagesTabProps) 
           }),
         }
       );
-      if (!r.ok) throw new Error("Failed to fetch pages");
+      if (!r.ok) throw new Error("Не удалось загрузить страницы");
       return r.json();
     },
     enabled: !!integration?.access_token && !!integration?.counter_id,

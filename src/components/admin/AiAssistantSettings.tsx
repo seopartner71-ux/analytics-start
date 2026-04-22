@@ -1,3 +1,4 @@
+import { ruError } from "@/lib/error-messages";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,7 +37,7 @@ export function AiAssistantSettings() {
       }
       toast.success("Системный промт сохранён");
     } catch (e: any) {
-      toast.error(e.message);
+      toast.error(ruError(e, "Не удалось сохранить настройки"));
     } finally {
       setSaving(false);
     }

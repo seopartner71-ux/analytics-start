@@ -1,3 +1,4 @@
+import { ruError } from "@/lib/error-messages";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format, startOfYear } from "date-fns";
@@ -67,7 +68,7 @@ export function ReconciliationBlock() {
     q = isUuid ? q.eq("client_id", clientId) : q.eq("client_name", client.name);
     const { data: invs, error } = await q.order("date_created");
     if (error) {
-      toast.error(error.message);
+      toast.error(ruError(error, "Не удалось загрузить данные"));
       return;
     }
 

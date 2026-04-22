@@ -1,3 +1,4 @@
+import { ruError } from "@/lib/error-messages";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -41,12 +42,12 @@ export function RelatedArticles({ taskId, scope, canEdit }: Props) {
     if (toAdd.length) {
       const { error } = await supabase.from(table as any)
         .insert(toAdd.map((id) => ({ [fk]: taskId, article_id: id })));
-      if (error) toast.error(error.message);
+      if (error) toast.error(ruError(error, "Не удалось привязать статью"));
     }
     if (toRemove.length) {
       const { error } = await supabase.from(table as any).delete()
         .eq(fk, taskId).in("article_id", toRemove);
-      if (error) toast.error(error.message);
+      if (error) toast.error(ruError(error, "Не удалось отвязать статью"));
     }
     load();
   };

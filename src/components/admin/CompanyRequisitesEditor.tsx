@@ -1,3 +1,4 @@
+import { ruError } from "@/lib/error-messages";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -77,7 +78,7 @@ export function CompanyRequisitesEditor() {
       toast.success("Реквизиты сохранены");
       qc.invalidateQueries({ queryKey: ["company_requisites"] });
     } catch (e: any) {
-      toast.error(e.message);
+      toast.error(ruError(e, "Не удалось сохранить реквизиты"));
     } finally {
       setSaving(false);
     }
@@ -94,7 +95,7 @@ export function CompanyRequisitesEditor() {
       setForm((f) => ({ ...f, logo_url: data.publicUrl }));
       toast.success("Логотип загружен");
     } catch (e: any) {
-      toast.error(e.message);
+      toast.error(ruError(e, "Не удалось загрузить логотип"));
     } finally {
       setUploading(false);
     }

@@ -89,7 +89,7 @@ export function DashboardTab({ projectId, projectName, onSwitchTab }: DashboardT
           }),
         }
       );
-      if (!r.ok) throw new Error("Failed to fetch stats");
+      if (!r.ok) throw new Error("Не удалось загрузить статистику");
       return await r.json();
     },
     enabled: !!integration?.access_token && !!integration?.counter_id,

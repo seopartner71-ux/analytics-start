@@ -1,3 +1,4 @@
+import { ruError } from "@/lib/error-messages";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -87,7 +88,7 @@ export function DepartmentsEditor() {
       setOpen(false);
       setEditing(null);
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(ruError(e, "Не удалось сохранить отдел")),
   });
 
   const remove = useMutation({
@@ -99,7 +100,7 @@ export function DepartmentsEditor() {
       queryClient.invalidateQueries({ queryKey: ["departments"] });
       toast.success("Отдел удалён");
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(ruError(e, "Не удалось удалить отдел")),
   });
 
   const memberCount = (deptId: string) => members.filter((m: any) => m.department_id === deptId).length;
