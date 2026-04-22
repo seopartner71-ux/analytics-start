@@ -40,6 +40,51 @@ export function MessengerPanel() {
   const [search, setSearch] = useState("");
   const lastSeenIdsRef = useRef<Set<string>>(new Set());
 
+  // Floating draggable window (desktop)
+  const PANEL_W = 380;
+  const PANEL_H = 600;
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+  const [animateIn, setAnimateIn] = useState(false);
+  const dragRef = useRef<{ dx: number; dy: number } | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setAnimateIn(false);
+      return;
+    }
+    if (typeof window === "undefined") return;
+    if (!pos) {
+      const x = Math.max(16, window.innerWidth - PANEL_W - 72);
+      const y = Math.max(16, Math.round((window.innerHeight - PANEL_H) / 2));
+      setPos({ x: window.innerWidth, y });
+      requestAnimationFrame(() => {
+        setAnimateIn(true);
+        setPos({ x, y });
+      });
+    } else {
+      setAnimateIn(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+
+  const onDragStart = (e: React.PointerEvent) => {
+    if (!pos) return;
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    dragRef.current = { dx: e.clientX - pos.x, dy: e.clientY - pos.y };
+    setAnimateIn(false);
+  };
+  const onDragMove = (e: React.PointerEvent) => {
+    if (!dragRef.current) return;
+    const x = Math.min(Math.max(0, e.clientX - dragRef.current.dx), window.innerWidth - 200);
+    const y = Math.min(Math.max(0, e.clientY - dragRef.current.dy), window.innerHeight - 60);
+    setPos({ x, y });
+  };
+  const onDragEnd = (e: React.PointerEvent) => {
+    if (!dragRef.current) return;
+    try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId); } catch {}
+    dragRef.current = null;
+  };
+
   // All employees (active profiles) — exclude self
   const { data: employees = [] } = useQuery({
     queryKey: ["messenger-employees"],
