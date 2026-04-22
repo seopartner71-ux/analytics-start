@@ -13,6 +13,7 @@ import {
   Paperclip, Copy, Video, UserPlus, Search as SearchIcon, Edit3, Play,
   CheckCircle2, RotateCcw, Link, FileText, Upload, Loader2, Plus,
   Clock, AlertTriangle, Eye, ThumbsUp, ThumbsDown,
+  ListChecks, Users, Timer, Layers, Target, AtSign, Sparkles,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
