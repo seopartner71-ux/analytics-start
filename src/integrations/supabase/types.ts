@@ -4242,6 +4242,10 @@ export type Database = {
         Args: { _task_id: string; _user_id: string }
         Returns: boolean
       }
+      is_task_assignee: {
+        Args: { _task_assignee: string; _user_id: string }
+        Returns: boolean
+      }
       is_task_creator: {
         Args: { _task_id: string; _user_id: string }
         Returns: boolean

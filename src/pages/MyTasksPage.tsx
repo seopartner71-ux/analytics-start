@@ -42,16 +42,30 @@ export default function MyTasksPage() {
   const [search, setSearch] = useState("");
   const [selectedTask, setSelectedTask] = useState<CrmTask | null>(null);
 
-  // Получаем team_member id текущего пользователя (для assignee)
+  // Получаем team_member id, где текущий пользователь — сотрудник.
+  // Связь определяется по email: запись в team_members может принадлежать
+  // любому owner_id (например, владельцу компании), а сам пользователь
+  // привязан к ней через свой email.
   const { data: myTeamMemberIds = [] } = useQuery({
-    queryKey: ["my-team-member-ids", user?.id],
+    queryKey: ["my-team-member-ids", user?.id, user?.email],
     enabled: !!user,
     queryFn: async () => {
-      const { data } = await supabase
+      const ids = new Set<string>();
+      // 1. Записи, которые я создал сам (если являюсь owner-ом)
+      const { data: ownRows } = await supabase
         .from("team_members")
         .select("id")
         .eq("owner_id", user!.id);
-      return (data ?? []).map((d) => d.id);
+      (ownRows ?? []).forEach((r) => ids.add(r.id));
+      // 2. Записи, где я добавлен как сотрудник по email
+      if (user?.email) {
+        const { data: byEmail } = await supabase
+          .from("team_members")
+          .select("id")
+          .ilike("email", user.email);
+        (byEmail ?? []).forEach((r) => ids.add(r.id));
+      }
+      return Array.from(ids);
     },
   });
 
