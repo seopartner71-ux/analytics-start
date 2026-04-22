@@ -557,11 +557,20 @@ function PositionsDashboard({
         {/* Rankings table */}
         <GlassCard>
           <CardContent className="p-0">
-            <div className="px-5 pt-4 pb-2 flex items-center justify-between">
+            <div className="px-5 pt-4 pb-2 flex items-center justify-between flex-wrap gap-2">
               <div>
-                <h3 className="text-sm font-semibold text-foreground">
-                  {isRu ? "Запросы и позиции" : "Keywords & Positions"}
-                </h3>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-sm font-semibold text-foreground">
+                    {isRu ? "Запросы и позиции" : "Keywords & Positions"}
+                  </h3>
+                  <PositionsLiveStatus
+                    isLoading={isLoading}
+                    isError={isError}
+                    errorMessage={(error as Error | null)?.message}
+                    rowCount={keywordRows.length}
+                    dateCount={allDates.length}
+                  />
+                </div>
                 <p className="text-xs text-muted-foreground">
                   {filtered.length} {isRu ? "запросов" : "keywords"} • {searcherName} • {regionName}
                 </p>
