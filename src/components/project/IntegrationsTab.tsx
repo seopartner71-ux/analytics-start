@@ -75,12 +75,51 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
   const [gscPropertyUrl, setGscPropertyUrl] = useState("");
   const [gscToken, setGscToken] = useState("");
 
+  const { user, isAdmin, isManager } = useAuth();
+
+  // Get project owner to determine if current user can manage integrations
+  const { data: projectMeta } = useQuery({
+    queryKey: ["project-owner-for-integrations", projectId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("owner_id, seo_specialist_id, account_manager_id")
+        .eq("id", projectId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const isOwner = !!user && projectMeta?.owner_id === user.id;
+  // Manager assigned as SEO specialist or account manager on this project
+  const { data: isProjectLead } = useQuery({
+    queryKey: ["is-project-lead", projectId, user?.id],
+    enabled: !!user && !!projectMeta && (isManager || false),
+    queryFn: async () => {
+      if (!user || !projectMeta) return false;
+      const ids = [projectMeta.seo_specialist_id, projectMeta.account_manager_id].filter(Boolean) as string[];
+      if (!ids.length) return false;
+      const { data } = await supabase
+        .from("team_members")
+        .select("id")
+        .in("id", ids)
+        .eq("owner_id", user.id);
+      return (data?.length ?? 0) > 0;
+    },
+  });
+
+  const canManageIntegrations = isAdmin || isOwner || (isManager && !!isProjectLead);
+
   const getIntegration = (key: string) => integrations.find((i) => i.service_name === key);
 
   const connectMutation = useMutation({
     mutationFn: async ({ serviceName, apiKey, externalProjectId, counterId, accessToken }: {
       serviceName: string; apiKey?: string; externalProjectId?: string; counterId?: string; accessToken?: string;
     }) => {
+      if (!canManageIntegrations) {
+        throw new Error("Недостаточно прав для управления интеграциями");
+      }
       // Validate that real credentials were provided — never write mock tokens
       if (!accessToken && !apiKey) {
         throw new Error("Не передан токен или API-ключ для подключения интеграции");
