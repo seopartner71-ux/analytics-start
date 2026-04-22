@@ -377,6 +377,9 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
       if (childIds.length > 0) {
         await supabase.from("crm_tasks").delete().in("id", childIds);
       }
+      if (activePeriod?.crm_task_id) {
+        await syncMainTaskStage(activePeriod.crm_task_id);
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["period-tasks", activePeriod?.id] });
