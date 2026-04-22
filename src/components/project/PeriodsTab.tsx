@@ -173,8 +173,11 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
 
   // Создаёт CRM-задачу проекта как дочернюю к главной задаче периода и возвращает её id.
   // Так задача появится во вкладке «Задачи» проекта.
-  const createChildCrmTaskFor = async (parentTaskId: string, t: Partial<PeriodTask>) => {
+  // Дополнительно: дата начала пишется в description, наблюдатель — в task_members.
+  const createChildCrmTaskFor = async (parentTaskId: string, t: Partial<PeriodTask> & { start_date?: string | null; watcher_id?: string | null }) => {
     if (!t.title) return null;
+    const startDate = t.start_date || null;
+    const description = startDate ? `Начало: ${format(new Date(startDate), "dd.MM.yyyy")}` : null;
     const { data, error } = await supabase
       .from("crm_tasks")
       .insert({
@@ -184,6 +187,7 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
         stage_progress: t.completed ? 100 : 0,
         priority: "medium",
         deadline: t.deadline ? new Date(t.deadline).toISOString() : null,
+        description,
         assignee_id: t.assignee_id || null,
         creator_id: t.assignee_id || null,
         project_id: projectId,
@@ -193,6 +197,15 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
       .select("id")
       .single();
     if (error) throw error;
+    // Добавим наблюдателя, если выбран
+    if (t.watcher_id) {
+      await supabase.from("task_members").insert({
+        task_id: data.id as string,
+        team_member_id: t.watcher_id,
+        role: "auditor" as any,
+        added_by: user!.id,
+      });
+    }
     return data.id as string;
   };
 
@@ -619,6 +632,8 @@ function PeriodTasksPanel(props: {
   const { period, tasks, members, selectedIds } = props;
   const [newTitle, setNewTitle] = useState("");
   const [newAssignee, setNewAssignee] = useState<string>("none");
+  const [newWatcher, setNewWatcher] = useState<string>("none");
+  const [newStartDate, setNewStartDate] = useState<string>("");
   const [newDeadline, setNewDeadline] = useState<string>("");
   const [newCategory, setNewCategory] = useState<string>("general");
   const [newRequired, setNewRequired] = useState(false);
@@ -627,15 +642,23 @@ function PeriodTasksPanel(props: {
   const handleQuickAdd = () => {
     const title = newTitle.trim();
     if (!title) return;
+    if (newStartDate && newDeadline && newStartDate > newDeadline) {
+      toast.error("Дата начала не может быть позже срока выполнения");
+      return;
+    }
     props.onAddTask({
       title,
       assignee_id: newAssignee === "none" ? null : newAssignee,
       deadline: newDeadline || null,
       category: newCategory,
       required: newRequired,
+      // extras для пробрасывания в CRM-задачу
+      ...( { start_date: newStartDate || null, watcher_id: newWatcher === "none" ? null : newWatcher } as any ),
     });
     setNewTitle("");
     setNewAssignee("none");
+    setNewWatcher("none");
+    setNewStartDate("");
     setNewDeadline("");
     setNewCategory("general");
     setNewRequired(false);
@@ -705,35 +728,68 @@ function PeriodTasksPanel(props: {
           placeholder="Название задачи..."
           className="h-9"
         />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div className="space-y-1">
+            <Label className="text-[10px] text-muted-foreground">Исполнитель</Label>
+            <Select value={newAssignee} onValueChange={setNewAssignee}>
+              <SelectTrigger className="h-9 text-xs">
+                <SelectValue placeholder="Не назначен" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Не назначен</SelectItem>
+                {members.map((m) => (
+                  <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-[10px] text-muted-foreground">Наблюдатель</Label>
+            <Select value={newWatcher} onValueChange={setNewWatcher}>
+              <SelectTrigger className="h-9 text-xs">
+                <SelectValue placeholder="Не назначен" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Не назначен</SelectItem>
+                {members.map((m) => (
+                  <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          <Select value={newAssignee} onValueChange={setNewAssignee}>
-            <SelectTrigger className="h-9 text-xs">
-              <SelectValue placeholder="Ответственный" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">Не назначен</SelectItem>
-              {members.map((m) => (
-                <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={newCategory} onValueChange={setNewCategory}>
-            <SelectTrigger className="h-9 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {CATEGORIES.map((c) => (
-                <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Input
-            type="date"
-            value={newDeadline}
-            onChange={(e) => setNewDeadline(e.target.value)}
-            className="h-9 text-xs"
-            placeholder="Дедлайн"
-          />
+          <div className="space-y-1">
+            <Label className="text-[10px] text-muted-foreground">Категория</Label>
+            <Select value={newCategory} onValueChange={setNewCategory}>
+              <SelectTrigger className="h-9 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {CATEGORIES.map((c) => (
+                  <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-[10px] text-muted-foreground">Дата начала</Label>
+            <Input
+              type="date"
+              value={newStartDate}
+              onChange={(e) => setNewStartDate(e.target.value)}
+              className="h-9 text-xs"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-[10px] text-muted-foreground">Срок выполнения</Label>
+            <Input
+              type="date"
+              value={newDeadline}
+              onChange={(e) => setNewDeadline(e.target.value)}
+              className="h-9 text-xs"
+            />
+          </div>
         </div>
         <div className="flex items-center justify-between">
           <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
