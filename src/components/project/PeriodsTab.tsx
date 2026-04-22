@@ -173,8 +173,11 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
 
   // Создаёт CRM-задачу проекта как дочернюю к главной задаче периода и возвращает её id.
   // Так задача появится во вкладке «Задачи» проекта.
-  const createChildCrmTaskFor = async (parentTaskId: string, t: Partial<PeriodTask>) => {
+  // Дополнительно: дата начала пишется в description, наблюдатель — в task_members.
+  const createChildCrmTaskFor = async (parentTaskId: string, t: Partial<PeriodTask> & { start_date?: string | null; watcher_id?: string | null }) => {
     if (!t.title) return null;
+    const startDate = t.start_date || null;
+    const description = startDate ? `Начало: ${format(new Date(startDate), "dd.MM.yyyy")}` : null;
     const { data, error } = await supabase
       .from("crm_tasks")
       .insert({
@@ -184,6 +187,7 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
         stage_progress: t.completed ? 100 : 0,
         priority: "medium",
         deadline: t.deadline ? new Date(t.deadline).toISOString() : null,
+        description,
         assignee_id: t.assignee_id || null,
         creator_id: t.assignee_id || null,
         project_id: projectId,
@@ -193,6 +197,15 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
       .select("id")
       .single();
     if (error) throw error;
+    // Добавим наблюдателя, если выбран
+    if (t.watcher_id) {
+      await supabase.from("task_members").insert({
+        task_id: data.id as string,
+        team_member_id: t.watcher_id,
+        role: "auditor" as any,
+        added_by: user!.id,
+      });
+    }
     return data.id as string;
   };
 
