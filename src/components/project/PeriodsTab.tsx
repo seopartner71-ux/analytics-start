@@ -56,6 +56,65 @@ const CATEGORIES = [
   { value: "reports", label: "Отчётность" },
 ];
 
+const toDateOnly = (value?: string | null) => value?.slice(0, 10) || null;
+
+const toDeadlineIso = (value?: string | null) => {
+  const dateOnly = toDateOnly(value);
+  return dateOnly ? `${dateOnly}T00:00:00.000Z` : null;
+};
+
+const formatDateLabel = (value: string) => format(new Date(`${toDateOnly(value)}T00:00:00`), "dd.MM.yyyy");
+
+const getTaskDateError = ({
+  startDate,
+  deadline,
+  periodStart,
+  periodEnd,
+  projectDeadline,
+}: {
+  startDate?: string | null;
+  deadline?: string | null;
+  periodStart?: string | null;
+  periodEnd?: string | null;
+  projectDeadline?: string | null;
+}) => {
+  const start = toDateOnly(startDate);
+  const due = toDateOnly(deadline);
+  const periodFrom = toDateOnly(periodStart);
+  const periodTo = toDateOnly(periodEnd);
+  const projectDue = toDateOnly(projectDeadline);
+
+  if (start && due && start > due) {
+    return "Дата начала не может быть позже срока выполнения";
+  }
+
+  if (start && periodFrom && start < periodFrom) {
+    return `Дата начала задачи не может быть раньше начала периода (${formatDateLabel(periodFrom)})`;
+  }
+
+  if (start && periodTo && start > periodTo) {
+    return `Дата начала задачи не может быть позже окончания периода (${formatDateLabel(periodTo)})`;
+  }
+
+  if (due && periodFrom && due < periodFrom) {
+    return `Срок задачи не может быть раньше начала периода (${formatDateLabel(periodFrom)})`;
+  }
+
+  if (due && periodTo && due > periodTo) {
+    return `Срок задачи не может быть позже окончания периода (${formatDateLabel(periodTo)})`;
+  }
+
+  if (start && projectDue && start > projectDue) {
+    return `Дата начала задачи не может быть позже срока проекта (${formatDateLabel(projectDue)})`;
+  }
+
+  if (due && projectDue && due > projectDue) {
+    return `Срок задачи не может быть позже срока проекта (${formatDateLabel(projectDue)})`;
+  }
+
+  return null;
+};
+
 type Period = {
   id: string;
   project_id: string;
