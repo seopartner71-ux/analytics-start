@@ -320,21 +320,54 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
             </Card>
           )}
           {periods.map((p) => (
-            <button
+            <div
               key={p.id}
-              onClick={() => setSelectedPeriodId(p.id)}
               className={cn(
-                "w-full text-left px-3 py-2.5 rounded-lg border transition-all",
+                "group w-full flex items-stretch rounded-lg border transition-all overflow-hidden",
                 activePeriod?.id === p.id
                   ? "border-primary bg-primary/5"
                   : "border-border/60 hover:border-border bg-card",
               )}
             >
-              <div className="text-sm font-medium">{p.title}</div>
-              <div className="text-[11px] text-muted-foreground mt-0.5">
-                {p.status === "active" ? "Активный" : "Завершён"}
-              </div>
-            </button>
+              <button
+                onClick={() => setSelectedPeriodId(p.id)}
+                className="flex-1 text-left px-3 py-2.5"
+              >
+                <div className="text-sm font-medium">{p.title}</div>
+                <div className="text-[11px] text-muted-foreground mt-0.5">
+                  {p.status === "active" ? "Активный" : "Завершён"}
+                </div>
+              </button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-auto w-8 rounded-none text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Удалить период «{p.title}»?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Все задачи периода также будут удалены. Действие необратимо.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Отмена</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => deletePeriod.mutate(p.id)}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Удалить
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           ))}
         </div>
       </div>
