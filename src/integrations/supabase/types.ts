@@ -3019,6 +3019,7 @@ export type Database = {
       project_periods: {
         Row: {
           created_at: string
+          crm_task_id: string | null
           end_date: string | null
           id: string
           month: number
@@ -3032,6 +3033,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          crm_task_id?: string | null
           end_date?: string | null
           id?: string
           month: number
@@ -3045,6 +3047,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          crm_task_id?: string | null
           end_date?: string | null
           id?: string
           month?: number
@@ -3057,6 +3060,13 @@ export type Database = {
           year?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "project_periods_crm_task_id_fkey"
+            columns: ["crm_task_id"]
+            isOneToOne: false
+            referencedRelation: "crm_tasks"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "project_periods_project_id_fkey"
             columns: ["project_id"]

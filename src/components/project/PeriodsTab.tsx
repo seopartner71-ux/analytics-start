@@ -65,6 +65,7 @@ type Period = {
   status: string;
   start_date: string | null;
   end_date: string | null;
+  crm_task_id: string | null;
 };
 
 type PeriodTask = {
@@ -77,7 +78,7 @@ type PeriodTask = {
   required: boolean;
   completed: boolean;
   sort_order: number;
-  crm_task_id: string | null;
+  crm_task_id: string | null; // id записи в subtasks
 };
 
 type Member = { id: string; full_name: string };
@@ -139,20 +140,18 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
     },
   });
 
-  // Создаёт CRM-задачу и возвращает её id (если переданы данные задачи).
-  const createCrmTask = async (t: Partial<PeriodTask>) => {
+  // Создаёт подзадачу в главной CRM-задаче периода и возвращает её id.
+  const createSubtaskFor = async (parentTaskId: string, t: Partial<PeriodTask>, sortOrder: number) => {
     if (!t.title) return null;
     const { data, error } = await supabase
-      .from("crm_tasks")
+      .from("subtasks")
       .insert({
+        task_id: parentTaskId,
         title: t.title,
-        stage: "Новые",
-        priority: "medium",
-        deadline: t.deadline ? new Date(t.deadline).toISOString() : null,
         assignee_id: t.assignee_id || null,
-        project_id: projectId,
-        creator_id: null,
-        owner_id: user!.id,
+        deadline: t.deadline ? new Date(t.deadline).toISOString() : null,
+        sort_order: sortOrder,
+        is_done: !!t.completed,
       })
       .select("id")
       .single();
@@ -170,6 +169,23 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
       end_date: string;
       tasks: Partial<PeriodTask>[];
     }) => {
+      // 1) Главная CRM-задача периода
+      const { data: parentTask, error: ptErr } = await supabase
+        .from("crm_tasks")
+        .insert({
+          title: vars.title,
+          stage: "В работе",
+          stage_color: "#f59e0b",
+          priority: "medium",
+          deadline: vars.end_date ? new Date(vars.end_date).toISOString() : null,
+          project_id: projectId,
+          owner_id: user!.id,
+        })
+        .select("id")
+        .single();
+      if (ptErr) throw ptErr;
+
+      // 2) Сам период со ссылкой на главную задачу
       const { data: p, error } = await supabase
         .from("project_periods")
         .insert({
@@ -180,15 +196,17 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
           title: vars.title,
           start_date: vars.start_date,
           end_date: vars.end_date,
+          crm_task_id: parentTask.id,
         })
         .select().single();
       if (error) throw error;
+
+      // 3) Пункты периода → подзадачи главной CRM-задачи
       if (vars.tasks.length > 0) {
-        // Создаём CRM-задачи последовательно, чтобы получить id для связи
         const rows: any[] = [];
         for (let i = 0; i < vars.tasks.length; i++) {
           const t = vars.tasks[i];
-          const crmId = await createCrmTask(t);
+          const subId = await createSubtaskFor(parentTask.id, t, i);
           rows.push({
             period_id: p.id,
             title: t.title!,
@@ -197,7 +215,7 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
             deadline: t.deadline || null,
             required: t.required || false,
             sort_order: i,
-            crm_task_id: crmId,
+            crm_task_id: subId,
           });
         }
         const { error: te } = await supabase.from("period_tasks").insert(rows);
@@ -207,6 +225,7 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
     },
     onSuccess: (p) => {
       qc.invalidateQueries({ queryKey: ["project-periods", projectId] });
+      qc.invalidateQueries({ queryKey: ["project-tasks", projectId] });
       qc.invalidateQueries({ queryKey: ["crm-tasks"] });
       setSelectedPeriodId(p.id);
       setCreateOpen(false);
@@ -217,24 +236,26 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
 
   const addTask = useMutation({
     mutationFn: async (vars: Partial<PeriodTask>) => {
+      if (!activePeriod?.crm_task_id) throw new Error("У периода нет связанной задачи");
       const sort_order = tasks.length;
-      const crmId = await createCrmTask(vars);
+      const subId = await createSubtaskFor(activePeriod.crm_task_id, vars, sort_order);
       const { error } = await supabase.from("period_tasks").insert({
-        period_id: activePeriod!.id,
+        period_id: activePeriod.id,
         title: vars.title!,
         category: vars.category || "general",
         assignee_id: vars.assignee_id || null,
         deadline: vars.deadline || null,
         required: vars.required || false,
         sort_order,
-        crm_task_id: crmId,
+        crm_task_id: subId,
       });
       if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["period-tasks", activePeriod?.id] });
+      qc.invalidateQueries({ queryKey: ["project-tasks", projectId] });
       qc.invalidateQueries({ queryKey: ["crm-tasks"] });
-      toast.success("Задача создана и добавлена в проект");
+      toast.success("Задача добавлена в период и в проект");
     },
     onError: (e: any) => toast.error(e.message || "Ошибка создания задачи"),
   });
@@ -243,17 +264,38 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
     mutationFn: async (vars: { id: string; patch: Partial<PeriodTask> }) => {
       const { error } = await supabase.from("period_tasks").update(vars.patch).eq("id", vars.id);
       if (error) throw error;
+      // Синхронизация с подзадачей
+      const row = tasks.find((t) => t.id === vars.id);
+      if (row?.crm_task_id) {
+        const subPatch: any = {};
+        if ("title" in vars.patch) subPatch.title = vars.patch.title;
+        if ("assignee_id" in vars.patch) subPatch.assignee_id = vars.patch.assignee_id;
+        if ("deadline" in vars.patch)
+          subPatch.deadline = vars.patch.deadline ? new Date(vars.patch.deadline as string).toISOString() : null;
+        if ("completed" in vars.patch) subPatch.is_done = !!vars.patch.completed;
+        if (Object.keys(subPatch).length > 0) {
+          await supabase.from("subtasks").update(subPatch).eq("id", row.crm_task_id);
+        }
+      }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["period-tasks", activePeriod?.id] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["period-tasks", activePeriod?.id] });
+      qc.invalidateQueries({ queryKey: ["project-tasks", projectId] });
+    },
   });
 
   const deleteTasks = useMutation({
     mutationFn: async (ids: string[]) => {
+      const subIds = tasks.filter((t) => ids.includes(t.id) && t.crm_task_id).map((t) => t.crm_task_id!) as string[];
       const { error } = await supabase.from("period_tasks").delete().in("id", ids);
       if (error) throw error;
+      if (subIds.length > 0) {
+        await supabase.from("subtasks").delete().in("id", subIds);
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["period-tasks", activePeriod?.id] });
+      qc.invalidateQueries({ queryKey: ["project-tasks", projectId] });
       setSelectedTaskIds(new Set());
       toast.success("Задачи удалены");
     },
@@ -262,11 +304,17 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
 
   const deletePeriod = useMutation({
     mutationFn: async (id: string) => {
+      const period = periods.find((p) => p.id === id);
+      // Удаление главной CRM-задачи каскадом снесёт subtasks
+      if (period?.crm_task_id) {
+        await supabase.from("crm_tasks").delete().eq("id", period.crm_task_id);
+      }
       const { error } = await supabase.from("project_periods").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["project-periods", projectId] });
+      qc.invalidateQueries({ queryKey: ["project-tasks", projectId] });
       setSelectedPeriodId(null);
       toast.success("Период удалён");
     },
@@ -280,6 +328,11 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
           supabase.from("period_tasks").update({ sort_order: i }).eq("id", t.id),
         ),
       );
+      await Promise.all(
+        newOrder.filter((t) => t.crm_task_id).map((t, i) =>
+          supabase.from("subtasks").update({ sort_order: i }).eq("id", t.crm_task_id!),
+        ),
+      );
     },
   });
 
@@ -287,9 +340,21 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
     mutationFn: async (vars: { ids: string[]; patch: Partial<PeriodTask> }) => {
       const { error } = await supabase.from("period_tasks").update(vars.patch).in("id", vars.ids);
       if (error) throw error;
+      const subIds = tasks.filter((t) => vars.ids.includes(t.id) && t.crm_task_id).map((t) => t.crm_task_id!) as string[];
+      if (subIds.length > 0) {
+        const subPatch: any = {};
+        if ("assignee_id" in vars.patch) subPatch.assignee_id = vars.patch.assignee_id;
+        if ("deadline" in vars.patch)
+          subPatch.deadline = vars.patch.deadline ? new Date(vars.patch.deadline as string).toISOString() : null;
+        if ("completed" in vars.patch) subPatch.is_done = !!vars.patch.completed;
+        if (Object.keys(subPatch).length > 0) {
+          await supabase.from("subtasks").update(subPatch).in("id", subIds);
+        }
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["period-tasks", activePeriod?.id] });
+      qc.invalidateQueries({ queryKey: ["project-tasks", projectId] });
       setSelectedTaskIds(new Set());
       toast.success("Обновлено");
     },
