@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/UserAvatar";
 import { Badge } from "@/components/ui/badge";
 import { Paperclip, Send, Search, X, FileIcon, Trash2, SmilePlus } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -391,9 +391,12 @@ export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) 
               const isMine = m.user_id === user?.id;
               return (
                 <div key={m.id} className={`flex gap-2 ${isMine ? "flex-row-reverse" : ""}`}>
-                  <Avatar className="h-8 w-8 shrink-0">
-                    <AvatarFallback className="text-[11px] bg-muted">{initialsOf(m.user_name)}</AvatarFallback>
-                  </Avatar>
+                  <UserAvatar
+                    name={m.user_name}
+                    seed={m.user_id || m.user_name}
+                    className="h-8 w-8 shrink-0"
+                    fallbackClassName="text-[11px] bg-muted"
+                  />
                   <div className={`max-w-[75%] ${isMine ? "items-end" : "items-start"} flex flex-col gap-1`}>
                     <div className="flex items-baseline gap-2 text-[11px] text-muted-foreground">
                       <span className="font-medium text-foreground">{m.user_name}</span>
@@ -505,7 +508,7 @@ export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) 
                 onClick={() => insertMention(p)}
                 className="w-full text-left px-3 py-1.5 text-xs hover:bg-accent flex items-center gap-2"
               >
-                <Avatar className="h-5 w-5"><AvatarFallback className="text-[9px]">{initialsOf(p.full_name)}</AvatarFallback></Avatar>
+                <UserAvatar name={p.full_name} seed={p.id} className="h-5 w-5" fallbackClassName="text-[9px]" />
                 {p.full_name}
               </button>
             ))}

@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { UserAvatar } from "@/components/UserAvatar";
 
 const allNav = [
   { title: "Дашборд", url: "/", icon: LayoutDashboard, minRole: "viewer" as const },
@@ -56,7 +57,7 @@ interface AppSidebarProps {
 export function AppSidebar({ activeTab, onTabChange, projectName, projectLogo }: AppSidebarProps) {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
-  const { user, role, isAdmin, isManager, hasFinanceAccess } = useAuth();
+  const { user, profile, role, isAdmin, isManager, hasFinanceAccess } = useAuth();
   const ROLE_LEVELS = { viewer: 0, junior: 0, seo: 1, manager: 1, director: 2, admin: 2 } as const;
   const userLevel = ROLE_LEVELS[role as keyof typeof ROLE_LEVELS] ?? 0;
   const isDirector = role === "director";
@@ -263,11 +264,15 @@ export function AppSidebar({ activeTab, onTabChange, projectName, projectLogo }:
             className="flex items-center gap-2.5 cursor-pointer hover:bg-sidebar-accent/50 rounded-lg p-1.5 -m-1.5 transition-colors"
             onClick={() => navigate("/profile")}
           >
-            <div className="h-8 w-8 rounded-full bg-sidebar-muted flex items-center justify-center text-xs font-medium text-sidebar-foreground">
-              {user?.email?.charAt(0).toUpperCase() || "U"}
-            </div>
+            <UserAvatar
+              avatarUrl={profile?.avatar_url}
+              name={profile?.full_name || user?.email}
+              seed={user?.id || user?.email}
+              className="h-8 w-8"
+              fallbackClassName="text-[10px]"
+            />
             <div className="min-w-0 flex-1">
-              <p className="text-[12px] font-medium text-sidebar-accent-foreground truncate">{user?.email}</p>
+              <p className="text-[12px] font-medium text-sidebar-accent-foreground truncate">{profile?.full_name || user?.email}</p>
               <p className="text-[10px] text-sidebar-foreground/50">Мой профиль</p>
             </div>
           </div>

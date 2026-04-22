@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePresence } from "@/hooks/usePresence";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/UserAvatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -220,12 +220,13 @@ export function ConversationView({ conversationId, onBack, employeeById, directO
         </Button>
         {conv?.type === "direct" && otherUser ? (
           <div className="relative">
-            <Avatar className="h-8 w-8">
-              <AvatarImage src={otherUser.avatar_url || undefined} />
-              <AvatarFallback className="text-[10px]">
-                {(otherUser.full_name || otherUser.email).slice(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
+            <UserAvatar
+              avatarUrl={otherUser.avatar_url}
+              name={otherUser.full_name || otherUser.email}
+              seed={otherUser.user_id}
+              className="h-8 w-8"
+              fallbackClassName="text-[10px]"
+            />
             {otherUserId && (
               <span
                 className={cn(

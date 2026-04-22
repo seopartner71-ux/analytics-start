@@ -27,10 +27,7 @@ const BADGE_ICONS = [
   Flag, Bookmark, Hash, Target, Zap, Globe, Briefcase, Building2,
 ];
 
-function getDefaultAvatar(name: string, size = 200) {
-  const hash = name.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
-  return `https://i.pravatar.cc/${size}?u=${hash}`;
-}
+import { getDefaultAvatar } from "@/lib/avatar";
 
 export default function ProfilePage() {
   const { user, profile, role, refreshProfile } = useAuth();
