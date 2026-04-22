@@ -122,7 +122,7 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
     enabled: !!activePeriod?.id,
   });
 
-  // Realtime: при изменении подзадач или пунктов периода — обновляем чекбоксы мгновенно
+  // Realtime: при изменении пунктов периода или связанных CRM-задач — обновляем данные
   useEffect(() => {
     if (!activePeriod?.id) return;
     const channel = supabase
@@ -130,14 +130,15 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
       .on("postgres_changes", { event: "*", schema: "public", table: "period_tasks", filter: `period_id=eq.${activePeriod.id}` }, () => {
         qc.invalidateQueries({ queryKey: ["period-tasks", activePeriod.id] });
       })
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "subtasks" }, () => {
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "crm_tasks" }, () => {
         qc.invalidateQueries({ queryKey: ["period-tasks", activePeriod.id] });
+        qc.invalidateQueries({ queryKey: ["project-tasks", projectId] });
       })
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [activePeriod?.id, qc]);
+  }, [activePeriod?.id, qc, projectId]);
 
   const { data: members = [] } = useQuery({
     queryKey: ["team-members-min"],
@@ -157,18 +158,24 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
     },
   });
 
-  // Создаёт подзадачу в главной CRM-задаче периода и возвращает её id.
-  const createSubtaskFor = async (parentTaskId: string, t: Partial<PeriodTask>, sortOrder: number) => {
+  // Создаёт CRM-задачу проекта как дочернюю к главной задаче периода и возвращает её id.
+  // Так задача появится во вкладке «Задачи» проекта.
+  const createChildCrmTaskFor = async (parentTaskId: string, t: Partial<PeriodTask>) => {
     if (!t.title) return null;
     const { data, error } = await supabase
-      .from("subtasks")
+      .from("crm_tasks")
       .insert({
-        task_id: parentTaskId,
         title: t.title,
-        assignee_id: t.assignee_id || null,
+        stage: t.completed ? "Завершена" : "Новые",
+        stage_color: t.completed ? "#10b981" : "#3b82f6",
+        stage_progress: t.completed ? 100 : 0,
+        priority: "medium",
         deadline: t.deadline ? new Date(t.deadline).toISOString() : null,
-        sort_order: sortOrder,
-        is_done: !!t.completed,
+        assignee_id: t.assignee_id || null,
+        creator_id: t.assignee_id || null,
+        project_id: projectId,
+        parent_id: parentTaskId,
+        owner_id: user!.id,
       })
       .select("id")
       .single();
