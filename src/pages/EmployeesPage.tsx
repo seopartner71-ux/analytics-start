@@ -393,19 +393,19 @@ export default function EmployeesPage() {
     queryClient.invalidateQueries({ queryKey: ["team-members"] });
   };
 
-  // Live presence + avatar: соединяем team_members → profiles (по email) → user_time_logs.updated_at
+  // Live presence + avatar + sync status: соединяем team_members → profiles (по email) → user_time_logs.updated_at
   const { data: presenceMap = {} } = useQuery({
     queryKey: ["team-presence"],
     queryFn: async () => {
       const today = new Date().toISOString().slice(0, 10);
       const [{ data: profiles }, { data: logs }] = await Promise.all([
-        supabase.from("profiles").select("user_id, email, avatar_url"),
+        supabase.from("profiles").select("user_id, email, avatar_url, status"),
         supabase.from("user_time_logs").select("user_id, updated_at, active_seconds").eq("log_date", today),
       ]);
-      const userIdToProfile = new Map<string, { email: string; avatar_url: string | null }>();
-      (profiles || []).forEach((p: any) => p.email && userIdToProfile.set(p.user_id, { email: p.email.toLowerCase(), avatar_url: p.avatar_url }));
-      const map: Record<string, { updated_at?: string; active_seconds?: number; avatar_url?: string | null }> = {};
-      userIdToProfile.forEach((p) => { map[p.email] = { avatar_url: p.avatar_url }; });
+      const userIdToProfile = new Map<string, { email: string; avatar_url: string | null; status: string | null }>();
+      (profiles || []).forEach((p: any) => p.email && userIdToProfile.set(p.user_id, { email: p.email.toLowerCase(), avatar_url: p.avatar_url, status: p.status }));
+      const map: Record<string, { updated_at?: string; active_seconds?: number; avatar_url?: string | null; profile_status?: string | null; has_profile?: boolean }> = {};
+      userIdToProfile.forEach((p) => { map[p.email] = { avatar_url: p.avatar_url, profile_status: p.status, has_profile: true }; });
       (logs || []).forEach((l: any) => {
         const p = userIdToProfile.get(l.user_id);
         if (p) map[p.email] = { ...map[p.email], updated_at: l.updated_at, active_seconds: l.active_seconds };
@@ -416,14 +416,16 @@ export default function EmployeesPage() {
   });
 
   const getPresence = (email: string | null) => {
-    if (!email) return { status: "offline" as const, activeSeconds: 0, avatarUrl: null as string | null, updatedAt: undefined as string | undefined };
+    if (!email) return { status: "offline" as const, activeSeconds: 0, avatarUrl: null as string | null, updatedAt: undefined as string | undefined, profileStatus: null as string | null, hasProfile: false };
     const entry = presenceMap[email.toLowerCase()];
-    if (!entry) return { status: "offline" as const, activeSeconds: 0, avatarUrl: null, updatedAt: undefined };
+    if (!entry) return { status: "offline" as const, activeSeconds: 0, avatarUrl: null, updatedAt: undefined, profileStatus: null, hasProfile: false };
     const avatarUrl = entry.avatar_url ?? null;
-    if (!entry.updated_at) return { status: "offline" as const, activeSeconds: 0, avatarUrl, updatedAt: undefined };
+    const profileStatus = entry.profile_status ?? null;
+    const hasProfile = !!entry.has_profile;
+    if (!entry.updated_at) return { status: "offline" as const, activeSeconds: 0, avatarUrl, updatedAt: undefined, profileStatus, hasProfile };
     const ageSec = (Date.now() - new Date(entry.updated_at).getTime()) / 1000;
     const status = ageSec < 180 ? "online" : ageSec < 900 ? "away" : "offline";
-    return { status: status as "online" | "away" | "offline", activeSeconds: entry.active_seconds || 0, updatedAt: entry.updated_at, avatarUrl };
+    return { status: status as "online" | "away" | "offline", activeSeconds: entry.active_seconds || 0, updatedAt: entry.updated_at, avatarUrl, profileStatus, hasProfile };
   };
 
   const filtered = employees.filter(e =>
@@ -504,6 +506,7 @@ export default function EmployeesPage() {
                     <th>Подразделение</th>
                     <th>E-Mail</th>
                     <th>Мобильный телефон</th>
+                    <th>Учётка</th>
                     <th>Дата активности</th>
                     {isAdmin && <th className="w-12"></th>}
                   </tr>
@@ -552,6 +555,19 @@ export default function EmployeesPage() {
                           </td>
                           <td className="text-sm text-muted-foreground">{e.email || "—"}</td>
                           <td className="text-sm text-muted-foreground">{e.phone || "—"}</td>
+                          <td>
+                            {!e.email ? (
+                              <Badge variant="outline" className="text-[10px] border-muted text-muted-foreground">Нет email</Badge>
+                            ) : !presence.hasProfile ? (
+                              <Badge variant="outline" className="text-[10px] border-amber-500/40 text-amber-600">Не в системе</Badge>
+                            ) : presence.profileStatus === "pending" ? (
+                              <Badge variant="outline" className="text-[10px] border-amber-500/40 text-amber-600">Ожидает</Badge>
+                            ) : presence.profileStatus === "blocked" ? (
+                              <Badge variant="outline" className="text-[10px] border-destructive/40 text-destructive">Заблокирован</Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-[10px] border-emerald-500/40 text-emerald-600">Синхронизирован</Badge>
+                            )}
+                          </td>
                           <td className={`text-sm ${statusClass}`}>{lastSeenLabel}</td>
                           {isAdmin && (
                             <td className="text-right">
