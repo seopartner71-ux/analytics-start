@@ -3909,6 +3909,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      archive_team_member_everywhere: {
+        Args: { p_member_id: string }
+        Returns: undefined
+      }
       can_view_project: {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
