@@ -550,7 +550,11 @@ export default function EmployeesPage() {
                               <AvatarCircle initials={getInitials(e.full_name)} status={presence.status} avatarUrl={presence.avatarUrl} />
                               <div>
                                 <p className="text-sm font-semibold text-foreground">{e.full_name}</p>
-                                <p className="text-[11px] text-muted-foreground">{ROLE_LABELS[e.role] || e.role}</p>
+                                <p className="text-[11px] text-muted-foreground">
+                                  {presence.appRole && APP_ROLE_LABELS[presence.appRole]
+                                    ? APP_ROLE_LABELS[presence.appRole].label
+                                    : ROLE_LABELS[e.role] || e.role}
+                                </p>
                               </div>
                             </div>
                           </td>
