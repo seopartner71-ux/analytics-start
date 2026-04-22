@@ -3979,6 +3979,14 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_subtask_progress: {
+        Args: { p_task_id: string }
+        Returns: {
+          done: number
+          percent: number
+          total: number
+        }[]
+      }
       get_weekly_report_by_token: {
         Args: { p_token: string }
         Returns: {
@@ -4037,6 +4045,7 @@ export type Database = {
         }[]
       }
       notify_overdue_tasks: { Args: never; Returns: undefined }
+      notify_upcoming_deadlines: { Args: never; Returns: undefined }
       recalc_onboarding_progress: {
         Args: { p_onboarding_id: string }
         Returns: undefined

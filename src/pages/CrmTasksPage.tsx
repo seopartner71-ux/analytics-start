@@ -29,6 +29,18 @@ import { DeleteButton } from "@/components/common/DeleteButton";
 import { logDeletion } from "@/lib/deletion-log";
 
 import { TaskDetailSheet, CrmTask, getAvatarUrl } from "@/components/project/TaskDetailSheet";
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  useDraggable,
+  useDroppable,
+} from "@dnd-kit/core";
+
 
 type TaskComment = Tables<"task_comments"> & {
   author?: Tables<"team_members"> | null;
@@ -147,65 +159,133 @@ function PropertyRow({ label, children }: { label: string; children: React.React
   );
 }
 
-/* ─── Kanban ─── */
-function KanbanView({ tasks, onSelect, onDelete, canDelete }: { tasks: CrmTask[]; onSelect: (t: CrmTask) => void; onDelete: (t: CrmTask) => Promise<void>; canDelete: (t: CrmTask) => boolean }) {
-  const stages = ["Новые", "В работе", "На проверке", "Возвращена", "Принята"] as const;
+/* ─── Kanban (with drag-and-drop) ─── */
+type KanbanStage = "Новые" | "В работе" | "На проверке" | "Возвращена" | "Принята";
+const KANBAN_STAGES: KanbanStage[] = ["Новые", "В работе", "На проверке", "Возвращена", "Принята"];
+
+function KanbanCard({ t, onSelect, onDelete, canDelete }: { t: CrmTask; onSelect: (t: CrmTask) => void; onDelete: (t: CrmTask) => Promise<void>; canDelete: (t: CrmTask) => boolean }) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: t.id });
+  const dlStatus = getDeadlineStatus(t.deadline, t.stage);
+  const dlStyle = DEADLINE_STYLES[dlStatus];
+  const color = STAGE_COLORS[t.stage as KanbanStage] || t.stage_color || "#3b82f6";
+
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-      {stages.map(stage => {
-        const stageTasks = tasks.filter(t => t.stage === stage);
-        const color = STAGE_COLORS[stage];
-        return (
-          <div key={stage} className="space-y-2.5">
-            <div className="flex items-center gap-2 pb-2.5 border-b-2" style={{ borderColor: color }}>
-              <span className="text-sm font-semibold text-foreground">{stage}</span>
-              <Badge variant="secondary" className="text-[10px] h-5 min-w-5 flex items-center justify-center rounded-full">{stageTasks.length}</Badge>
+    <div ref={setNodeRef} {...attributes} style={{ opacity: isDragging ? 0.4 : 1 }}>
+      <Card className="cursor-pointer card-glow group relative" onClick={() => onSelect(t)}>
+        <CardContent className="p-3.5 space-y-2.5">
+          <div className="flex items-start justify-between gap-2">
+            <div
+              {...listeners}
+              className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground/80 mt-0.5"
+              onClick={(e) => e.stopPropagation()}
+              aria-label="Перетащить"
+            >
+              <GripVertical className="h-3.5 w-3.5" />
             </div>
-            <AnimatePresence>
-              {stageTasks.map((t, i) => {
-                const dlStatus = getDeadlineStatus(t.deadline, t.stage);
-                const dlStyle = DEADLINE_STYLES[dlStatus];
-                return (
-                  <motion.div
-                    key={t.id}
-                    initial={{ opacity: 0, scale: 0.97 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: i * 0.05, duration: 0.2 }}
-                  >
-                    <Card className="cursor-pointer card-glow group relative" onClick={() => onSelect(t)}>
-                      <CardContent className="p-3.5 space-y-2.5">
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm font-medium text-foreground line-clamp-2 leading-snug flex-1">{t.title}</p>
-                          <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                            <DeleteButton
-                              visible={canDelete(t)}
-                              entityName={t.title}
-                              entityLabel="задачу"
-                              onConfirm={() => onDelete(t)}
-                            />
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className={cn("text-[11px] font-medium flex items-center gap-1", dlStyle.text)}>
-                            {dlStatus === "overdue" && <AlertTriangle className="h-3 w-3" />}
-                            {dlStatus === "soon" && <Clock className="h-3 w-3" />}
-                            {t.deadline ? new Date(t.deadline).toLocaleDateString("ru-RU", { day: "numeric", month: "short" }) : "—"}
-                          </span>
-                          {t.assignee && <AvatarCircle initials={getInitials(t.assignee.full_name)} className="h-6 w-6 text-[10px]" />}
-                        </div>
-                        <div className="w-full h-1.5 rounded-full overflow-hidden bg-muted">
-                          <div className="h-full rounded-full transition-all duration-500" style={{ width: `${t.stage_progress || 0}%`, backgroundColor: color }} />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                );
-              })}
-            </AnimatePresence>
+            <p className="text-sm font-medium text-foreground line-clamp-2 leading-snug flex-1">{t.title}</p>
+            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+              <DeleteButton
+                visible={canDelete(t)}
+                entityName={t.title}
+                entityLabel="задачу"
+                onConfirm={() => onDelete(t)}
+              />
+            </div>
           </div>
-        );
-      })}
+          <div className="flex items-center justify-between">
+            <span className={cn("text-[11px] font-medium flex items-center gap-1", dlStyle.text)}>
+              {dlStatus === "overdue" && <AlertTriangle className="h-3 w-3" />}
+              {dlStatus === "soon" && <Clock className="h-3 w-3" />}
+              {t.deadline ? new Date(t.deadline).toLocaleDateString("ru-RU", { day: "numeric", month: "short" }) : "—"}
+            </span>
+            {t.assignee && <AvatarCircle initials={getInitials(t.assignee.full_name)} className="h-6 w-6 text-[10px]" />}
+          </div>
+          <div className="w-full h-1.5 rounded-full overflow-hidden bg-muted">
+            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${t.stage_progress || 0}%`, backgroundColor: color }} />
+          </div>
+        </CardContent>
+      </Card>
     </div>
+  );
+}
+
+function KanbanColumn({ stage, tasks, onSelect, onDelete, canDelete }: { stage: KanbanStage; tasks: CrmTask[]; onSelect: (t: CrmTask) => void; onDelete: (t: CrmTask) => Promise<void>; canDelete: (t: CrmTask) => boolean }) {
+  const { setNodeRef, isOver } = useDroppable({ id: `col-${stage}` });
+  const color = STAGE_COLORS[stage];
+  return (
+    <div ref={setNodeRef} className={cn("space-y-2.5 rounded-lg p-1 transition-colors", isOver && "bg-primary/5 ring-2 ring-primary/30")}>
+      <div className="flex items-center gap-2 pb-2.5 border-b-2" style={{ borderColor: color }}>
+        <span className="text-sm font-semibold text-foreground">{stage}</span>
+        <Badge variant="secondary" className="text-[10px] h-5 min-w-5 flex items-center justify-center rounded-full">{tasks.length}</Badge>
+      </div>
+      <div className="space-y-2.5 min-h-[80px]">
+        {tasks.map((t) => (
+          <KanbanCard key={t.id} t={t} onSelect={onSelect} onDelete={onDelete} canDelete={canDelete} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function KanbanView({ tasks, onSelect, onDelete, canDelete }: { tasks: CrmTask[]; onSelect: (t: CrmTask) => void; onDelete: (t: CrmTask) => Promise<void>; canDelete: (t: CrmTask) => boolean }) {
+  const queryClient = useQueryClient();
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+
+  const handleDragStart = (e: DragStartEvent) => setActiveId(String(e.active.id));
+
+  const handleDragEnd = async (e: DragEndEvent) => {
+    setActiveId(null);
+    if (!e.over) return;
+    const taskId = String(e.active.id);
+    const overId = String(e.over.id);
+    if (!overId.startsWith("col-")) return;
+    const newStage = overId.slice(4) as KanbanStage;
+    const task = tasks.find(t => t.id === taskId);
+    if (!task || task.stage === newStage) return;
+
+    const { error } = await supabase
+      .from("crm_tasks")
+      .update({
+        stage: newStage,
+        stage_color: STAGE_COLORS[newStage],
+        stage_progress: STAGE_PROGRESS[newStage] ?? task.stage_progress,
+      } as any)
+      .eq("id", taskId);
+    if (error) {
+      toast.error(error.message || "Не удалось сменить этап");
+      return;
+    }
+    toast.success(`Этап → «${newStage}»`);
+    queryClient.invalidateQueries({ queryKey: ["crm-tasks"] });
+  };
+
+  const activeTask = tasks.find(t => t.id === activeId);
+
+  return (
+    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        {KANBAN_STAGES.map(stage => (
+          <KanbanColumn
+            key={stage}
+            stage={stage}
+            tasks={tasks.filter(t => t.stage === stage)}
+            onSelect={onSelect}
+            onDelete={onDelete}
+            canDelete={canDelete}
+          />
+        ))}
+      </div>
+      <DragOverlay>
+        {activeTask ? (
+          <Card className="shadow-2xl ring-2 ring-primary cursor-grabbing">
+            <CardContent className="p-3.5">
+              <p className="text-sm font-medium text-foreground line-clamp-2">{activeTask.title}</p>
+            </CardContent>
+          </Card>
+        ) : null}
+      </DragOverlay>
+    </DndContext>
   );
 }
 
