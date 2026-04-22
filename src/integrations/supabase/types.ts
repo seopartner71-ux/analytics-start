@@ -616,6 +616,79 @@ export type Database = {
         }
         Relationships: []
       }
+      conversation_participants: {
+        Row: {
+          conversation_id: string
+          joined_at: string
+          last_read_at: string
+          muted: boolean
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          joined_at?: string
+          last_read_at?: string
+          muted?: boolean
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          joined_at?: string
+          last_read_at?: string
+          muted?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_participants_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversations: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          last_message_at: string
+          project_id: string | null
+          title: string | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          last_message_at?: string
+          project_id?: string | null
+          title?: string | null
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          last_message_at?: string
+          project_id?: string | null
+          title?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crawl_issues: {
         Row: {
           code: string
@@ -973,6 +1046,47 @@ export type Database = {
           id?: string
         }
         Relationships: []
+      }
+      dm_messages: {
+        Row: {
+          attachments: Json
+          body: string
+          conversation_id: string
+          created_at: string
+          id: string
+          is_system: boolean
+          user_id: string
+          user_name: string
+        }
+        Insert: {
+          attachments?: Json
+          body?: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          is_system?: boolean
+          user_id: string
+          user_name?: string
+        }
+        Update: {
+          attachments?: Json
+          body?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          is_system?: boolean
+          user_id?: string
+          user_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dm_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       finance_clients: {
         Row: {
@@ -3483,6 +3597,27 @@ export type Database = {
           },
         ]
       }
+      user_presence: {
+        Row: {
+          is_online: boolean
+          last_seen_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          is_online?: boolean
+          last_seen_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          is_online?: boolean
+          last_seen_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -3770,6 +3905,15 @@ export type Database = {
           url: string
         }[]
       }
+      get_or_create_company_conversation: { Args: never; Returns: string }
+      get_or_create_direct_conversation: {
+        Args: { _other_user: string }
+        Returns: string
+      }
+      get_or_create_project_conversation: {
+        Args: { _project_id: string }
+        Returns: string
+      }
       get_shared_project: {
         Args: { p_share_token: string }
         Returns: {
@@ -3869,10 +4013,15 @@ export type Database = {
       increment_time: { Args: { p_seconds: number }; Returns: undefined }
       is_active_user: { Args: { _user_id: string }; Returns: boolean }
       is_admin_or_director: { Args: { _user_id: string }; Returns: boolean }
+      is_conversation_participant: {
+        Args: { _conv_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_project_participant: {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
       }
+      mark_conversation_read: { Args: { _conv_id: string }; Returns: undefined }
       match_chunks: {
         Args: {
           match_count?: number
@@ -3892,6 +4041,7 @@ export type Database = {
         Args: { p_onboarding_id: string }
         Returns: undefined
       }
+      touch_user_presence: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "viewer" | "manager" | "director" | "seo" | "junior"
