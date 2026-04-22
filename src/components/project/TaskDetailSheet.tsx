@@ -576,7 +576,7 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
               </Card>
 
               {/* Main properties */}
-              <Card className="bg-card shadow-sm border-border/60 rounded-xl">
+              <Card id="task-section-props" className="bg-card shadow-sm border-border/60 rounded-xl scroll-mt-4">
                 <CardContent className="p-0 divide-y divide-border/40">
                   {/* Assignee */}
                   <div className="flex items-center gap-4 px-4 py-3.5">
@@ -673,15 +673,17 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
               </Card>
 
               {/* Members */}
-              <TaskMembersBlock
-                taskId={task.id}
-                taskOwnerId={task.owner_id}
-                creatorTeamMemberId={task.creator_id}
-                canManage={canEditFields}
-              />
+              <div id="task-section-members" className="scroll-mt-4">
+                <TaskMembersBlock
+                  taskId={task.id}
+                  taskOwnerId={task.owner_id}
+                  creatorTeamMemberId={task.creator_id}
+                  canManage={canEditFields}
+                />
+              </div>
 
               {/* Subtasks */}
-              <Card className="bg-card shadow-sm border-border/60 rounded-xl">
+              <Card id="task-section-subtasks" className="bg-card shadow-sm border-border/60 rounded-xl scroll-mt-4">
                 <CardContent className="p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -743,7 +745,7 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
               </Card>
 
               {/* Result field */}
-              <Card className="bg-card shadow-sm border-border/60 rounded-xl">
+              <Card id="task-section-result" className="bg-card shadow-sm border-border/60 rounded-xl scroll-mt-4">
                 <CardContent className="p-4 space-y-3">
                   <div className="flex items-center gap-2">
                     <FileText className="h-4 w-4 text-muted-foreground" />
@@ -765,7 +767,9 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
               </Card>
 
               {/* Time tracking — manual only */}
-              <TaskTimeManual taskId={task.id} projectId={editProjectId || task.project_id || null} />
+              <div id="task-section-time" className="scroll-mt-4">
+                <TaskTimeManual taskId={task.id} projectId={editProjectId || task.project_id || null} />
+              </div>
 
             </div>
 
