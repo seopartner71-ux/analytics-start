@@ -485,9 +485,9 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
           />
         </div>
 
-        <div className="flex flex-col md:flex-row h-[calc(100vh-72px)]">
+        <div className="flex flex-col md:flex-row flex-1 min-h-0">
           {/* LEFT COLUMN */}
-          <div className="w-full md:w-[44%] lg:w-[40%] flex flex-col border-r border-border/50 bg-[hsl(var(--muted)/0.3)]">
+          <div className="w-full md:w-[44%] lg:w-[40%] flex flex-col border-r border-border/50 bg-[hsl(var(--muted)/0.3)] min-h-0">
             <div className="flex-1 overflow-y-auto p-5 space-y-4">
 
               {/* Description */}
