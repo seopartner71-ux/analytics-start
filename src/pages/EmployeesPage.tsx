@@ -159,21 +159,36 @@ function AddEmployeeDialog() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ full_name: "", role: "seo", email: "", phone: "", department: "SEO отдел" });
+  const [form, setForm] = useState({ full_name: "", role: "seo", email: "", phone: "", department_id: "none" });
+
+  const { data: departments = [] } = useQuery({
+    queryKey: ["departments"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("departments").select("id, name").eq("is_active", true).order("name");
+      if (error) throw error;
+      return data;
+    },
+  });
 
   const mutation = useMutation({
     mutationFn: async () => {
+      const dept = departments.find((d: any) => d.id === form.department_id);
       const { error } = await supabase.from("team_members").insert({
-        ...form,
+        full_name: form.full_name,
+        role: form.role,
+        email: form.email,
+        phone: form.phone,
+        department: dept?.name || null,
+        department_id: form.department_id === "none" ? null : form.department_id,
         owner_id: user!.id,
-      });
+      } as any);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["team-members"] });
       toast.success("Сотрудник добавлен");
       setOpen(false);
-      setForm({ full_name: "", role: "seo", email: "", phone: "", department: "SEO отдел" });
+      setForm({ full_name: "", role: "seo", email: "", phone: "", department_id: "none" });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -203,12 +218,25 @@ function AddEmployeeDialog() {
                 </SelectContent>
               </Select>
             </div>
-            <div><Label className="text-xs">Подразделение</Label><Input value={form.department} onChange={e => setForm(f => ({ ...f, department: e.target.value }))} /></div>
+            <div><Label className="text-xs">Отдел</Label>
+              <Select value={form.department_id} onValueChange={v => setForm(f => ({ ...f, department_id: v }))}>
+                <SelectTrigger><SelectValue placeholder="Без отдела" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— Без отдела —</SelectItem>
+                  {departments.map((d: any) => (
+                    <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div><Label className="text-xs">E-Mail</Label><Input value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} /></div>
             <div><Label className="text-xs">Телефон</Label><Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} /></div>
           </div>
+          <p className="text-[11px] text-muted-foreground">
+            Совет: если у сотрудника есть аккаунт в системе, укажите его email — связь установится автоматически.
+          </p>
           <Button onClick={() => mutation.mutate()} disabled={!form.full_name.trim() || mutation.isPending} className="w-full">
             {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
             Добавить сотрудника
