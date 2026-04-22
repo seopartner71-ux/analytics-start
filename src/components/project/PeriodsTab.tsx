@@ -398,6 +398,7 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
             onSelectAll={(all) => setSelectedTaskIds(all ? new Set(tasks.map((t) => t.id)) : new Set())}
             onAddTask={(t) => addTask.mutate(t)}
             onUpdateTask={(id, patch) => updateTask.mutate({ id, patch })}
+            onDeleteTask={(id) => deleteTasks.mutate([id])}
             onDeleteSelected={() => deleteTasks.mutate(Array.from(selectedTaskIds))}
             onBulkUpdate={(patch) => bulkUpdate.mutate({ ids: Array.from(selectedTaskIds), patch })}
             sensors={sensors}
@@ -433,6 +434,7 @@ function PeriodTasksPanel(props: {
   onSelectAll: (all: boolean) => void;
   onAddTask: (t: Partial<PeriodTask>) => void;
   onUpdateTask: (id: string, patch: Partial<PeriodTask>) => void;
+  onDeleteTask: (id: string) => void;
   onDeleteSelected: () => void;
   onBulkUpdate: (patch: Partial<PeriodTask>) => void;
   sensors: ReturnType<typeof useSensors>;
@@ -670,6 +672,12 @@ function SortableTaskRow(props: {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+      <DeleteButton
+        entityName={task.title}
+        entityLabel="задачу"
+        onConfirm={async () => props.onDelete()}
+        className="shrink-0"
+      />
     </div>
   );
 }
