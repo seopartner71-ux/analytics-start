@@ -27,6 +27,7 @@ import { TaskTimeManual } from "@/components/project/TaskTimeManual";
 import { CompleteTaskDialog } from "@/components/project/CompleteTaskDialog";
 import { CreateSubtaskDialog, type SubtaskFormValues } from "@/components/project/CreateSubtaskDialog";
 import { TaskBlockerSection, FrozenDeadlineBadge, useTaskBlocker } from "@/components/project/TaskBlocker";
+import { TaskMembersBlock } from "@/components/project/TaskMembersBlock";
 
 export type CrmTask = Tables<"crm_tasks"> & {
   creator?: Tables<"team_members"> | null;
@@ -614,6 +615,14 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Members */}
+              <TaskMembersBlock
+                taskId={task.id}
+                taskOwnerId={task.owner_id}
+                creatorTeamMemberId={task.creator_id}
+                canManage={canEditFields}
+              />
 
               {/* Subtasks */}
               <Card className="bg-card shadow-sm border-border/60 rounded-xl">
