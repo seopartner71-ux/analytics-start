@@ -907,6 +907,7 @@ function CreatePeriodDialog(props: {
   onOpenChange: (v: boolean) => void;
   existingPeriods: Period[];
   templates: any[];
+  projectDeadline: string | null;
   onCreate: (payload: {
     year: number;
     month: number;
@@ -918,14 +919,31 @@ function CreatePeriodDialog(props: {
   creating: boolean;
   loadPastTasks: (periodId: string) => Promise<PeriodTask[]>;
 }) {
-  const now = new Date();
-  const todayIso = now.toISOString().slice(0, 10);
-  const monthEndIso = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
+  const getInitialDates = () => {
+    const now = new Date();
+    const today = now.toISOString().slice(0, 10);
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
+    const projectDeadline = props.projectDeadline?.slice(0, 10) || null;
 
+    if (!projectDeadline) {
+      return { start: today, end: monthEnd };
+    }
+
+    if (today > projectDeadline) {
+      return { start: projectDeadline, end: projectDeadline };
+    }
+
+    return {
+      start: today,
+      end: monthEnd > projectDeadline ? projectDeadline : monthEnd,
+    };
+  };
+
+  const initialDates = getInitialDates();
   const [step, setStep] = useState<"select" | "build">("select");
   const [mode, setMode] = useState<CreateMode>("template");
-  const [startDate, setStartDate] = useState(todayIso);
-  const [endDate, setEndDate] = useState(monthEndIso);
+  const [startDate, setStartDate] = useState(initialDates.start);
+  const [endDate, setEndDate] = useState(initialDates.end);
   const [title, setTitle] = useState("");
 
   // Year/Month вычисляем из startDate (для совместимости и UNIQUE-ключа)
@@ -944,8 +962,11 @@ function CreatePeriodDialog(props: {
   const [copyTasks, setCopyTasks] = useState<Partial<PeriodTask>[]>([]);
 
   const reset = () => {
+    const dates = getInitialDates();
     setStep("select");
     setMode("template");
+    setStartDate(dates.start);
+    setEndDate(dates.end);
     setTitle("");
     setTemplateTasks([]);
     setListText("");
@@ -955,6 +976,10 @@ function CreatePeriodDialog(props: {
   };
 
   const handleNext = async () => {
+    if (props.projectDeadline && endDate > props.projectDeadline.slice(0, 10)) {
+      toast.error(`Срок периода не может быть позже срока проекта (${format(new Date(props.projectDeadline), "dd.MM.yyyy")})`);
+      return;
+    }
     if (mode === "template") {
       setTemplateTasks(
         props.templates.map((t) => ({
@@ -988,6 +1013,10 @@ function CreatePeriodDialog(props: {
     }
     if (endDate < startDate) {
       toast.error("Дата окончания должна быть позже даты начала");
+      return;
+    }
+    if (props.projectDeadline && endDate > props.projectDeadline.slice(0, 10)) {
+      toast.error(`Срок периода не может быть позже срока проекта (${format(new Date(props.projectDeadline), "dd.MM.yyyy")})`);
       return;
     }
     let finalTasks: Partial<PeriodTask>[] = [];
