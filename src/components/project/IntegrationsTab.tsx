@@ -1,22 +1,40 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import {
   BarChart3, Globe, Search, Target,
-  CheckCircle2, Unplug, KeyRound, RefreshCw,
+  CheckCircle2, Unplug, KeyRound, RefreshCw, Lock, ShieldAlert,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
+import { useAuth } from "@/contexts/AuthContext";
 import { MetrikaOAuthDialog } from "./MetrikaOAuthDialog";
+
+/** Перевод RLS / Postgres ошибок в понятный человеку текст */
+function humanizePermissionError(err: Error): string {
+  const msg = (err?.message || "").toLowerCase();
+  if (
+    msg.includes("row-level security") ||
+    msg.includes("row level security") ||
+    msg.includes("permission denied") ||
+    msg.includes("violates row-level") ||
+    msg.includes("not authorized")
+  ) {
+    return "Недостаточно прав. Изменять интеграции может только администратор, руководитель проекта или владелец проекта. Обратитесь к ним за помощью.";
+  }
+  return err?.message || "Произошла ошибка";
+}
 
 interface IntegrationMeta {
   key: string;
@@ -57,12 +75,51 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
   const [gscPropertyUrl, setGscPropertyUrl] = useState("");
   const [gscToken, setGscToken] = useState("");
 
+  const { user, isAdmin, isManager } = useAuth();
+
+  // Get project owner to determine if current user can manage integrations
+  const { data: projectMeta } = useQuery({
+    queryKey: ["project-owner-for-integrations", projectId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("owner_id, seo_specialist_id, account_manager_id")
+        .eq("id", projectId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const isOwner = !!user && projectMeta?.owner_id === user.id;
+  // Manager assigned as SEO specialist or account manager on this project
+  const { data: isProjectLead } = useQuery({
+    queryKey: ["is-project-lead", projectId, user?.id],
+    enabled: !!user && !!projectMeta && (isManager || false),
+    queryFn: async () => {
+      if (!user || !projectMeta) return false;
+      const ids = [projectMeta.seo_specialist_id, projectMeta.account_manager_id].filter(Boolean) as string[];
+      if (!ids.length) return false;
+      const { data } = await supabase
+        .from("team_members")
+        .select("id")
+        .in("id", ids)
+        .eq("owner_id", user.id);
+      return (data?.length ?? 0) > 0;
+    },
+  });
+
+  const canManageIntegrations = isAdmin || isOwner || (isManager && !!isProjectLead);
+
   const getIntegration = (key: string) => integrations.find((i) => i.service_name === key);
 
   const connectMutation = useMutation({
     mutationFn: async ({ serviceName, apiKey, externalProjectId, counterId, accessToken }: {
       serviceName: string; apiKey?: string; externalProjectId?: string; counterId?: string; accessToken?: string;
     }) => {
+      if (!canManageIntegrations) {
+        throw new Error("Недостаточно прав для управления интеграциями");
+      }
       // Validate that real credentials were provided — never write mock tokens
       if (!accessToken && !apiKey) {
         throw new Error("Не передан токен или API-ключ для подключения интеграции");
@@ -96,11 +153,14 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
       queryClient.invalidateQueries({ queryKey: ["integrations", projectId] });
       toast.success(t("integrations.connected"));
     },
-    onError: (err: Error) => toast.error(err.message),
+    onError: (err: Error) => toast.error(humanizePermissionError(err)),
   });
 
   const disconnectMutation = useMutation({
     mutationFn: async (integrationId: string) => {
+      if (!canManageIntegrations) {
+        throw new Error("Недостаточно прав для отключения интеграции");
+      }
       const { error } = await supabase.from("integrations").update({
         connected: false,
         access_token: null,
@@ -113,6 +173,7 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
       queryClient.invalidateQueries({ queryKey: ["integrations", projectId] });
       toast.success(t("integrations.disconnected"));
     },
+    onError: (err: Error) => toast.error(humanizePermissionError(err)),
   });
 
   const [syncingId, setSyncingId] = useState<string | null>(null);
@@ -204,7 +265,7 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
       setSyncingId(null);
     },
     onError: (err: Error) => {
-      toast.error(err.message);
+      toast.error(humanizePermissionError(err));
       setSyncingId(null);
     },
   });
@@ -293,74 +354,136 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
     setTvProjectId("");
   };
 
+  const lockedHint = "Только администратор, владелец проекта или назначенный руководитель проекта может управлять интеграциями. Вы можете просматривать данные, но не менять подключения.";
+
   return (
-    <div className="space-y-4">
-      <h2 className="text-lg font-semibold text-foreground">{t("integrations.title")}</h2>
+    <TooltipProvider>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <h2 className="text-lg font-semibold text-foreground">{t("integrations.title")}</h2>
+          {!canManageIntegrations && (
+            <Badge variant="outline" className="gap-1.5 border-[hsl(var(--warning)/0.4)] text-[hsl(var(--warning))]">
+              <Lock className="h-3 w-3" />
+              Только просмотр
+            </Badge>
+          )}
+        </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        {integrationsMeta.map((meta) => {
-          const integration = getIntegration(meta.key);
-          const connected = integration?.connected ?? false;
+        {!canManageIntegrations && (
+          <Alert className="border-[hsl(var(--warning)/0.4)] bg-[hsl(var(--warning)/0.05)]">
+            <ShieldAlert className="h-4 w-4 text-[hsl(var(--warning))]" />
+            <AlertTitle className="text-[hsl(var(--warning))]">Недостаточно прав на изменение интеграций</AlertTitle>
+            <AlertDescription className="text-muted-foreground">
+              Вам доступен просмотр всей аналитики и подключённых сервисов проекта.
+              Подключать, отключать и синхронизировать интеграции может администратор,
+              владелец проекта или назначенный руководитель проекта (SEO-специалист или аккаунт-менеджер).
+            </AlertDescription>
+          </Alert>
+        )}
 
-          return (
-            <Card key={meta.key} className="border-border/60">
-              <CardContent className="p-5">
-                <div className="flex items-start gap-4">
-                  <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center text-muted-foreground shrink-0">
-                    {meta.icon}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold text-foreground">{t(`integrations.names.${meta.key}`)}</h3>
-                      {connected && (
-                        <Badge className="bg-[hsl(var(--success))] text-[hsl(var(--success-foreground))]">
-                          <CheckCircle2 className="h-3 w-3 mr-1" />
-                          {t("integrations.active")}
-                        </Badge>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {integrationsMeta.map((meta) => {
+            const integration = getIntegration(meta.key);
+            const connected = integration?.connected ?? false;
+
+            const wrapDisabled = (node: React.ReactNode) =>
+              !canManageIntegrations ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-flex">{node}</span>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-xs">
+                    {lockedHint}
+                  </TooltipContent>
+                </Tooltip>
+              ) : (
+                node
+              );
+
+            return (
+              <Card key={meta.key} className="border-border/60">
+                <CardContent className="p-5">
+                  <div className="flex items-start gap-4">
+                    <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center text-muted-foreground shrink-0">
+                      {meta.icon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <h3 className="font-semibold text-foreground">{t(`integrations.names.${meta.key}`)}</h3>
+                        {connected && (
+                          <Badge className="bg-[hsl(var(--success))] text-[hsl(var(--success-foreground))]">
+                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                            {t("integrations.active")}
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-3">{t(meta.descriptionKey)}</p>
+
+                      {connected && integration?.last_sync && (
+                        <p className="text-xs text-muted-foreground mb-3">
+                          {t("integrations.lastSync")}: {new Date(integration.last_sync).toLocaleDateString()}
+                        </p>
+                      )}
+
+                      {connected ? (
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {wrapDisabled(
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="gap-1.5"
+                              onClick={() => syncMutation.mutate(integration!)}
+                              disabled={syncingId === integration!.id || !canManageIntegrations}
+                            >
+                              <RefreshCw className={`h-3.5 w-3.5 ${syncingId === integration!.id ? "animate-spin" : ""}`} />
+                              {t("integrations.sync")}
+                            </Button>
+                          )}
+                          {wrapDisabled(
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="gap-1.5"
+                              onClick={() => handleConnect(meta)}
+                              disabled={!canManageIntegrations}
+                            >
+                              {canManageIntegrations ? <KeyRound className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
+                              Настроить
+                            </Button>
+                          )}
+                          {wrapDisabled(
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="gap-1.5 text-destructive hover:text-destructive"
+                              onClick={() => disconnectMutation.mutate(integration!.id)}
+                              disabled={!canManageIntegrations}
+                            >
+                              <Unplug className="h-3.5 w-3.5" />
+                              {t("integrations.disconnect")}
+                            </Button>
+                          )}
+                        </div>
+                      ) : (
+                        wrapDisabled(
+                          <Button
+                            size="sm"
+                            className="gap-1.5"
+                            onClick={() => handleConnect(meta)}
+                            disabled={!canManageIntegrations}
+                          >
+                            {canManageIntegrations ? <KeyRound className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
+                            {t("integrations.connect")}
+                          </Button>
+                        )
                       )}
                     </div>
-                    <p className="text-sm text-muted-foreground mb-3">{t(meta.descriptionKey)}</p>
-
-                    {connected && integration?.last_sync && (
-                      <p className="text-xs text-muted-foreground mb-3">
-                        {t("integrations.lastSync")}: {new Date(integration.last_sync).toLocaleDateString()}
-                      </p>
-                    )}
-
-                    {connected ? (
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="gap-1.5"
-                          onClick={() => syncMutation.mutate(integration!)}
-                          disabled={syncingId === integration!.id}
-                        >
-                          <RefreshCw className={`h-3.5 w-3.5 ${syncingId === integration!.id ? "animate-spin" : ""}`} />
-                          {t("integrations.sync")}
-                        </Button>
-                        <Button variant="outline" size="sm" className="gap-1.5" onClick={() => handleConnect(meta)}>
-                          <KeyRound className="h-3.5 w-3.5" />
-                          Настроить
-                        </Button>
-                        <Button variant="outline" size="sm" className="gap-1.5 text-destructive hover:text-destructive" onClick={() => disconnectMutation.mutate(integration!.id)}>
-                          <Unplug className="h-3.5 w-3.5" />
-                          {t("integrations.disconnect")}
-                        </Button>
-                      </div>
-                    ) : (
-                      <Button size="sm" className="gap-1.5" onClick={() => handleConnect(meta)}>
-                        <KeyRound className="h-3.5 w-3.5" />
-                        {t("integrations.connect")}
-                      </Button>
-                    )}
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
 
       {/* Yandex Webmaster Dialog */}
       <Dialog open={wmDialog} onOpenChange={setWmDialog}>
@@ -489,6 +612,7 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </TooltipProvider>
   );
 }
