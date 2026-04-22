@@ -555,6 +555,19 @@ export default function EmployeesPage() {
                           </td>
                           <td className="text-sm text-muted-foreground">{e.email || "—"}</td>
                           <td className="text-sm text-muted-foreground">{e.phone || "—"}</td>
+                          <td>
+                            {!e.email ? (
+                              <Badge variant="outline" className="text-[10px] border-muted text-muted-foreground">Нет email</Badge>
+                            ) : !presence.hasProfile ? (
+                              <Badge variant="outline" className="text-[10px] border-amber-500/40 text-amber-600">Не в системе</Badge>
+                            ) : presence.profileStatus === "pending" ? (
+                              <Badge variant="outline" className="text-[10px] border-amber-500/40 text-amber-600">Ожидает</Badge>
+                            ) : presence.profileStatus === "blocked" ? (
+                              <Badge variant="outline" className="text-[10px] border-destructive/40 text-destructive">Заблокирован</Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-[10px] border-emerald-500/40 text-emerald-600">Синхронизирован</Badge>
+                            )}
+                          </td>
                           <td className={`text-sm ${statusClass}`}>{lastSeenLabel}</td>
                           {isAdmin && (
                             <td className="text-right">
