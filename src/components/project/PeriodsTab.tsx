@@ -258,9 +258,17 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
     onError: (e: any) => toast.error(e.message || "Ошибка создания периода"),
   });
 
-  // Гарантирует наличие главной CRM-задачи у периода (для старых периодов, созданных до новой логики)
+  // Гарантирует наличие главной CRM-задачи у периода и синхронизирует её title/deadline с полями периода
   const ensurePeriodParentTask = async (period: Period): Promise<string> => {
-    if (period.crm_task_id) return period.crm_task_id;
+    const deadlineIso = period.end_date ? new Date(period.end_date).toISOString() : null;
+    if (period.crm_task_id) {
+      // Всегда подтягиваем актуальные title и deadline периода в главную CRM-задачу
+      await supabase
+        .from("crm_tasks")
+        .update({ title: period.title, deadline: deadlineIso })
+        .eq("id", period.crm_task_id);
+      return period.crm_task_id;
+    }
     const { data: parentTask, error: ptErr } = await supabase
       .from("crm_tasks")
       .insert({
@@ -268,7 +276,7 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
         stage: "В работе",
         stage_color: "#f59e0b",
         priority: "medium",
-        deadline: period.end_date ? new Date(period.end_date).toISOString() : null,
+        deadline: deadlineIso,
         project_id: projectId,
         owner_id: user!.id,
       })
@@ -281,6 +289,23 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
       .eq("id", period.id);
     if (upErr) throw upErr;
     return parentTask.id as string;
+  };
+
+  // Пересчитывает stage главной CRM-задачи периода по состоянию дочерних задач
+  const syncMainTaskStage = async (parentTaskId: string) => {
+    const { data: children } = await supabase
+      .from("crm_tasks")
+      .select("stage")
+      .eq("parent_id", parentTaskId);
+    const list = children || [];
+    const allDone = list.length > 0 && list.every((c: any) => c.stage === "Завершена" || c.stage === "Принята");
+    const stage = allDone ? "Завершена" : "В работе";
+    const stage_color = allDone ? "#10b981" : "#f59e0b";
+    const stage_progress = allDone ? 100 : 50;
+    await supabase
+      .from("crm_tasks")
+      .update({ stage, stage_color, stage_progress })
+      .eq("id", parentTaskId);
   };
 
   const addTask = useMutation({
