@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
 import { generateWebmasterPdf } from "@/lib/webmaster-pdf";
+import { DataStatusBadge } from "./DataStatusBadge";
 
 /* ─── types ─── */
 type CheckStatus = "ok" | "error" | "not_checked";
@@ -353,7 +354,16 @@ export function YandexWebmasterTab({ projectId }: Props) {
       <Card className="bg-card border-border p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-1.5">
-            <h2 className="text-lg font-bold text-foreground">Яндекс Вебмастер</h2>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-lg font-bold text-foreground">Яндекс Вебмастер</h2>
+              <DataStatusBadge
+                projectId={projectId}
+                label="Вебмастер"
+                table="site_health"
+                sourceFilter="yandex"
+                lastUpdatedAt={lastUpdate}
+              />
+            </div>
             <div className="flex flex-wrap gap-x-6 gap-y-1 text-[13px] text-muted-foreground">
               <span>Сайт: <span className="text-foreground font-medium">{domain}</span></span>
               <span>Дата анализа: <span className="text-foreground">{lastUpdate ? format(lastUpdate, "dd.MM.yyyy HH:mm") : "—"}</span></span>
