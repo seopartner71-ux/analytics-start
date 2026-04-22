@@ -158,6 +158,9 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
 
   const disconnectMutation = useMutation({
     mutationFn: async (integrationId: string) => {
+      if (!canManageIntegrations) {
+        throw new Error("Недостаточно прав для отключения интеграции");
+      }
       const { error } = await supabase.from("integrations").update({
         connected: false,
         access_token: null,
@@ -170,6 +173,7 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
       queryClient.invalidateQueries({ queryKey: ["integrations", projectId] });
       toast.success(t("integrations.disconnected"));
     },
+    onError: (err: Error) => toast.error(humanizePermissionError(err)),
   });
 
   const [syncingId, setSyncingId] = useState<string | null>(null);
