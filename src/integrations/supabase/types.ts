@@ -831,7 +831,15 @@ export type Database = {
           url?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "crawl_jobs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       crawl_pages: {
         Row: {
@@ -1119,6 +1127,47 @@ export type Database = {
           id?: string
         }
         Relationships: []
+      }
+      departments: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          head_id: string | null
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          head_id?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          head_id?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "departments_head_id_fkey"
+            columns: ["head_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       dm_messages: {
         Row: {
@@ -3636,6 +3685,7 @@ export type Database = {
           archived_by: string | null
           created_at: string
           department: string | null
+          department_id: string | null
           email: string | null
           full_name: string
           id: string
@@ -3651,6 +3701,7 @@ export type Database = {
           archived_by?: string | null
           created_at?: string
           department?: string | null
+          department_id?: string | null
           email?: string | null
           full_name: string
           id?: string
@@ -3666,6 +3717,7 @@ export type Database = {
           archived_by?: string | null
           created_at?: string
           department?: string | null
+          department_id?: string | null
           email?: string | null
           full_name?: string
           id?: string
@@ -3676,7 +3728,15 @@ export type Database = {
           status?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "team_members_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       transactions: {
         Row: {
