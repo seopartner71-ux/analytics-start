@@ -392,8 +392,16 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
       await supabase.from("subtasks").update({ is_done: done } as any).eq("id", stId);
       const st = subtasks.find(s => s.id === stId);
       await addSystemLog(`Подзадача «${st?.title}» ${done ? "выполнена ✓" : "возвращена в работу"}`);
+      // Обратная синхронизация: пункт периода, привязанный к этой подзадаче
+      await supabase
+        .from("period_tasks")
+        .update({ completed: done, completed_at: done ? new Date().toISOString() : null } as any)
+        .eq("crm_task_id", stId);
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["subtasks", task?.id] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["subtasks", task?.id] });
+      queryClient.invalidateQueries({ queryKey: ["period-tasks"] });
+    },
   });
 
   const handleComplete = async ({ result, minutes }: { result: string; minutes: number }) => {

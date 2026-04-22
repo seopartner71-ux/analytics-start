@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -121,6 +121,23 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
     },
     enabled: !!activePeriod?.id,
   });
+
+  // Realtime: при изменении подзадач или пунктов периода — обновляем чекбоксы мгновенно
+  useEffect(() => {
+    if (!activePeriod?.id) return;
+    const channel = supabase
+      .channel(`period-sync-${activePeriod.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "period_tasks", filter: `period_id=eq.${activePeriod.id}` }, () => {
+        qc.invalidateQueries({ queryKey: ["period-tasks", activePeriod.id] });
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "subtasks" }, () => {
+        qc.invalidateQueries({ queryKey: ["period-tasks", activePeriod.id] });
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [activePeriod?.id, qc]);
 
   const { data: members = [] } = useQuery({
     queryKey: ["team-members-min"],
