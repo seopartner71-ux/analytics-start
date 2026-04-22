@@ -416,14 +416,16 @@ export default function EmployeesPage() {
   });
 
   const getPresence = (email: string | null) => {
-    if (!email) return { status: "offline" as const, activeSeconds: 0, avatarUrl: null as string | null, updatedAt: undefined as string | undefined };
+    if (!email) return { status: "offline" as const, activeSeconds: 0, avatarUrl: null as string | null, updatedAt: undefined as string | undefined, profileStatus: null as string | null, hasProfile: false };
     const entry = presenceMap[email.toLowerCase()];
-    if (!entry) return { status: "offline" as const, activeSeconds: 0, avatarUrl: null, updatedAt: undefined };
+    if (!entry) return { status: "offline" as const, activeSeconds: 0, avatarUrl: null, updatedAt: undefined, profileStatus: null, hasProfile: false };
     const avatarUrl = entry.avatar_url ?? null;
-    if (!entry.updated_at) return { status: "offline" as const, activeSeconds: 0, avatarUrl, updatedAt: undefined };
+    const profileStatus = entry.profile_status ?? null;
+    const hasProfile = !!entry.has_profile;
+    if (!entry.updated_at) return { status: "offline" as const, activeSeconds: 0, avatarUrl, updatedAt: undefined, profileStatus, hasProfile };
     const ageSec = (Date.now() - new Date(entry.updated_at).getTime()) / 1000;
     const status = ageSec < 180 ? "online" : ageSec < 900 ? "away" : "offline";
-    return { status: status as "online" | "away" | "offline", activeSeconds: entry.active_seconds || 0, updatedAt: entry.updated_at, avatarUrl };
+    return { status: status as "online" | "away" | "offline", activeSeconds: entry.active_seconds || 0, updatedAt: entry.updated_at, avatarUrl, profileStatus, hasProfile };
   };
 
   const filtered = employees.filter(e =>
