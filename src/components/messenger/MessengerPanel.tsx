@@ -283,8 +283,8 @@ export function MessengerPanel() {
                     avatarUrl={e.avatar_url}
                     name={e.full_name || e.email}
                     seed={e.user_id}
-                    className="h-9 w-9 ring-1 ring-border group-hover:ring-primary/40 transition"
-                    fallbackClassName="text-[11px]"
+                    size="md"
+                    className="ring-1 ring-border group-hover:ring-primary/40 transition"
                   />
                   <span
                     className={cn(
@@ -482,8 +482,7 @@ export function MessengerPanel() {
                                   avatarUrl={other?.avatar_url}
                                   name={other?.full_name || other?.email}
                                   seed={otherId || other?.email}
-                                  className="h-9 w-9"
-                                  fallbackClassName="text-[11px]"
+                                  size="md"
                                 />
                                 <span
                                   className={cn(
@@ -531,8 +530,7 @@ export function MessengerPanel() {
                               avatarUrl={e.avatar_url}
                               name={e.full_name || e.email}
                               seed={e.user_id}
-                              className="h-9 w-9"
-                              fallbackClassName="text-[11px]"
+                              size="md"
                             />
                             <span
                               className={cn(

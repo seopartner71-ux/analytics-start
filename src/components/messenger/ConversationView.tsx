@@ -224,8 +224,7 @@ export function ConversationView({ conversationId, onBack, employeeById, directO
               avatarUrl={otherUser.avatar_url}
               name={otherUser.full_name || otherUser.email}
               seed={otherUser.user_id}
-              className="h-8 w-8"
-              fallbackClassName="text-[10px]"
+              size="sm"
             />
             {otherUserId && (
               <span
