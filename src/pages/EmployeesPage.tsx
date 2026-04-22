@@ -393,19 +393,19 @@ export default function EmployeesPage() {
     queryClient.invalidateQueries({ queryKey: ["team-members"] });
   };
 
-  // Live presence + avatar: соединяем team_members → profiles (по email) → user_time_logs.updated_at
+  // Live presence + avatar + sync status: соединяем team_members → profiles (по email) → user_time_logs.updated_at
   const { data: presenceMap = {} } = useQuery({
     queryKey: ["team-presence"],
     queryFn: async () => {
       const today = new Date().toISOString().slice(0, 10);
       const [{ data: profiles }, { data: logs }] = await Promise.all([
-        supabase.from("profiles").select("user_id, email, avatar_url"),
+        supabase.from("profiles").select("user_id, email, avatar_url, status"),
         supabase.from("user_time_logs").select("user_id, updated_at, active_seconds").eq("log_date", today),
       ]);
-      const userIdToProfile = new Map<string, { email: string; avatar_url: string | null }>();
-      (profiles || []).forEach((p: any) => p.email && userIdToProfile.set(p.user_id, { email: p.email.toLowerCase(), avatar_url: p.avatar_url }));
-      const map: Record<string, { updated_at?: string; active_seconds?: number; avatar_url?: string | null }> = {};
-      userIdToProfile.forEach((p) => { map[p.email] = { avatar_url: p.avatar_url }; });
+      const userIdToProfile = new Map<string, { email: string; avatar_url: string | null; status: string | null }>();
+      (profiles || []).forEach((p: any) => p.email && userIdToProfile.set(p.user_id, { email: p.email.toLowerCase(), avatar_url: p.avatar_url, status: p.status }));
+      const map: Record<string, { updated_at?: string; active_seconds?: number; avatar_url?: string | null; profile_status?: string | null; has_profile?: boolean }> = {};
+      userIdToProfile.forEach((p) => { map[p.email] = { avatar_url: p.avatar_url, profile_status: p.status, has_profile: true }; });
       (logs || []).forEach((l: any) => {
         const p = userIdToProfile.get(l.user_id);
         if (p) map[p.email] = { ...map[p.email], updated_at: l.updated_at, active_seconds: l.active_seconds };
