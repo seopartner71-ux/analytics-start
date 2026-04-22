@@ -1,22 +1,40 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import {
   BarChart3, Globe, Search, Target,
-  CheckCircle2, Unplug, KeyRound, RefreshCw,
+  CheckCircle2, Unplug, KeyRound, RefreshCw, Lock, ShieldAlert,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
+import { useAuth } from "@/contexts/AuthContext";
 import { MetrikaOAuthDialog } from "./MetrikaOAuthDialog";
+
+/** Перевод RLS / Postgres ошибок в понятный человеку текст */
+function humanizePermissionError(err: Error): string {
+  const msg = (err?.message || "").toLowerCase();
+  if (
+    msg.includes("row-level security") ||
+    msg.includes("row level security") ||
+    msg.includes("permission denied") ||
+    msg.includes("violates row-level") ||
+    msg.includes("not authorized")
+  ) {
+    return "Недостаточно прав. Изменять интеграции может только администратор, руководитель проекта или владелец проекта. Обратитесь к ним за помощью.";
+  }
+  return err?.message || "Произошла ошибка";
+}
 
 interface IntegrationMeta {
   key: string;
