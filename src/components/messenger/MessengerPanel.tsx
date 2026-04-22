@@ -312,18 +312,34 @@ export function MessengerPanel() {
         )}
       </button>
 
-      {/* Slide-out panel */}
+      {/* Slide-out / draggable floating panel */}
       {isOpen && (
         <div
           className={cn(
-            "fixed z-30 bg-card border-border/60 shadow-2xl flex flex-col",
-            // Desktop
-            "md:right-14 md:top-0 md:bottom-0 md:w-[380px] md:border-l",
-            // Mobile (full screen)
+            "fixed z-30 bg-card border border-border/60 shadow-2xl flex flex-col",
+            "md:rounded-xl md:overflow-hidden",
+            // Mobile: full screen
             "inset-0 md:inset-auto",
           )}
+          style={
+            typeof window !== "undefined" && window.innerWidth >= 768 && pos
+              ? {
+                  left: pos.x,
+                  top: pos.y,
+                  width: PANEL_W,
+                  height: PANEL_H,
+                  transition: animateIn ? "left 280ms cubic-bezier(0.22,1,0.36,1), top 280ms cubic-bezier(0.22,1,0.36,1)" : "none",
+                }
+              : undefined
+          }
         >
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border/60">
+          <div
+            onPointerDown={onDragStart}
+            onPointerMove={onDragMove}
+            onPointerUp={onDragEnd}
+            onPointerCancel={onDragEnd}
+            className="flex items-center justify-between px-4 py-3 border-b border-border/60 md:cursor-move select-none touch-none"
+          >
             <div className="flex items-center gap-2">
               <MessageSquare className="h-4 w-4 text-primary" />
               <h3 className="text-sm font-semibold">Мессенджер</h3>
@@ -334,11 +350,18 @@ export function MessengerPanel() {
                 size="icon"
                 className="h-8 w-8"
                 onClick={sound.toggle}
+                onPointerDown={(e) => e.stopPropagation()}
                 title={sound.enabled ? "Отключить звук" : "Включить звук"}
               >
                 {sound.enabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4 text-muted-foreground" />}
               </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={close}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={close}
+                onPointerDown={(e) => e.stopPropagation()}
+              >
                 <X className="h-4 w-4" />
               </Button>
             </div>
