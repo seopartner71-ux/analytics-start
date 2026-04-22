@@ -37,13 +37,11 @@ interface ProjectMemberRow {
   team_member_id: string;
   role: string;
   notifications_enabled: boolean;
-  team_member?: { id: string; full_name: string } | null;
+  team_member?: { id: string; full_name: string; email: string | null; owner_id: string | null } | null;
 }
 
-const avatarFor = (name: string) => {
-  const hash = name.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
-  return `https://i.pravatar.cc/120?u=${hash}`;
-};
+const initialsOf = (name: string) =>
+  name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 
 export function ProjectTeamTab({ projectId }: { projectId: string }) {
   const qc = useQueryClient();
