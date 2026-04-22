@@ -422,6 +422,11 @@ function PeriodTasksPanel(props: {
         <div>
           <h3 className="text-base font-semibold">{period.title}</h3>
           <p className="text-xs text-muted-foreground mt-0.5">
+            {period.start_date && period.end_date && (
+              <>
+                {format(new Date(period.start_date), "d MMM", { locale: ru })} — {format(new Date(period.end_date), "d MMM yyyy", { locale: ru })} · {" "}
+              </>
+            )}
             {completed} из {tasks.length} задач выполнено
           </p>
         </div>
