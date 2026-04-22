@@ -623,15 +623,33 @@ function CreatePeriodDialog(props: {
   onOpenChange: (v: boolean) => void;
   existingPeriods: Period[];
   templates: any[];
-  onCreate: (year: number, month: number, tasks: Partial<PeriodTask>[]) => void;
+  onCreate: (payload: {
+    year: number;
+    month: number;
+    title: string;
+    start_date: string;
+    end_date: string;
+    tasks: Partial<PeriodTask>[];
+  }) => void;
   creating: boolean;
   loadPastTasks: (periodId: string) => Promise<PeriodTask[]>;
 }) {
   const now = new Date();
+  const todayIso = now.toISOString().slice(0, 10);
+  const monthEndIso = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
+
   const [step, setStep] = useState<"select" | "build">("select");
   const [mode, setMode] = useState<CreateMode>("template");
-  const [year, setYear] = useState(now.getFullYear());
-  const [month, setMonth] = useState(now.getMonth() + 1);
+  const [startDate, setStartDate] = useState(todayIso);
+  const [endDate, setEndDate] = useState(monthEndIso);
+  const [title, setTitle] = useState("");
+
+  // Year/Month вычисляем из startDate (для совместимости и UNIQUE-ключа)
+  const start = new Date(startDate);
+  const year = start.getFullYear();
+  const month = start.getMonth() + 1;
+  const autoTitle = `${MONTH_NAMES[month - 1]} ${year}`;
+  const effectiveTitle = title.trim() || autoTitle;
 
   // Build state per mode
   const [templateTasks, setTemplateTasks] = useState<Partial<PeriodTask>[]>([]);
@@ -644,6 +662,7 @@ function CreatePeriodDialog(props: {
   const reset = () => {
     setStep("select");
     setMode("template");
+    setTitle("");
     setTemplateTasks([]);
     setListText("");
     setManualTasks([]);
@@ -679,15 +698,31 @@ function CreatePeriodDialog(props: {
   };
 
   const handleCreate = () => {
+    if (!startDate || !endDate) {
+      toast.error("Укажите даты начала и окончания");
+      return;
+    }
+    if (endDate < startDate) {
+      toast.error("Дата окончания должна быть позже даты начала");
+      return;
+    }
     let finalTasks: Partial<PeriodTask>[] = [];
     if (mode === "template") finalTasks = templateTasks;
     else if (mode === "list") {
       finalTasks = listText
         .split("\n").map((s) => s.trim()).filter(Boolean)
-        .map((title) => ({ title, category: "general" }));
+        .map((t) => ({ title: t, category: "general" }));
     } else if (mode === "manual") finalTasks = manualTasks;
     else if (mode === "copy") finalTasks = copyTasks;
-    props.onCreate(year, month, finalTasks);
+
+    props.onCreate({
+      year,
+      month,
+      title: effectiveTitle,
+      start_date: startDate,
+      end_date: endDate,
+      tasks: finalTasks,
+    });
     reset();
   };
 
@@ -696,27 +731,31 @@ function CreatePeriodDialog(props: {
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {step === "select" ? "Создание периода" : `Задачи на ${MONTH_NAMES[month - 1]} ${year}`}
+            {step === "select" ? "Создание периода" : `Задачи: ${effectiveTitle}`}
           </DialogTitle>
         </DialogHeader>
 
         {step === "select" ? (
           <div className="space-y-4">
+            <div>
+              <Label>Название периода</Label>
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder={autoTitle}
+              />
+              <p className="text-[11px] text-muted-foreground mt-1">
+                По умолчанию — месяц и год начала периода.
+              </p>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <Label>Месяц</Label>
-                <Select value={String(month)} onValueChange={(v) => setMonth(Number(v))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {MONTH_NAMES.map((m, i) => (
-                      <SelectItem key={i} value={String(i + 1)}>{m}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>Дата начала</Label>
+                <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
               </div>
               <div>
-                <Label>Год</Label>
-                <Input type="number" value={year} onChange={(e) => setYear(Number(e.target.value))} />
+                <Label>Дата окончания</Label>
+                <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
               </div>
             </div>
 
@@ -730,7 +769,7 @@ function CreatePeriodDialog(props: {
                   value="copy"
                   icon={<Copy />}
                   label="Скопировать из прошлого периода"
-                  hint="Перенести задачи из предыдущего месяца"
+                  hint="Перенести задачи из предыдущего периода"
                   disabled={props.existingPeriods.length === 0}
                 />
               </RadioGroup>
