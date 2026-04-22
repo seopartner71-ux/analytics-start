@@ -362,7 +362,7 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <h2 className="text-lg font-semibold text-foreground">{t("integrations.title")}</h2>
           {!canManageIntegrations && (
-            <Badge variant="outline" className="gap-1.5 border-amber-500/40 text-amber-600">
+            <Badge variant="outline" className="gap-1.5 border-[hsl(var(--warning)/0.4)] text-[hsl(var(--warning))]">
               <Lock className="h-3 w-3" />
               Только просмотр
             </Badge>
@@ -370,9 +370,9 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
         </div>
 
         {!canManageIntegrations && (
-          <Alert className="border-amber-500/40 bg-amber-500/5">
-            <ShieldAlert className="h-4 w-4 text-amber-600" />
-            <AlertTitle className="text-amber-700 dark:text-amber-400">Недостаточно прав на изменение интеграций</AlertTitle>
+          <Alert className="border-[hsl(var(--warning)/0.4)] bg-[hsl(var(--warning)/0.05)]">
+            <ShieldAlert className="h-4 w-4 text-[hsl(var(--warning))]" />
+            <AlertTitle className="text-[hsl(var(--warning))]">Недостаточно прав на изменение интеграций</AlertTitle>
             <AlertDescription className="text-muted-foreground">
               Вам доступен просмотр всей аналитики и подключённых сервисов проекта.
               Подключать, отключать и синхронизировать интеграции может администратор,
