@@ -447,10 +447,18 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
 
   const updateTask = useMutation({
     mutationFn: async (vars: { id: string; patch: Partial<PeriodTask> }) => {
+      const row = tasks.find((t) => t.id === vars.id);
+      const taskDatesError = getTaskDateError({
+        deadline: "deadline" in vars.patch ? vars.patch.deadline : row?.deadline,
+        periodStart: activePeriod?.start_date,
+        periodEnd: activePeriod?.end_date,
+        projectDeadline: project?.deadline || null,
+      });
+      if (taskDatesError) throw new Error(taskDatesError);
+
       const { error } = await supabase.from("period_tasks").update(vars.patch).eq("id", vars.id);
       if (error) throw error;
       // Синхронизация со связанной CRM-задачей
-      const row = tasks.find((t) => t.id === vars.id);
       if (row?.crm_task_id) {
         const subPatch: any = {};
         if ("title" in vars.patch) subPatch.title = vars.patch.title;
@@ -532,6 +540,16 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
 
   const bulkUpdate = useMutation({
     mutationFn: async (vars: { ids: string[]; patch: Partial<PeriodTask> }) => {
+      if ("deadline" in vars.patch) {
+        const taskDatesError = getTaskDateError({
+          deadline: vars.patch.deadline,
+          periodStart: activePeriod?.start_date,
+          periodEnd: activePeriod?.end_date,
+          projectDeadline: project?.deadline || null,
+        });
+        if (taskDatesError) throw new Error(taskDatesError);
+      }
+
       const { error } = await supabase.from("period_tasks").update(vars.patch).in("id", vars.ids);
       if (error) throw error;
       const childIds = tasks.filter((t) => vars.ids.includes(t.id) && t.crm_task_id).map((t) => t.crm_task_id!) as string[];
@@ -721,8 +739,14 @@ function PeriodTasksPanel(props: {
   const handleQuickAdd = () => {
     const title = newTitle.trim();
     if (!title) return;
-    if (newStartDate && newDeadline && newStartDate > newDeadline) {
-      toast.error("Дата начала не может быть позже срока выполнения");
+    const taskDatesError = getTaskDateError({
+      startDate: newStartDate || null,
+      deadline: newDeadline || null,
+      periodStart: period.start_date,
+      periodEnd: period.end_date,
+    });
+    if (taskDatesError) {
+      toast.error(taskDatesError);
       return;
     }
     props.onAddTask({
@@ -1114,8 +1138,13 @@ function CreatePeriodDialog(props: {
   };
 
   const handleNext = async () => {
-    if (props.projectDeadline && endDate > props.projectDeadline.slice(0, 10)) {
-      toast.error(`Срок периода не может быть позже срока проекта (${format(new Date(props.projectDeadline), "dd.MM.yyyy")})`);
+    const periodDatesError = getTaskDateError({
+      startDate,
+      deadline: endDate,
+      projectDeadline: props.projectDeadline,
+    });
+    if (periodDatesError) {
+      toast.error(periodDatesError);
       return;
     }
     if (mode === "template") {
@@ -1149,12 +1178,13 @@ function CreatePeriodDialog(props: {
       toast.error("Укажите даты начала и окончания");
       return;
     }
-    if (endDate < startDate) {
-      toast.error("Дата окончания должна быть позже даты начала");
-      return;
-    }
-    if (props.projectDeadline && endDate > props.projectDeadline.slice(0, 10)) {
-      toast.error(`Срок периода не может быть позже срока проекта (${format(new Date(props.projectDeadline), "dd.MM.yyyy")})`);
+    const periodDatesError = getTaskDateError({
+      startDate,
+      deadline: endDate,
+      projectDeadline: props.projectDeadline,
+    });
+    if (periodDatesError) {
+      toast.error(periodDatesError);
       return;
     }
     let finalTasks: Partial<PeriodTask>[] = [];
