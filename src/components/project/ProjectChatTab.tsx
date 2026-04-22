@@ -394,8 +394,9 @@ export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) 
                   <UserAvatar
                     name={m.user_name}
                     seed={m.user_id || m.user_name}
-                    className="h-8 w-8 shrink-0"
-                    fallbackClassName="text-[11px] bg-muted"
+                    size="sm"
+                    className="shrink-0"
+                    fallbackClassName="bg-muted"
                   />
                   <div className={`max-w-[75%] ${isMine ? "items-end" : "items-start"} flex flex-col gap-1`}>
                     <div className="flex items-baseline gap-2 text-[11px] text-muted-foreground">
@@ -508,7 +509,7 @@ export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) 
                 onClick={() => insertMention(p)}
                 className="w-full text-left px-3 py-1.5 text-xs hover:bg-accent flex items-center gap-2"
               >
-                <UserAvatar name={p.full_name} seed={p.id} className="h-5 w-5" fallbackClassName="text-[9px]" />
+                <UserAvatar name={p.full_name} seed={p.id} size="xs" />
                 {p.full_name}
               </button>
             ))}

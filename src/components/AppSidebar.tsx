@@ -268,8 +268,7 @@ export function AppSidebar({ activeTab, onTabChange, projectName, projectLogo }:
               avatarUrl={profile?.avatar_url}
               name={profile?.full_name || user?.email}
               seed={user?.id || user?.email}
-              className="h-8 w-8"
-              fallbackClassName="text-[10px]"
+              size="sm"
             />
             <div className="min-w-0 flex-1">
               <p className="text-[12px] font-medium text-sidebar-accent-foreground truncate">{profile?.full_name || user?.email}</p>
