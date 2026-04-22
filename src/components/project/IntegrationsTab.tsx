@@ -265,7 +265,7 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
       setSyncingId(null);
     },
     onError: (err: Error) => {
-      toast.error(err.message);
+      toast.error(humanizePermissionError(err));
       setSyncingId(null);
     },
   });
