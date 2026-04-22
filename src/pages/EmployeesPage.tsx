@@ -54,6 +54,7 @@ const ROLE_LABELS: Record<string, string> = {
 
 const APP_ROLE_LABELS: Record<string, { label: string; color: string }> = {
   admin: { label: "Администратор", color: "bg-destructive/10 text-destructive" },
+  director: { label: "Директор", color: "bg-purple-500/10 text-purple-600" },
   manager: { label: "Менеджер", color: "bg-blue-500/10 text-blue-600" },
   viewer: { label: "Наблюдатель", color: "bg-muted text-muted-foreground" },
 };
@@ -398,14 +399,17 @@ export default function EmployeesPage() {
     queryKey: ["team-presence"],
     queryFn: async () => {
       const today = new Date().toISOString().slice(0, 10);
-      const [{ data: profiles }, { data: logs }] = await Promise.all([
+      const [{ data: profiles }, { data: logs }, { data: roles }] = await Promise.all([
         supabase.from("profiles").select("user_id, email, avatar_url, status"),
         supabase.from("user_time_logs").select("user_id, updated_at, active_seconds").eq("log_date", today),
+        supabase.from("user_roles").select("user_id, role"),
       ]);
       const userIdToProfile = new Map<string, { email: string; avatar_url: string | null; status: string | null }>();
       (profiles || []).forEach((p: any) => p.email && userIdToProfile.set(p.user_id, { email: p.email.toLowerCase(), avatar_url: p.avatar_url, status: p.status }));
-      const map: Record<string, { updated_at?: string; active_seconds?: number; avatar_url?: string | null; profile_status?: string | null; has_profile?: boolean }> = {};
-      userIdToProfile.forEach((p) => { map[p.email] = { avatar_url: p.avatar_url, profile_status: p.status, has_profile: true }; });
+      const userIdToRole = new Map<string, string>();
+      (roles || []).forEach((r: any) => userIdToRole.set(r.user_id, r.role));
+      const map: Record<string, { updated_at?: string; active_seconds?: number; avatar_url?: string | null; profile_status?: string | null; has_profile?: boolean; app_role?: string | null }> = {};
+      userIdToProfile.forEach((p, uid) => { map[p.email] = { avatar_url: p.avatar_url, profile_status: p.status, has_profile: true, app_role: userIdToRole.get(uid) || null }; });
       (logs || []).forEach((l: any) => {
         const p = userIdToProfile.get(l.user_id);
         if (p) map[p.email] = { ...map[p.email], updated_at: l.updated_at, active_seconds: l.active_seconds };
@@ -416,16 +420,17 @@ export default function EmployeesPage() {
   });
 
   const getPresence = (email: string | null) => {
-    if (!email) return { status: "offline" as const, activeSeconds: 0, avatarUrl: null as string | null, updatedAt: undefined as string | undefined, profileStatus: null as string | null, hasProfile: false };
+    if (!email) return { status: "offline" as const, activeSeconds: 0, avatarUrl: null as string | null, updatedAt: undefined as string | undefined, profileStatus: null as string | null, hasProfile: false, appRole: null as string | null };
     const entry = presenceMap[email.toLowerCase()];
-    if (!entry) return { status: "offline" as const, activeSeconds: 0, avatarUrl: null, updatedAt: undefined, profileStatus: null, hasProfile: false };
+    if (!entry) return { status: "offline" as const, activeSeconds: 0, avatarUrl: null, updatedAt: undefined, profileStatus: null, hasProfile: false, appRole: null };
     const avatarUrl = entry.avatar_url ?? null;
     const profileStatus = entry.profile_status ?? null;
     const hasProfile = !!entry.has_profile;
-    if (!entry.updated_at) return { status: "offline" as const, activeSeconds: 0, avatarUrl, updatedAt: undefined, profileStatus, hasProfile };
+    const appRole = (entry as any).app_role ?? null;
+    if (!entry.updated_at) return { status: "offline" as const, activeSeconds: 0, avatarUrl, updatedAt: undefined, profileStatus, hasProfile, appRole };
     const ageSec = (Date.now() - new Date(entry.updated_at).getTime()) / 1000;
     const status = ageSec < 180 ? "online" : ageSec < 900 ? "away" : "offline";
-    return { status: status as "online" | "away" | "offline", activeSeconds: entry.active_seconds || 0, updatedAt: entry.updated_at, avatarUrl, profileStatus, hasProfile };
+    return { status: status as "online" | "away" | "offline", activeSeconds: entry.active_seconds || 0, updatedAt: entry.updated_at, avatarUrl, profileStatus, hasProfile, appRole };
   };
 
   const filtered = employees.filter(e =>
@@ -546,7 +551,11 @@ export default function EmployeesPage() {
                               <AvatarCircle initials={getInitials(e.full_name)} status={presence.status} avatarUrl={presence.avatarUrl} />
                               <div>
                                 <p className="text-sm font-semibold text-foreground">{e.full_name}</p>
-                                <p className="text-[11px] text-muted-foreground">{ROLE_LABELS[e.role] || e.role}</p>
+                                <p className="text-[11px] text-muted-foreground">
+                                  {presence.appRole && APP_ROLE_LABELS[presence.appRole]
+                                    ? APP_ROLE_LABELS[presence.appRole].label
+                                    : ROLE_LABELS[e.role] || e.role}
+                                </p>
                               </div>
                             </div>
                           </td>
