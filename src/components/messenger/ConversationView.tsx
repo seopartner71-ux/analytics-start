@@ -89,7 +89,7 @@ export function ConversationView({ conversationId, onBack, employeeById, directO
         .eq("conversation_id", conversationId)
         .order("created_at", { ascending: true })
         .limit(200);
-      return (data ?? []) as DmMessage[];
+      return (data ?? []) as unknown as DmMessage[];
     },
   });
 
