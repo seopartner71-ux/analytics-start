@@ -51,7 +51,7 @@ export function usePresence() {
       });
 
     const channel = supabase
-      .channel("presence-feed")
+      .channel(`presence-feed-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "user_presence" },
