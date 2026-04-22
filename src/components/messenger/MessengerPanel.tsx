@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useMessenger } from "@/contexts/MessengerContext";
 import { usePresence } from "@/hooks/usePresence";
 import { useNotificationSound } from "@/hooks/useNotificationSound";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/UserAvatar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
