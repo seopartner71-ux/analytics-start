@@ -435,6 +435,60 @@ export type Database = {
         }
         Relationships: []
       }
+      checklists: {
+        Row: {
+          assigned_to: string | null
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          id: string
+          is_completed: boolean
+          sort_order: number
+          task_id: string
+          text: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          id?: string
+          is_completed?: boolean
+          sort_order?: number
+          task_id: string
+          text: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          id?: string
+          is_completed?: boolean
+          sort_order?: number
+          task_id?: string
+          text?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklists_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklists_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "crm_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           address: string | null
@@ -892,12 +946,16 @@ export type Database = {
           deadline: string | null
           description: string | null
           id: string
+          is_expired: boolean
           owner_id: string
-          priority: string
+          parent_id: string | null
+          priority: Database["public"]["Enums"]["task_priority"]
           project_id: string | null
+          requires_approval: boolean
           stage: string
           stage_color: string | null
           stage_progress: number | null
+          status: Database["public"]["Enums"]["task_status"]
           title: string
           updated_at: string
           week_number: number | null
@@ -912,12 +970,16 @@ export type Database = {
           deadline?: string | null
           description?: string | null
           id?: string
+          is_expired?: boolean
           owner_id: string
-          priority?: string
+          parent_id?: string | null
+          priority?: Database["public"]["Enums"]["task_priority"]
           project_id?: string | null
+          requires_approval?: boolean
           stage?: string
           stage_color?: string | null
           stage_progress?: number | null
+          status?: Database["public"]["Enums"]["task_status"]
           title: string
           updated_at?: string
           week_number?: number | null
@@ -932,12 +994,16 @@ export type Database = {
           deadline?: string | null
           description?: string | null
           id?: string
+          is_expired?: boolean
           owner_id?: string
-          priority?: string
+          parent_id?: string | null
+          priority?: Database["public"]["Enums"]["task_priority"]
           project_id?: string | null
+          requires_approval?: boolean
           stage?: string
           stage_color?: string | null
           stage_progress?: number | null
+          status?: Database["public"]["Enums"]["task_status"]
           title?: string
           updated_at?: string
           week_number?: number | null
@@ -956,6 +1022,13 @@ export type Database = {
             columns: ["creator_id"]
             isOneToOne: false
             referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_tasks_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "crm_tasks"
             referencedColumns: ["id"]
           },
           {
@@ -3458,6 +3531,48 @@ export type Database = {
           },
         ]
       }
+      task_members: {
+        Row: {
+          added_by: string | null
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["task_member_role"]
+          task_id: string
+          team_member_id: string
+        }
+        Insert: {
+          added_by?: string | null
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["task_member_role"]
+          task_id: string
+          team_member_id: string
+        }
+        Update: {
+          added_by?: string | null
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["task_member_role"]
+          task_id?: string
+          team_member_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_members_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "crm_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_members_team_member_id_fkey"
+            columns: ["team_member_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_time_entries: {
         Row: {
           comment: string | null
@@ -4059,6 +4174,18 @@ export type Database = {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
       }
+      is_task_accomplice: {
+        Args: { _task_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_task_creator: {
+        Args: { _task_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_task_responsible: {
+        Args: { _task_id: string; _user_id: string }
+        Returns: boolean
+      }
       mark_conversation_read: { Args: { _conv_id: string }; Returns: undefined }
       match_chunks: {
         Args: {
@@ -4080,10 +4207,26 @@ export type Database = {
         Args: { p_onboarding_id: string }
         Returns: undefined
       }
+      task_is_expired: {
+        Args: {
+          _deadline: string
+          _status: Database["public"]["Enums"]["task_status"]
+        }
+        Returns: boolean
+      }
       touch_user_presence: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "viewer" | "manager" | "director" | "seo" | "junior"
+      task_member_role: "accomplice" | "auditor"
+      task_priority: "low" | "medium" | "high"
+      task_status:
+        | "new"
+        | "pending"
+        | "in_progress"
+        | "awaiting_control"
+        | "completed"
+        | "deferred"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -4212,6 +4355,16 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "viewer", "manager", "director", "seo", "junior"],
+      task_member_role: ["accomplice", "auditor"],
+      task_priority: ["low", "medium", "high"],
+      task_status: [
+        "new",
+        "pending",
+        "in_progress",
+        "awaiting_control",
+        "completed",
+        "deferred",
+      ],
     },
   },
 } as const
