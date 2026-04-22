@@ -619,6 +619,8 @@ function PeriodTasksPanel(props: {
   const { period, tasks, members, selectedIds } = props;
   const [newTitle, setNewTitle] = useState("");
   const [newAssignee, setNewAssignee] = useState<string>("none");
+  const [newWatcher, setNewWatcher] = useState<string>("none");
+  const [newStartDate, setNewStartDate] = useState<string>("");
   const [newDeadline, setNewDeadline] = useState<string>("");
   const [newCategory, setNewCategory] = useState<string>("general");
   const [newRequired, setNewRequired] = useState(false);
@@ -627,15 +629,23 @@ function PeriodTasksPanel(props: {
   const handleQuickAdd = () => {
     const title = newTitle.trim();
     if (!title) return;
+    if (newStartDate && newDeadline && newStartDate > newDeadline) {
+      toast.error("Дата начала не может быть позже срока выполнения");
+      return;
+    }
     props.onAddTask({
       title,
       assignee_id: newAssignee === "none" ? null : newAssignee,
       deadline: newDeadline || null,
       category: newCategory,
       required: newRequired,
+      // extras для пробрасывания в CRM-задачу
+      ...( { start_date: newStartDate || null, watcher_id: newWatcher === "none" ? null : newWatcher } as any ),
     });
     setNewTitle("");
     setNewAssignee("none");
+    setNewWatcher("none");
+    setNewStartDate("");
     setNewDeadline("");
     setNewCategory("general");
     setNewRequired(false);
