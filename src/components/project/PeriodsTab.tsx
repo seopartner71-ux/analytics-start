@@ -363,7 +363,7 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
         onOpenChange={setCreateOpen}
         existingPeriods={periods}
         templates={templates as any[]}
-        onCreate={(year, month, tasks) => createPeriod.mutate({ year, month, tasks })}
+        onCreate={(payload) => createPeriod.mutate(payload)}
         creating={createPeriod.isPending}
         loadPastTasks={async (periodId) => {
           const { data } = await supabase.from("period_tasks").select("*").eq("period_id", periodId);
