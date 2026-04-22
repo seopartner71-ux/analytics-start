@@ -354,74 +354,136 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
     setTvProjectId("");
   };
 
+  const lockedHint = "Только администратор, владелец проекта или назначенный руководитель проекта может управлять интеграциями. Вы можете просматривать данные, но не менять подключения.";
+
   return (
-    <div className="space-y-4">
-      <h2 className="text-lg font-semibold text-foreground">{t("integrations.title")}</h2>
+    <TooltipProvider>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <h2 className="text-lg font-semibold text-foreground">{t("integrations.title")}</h2>
+          {!canManageIntegrations && (
+            <Badge variant="outline" className="gap-1.5 border-amber-500/40 text-amber-600">
+              <Lock className="h-3 w-3" />
+              Только просмотр
+            </Badge>
+          )}
+        </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        {integrationsMeta.map((meta) => {
-          const integration = getIntegration(meta.key);
-          const connected = integration?.connected ?? false;
+        {!canManageIntegrations && (
+          <Alert className="border-amber-500/40 bg-amber-500/5">
+            <ShieldAlert className="h-4 w-4 text-amber-600" />
+            <AlertTitle className="text-amber-700 dark:text-amber-400">Недостаточно прав на изменение интеграций</AlertTitle>
+            <AlertDescription className="text-muted-foreground">
+              Вам доступен просмотр всей аналитики и подключённых сервисов проекта.
+              Подключать, отключать и синхронизировать интеграции может администратор,
+              владелец проекта или назначенный руководитель проекта (SEO-специалист или аккаунт-менеджер).
+            </AlertDescription>
+          </Alert>
+        )}
 
-          return (
-            <Card key={meta.key} className="border-border/60">
-              <CardContent className="p-5">
-                <div className="flex items-start gap-4">
-                  <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center text-muted-foreground shrink-0">
-                    {meta.icon}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold text-foreground">{t(`integrations.names.${meta.key}`)}</h3>
-                      {connected && (
-                        <Badge className="bg-[hsl(var(--success))] text-[hsl(var(--success-foreground))]">
-                          <CheckCircle2 className="h-3 w-3 mr-1" />
-                          {t("integrations.active")}
-                        </Badge>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {integrationsMeta.map((meta) => {
+            const integration = getIntegration(meta.key);
+            const connected = integration?.connected ?? false;
+
+            const wrapDisabled = (node: React.ReactNode) =>
+              !canManageIntegrations ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-flex">{node}</span>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-xs">
+                    {lockedHint}
+                  </TooltipContent>
+                </Tooltip>
+              ) : (
+                node
+              );
+
+            return (
+              <Card key={meta.key} className="border-border/60">
+                <CardContent className="p-5">
+                  <div className="flex items-start gap-4">
+                    <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center text-muted-foreground shrink-0">
+                      {meta.icon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <h3 className="font-semibold text-foreground">{t(`integrations.names.${meta.key}`)}</h3>
+                        {connected && (
+                          <Badge className="bg-[hsl(var(--success))] text-[hsl(var(--success-foreground))]">
+                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                            {t("integrations.active")}
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-3">{t(meta.descriptionKey)}</p>
+
+                      {connected && integration?.last_sync && (
+                        <p className="text-xs text-muted-foreground mb-3">
+                          {t("integrations.lastSync")}: {new Date(integration.last_sync).toLocaleDateString()}
+                        </p>
+                      )}
+
+                      {connected ? (
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {wrapDisabled(
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="gap-1.5"
+                              onClick={() => syncMutation.mutate(integration!)}
+                              disabled={syncingId === integration!.id || !canManageIntegrations}
+                            >
+                              <RefreshCw className={`h-3.5 w-3.5 ${syncingId === integration!.id ? "animate-spin" : ""}`} />
+                              {t("integrations.sync")}
+                            </Button>
+                          )}
+                          {wrapDisabled(
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="gap-1.5"
+                              onClick={() => handleConnect(meta)}
+                              disabled={!canManageIntegrations}
+                            >
+                              {canManageIntegrations ? <KeyRound className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
+                              Настроить
+                            </Button>
+                          )}
+                          {wrapDisabled(
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="gap-1.5 text-destructive hover:text-destructive"
+                              onClick={() => disconnectMutation.mutate(integration!.id)}
+                              disabled={!canManageIntegrations}
+                            >
+                              <Unplug className="h-3.5 w-3.5" />
+                              {t("integrations.disconnect")}
+                            </Button>
+                          )}
+                        </div>
+                      ) : (
+                        wrapDisabled(
+                          <Button
+                            size="sm"
+                            className="gap-1.5"
+                            onClick={() => handleConnect(meta)}
+                            disabled={!canManageIntegrations}
+                          >
+                            {canManageIntegrations ? <KeyRound className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
+                            {t("integrations.connect")}
+                          </Button>
+                        )
                       )}
                     </div>
-                    <p className="text-sm text-muted-foreground mb-3">{t(meta.descriptionKey)}</p>
-
-                    {connected && integration?.last_sync && (
-                      <p className="text-xs text-muted-foreground mb-3">
-                        {t("integrations.lastSync")}: {new Date(integration.last_sync).toLocaleDateString()}
-                      </p>
-                    )}
-
-                    {connected ? (
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="gap-1.5"
-                          onClick={() => syncMutation.mutate(integration!)}
-                          disabled={syncingId === integration!.id}
-                        >
-                          <RefreshCw className={`h-3.5 w-3.5 ${syncingId === integration!.id ? "animate-spin" : ""}`} />
-                          {t("integrations.sync")}
-                        </Button>
-                        <Button variant="outline" size="sm" className="gap-1.5" onClick={() => handleConnect(meta)}>
-                          <KeyRound className="h-3.5 w-3.5" />
-                          Настроить
-                        </Button>
-                        <Button variant="outline" size="sm" className="gap-1.5 text-destructive hover:text-destructive" onClick={() => disconnectMutation.mutate(integration!.id)}>
-                          <Unplug className="h-3.5 w-3.5" />
-                          {t("integrations.disconnect")}
-                        </Button>
-                      </div>
-                    ) : (
-                      <Button size="sm" className="gap-1.5" onClick={() => handleConnect(meta)}>
-                        <KeyRound className="h-3.5 w-3.5" />
-                        {t("integrations.connect")}
-                      </Button>
-                    )}
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
 
       {/* Yandex Webmaster Dialog */}
       <Dialog open={wmDialog} onOpenChange={setWmDialog}>
