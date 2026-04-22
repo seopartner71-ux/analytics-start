@@ -281,11 +281,8 @@ function UserEditSheet({
           .maybeSingle();
 
         const fullName = [firstName, lastName].filter(Boolean).join(" ") || user.full_name || user.email;
-        const tmRole = role === "admin" ? "Администратор"
-          : role === "director" ? "Директор"
-          : role === "manager" ? "Менеджер"
-          : role === "junior" ? "Junior"
-          : "SEO-специалист";
+        // team_members.role is constrained to 'seo' | 'account_manager'
+        const tmRole = role === "manager" ? "account_manager" : "seo";
 
         if (!existingTm) {
           await supabase.from("team_members").insert({
@@ -293,14 +290,14 @@ function UserEditSheet({
             full_name: fullName,
             email: user.email,
             phone: phone || null,
-            role: position || tmRole,
+            role: tmRole,
             status: "active",
           } as any);
         } else {
           await supabase.from("team_members").update({
             full_name: fullName,
             phone: phone || null,
-            role: position || tmRole,
+            role: tmRole,
             status: "active",
           } as any).eq("id", existingTm.id);
         }
