@@ -471,8 +471,8 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
 
   return (
     <Sheet open={open} onOpenChange={onClose}>
-      <SheetContent className="w-full md:w-[88vw] md:max-w-[88vw] p-0 overflow-hidden border-l-0 shadow-2xl" side="right">
-        <div className="px-6 py-4 border-b border-border/60 bg-gradient-to-r from-primary/[0.04] to-transparent space-y-3">
+      <SheetContent className="w-full md:w-[88vw] md:max-w-[88vw] p-0 overflow-hidden border-l-0 shadow-2xl flex flex-col h-screen max-h-screen" side="right">
+        <div className="px-6 py-4 border-b border-border/60 bg-gradient-to-r from-primary/[0.04] to-transparent space-y-3 shrink-0">
           <SheetTitle className="text-lg font-bold text-foreground leading-tight tracking-tight">
             {task.title}
           </SheetTitle>
@@ -485,9 +485,9 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
           />
         </div>
 
-        <div className="flex flex-col md:flex-row h-[calc(100vh-72px)]">
+        <div className="flex flex-col md:flex-row flex-1 min-h-0">
           {/* LEFT COLUMN */}
-          <div className="w-full md:w-[44%] lg:w-[40%] flex flex-col border-r border-border/50 bg-[hsl(var(--muted)/0.3)]">
+          <div className="w-full md:w-[44%] lg:w-[40%] flex flex-col border-r border-border/50 bg-[hsl(var(--muted)/0.3)] min-h-0">
             <div className="flex-1 overflow-y-auto p-5 space-y-4">
 
               {/* Description */}
