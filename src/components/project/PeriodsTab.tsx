@@ -324,6 +324,9 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
   const addTask = useMutation({
     mutationFn: async (vars: Partial<PeriodTask>) => {
       if (!activePeriod) throw new Error("Период не выбран");
+      if (vars.deadline && activePeriod.end_date && vars.deadline > activePeriod.end_date) {
+        throw new Error(`Срок задачи не может быть позже окончания периода (${format(new Date(activePeriod.end_date), "dd.MM.yyyy")})`);
+      }
       const parentId = await ensurePeriodParentTask(activePeriod);
       const sort_order = tasks.length;
       const childId = await createChildCrmTaskFor(parentId, vars);
