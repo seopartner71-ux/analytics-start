@@ -54,6 +54,7 @@ const ROLE_LABELS: Record<string, string> = {
 
 const APP_ROLE_LABELS: Record<string, { label: string; color: string }> = {
   admin: { label: "Администратор", color: "bg-destructive/10 text-destructive" },
+  director: { label: "Директор", color: "bg-purple-500/10 text-purple-600" },
   manager: { label: "Менеджер", color: "bg-blue-500/10 text-blue-600" },
   viewer: { label: "Наблюдатель", color: "bg-muted text-muted-foreground" },
 };
