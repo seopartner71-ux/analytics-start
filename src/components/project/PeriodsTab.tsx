@@ -441,6 +441,9 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
           await supabase.from("crm_tasks").update(subPatch).in("id", childIds);
         }
       }
+      if ("completed" in vars.patch && activePeriod?.crm_task_id) {
+        await syncMainTaskStage(activePeriod.crm_task_id);
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["period-tasks", activePeriod?.id] });
