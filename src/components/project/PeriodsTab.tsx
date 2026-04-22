@@ -29,6 +29,7 @@ import {
   Trash2, MoreVertical, CalendarDays, User, AlertCircle, Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { DeleteButton } from "@/components/common/DeleteButton";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import {
@@ -398,6 +399,7 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
             onSelectAll={(all) => setSelectedTaskIds(all ? new Set(tasks.map((t) => t.id)) : new Set())}
             onAddTask={(t) => addTask.mutate(t)}
             onUpdateTask={(id, patch) => updateTask.mutate({ id, patch })}
+            onDeleteTask={(id) => deleteTasks.mutate([id])}
             onDeleteSelected={() => deleteTasks.mutate(Array.from(selectedTaskIds))}
             onBulkUpdate={(patch) => bulkUpdate.mutate({ ids: Array.from(selectedTaskIds), patch })}
             sensors={sensors}
@@ -433,6 +435,7 @@ function PeriodTasksPanel(props: {
   onSelectAll: (all: boolean) => void;
   onAddTask: (t: Partial<PeriodTask>) => void;
   onUpdateTask: (id: string, patch: Partial<PeriodTask>) => void;
+  onDeleteTask: (id: string) => void;
   onDeleteSelected: () => void;
   onBulkUpdate: (patch: Partial<PeriodTask>) => void;
   sensors: ReturnType<typeof useSensors>;
@@ -511,7 +514,7 @@ function PeriodTasksPanel(props: {
                 selected={selectedIds.has(t.id)}
                 onToggleSelect={() => props.onToggleSelect(t.id)}
                 onUpdate={(patch) => props.onUpdateTask(t.id, patch)}
-                onDelete={() => props.onUpdateTask(t.id, { completed: !t.completed })}
+                onDelete={() => props.onDeleteTask(t.id)}
               />
             ))}
           </div>
@@ -670,6 +673,12 @@ function SortableTaskRow(props: {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+      <DeleteButton
+        entityName={task.title}
+        entityLabel="задачу"
+        onConfirm={async () => props.onDelete()}
+        className="shrink-0"
+      />
     </div>
   );
 }
