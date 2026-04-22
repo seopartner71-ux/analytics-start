@@ -4230,6 +4230,10 @@ export type Database = {
         Args: { _conv_id: string; _user_id: string }
         Returns: boolean
       }
+      is_project_member: {
+        Args: { _project_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_project_participant: {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean

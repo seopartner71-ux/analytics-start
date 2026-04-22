@@ -37,13 +37,11 @@ interface ProjectMemberRow {
   team_member_id: string;
   role: string;
   notifications_enabled: boolean;
-  team_member?: { id: string; full_name: string } | null;
+  team_member?: { id: string; full_name: string; email: string | null; owner_id: string | null } | null;
 }
 
-const avatarFor = (name: string) => {
-  const hash = name.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
-  return `https://i.pravatar.cc/120?u=${hash}`;
-};
+const initialsOf = (name: string) =>
+  name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 
 export function ProjectTeamTab({ projectId }: { projectId: string }) {
   const qc = useQueryClient();
@@ -58,13 +56,43 @@ export function ProjectTeamTab({ projectId }: { projectId: string }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("project_members")
-        .select("id, team_member_id, role, notifications_enabled, team_member:team_members(id, full_name)")
+        .select("id, team_member_id, role, notifications_enabled, team_member:team_members(id, full_name, email, owner_id)")
         .eq("project_id", projectId)
         .order("created_at", { ascending: true });
       if (error) throw error;
       return (data || []) as any;
     },
   });
+
+  // Аватарки реальных пользователей: тянем profiles по email участников
+  const memberEmails = members.map((m) => m.team_member?.email).filter(Boolean) as string[];
+  const memberOwnerIds = members.map((m) => m.team_member?.owner_id).filter(Boolean) as string[];
+  const { data: avatarMap = {} } = useQuery<Record<string, string>>({
+    queryKey: ["project-members-avatars", projectId, memberEmails.join(","), memberOwnerIds.join(",")],
+    enabled: memberEmails.length > 0 || memberOwnerIds.length > 0,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("user_id, email, avatar_url")
+        .or([
+          memberEmails.length ? `email.in.(${memberEmails.map((e) => `"${e}"`).join(",")})` : "",
+          memberOwnerIds.length ? `user_id.in.(${memberOwnerIds.join(",")})` : "",
+        ].filter(Boolean).join(","));
+      const map: Record<string, string> = {};
+      (data || []).forEach((p: any) => {
+        if (!p.avatar_url) return;
+        if (p.email) map[`email:${p.email.toLowerCase()}`] = p.avatar_url;
+        if (p.user_id) map[`uid:${p.user_id}`] = p.avatar_url;
+      });
+      return map;
+    },
+  });
+
+  const avatarUrlFor = (m: ProjectMemberRow) => {
+    if (m.team_member?.owner_id && avatarMap[`uid:${m.team_member.owner_id}`]) return avatarMap[`uid:${m.team_member.owner_id}`];
+    if (m.team_member?.email && avatarMap[`email:${m.team_member.email.toLowerCase()}`]) return avatarMap[`email:${m.team_member.email.toLowerCase()}`];
+    return null;
+  };
 
   // Все сотрудники для выбора
   const { data: allMembers = [] } = useQuery({
@@ -172,16 +200,23 @@ export function ProjectTeamTab({ projectId }: { projectId: string }) {
         ) : (
           members.map((m) => {
             const name = m.team_member?.full_name || "Без имени";
+            const avatar = avatarUrlFor(m);
             return (
               <div
                 key={m.id}
                 className="flex items-center gap-3 px-4 py-3 hover:bg-muted/20 transition-colors"
               >
-                <img
-                  src={avatarFor(name)}
-                  alt={name}
-                  className="h-10 w-10 rounded-full ring-1 ring-border/60 object-cover"
-                />
+                {avatar ? (
+                  <img
+                    src={avatar}
+                    alt={name}
+                    className="h-10 w-10 rounded-full ring-1 ring-border/60 object-cover"
+                  />
+                ) : (
+                  <div className="h-10 w-10 rounded-full ring-1 ring-border/60 bg-primary/15 text-primary flex items-center justify-center text-sm font-semibold">
+                    {initialsOf(name)}
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <div className="text-[13.5px] font-medium text-foreground truncate">{name}</div>
                   <div className="text-[11.5px] text-muted-foreground truncate">
