@@ -506,6 +506,7 @@ export default function EmployeesPage() {
                     <th>Подразделение</th>
                     <th>E-Mail</th>
                     <th>Мобильный телефон</th>
+                    <th>Учётка</th>
                     <th>Дата активности</th>
                     {isAdmin && <th className="w-12"></th>}
                   </tr>
