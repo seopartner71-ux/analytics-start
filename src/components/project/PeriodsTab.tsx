@@ -138,25 +138,67 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
     },
   });
 
+  // Создаёт CRM-задачу и возвращает её id (если переданы данные задачи).
+  const createCrmTask = async (t: Partial<PeriodTask>) => {
+    if (!t.title) return null;
+    const { data, error } = await supabase
+      .from("crm_tasks")
+      .insert({
+        title: t.title,
+        stage: "Новые",
+        priority: "medium",
+        deadline: t.deadline ? new Date(t.deadline).toISOString() : null,
+        assignee_id: t.assignee_id || null,
+        project_id: projectId,
+        creator_id: null,
+        owner_id: user!.id,
+      })
+      .select("id")
+      .single();
+    if (error) throw error;
+    return data.id as string;
+  };
+
   // Mutations
   const createPeriod = useMutation({
-    mutationFn: async (vars: { year: number; month: number; tasks: Partial<PeriodTask>[] }) => {
-      const title = `${MONTH_NAMES[vars.month - 1]} ${vars.year}`;
+    mutationFn: async (vars: {
+      year: number;
+      month: number;
+      title: string;
+      start_date: string;
+      end_date: string;
+      tasks: Partial<PeriodTask>[];
+    }) => {
       const { data: p, error } = await supabase
         .from("project_periods")
-        .insert({ project_id: projectId, owner_id: user!.id, year: vars.year, month: vars.month, title })
+        .insert({
+          project_id: projectId,
+          owner_id: user!.id,
+          year: vars.year,
+          month: vars.month,
+          title: vars.title,
+          start_date: vars.start_date,
+          end_date: vars.end_date,
+        })
         .select().single();
       if (error) throw error;
       if (vars.tasks.length > 0) {
-        const rows = vars.tasks.map((t, i) => ({
-          period_id: p.id,
-          title: t.title!,
-          category: t.category || "general",
-          assignee_id: t.assignee_id || null,
-          deadline: t.deadline || null,
-          required: t.required || false,
-          sort_order: i,
-        }));
+        // Создаём CRM-задачи последовательно, чтобы получить id для связи
+        const rows: any[] = [];
+        for (let i = 0; i < vars.tasks.length; i++) {
+          const t = vars.tasks[i];
+          const crmId = await createCrmTask(t);
+          rows.push({
+            period_id: p.id,
+            title: t.title!,
+            category: t.category || "general",
+            assignee_id: t.assignee_id || null,
+            deadline: t.deadline || null,
+            required: t.required || false,
+            sort_order: i,
+            crm_task_id: crmId,
+          });
+        }
         const { error: te } = await supabase.from("period_tasks").insert(rows);
         if (te) throw te;
       }
@@ -164,6 +206,7 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
     },
     onSuccess: (p) => {
       qc.invalidateQueries({ queryKey: ["project-periods", projectId] });
+      qc.invalidateQueries({ queryKey: ["crm-tasks"] });
       setSelectedPeriodId(p.id);
       setCreateOpen(false);
       toast.success(`Период «${p.title}» создан`);
@@ -174,6 +217,7 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
   const addTask = useMutation({
     mutationFn: async (vars: Partial<PeriodTask>) => {
       const sort_order = tasks.length;
+      const crmId = await createCrmTask(vars);
       const { error } = await supabase.from("period_tasks").insert({
         period_id: activePeriod!.id,
         title: vars.title!,
@@ -182,10 +226,16 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
         deadline: vars.deadline || null,
         required: vars.required || false,
         sort_order,
+        crm_task_id: crmId,
       });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["period-tasks", activePeriod?.id] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["period-tasks", activePeriod?.id] });
+      qc.invalidateQueries({ queryKey: ["crm-tasks"] });
+      toast.success("Задача создана и добавлена в проект");
+    },
+    onError: (e: any) => toast.error(e.message || "Ошибка создания задачи"),
   });
 
   const updateTask = useMutation({
