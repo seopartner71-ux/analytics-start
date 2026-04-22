@@ -828,7 +828,7 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
             </div>
           </div>
           {/* RIGHT COLUMN: Chat */}
-          <div className="flex-1 flex flex-col min-h-0">
+          <div id="task-section-chat" className="flex-1 flex flex-col min-h-0 bg-card scroll-mt-4">
             <div className="px-5 py-3 border-b border-border/60 bg-card flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
                 <MessageSquare className="h-4 w-4 text-muted-foreground" />
