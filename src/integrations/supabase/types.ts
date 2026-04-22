@@ -2500,6 +2500,7 @@ export type Database = {
           completed: boolean
           completed_at: string | null
           created_at: string
+          crm_task_id: string | null
           deadline: string | null
           id: string
           instruction_article_id: string | null
@@ -2515,6 +2516,7 @@ export type Database = {
           completed?: boolean
           completed_at?: string | null
           created_at?: string
+          crm_task_id?: string | null
           deadline?: string | null
           id?: string
           instruction_article_id?: string | null
@@ -2530,6 +2532,7 @@ export type Database = {
           completed?: boolean
           completed_at?: string | null
           created_at?: string
+          crm_task_id?: string | null
           deadline?: string | null
           id?: string
           instruction_article_id?: string | null
@@ -2545,6 +2548,13 @@ export type Database = {
             columns: ["assignee_id"]
             isOneToOne: false
             referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "period_tasks_crm_task_id_fkey"
+            columns: ["crm_task_id"]
+            isOneToOne: false
+            referencedRelation: "crm_tasks"
             referencedColumns: ["id"]
           },
           {
@@ -3009,10 +3019,12 @@ export type Database = {
       project_periods: {
         Row: {
           created_at: string
+          end_date: string | null
           id: string
           month: number
           owner_id: string
           project_id: string
+          start_date: string | null
           status: string
           title: string
           updated_at: string
@@ -3020,10 +3032,12 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          end_date?: string | null
           id?: string
           month: number
           owner_id: string
           project_id: string
+          start_date?: string | null
           status?: string
           title?: string
           updated_at?: string
@@ -3031,10 +3045,12 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          end_date?: string | null
           id?: string
           month?: number
           owner_id?: string
           project_id?: string
+          start_date?: string | null
           status?: string
           title?: string
           updated_at?: string

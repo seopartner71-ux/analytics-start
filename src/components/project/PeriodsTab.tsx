@@ -62,6 +62,8 @@ type Period = {
   month: number;
   title: string;
   status: string;
+  start_date: string | null;
+  end_date: string | null;
 };
 
 type PeriodTask = {
@@ -74,6 +76,7 @@ type PeriodTask = {
   required: boolean;
   completed: boolean;
   sort_order: number;
+  crm_task_id: string | null;
 };
 
 type Member = { id: string; full_name: string };
@@ -135,25 +138,67 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
     },
   });
 
+  // Создаёт CRM-задачу и возвращает её id (если переданы данные задачи).
+  const createCrmTask = async (t: Partial<PeriodTask>) => {
+    if (!t.title) return null;
+    const { data, error } = await supabase
+      .from("crm_tasks")
+      .insert({
+        title: t.title,
+        stage: "Новые",
+        priority: "medium",
+        deadline: t.deadline ? new Date(t.deadline).toISOString() : null,
+        assignee_id: t.assignee_id || null,
+        project_id: projectId,
+        creator_id: null,
+        owner_id: user!.id,
+      })
+      .select("id")
+      .single();
+    if (error) throw error;
+    return data.id as string;
+  };
+
   // Mutations
   const createPeriod = useMutation({
-    mutationFn: async (vars: { year: number; month: number; tasks: Partial<PeriodTask>[] }) => {
-      const title = `${MONTH_NAMES[vars.month - 1]} ${vars.year}`;
+    mutationFn: async (vars: {
+      year: number;
+      month: number;
+      title: string;
+      start_date: string;
+      end_date: string;
+      tasks: Partial<PeriodTask>[];
+    }) => {
       const { data: p, error } = await supabase
         .from("project_periods")
-        .insert({ project_id: projectId, owner_id: user!.id, year: vars.year, month: vars.month, title })
+        .insert({
+          project_id: projectId,
+          owner_id: user!.id,
+          year: vars.year,
+          month: vars.month,
+          title: vars.title,
+          start_date: vars.start_date,
+          end_date: vars.end_date,
+        })
         .select().single();
       if (error) throw error;
       if (vars.tasks.length > 0) {
-        const rows = vars.tasks.map((t, i) => ({
-          period_id: p.id,
-          title: t.title!,
-          category: t.category || "general",
-          assignee_id: t.assignee_id || null,
-          deadline: t.deadline || null,
-          required: t.required || false,
-          sort_order: i,
-        }));
+        // Создаём CRM-задачи последовательно, чтобы получить id для связи
+        const rows: any[] = [];
+        for (let i = 0; i < vars.tasks.length; i++) {
+          const t = vars.tasks[i];
+          const crmId = await createCrmTask(t);
+          rows.push({
+            period_id: p.id,
+            title: t.title!,
+            category: t.category || "general",
+            assignee_id: t.assignee_id || null,
+            deadline: t.deadline || null,
+            required: t.required || false,
+            sort_order: i,
+            crm_task_id: crmId,
+          });
+        }
         const { error: te } = await supabase.from("period_tasks").insert(rows);
         if (te) throw te;
       }
@@ -161,6 +206,7 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
     },
     onSuccess: (p) => {
       qc.invalidateQueries({ queryKey: ["project-periods", projectId] });
+      qc.invalidateQueries({ queryKey: ["crm-tasks"] });
       setSelectedPeriodId(p.id);
       setCreateOpen(false);
       toast.success(`Период «${p.title}» создан`);
@@ -171,6 +217,7 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
   const addTask = useMutation({
     mutationFn: async (vars: Partial<PeriodTask>) => {
       const sort_order = tasks.length;
+      const crmId = await createCrmTask(vars);
       const { error } = await supabase.from("period_tasks").insert({
         period_id: activePeriod!.id,
         title: vars.title!,
@@ -179,10 +226,16 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
         deadline: vars.deadline || null,
         required: vars.required || false,
         sort_order,
+        crm_task_id: crmId,
       });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["period-tasks", activePeriod?.id] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["period-tasks", activePeriod?.id] });
+      qc.invalidateQueries({ queryKey: ["crm-tasks"] });
+      toast.success("Задача создана и добавлена в проект");
+    },
+    onError: (e: any) => toast.error(e.message || "Ошибка создания задачи"),
   });
 
   const updateTask = useMutation({
@@ -310,7 +363,7 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
         onOpenChange={setCreateOpen}
         existingPeriods={periods}
         templates={templates as any[]}
-        onCreate={(year, month, tasks) => createPeriod.mutate({ year, month, tasks })}
+        onCreate={(payload) => createPeriod.mutate(payload)}
         creating={createPeriod.isPending}
         loadPastTasks={async (periodId) => {
           const { data } = await supabase.from("period_tasks").select("*").eq("period_id", periodId);
@@ -339,13 +392,27 @@ function PeriodTasksPanel(props: {
 }) {
   const { period, tasks, members, selectedIds } = props;
   const [newTitle, setNewTitle] = useState("");
+  const [newAssignee, setNewAssignee] = useState<string>("none");
+  const [newDeadline, setNewDeadline] = useState<string>("");
+  const [newCategory, setNewCategory] = useState<string>("general");
+  const [newRequired, setNewRequired] = useState(false);
   const completed = tasks.filter((t) => t.completed).length;
 
   const handleQuickAdd = () => {
     const title = newTitle.trim();
     if (!title) return;
-    props.onAddTask({ title });
+    props.onAddTask({
+      title,
+      assignee_id: newAssignee === "none" ? null : newAssignee,
+      deadline: newDeadline || null,
+      category: newCategory,
+      required: newRequired,
+    });
     setNewTitle("");
+    setNewAssignee("none");
+    setNewDeadline("");
+    setNewCategory("general");
+    setNewRequired(false);
   };
 
   return (
@@ -355,6 +422,11 @@ function PeriodTasksPanel(props: {
         <div>
           <h3 className="text-base font-semibold">{period.title}</h3>
           <p className="text-xs text-muted-foreground mt-0.5">
+            {period.start_date && period.end_date && (
+              <>
+                {format(new Date(period.start_date), "d MMM", { locale: ru })} — {format(new Date(period.end_date), "d MMM yyyy", { locale: ru })} · {" "}
+              </>
+            )}
             {completed} из {tasks.length} задач выполнено
           </p>
         </div>
@@ -398,18 +470,54 @@ function PeriodTasksPanel(props: {
         </SortableContext>
       </DndContext>
 
-      {/* Quick add */}
-      <div className="flex gap-2 mt-3 pt-3 border-t border-border/60">
+      {/* Add task form (как в CRM) */}
+      <div className="mt-3 pt-3 border-t border-border/60 space-y-2">
         <Input
           value={newTitle}
           onChange={(e) => setNewTitle(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleQuickAdd()}
-          placeholder="+ Добавить задачу..."
+          placeholder="Название задачи..."
           className="h-9"
         />
-        <Button onClick={handleQuickAdd} disabled={!newTitle.trim()} size="sm">
-          Добавить
-        </Button>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <Select value={newAssignee} onValueChange={setNewAssignee}>
+            <SelectTrigger className="h-9 text-xs">
+              <SelectValue placeholder="Ответственный" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Не назначен</SelectItem>
+              {members.map((m) => (
+                <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={newCategory} onValueChange={setNewCategory}>
+            <SelectTrigger className="h-9 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {CATEGORIES.map((c) => (
+                <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Input
+            type="date"
+            value={newDeadline}
+            onChange={(e) => setNewDeadline(e.target.value)}
+            className="h-9 text-xs"
+            placeholder="Дедлайн"
+          />
+        </div>
+        <div className="flex items-center justify-between">
+          <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+            <Checkbox checked={newRequired} onCheckedChange={(v) => setNewRequired(!!v)} />
+            Обязательная
+          </label>
+          <Button onClick={handleQuickAdd} disabled={!newTitle.trim()} size="sm">
+            <Plus className="h-3.5 w-3.5 mr-1" /> Добавить задачу
+          </Button>
+        </div>
       </div>
     </Card>
   );
@@ -570,15 +678,33 @@ function CreatePeriodDialog(props: {
   onOpenChange: (v: boolean) => void;
   existingPeriods: Period[];
   templates: any[];
-  onCreate: (year: number, month: number, tasks: Partial<PeriodTask>[]) => void;
+  onCreate: (payload: {
+    year: number;
+    month: number;
+    title: string;
+    start_date: string;
+    end_date: string;
+    tasks: Partial<PeriodTask>[];
+  }) => void;
   creating: boolean;
   loadPastTasks: (periodId: string) => Promise<PeriodTask[]>;
 }) {
   const now = new Date();
+  const todayIso = now.toISOString().slice(0, 10);
+  const monthEndIso = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
+
   const [step, setStep] = useState<"select" | "build">("select");
   const [mode, setMode] = useState<CreateMode>("template");
-  const [year, setYear] = useState(now.getFullYear());
-  const [month, setMonth] = useState(now.getMonth() + 1);
+  const [startDate, setStartDate] = useState(todayIso);
+  const [endDate, setEndDate] = useState(monthEndIso);
+  const [title, setTitle] = useState("");
+
+  // Year/Month вычисляем из startDate (для совместимости и UNIQUE-ключа)
+  const start = new Date(startDate);
+  const year = start.getFullYear();
+  const month = start.getMonth() + 1;
+  const autoTitle = `${MONTH_NAMES[month - 1]} ${year}`;
+  const effectiveTitle = title.trim() || autoTitle;
 
   // Build state per mode
   const [templateTasks, setTemplateTasks] = useState<Partial<PeriodTask>[]>([]);
@@ -591,6 +717,7 @@ function CreatePeriodDialog(props: {
   const reset = () => {
     setStep("select");
     setMode("template");
+    setTitle("");
     setTemplateTasks([]);
     setListText("");
     setManualTasks([]);
@@ -626,15 +753,31 @@ function CreatePeriodDialog(props: {
   };
 
   const handleCreate = () => {
+    if (!startDate || !endDate) {
+      toast.error("Укажите даты начала и окончания");
+      return;
+    }
+    if (endDate < startDate) {
+      toast.error("Дата окончания должна быть позже даты начала");
+      return;
+    }
     let finalTasks: Partial<PeriodTask>[] = [];
     if (mode === "template") finalTasks = templateTasks;
     else if (mode === "list") {
       finalTasks = listText
         .split("\n").map((s) => s.trim()).filter(Boolean)
-        .map((title) => ({ title, category: "general" }));
+        .map((t) => ({ title: t, category: "general" }));
     } else if (mode === "manual") finalTasks = manualTasks;
     else if (mode === "copy") finalTasks = copyTasks;
-    props.onCreate(year, month, finalTasks);
+
+    props.onCreate({
+      year,
+      month,
+      title: effectiveTitle,
+      start_date: startDate,
+      end_date: endDate,
+      tasks: finalTasks,
+    });
     reset();
   };
 
@@ -643,27 +786,31 @@ function CreatePeriodDialog(props: {
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {step === "select" ? "Создание периода" : `Задачи на ${MONTH_NAMES[month - 1]} ${year}`}
+            {step === "select" ? "Создание периода" : `Задачи: ${effectiveTitle}`}
           </DialogTitle>
         </DialogHeader>
 
         {step === "select" ? (
           <div className="space-y-4">
+            <div>
+              <Label>Название периода</Label>
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder={autoTitle}
+              />
+              <p className="text-[11px] text-muted-foreground mt-1">
+                По умолчанию — месяц и год начала периода.
+              </p>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <Label>Месяц</Label>
-                <Select value={String(month)} onValueChange={(v) => setMonth(Number(v))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {MONTH_NAMES.map((m, i) => (
-                      <SelectItem key={i} value={String(i + 1)}>{m}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>Дата начала</Label>
+                <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
               </div>
               <div>
-                <Label>Год</Label>
-                <Input type="number" value={year} onChange={(e) => setYear(Number(e.target.value))} />
+                <Label>Дата окончания</Label>
+                <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
               </div>
             </div>
 
@@ -677,7 +824,7 @@ function CreatePeriodDialog(props: {
                   value="copy"
                   icon={<Copy />}
                   label="Скопировать из прошлого периода"
-                  hint="Перенести задачи из предыдущего месяца"
+                  hint="Перенести задачи из предыдущего периода"
                   disabled={props.existingPeriods.length === 0}
                 />
               </RadioGroup>
