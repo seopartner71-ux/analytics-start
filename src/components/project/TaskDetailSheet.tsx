@@ -13,6 +13,7 @@ import {
   Paperclip, Copy, Video, UserPlus, Search as SearchIcon, Edit3, Play,
   CheckCircle2, RotateCcw, Link, FileText, Upload, Loader2, Plus,
   Clock, AlertTriangle, Eye, ThumbsUp, ThumbsDown,
+  ListChecks, Users, Timer, Layers, Target, AtSign, Sparkles,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -480,11 +481,36 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
 
   return (
     <Sheet open={open} onOpenChange={onClose}>
-      <SheetContent className="w-full md:w-[88vw] md:max-w-[88vw] p-0 overflow-hidden border-l-0 shadow-2xl flex flex-col h-screen max-h-screen" side="right">
-        <div className="px-6 py-4 border-b border-border/60 bg-gradient-to-r from-primary/[0.04] to-transparent space-y-3 shrink-0">
-          <SheetTitle className="text-lg font-bold text-foreground leading-tight tracking-tight">
-            {task.title}
-          </SheetTitle>
+      <SheetContent className="w-full md:w-[92vw] md:max-w-[92vw] p-0 overflow-hidden border-l-0 shadow-2xl flex flex-col h-screen max-h-screen bg-background" side="right">
+        {/* HEADER: title + status + quick actions grid */}
+        <div className="px-7 py-5 border-b border-border/60 bg-card space-y-4 shrink-0">
+          <div className="flex items-start gap-4">
+            <div className="flex-1 min-w-0 space-y-2">
+              <SheetTitle className="text-2xl font-bold text-foreground leading-tight tracking-tight">
+                {task.title}
+              </SheetTitle>
+              <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
+                <Badge
+                  className="text-[11px] h-5 border-0"
+                  style={{ backgroundColor: `${task.stage_color || "hsl(var(--primary))"}20`, color: task.stage_color || "hsl(var(--primary))" }}
+                >
+                  {editStage || task.stage}
+                </Badge>
+                <span className="text-muted-foreground/60">•</span>
+                <span className="font-mono">#{taskIdShort}</span>
+                {currentProject && (
+                  <>
+                    <span className="text-muted-foreground/60">•</span>
+                    <span className="flex items-center gap-1.5">
+                      <FolderOpen className="h-3 w-3" />
+                      {currentProject.name}
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
           <TaskBlockerSection
             isBlocked={blocker.isBlocked}
             blockReason={blocker.blockReason}
@@ -492,12 +518,42 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
             onBlock={blocker.block}
             onUnblock={blocker.unblock}
           />
+
+          {/* Quick actions grid (Bitrix-style) */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-1.5">
+            {[
+              { icon: ListChecks, label: "Подзадачи", anchor: "subtasks", count: subtasks.length || undefined },
+              { icon: Users, label: "Участники", anchor: "members" },
+              { icon: FileText, label: "Результат", anchor: "result" },
+              { icon: Paperclip, label: "Файлы", anchor: "result" },
+              { icon: Timer, label: "Учёт времени", anchor: "time" },
+              { icon: Layers, label: task.parent_id ? "Родительская" : "Подзадачи", anchor: "subtasks" },
+              { icon: Target, label: "Проект", anchor: "props" },
+              { icon: MessageSquare, label: "Чат", anchor: "chat", count: comments.filter(c => !c.is_system).length || undefined },
+            ].map((b) => (
+              <button
+                key={b.label}
+                onClick={() => {
+                  document.getElementById(`task-section-${b.anchor}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border/50 bg-background/40 hover:bg-muted/50 hover:border-border transition-all text-xs font-medium text-foreground/80 hover:text-foreground group"
+              >
+                <b.icon className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+                <span className="truncate flex-1 text-left">{b.label}</span>
+                {b.count !== undefined && (
+                  <span className="text-[10px] tabular-nums text-muted-foreground bg-muted/60 px-1.5 rounded-full">
+                    {b.count}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="flex flex-col md:flex-row flex-1 min-h-0">
           {/* LEFT COLUMN */}
-          <div className="w-full md:w-[44%] lg:w-[40%] flex flex-col border-r border-border/50 bg-[hsl(var(--muted)/0.3)] min-h-0">
-            <div className="flex-1 overflow-y-auto p-5 space-y-4">
+          <div className="w-full md:w-[78%] flex flex-col border-r border-border/50 bg-[hsl(var(--muted)/0.2)] min-h-0">
+            <div className="flex-1 overflow-y-auto p-7 space-y-4">
 
               {/* Description */}
               <Card className="bg-card shadow-sm border-border/60 rounded-xl">
@@ -520,7 +576,7 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
               </Card>
 
               {/* Main properties */}
-              <Card className="bg-card shadow-sm border-border/60 rounded-xl">
+              <Card id="task-section-props" className="bg-card shadow-sm border-border/60 rounded-xl scroll-mt-4">
                 <CardContent className="p-0 divide-y divide-border/40">
                   {/* Assignee */}
                   <div className="flex items-center gap-4 px-4 py-3.5">
@@ -617,15 +673,17 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
               </Card>
 
               {/* Members */}
-              <TaskMembersBlock
-                taskId={task.id}
-                taskOwnerId={task.owner_id}
-                creatorTeamMemberId={task.creator_id}
-                canManage={canEditFields}
-              />
+              <div id="task-section-members" className="scroll-mt-4">
+                <TaskMembersBlock
+                  taskId={task.id}
+                  taskOwnerId={task.owner_id}
+                  creatorTeamMemberId={task.creator_id}
+                  canManage={canEditFields}
+                />
+              </div>
 
               {/* Subtasks */}
-              <Card className="bg-card shadow-sm border-border/60 rounded-xl">
+              <Card id="task-section-subtasks" className="bg-card shadow-sm border-border/60 rounded-xl scroll-mt-4">
                 <CardContent className="p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -687,7 +745,7 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
               </Card>
 
               {/* Result field */}
-              <Card className="bg-card shadow-sm border-border/60 rounded-xl">
+              <Card id="task-section-result" className="bg-card shadow-sm border-border/60 rounded-xl scroll-mt-4">
                 <CardContent className="p-4 space-y-3">
                   <div className="flex items-center gap-2">
                     <FileText className="h-4 w-4 text-muted-foreground" />
@@ -709,7 +767,9 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
               </Card>
 
               {/* Time tracking — manual only */}
-              <TaskTimeManual taskId={task.id} projectId={editProjectId || task.project_id || null} />
+              <div id="task-section-time" className="scroll-mt-4">
+                <TaskTimeManual taskId={task.id} projectId={editProjectId || task.project_id || null} />
+              </div>
 
             </div>
 
@@ -768,7 +828,7 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
             </div>
           </div>
           {/* RIGHT COLUMN: Chat */}
-          <div className="flex-1 flex flex-col min-h-0">
+          <div id="task-section-chat" className="flex-1 flex flex-col min-h-0 bg-card scroll-mt-4">
             <div className="px-5 py-3 border-b border-border/60 bg-card flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
                 <MessageSquare className="h-4 w-4 text-muted-foreground" />
