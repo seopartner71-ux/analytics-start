@@ -258,11 +258,37 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
     onError: (e: any) => toast.error(e.message || "Ошибка создания периода"),
   });
 
+  // Гарантирует наличие главной CRM-задачи у периода (для старых периодов, созданных до новой логики)
+  const ensurePeriodParentTask = async (period: Period): Promise<string> => {
+    if (period.crm_task_id) return period.crm_task_id;
+    const { data: parentTask, error: ptErr } = await supabase
+      .from("crm_tasks")
+      .insert({
+        title: period.title,
+        stage: "В работе",
+        stage_color: "#f59e0b",
+        priority: "medium",
+        deadline: period.end_date ? new Date(period.end_date).toISOString() : null,
+        project_id: projectId,
+        owner_id: user!.id,
+      })
+      .select("id")
+      .single();
+    if (ptErr) throw ptErr;
+    const { error: upErr } = await supabase
+      .from("project_periods")
+      .update({ crm_task_id: parentTask.id })
+      .eq("id", period.id);
+    if (upErr) throw upErr;
+    return parentTask.id as string;
+  };
+
   const addTask = useMutation({
     mutationFn: async (vars: Partial<PeriodTask>) => {
-      if (!activePeriod?.crm_task_id) throw new Error("У периода нет связанной задачи");
+      if (!activePeriod) throw new Error("Период не выбран");
+      const parentId = await ensurePeriodParentTask(activePeriod);
       const sort_order = tasks.length;
-      const childId = await createChildCrmTaskFor(activePeriod.crm_task_id, vars);
+      const childId = await createChildCrmTaskFor(parentId, vars);
       const { error } = await supabase.from("period_tasks").insert({
         period_id: activePeriod.id,
         title: vars.title!,
@@ -276,6 +302,7 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
       if (error) throw error;
     },
     onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["project-periods", projectId] });
       qc.invalidateQueries({ queryKey: ["period-tasks", activePeriod?.id] });
       qc.invalidateQueries({ queryKey: ["project-tasks", projectId] });
       qc.invalidateQueries({ queryKey: ["crm-tasks"] });
