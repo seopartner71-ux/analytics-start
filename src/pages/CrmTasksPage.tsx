@@ -315,22 +315,26 @@ export default function CrmTasksPage() {
     },
   });
 
-  const canDeleteTask = (t: CrmTask) =>
-    !!user && (isAdmin || isDirector || t.owner_id === user.id);
+  const canDeleteTask = (_t: CrmTask) => !!user;
 
   const deleteTask = async (t: CrmTask) => {
-    const { error } = await supabase
-      .from("crm_tasks")
-      .update({ archived_at: new Date().toISOString(), archived_by: user!.id })
-      .eq("id", t.id);
-    if (error) throw error;
-    await logDeletion({
-      entityType: "task",
-      entityId: t.id,
-      entityName: t.title,
-      context: { project_name: t.project?.name || null, assignee: t.assignee?.full_name || null },
-    });
-    queryClient.invalidateQueries({ queryKey: ["crm-tasks"] });
+    try {
+      const { error } = await supabase
+        .from("crm_tasks")
+        .update({ archived_at: new Date().toISOString(), archived_by: user!.id })
+        .eq("id", t.id);
+      if (error) throw error;
+      await logDeletion({
+        entityType: "task",
+        entityId: t.id,
+        entityName: t.title,
+        context: { project_name: t.project?.name || null, assignee: t.assignee?.full_name || null },
+      });
+      queryClient.invalidateQueries({ queryKey: ["crm-tasks"] });
+      toast.success("Задача удалена");
+    } catch (e: any) {
+      toast.error(e?.message || "Не удалось удалить задачу");
+    }
   };
 
   // Unique projects & assignees for filter dropdowns
