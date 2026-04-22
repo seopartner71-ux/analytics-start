@@ -254,7 +254,22 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["period-tasks", activePeriod?.id] });
       setSelectedTaskIds(new Set());
+      toast.success("Задачи удалены");
     },
+    onError: (e: any) => toast.error(e?.message || "Не удалось удалить задачи"),
+  });
+
+  const deletePeriod = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("project_periods").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["project-periods", projectId] });
+      setSelectedPeriodId(null);
+      toast.success("Период удалён");
+    },
+    onError: (e: any) => toast.error(e?.message || "Не удалось удалить период"),
   });
 
   const reorder = useMutation({
