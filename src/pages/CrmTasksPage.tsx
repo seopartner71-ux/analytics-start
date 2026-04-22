@@ -319,17 +319,20 @@ export default function CrmTasksPage() {
 
   const deleteTask = async (t: CrmTask) => {
     try {
-      const { error } = await supabase
-        .from("crm_tasks")
-        .update({ archived_at: new Date().toISOString(), archived_by: user!.id })
-        .eq("id", t.id);
-      if (error) throw error;
+      // Лог пишем ДО удаления, чтобы остался след
       await logDeletion({
         entityType: "task",
         entityId: t.id,
         entityName: t.title,
+        action: "hard_delete",
         context: { project_name: t.project?.name || null, assignee: t.assignee?.full_name || null },
       });
+      const { error, count } = await supabase
+        .from("crm_tasks")
+        .delete({ count: "exact" })
+        .eq("id", t.id);
+      if (error) throw error;
+      if (!count) throw new Error("Нет прав на удаление этой задачи");
       queryClient.invalidateQueries({ queryKey: ["crm-tasks"] });
       toast.success("Задача удалена");
     } catch (e: any) {
