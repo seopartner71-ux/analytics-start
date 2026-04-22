@@ -563,11 +563,12 @@ export default function CrmProjectDetailPage() {
                       entityName={task.title}
                       entityLabel="задачу"
                       onConfirm={async () => {
-                        const { error } = await supabase
+                        const { error, count } = await supabase
                           .from("crm_tasks")
-                          .update({ archived_at: new Date().toISOString(), archived_by: user!.id })
+                          .delete({ count: "exact" })
                           .eq("id", task.id);
                         if (error) throw error;
+                        if (!count) throw new Error("Нет прав на удаление этой задачи");
                         await queryClient.invalidateQueries({ queryKey: ["project-tasks", id] });
                         if (selectedTask?.id === task.id) setSelectedTask(null);
                       }}
