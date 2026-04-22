@@ -97,12 +97,13 @@ const Team = () => {
 
   const deleteMember = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("team_members").delete().eq("id", id);
+      const { error } = await supabase.rpc("archive_team_member_everywhere", { p_member_id: id });
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["team_members"] });
       queryClient.invalidateQueries({ queryKey: ["projects"] });
+      queryClient.invalidateQueries({ queryKey: ["crm-tasks"] });
       toast.success(t("team.deleted"));
     },
     onError: (err: Error) => toast.error(err.message),

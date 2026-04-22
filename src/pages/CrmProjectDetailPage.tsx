@@ -559,6 +559,20 @@ export default function CrmProjectDetailPage() {
                     >
                       {pri.label}
                     </span>
+                    <DeleteButton
+                      entityName={task.title}
+                      entityLabel="задачу"
+                      onConfirm={async () => {
+                        const { error } = await supabase
+                          .from("crm_tasks")
+                          .update({ archived_at: new Date().toISOString(), archived_by: user!.id })
+                          .eq("id", task.id);
+                        if (error) throw error;
+                        await queryClient.invalidateQueries({ queryKey: ["project-tasks", id] });
+                        if (selectedTask?.id === task.id) setSelectedTask(null);
+                      }}
+                      className="shrink-0"
+                    />
                   </div>
                 );
               })}
