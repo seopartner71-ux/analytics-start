@@ -612,6 +612,7 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </TooltipProvider>
   );
 }
