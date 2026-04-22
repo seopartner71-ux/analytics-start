@@ -302,6 +302,7 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
       if (error) throw error;
     },
     onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["project-periods", projectId] });
       qc.invalidateQueries({ queryKey: ["period-tasks", activePeriod?.id] });
       qc.invalidateQueries({ queryKey: ["project-tasks", projectId] });
       qc.invalidateQueries({ queryKey: ["crm-tasks"] });
