@@ -573,7 +573,6 @@ export default function CrmProjectDetailPage() {
                       }}
                       className="shrink-0"
                     />
-                    </span>
                   </div>
                 );
               })}
