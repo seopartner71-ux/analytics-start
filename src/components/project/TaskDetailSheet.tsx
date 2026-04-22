@@ -286,11 +286,17 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
 
   const acceptTask = async () => {
     if (!task) return;
-    await supabase.from("crm_tasks").update({
+    const openSubs = subtasks.filter((s: any) => !s.is_done).length;
+    if (openSubs > 0) {
+      toast.error(`Нельзя принять: есть ${openSubs} открытых подзадач`);
+      return;
+    }
+    const { error } = await supabase.from("crm_tasks").update({
       stage: "Принята",
       stage_color: STAGE_COLORS["Принята"],
       stage_progress: 100,
     } as any).eq("id", task.id);
+    if (error) { toast.error(error.message); return; }
     await addSystemLog(`Аккаунт принял задачу ✓`);
     queryClient.invalidateQueries({ queryKey: ["crm-tasks"] });
     queryClient.invalidateQueries({ queryKey: ["project-tasks"] });
