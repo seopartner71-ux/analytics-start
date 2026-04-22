@@ -200,16 +200,23 @@ export function ProjectTeamTab({ projectId }: { projectId: string }) {
         ) : (
           members.map((m) => {
             const name = m.team_member?.full_name || "Без имени";
+            const avatar = avatarUrlFor(m);
             return (
               <div
                 key={m.id}
                 className="flex items-center gap-3 px-4 py-3 hover:bg-muted/20 transition-colors"
               >
-                <img
-                  src={avatarFor(name)}
-                  alt={name}
-                  className="h-10 w-10 rounded-full ring-1 ring-border/60 object-cover"
-                />
+                {avatar ? (
+                  <img
+                    src={avatar}
+                    alt={name}
+                    className="h-10 w-10 rounded-full ring-1 ring-border/60 object-cover"
+                  />
+                ) : (
+                  <div className="h-10 w-10 rounded-full ring-1 ring-border/60 bg-primary/15 text-primary flex items-center justify-center text-sm font-semibold">
+                    {initialsOf(name)}
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <div className="text-[13.5px] font-medium text-foreground truncate">{name}</div>
                   <div className="text-[11.5px] text-muted-foreground truncate">
