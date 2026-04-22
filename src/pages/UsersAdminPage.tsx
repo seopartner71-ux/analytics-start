@@ -271,6 +271,41 @@ function UserEditSheet({
       const { error: rErr } = await supabase.from("user_roles").insert({ user_id: user.user_id, role });
       if (rErr) throw rErr;
 
+      // Auto-create / sync team_members record (so user appears in employees and can be assigned)
+      if (status === "active" && user.email) {
+        const { data: existingTm } = await supabase
+          .from("team_members")
+          .select("id")
+          .eq("email", user.email)
+          .is("archived_at", null)
+          .maybeSingle();
+
+        const fullName = [firstName, lastName].filter(Boolean).join(" ") || user.full_name || user.email;
+        const tmRole = role === "admin" ? "Администратор"
+          : role === "director" ? "Директор"
+          : role === "manager" ? "Менеджер"
+          : role === "junior" ? "Junior"
+          : "SEO-специалист";
+
+        if (!existingTm) {
+          await supabase.from("team_members").insert({
+            owner_id: user.user_id,
+            full_name: fullName,
+            email: user.email,
+            phone: phone || null,
+            role: position || tmRole,
+            status: "active",
+          } as any);
+        } else {
+          await supabase.from("team_members").update({
+            full_name: fullName,
+            phone: phone || null,
+            role: position || tmRole,
+            status: "active",
+          } as any).eq("id", existingTm.id);
+        }
+      }
+
       // Project memberships
       await supabase.from("project_members").delete().eq("user_id", user.user_id);
       const toInsert = Array.from(linkedProjects).map((pid) => ({
