@@ -47,7 +47,7 @@ export function DataStatusBadge({
   const { data, isLoading, isError } = useQuery({
     queryKey: ["data-status", table, projectId, sourceFilter ?? ""],
     queryFn: async () => {
-      let q = supabase.from(table).select("id", { count: "exact", head: true }).eq("project_id", projectId);
+      let q: any = supabase.from(table).select("id", { count: "exact", head: true }).eq("project_id", projectId);
       if (sourceFilter) q = q.eq("source", sourceFilter);
       const { count, error } = await q;
       if (error) throw error;
