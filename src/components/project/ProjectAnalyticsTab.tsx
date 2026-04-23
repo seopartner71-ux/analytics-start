@@ -10,6 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   TrendingUp, TrendingDown, BarChart3, Search, Loader2,
   MousePointerClick, Layers, Clock, Users, Target,
@@ -132,6 +133,11 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     from: subDays(today, 61), to: subDays(today, 31),
   });
   const [channel, setChannel] = useState<TrafficChannel>("all");
+
+  // ── Topvisor searcher/region filter ──
+  // searcherKey: 0 = Google, 1 = Yandex (Topvisor convention)
+  const [tvSearcherKey, setTvSearcherKey] = useState<number | null>(null);
+  const [tvRegionIndex, setTvRegionIndex] = useState<string | null>(null);
 
   // ── Data queries — fetch ALL metrika snapshots and merge ──
   const { data: allMetrikaStats = [], isLoading: metrikaLoading } = useQuery({
