@@ -76,6 +76,8 @@ function AddTaskDialog() {
 
   const mutation = useMutation({
     mutationFn: async () => {
+      const { resolveCurrentTeamMemberId } = await import("@/lib/task-helpers");
+      const creatorTmId = await resolveCurrentTeamMemberId(supabase, user!.id, user!.email);
       const { error } = await supabase.from("crm_tasks").insert({
         title: form.title,
         stage: form.stage,
@@ -85,6 +87,7 @@ function AddTaskDialog() {
         deadline: form.deadline || null,
         project_id: projectId,
         owner_id: user!.id,
+        creator_id: creatorTmId,
       });
       if (error) throw error;
     },

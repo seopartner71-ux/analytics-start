@@ -237,6 +237,8 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
     if (!t.title) return null;
     const startDate = toDateOnly(t.start_date);
     const description = startDate ? `Начало: ${format(new Date(startDate), "dd.MM.yyyy")}` : null;
+    const { resolveCurrentTeamMemberId } = await import("@/lib/task-helpers");
+    const creatorTmId = await resolveCurrentTeamMemberId(supabase, user!.id, user!.email);
     const { data, error } = await supabase
       .from("crm_tasks")
       .insert({
@@ -248,7 +250,7 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
         deadline: toDeadlineIso(t.deadline),
         description,
         assignee_id: t.assignee_id || null,
-        creator_id: t.assignee_id || null,
+        creator_id: creatorTmId,
         project_id: projectId,
         parent_id: parentTaskId,
         owner_id: user!.id,

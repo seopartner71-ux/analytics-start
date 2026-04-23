@@ -182,11 +182,14 @@ export default function CrmProjectDetailPage() {
   // Add task
   const addTask = useMutation({
     mutationFn: async () => {
+      const { resolveCurrentTeamMemberId } = await import("@/lib/task-helpers");
+      const creatorTmId = await resolveCurrentTeamMemberId(supabase, user!.id, user!.email);
       const { error } = await supabase.from("crm_tasks").insert({
         title: newTask.title,
         priority: newTask.priority,
         deadline: newTask.deadline || null,
         assignee_id: newTask.assignee_id || null,
+        creator_id: creatorTmId,
         project_id: id!,
         owner_id: user!.id,
         stage: "Новые",
