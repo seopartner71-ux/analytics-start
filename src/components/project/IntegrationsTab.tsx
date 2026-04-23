@@ -337,9 +337,11 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
       toast.error(t("integrations.fillFields"));
       return;
     }
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailPattern.test(normalizedUserId)) {
-      toast.error("Для Topvisor в поле User ID нужно указать email аккаунта");
+    // Topvisor accepts numeric User ID (из настроек профиля) или email аккаунта
+    const isNumeric = /^\d+$/.test(normalizedUserId);
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedUserId);
+    if (!isNumeric && !isEmail) {
+      toast.error("Укажите числовой User ID из настроек профиля Topvisor (или email аккаунта)");
       return;
     }
     connectMutation.mutate({
@@ -596,9 +598,9 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
               <p className="text-[11px] text-muted-foreground">Settings → API → API key</p>
             </div>
             <div className="space-y-2">
-              <Label>User ID (email) *</Label>
-              <Input value={tvUserId} onChange={(e) => setTvUserId(e.target.value)} placeholder="user@example.com" />
-              <p className="text-[11px] text-muted-foreground">Email вашего аккаунта Topvisor</p>
+              <Label>User ID Topvisor *</Label>
+              <Input value={tvUserId} onChange={(e) => setTvUserId(e.target.value)} placeholder="123456 или user@example.com" />
+              <p className="text-[11px] text-muted-foreground">Числовой User ID из настроек профиля Topvisor (или email аккаунта)</p>
             </div>
             <div className="space-y-2">
               <Label>Project ID *</Label>
