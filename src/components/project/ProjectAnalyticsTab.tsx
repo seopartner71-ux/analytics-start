@@ -242,9 +242,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     enabled: !!projectId,
   });
 
-  const { data: topvisorData, isLoading: tvLoading } = useQuery({
-    queryKey: ["tv-positions-analytics", projectId, project?.topvisor_project_id, project?.topvisor_api_key],
-    queryFn: async () => {
+  // ── Load Topvisor project info (searchers + regions) for tabs/region select ──
   // ── Load Topvisor project info (searchers + regions) for tabs/region select ──
   const { data: tvProjectInfo } = useQuery({
     queryKey: ["tv-project-info-analytics", project?.topvisor_project_id, project?.topvisor_api_key],
