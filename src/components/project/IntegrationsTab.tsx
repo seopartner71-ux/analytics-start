@@ -655,23 +655,50 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>API Key *</Label>
-              <Input value={tvApiKey} onChange={(e) => setTvApiKey(e.target.value)} placeholder="tv_xxxxxxxxxxxxxxxx" />
-              <p className="text-[11px] text-muted-foreground">Settings → API → API key</p>
+              <Input
+                value={tvApiKey}
+                onChange={(e) => setTvApiKey(e.target.value)}
+                placeholder="tv_xxxxxxxxxxxxxxxx"
+                aria-invalid={tvApiKeyValidation.state === "invalid"}
+                className={cn(
+                  tvApiKeyValidation.state === "invalid" && "border-destructive focus-visible:ring-destructive",
+                  tvApiKeyValidation.state === "valid" && "border-emerald-500/60",
+                )}
+              />
+              <TvFieldHint v={tvApiKeyValidation} />
             </div>
             <div className="space-y-2">
               <Label>User ID Topvisor *</Label>
-              <Input value={tvUserId} onChange={(e) => setTvUserId(e.target.value)} placeholder="123456 или user@example.com" />
-              <p className="text-[11px] text-muted-foreground">Числовой User ID из настроек профиля Topvisor (или email аккаунта)</p>
+              <Input
+                value={tvUserId}
+                onChange={(e) => setTvUserId(e.target.value)}
+                placeholder="123456 или user@example.com"
+                aria-invalid={tvUserIdValidation.state === "invalid"}
+                className={cn(
+                  tvUserIdValidation.state === "invalid" && "border-destructive focus-visible:ring-destructive",
+                  tvUserIdValidation.state === "valid" && "border-emerald-500/60",
+                )}
+              />
+              <TvFieldHint v={tvUserIdValidation} />
             </div>
             <div className="space-y-2">
               <Label>Project ID *</Label>
-              <Input value={tvProjectId} onChange={(e) => setTvProjectId(e.target.value)} placeholder="26206407" />
-              <p className="text-[11px] text-muted-foreground">ID проекта в Topvisor (виден в URL)</p>
+              <Input
+                value={tvProjectId}
+                onChange={(e) => setTvProjectId(e.target.value)}
+                placeholder="26206407"
+                aria-invalid={tvProjectIdValidation.state === "invalid"}
+                className={cn(
+                  tvProjectIdValidation.state === "invalid" && "border-destructive focus-visible:ring-destructive",
+                  tvProjectIdValidation.state === "valid" && "border-emerald-500/60",
+                )}
+              />
+              <TvFieldHint v={tvProjectIdValidation} />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setTopvisorDialog(false)}>{t("common.cancel")}</Button>
-            <Button onClick={handleTopvisorConnect}>{t("integrations.connect")}</Button>
+            <Button onClick={handleTopvisorConnect} disabled={!canConnectTopvisor}>{t("integrations.connect")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
