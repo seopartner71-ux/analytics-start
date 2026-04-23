@@ -30,9 +30,17 @@ interface EditProjectDialogProps {
 const INTEGRATION_DEFS = [
   { key: "yandexMetrika", label: "Яндекс Метрика", icon: "Я", color: "hsl(var(--primary))", fieldLabel: "Counter ID", fieldKey: "counter_id" },
   { key: "yandexWebmaster", label: "Яндекс Вебмастер", icon: "Я", color: "#FF0000", fieldLabel: "Host ID", fieldKey: "external_project_id" },
-  { key: "topvisor", label: "TopVisor", icon: "T", color: "#4CAF50", fieldLabel: "Project ID", fieldKey: "external_project_id", extraFields: [{ label: "API Key", key: "api_key", type: "password" as const }, { label: "User ID (email)", key: "counter_id", type: "text" as const, placeholder: "user@example.com" }] },
+  { key: "topvisor", label: "TopVisor", icon: "T", color: "#4CAF50", fieldLabel: "Project ID", fieldKey: "external_project_id", extraFields: [{ label: "API Key", key: "api_key", type: "password" as const }, { label: "User ID", key: "counter_id", type: "text" as const, placeholder: "123456 или user@example.com" }] },
   { key: "googleSearchConsole", label: "Google Search Console", icon: "G", color: "#4285F4", fieldLabel: "Property URL", fieldKey: "external_project_id" },
 ];
+
+function isValidTopvisorUserId(value?: string) {
+  const normalized = value?.trim() || "";
+  if (!normalized) return false;
+  const isNumeric = /^\d+$/.test(normalized);
+  const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized);
+  return isNumeric || isEmail;
+}
 
 export default function EditProjectDialog({ open, onOpenChange, project, projectId }: EditProjectDialogProps) {
   const queryClient = useQueryClient();
@@ -166,10 +174,9 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
         if (!mainVal) continue;
 
         if (def.key === "topvisor") {
-          const topvisorEmail = vals.counter_id?.trim();
-          const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-          if (!topvisorEmail || !emailPattern.test(topvisorEmail)) {
-            throw new Error("Для Topvisor в поле User ID нужно указать email аккаунта");
+          const topvisorUserId = vals.counter_id?.trim();
+          if (!isValidTopvisorUserId(topvisorUserId)) {
+            throw new Error("Для Topvisor в поле User ID укажите числовой ID пользователя или полный email аккаунта");
           }
         }
 
