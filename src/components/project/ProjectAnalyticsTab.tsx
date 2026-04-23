@@ -393,6 +393,47 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     staleTime: 5 * 60_000,
   });
 
+  // ── Live Metrika data for comparison period (Period B) ──
+  const compDateFrom = fmtDate(appliedCompRange.from, "yyyy-MM-dd");
+  const compDateTo = fmtDate(appliedCompRange.to, "yyyy-MM-dd");
+  const { data: liveCompMetrikaData } = useQuery({
+    queryKey: ["metrika-live-stats-comp", projectId, compDateFrom, compDateTo],
+    queryFn: async () => {
+      if (!integration?.access_token || !integration?.counter_id) return null;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return null;
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/yandex-metrika-auth?action=fetch-stats`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            access_token: integration.access_token,
+            counter_id: integration.counter_id,
+            date1: compDateFrom,
+            date2: compDateTo,
+          }),
+        }
+      );
+      if (!resp.ok) return null;
+      return resp.json();
+    },
+    enabled: !!integration?.access_token && !!integration?.counter_id && showComparison,
+    staleTime: 5 * 60_000,
+  });
+
+  // Daily series for comparison period from live API
+  const compDailyData = useMemo(() => {
+    if (!liveCompMetrikaData?.timeSeries?.data?.[0]?.metrics?.[0]) return [];
+    const timeLabels = liveCompMetrikaData.timeSeries.time_intervals || [];
+    const visits = liveCompMetrikaData.timeSeries.data[0].metrics[0];
+    return visits.map((v: number, i: number) => {
+      const dateStr = timeLabels[i]?.[0];
+      const date = dateStr ? new Date(dateStr) : new Date();
+      return { date, dateStr: format(date, "dd.MM", { locale: ru }), visits: Math.round(v) };
+    });
+  }, [liveCompMetrikaData]);
+
   const { data: goalsData = [] } = useQuery({
     queryKey: ["metrika-goals-ai", projectId, dateFrom30, dateTo30],
     queryFn: async () => {
@@ -685,12 +726,12 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
   }, [dailyData, appliedRange]);
 
   const filteredCompData = useMemo(() => {
-    if (dailyData.length === 0) return [];
-    const lastDataDate = dailyData[dailyData.length - 1].date;
-    const rangeEnd = appliedCompRange.to > lastDataDate ? lastDataDate : appliedCompRange.to;
-    const days = differenceInDays(rangeEnd, appliedCompRange.from);
+    // Prefer live comparison data; fallback to merged dailyData
+    const source = compDailyData.length > 0 ? compDailyData : dailyData;
+    if (source.length === 0) return [];
+    const days = differenceInDays(appliedCompRange.to, appliedCompRange.from);
     if (days < 0) return [];
-    const dailyMap = new Map(dailyData.map(d => [format(d.date, "yyyy-MM-dd"), d as { date: Date; dateStr: string; visits: number }]));
+    const dailyMap = new Map(source.map((d: any) => [format(d.date, "yyyy-MM-dd"), d as { date: Date; dateStr: string; visits: number }]));
     const result = [];
     for (let i = 0; i <= days; i++) {
       const date = new Date(appliedCompRange.from);
@@ -704,7 +745,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
       });
     }
     return result;
-  }, [dailyData, appliedCompRange]);
+  }, [dailyData, compDailyData, appliedCompRange]);
 
   // ── Channel ratios for splitting (prefer live traffic sources) ──
   const channelRatios = useMemo(() => {
@@ -743,7 +784,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     const applyRatio = (v: number) => Math.round(v * channelVisitRatio);
     const buildRow = (dateStr: string, visits: number) => {
       if (channel === "all") {
-        const row: any = { date: dateStr };
+        const row: any = { date: dateStr, visits };
         for (const ch of ALL_CHANNELS) {
           row[ch] = Math.round(visits * (channelRatios[ch] || 0));
         }
@@ -760,7 +801,9 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     const result = [];
     for (let i = 0; i < maxLen; i++) {
       const row = buildRow(filteredData[i]?.dateStr || `${i + 1}`, filteredData[i]?.visits || 0);
-      row.previous = applyRatio(filteredCompData[i]?.visits || 0);
+      row.previous = channel === "all"
+        ? (filteredCompData[i]?.visits || 0)
+        : applyRatio(filteredCompData[i]?.visits || 0);
       result.push(row);
     }
     return result;
