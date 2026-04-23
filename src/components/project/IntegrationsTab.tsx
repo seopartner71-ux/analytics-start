@@ -337,9 +337,11 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
       toast.error(t("integrations.fillFields"));
       return;
     }
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailPattern.test(normalizedUserId)) {
-      toast.error("Для Topvisor в поле User ID нужно указать email аккаунта");
+    // Topvisor accepts numeric User ID (из настроек профиля) или email аккаунта
+    const isNumeric = /^\d+$/.test(normalizedUserId);
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedUserId);
+    if (!isNumeric && !isEmail) {
+      toast.error("Укажите числовой User ID из настроек профиля Topvisor (или email аккаунта)");
       return;
     }
     connectMutation.mutate({
