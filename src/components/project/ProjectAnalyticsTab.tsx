@@ -1392,8 +1392,50 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
         ];
         return (
           <Card className="bg-card rounded-lg shadow-sm border border-border p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-foreground">Сводка позиций Topvisor</h3>
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+              <div className="flex items-center gap-3 flex-wrap">
+                <h3 className="text-sm font-semibold text-foreground">Сводка позиций Topvisor</h3>
+                {tvSearchers.length > 0 && (
+                  <Tabs
+                    value={tvSearcherKey != null ? String(tvSearcherKey) : ""}
+                    onValueChange={(v) => {
+                      const k = Number(v);
+                      setTvSearcherKey(k);
+                      const next = tvSearchers.find((s) => s.key === k);
+                      setTvRegionIndex(next?.regions[0]?.index || null);
+                    }}
+                  >
+                    <TabsList className="h-7 bg-muted/50">
+                      {tvSearchers.map((s) => (
+                        <TabsTrigger key={s.key} value={String(s.key)} className="text-[11px] h-6 px-2.5">
+                          {s.name}
+                        </TabsTrigger>
+                      ))}
+                    </TabsList>
+                  </Tabs>
+                )}
+                {tvSearcherKey != null && (() => {
+                  const cur = tvSearchers.find((s) => s.key === tvSearcherKey);
+                  if (!cur || cur.regions.length === 0) return null;
+                  return (
+                    <Select
+                      value={tvRegionIndex || ""}
+                      onValueChange={(v) => setTvRegionIndex(v)}
+                    >
+                      <SelectTrigger className="h-7 text-[11px] w-auto min-w-[160px]">
+                        <SelectValue placeholder="Регион" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {cur.regions.map((r) => (
+                          <SelectItem key={r.index} value={r.index} className="text-[12px]">
+                            {r.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  );
+                })()}
+              </div>
               <span className="text-[11px] text-muted-foreground">
                 Данные за: <span className="text-foreground font-medium">{keywordDates[0] ? format(new Date(keywordDates[0]), "dd.MM.yyyy") : "—"}</span>
               </span>
