@@ -186,7 +186,7 @@ export function NotificationBell() {
       markRead.mutate(notif.id);
     }
     setOpen(false);
-    navigate(`/crm-projects/${notif.project_id}?tab=health`);
+    navigate(getNotifRoute(notif));
   };
 
   return (
