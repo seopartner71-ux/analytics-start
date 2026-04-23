@@ -454,8 +454,8 @@ function PositionsDashboard({
           ? "Съём позиций запущен в Topvisor. Данные появятся через 1–5 мин."
           : "Position check started in Topvisor. Data will arrive in 1–5 min."
       );
-      // Refetch after a short delay to pick up new data when ready
-      setTimeout(() => refetch(), 60_000);
+      // Несколько повторных попыток подтянуть данные после запуска съёма
+      [60_000, 120_000, 240_000].forEach((ms) => setTimeout(() => refetch(), ms));
     } catch (e: any) {
       toast.error(e?.message || (isRu ? "Не удалось запустить съём" : "Failed to start check"));
     } finally {
