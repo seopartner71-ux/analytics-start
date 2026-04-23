@@ -84,6 +84,21 @@ function mergeHeaders(input: RequestInfo | URL, init?: RequestInit): Headers {
 }
 
 /**
+ * Гарантирует наличие apikey и Authorization на каждом проксированном запросе.
+ * Некоторые запросы supabase-js (например, обновление сессии до логина) уходят
+ * без apikey — Nginx/Supabase в этом случае возвращают 401 "Invalid API key".
+ */
+function ensureAuthHeaders(headers: Headers): void {
+  if (!SUPABASE_ANON_KEY) return;
+  if (!headers.has("apikey")) {
+    headers.set("apikey", SUPABASE_ANON_KEY);
+  }
+  if (!headers.has("authorization") && !headers.has("Authorization")) {
+    headers.set("Authorization", `Bearer ${SUPABASE_ANON_KEY}`);
+  }
+}
+
+/**
  * Проверяет, что Nginx-прокси действительно форвардит на Supabase
  * и возвращает JSON, а не HTML SPA / 404.
  * Использует нативный fetch (до подмены), чтобы не зациклиться.
@@ -158,6 +173,7 @@ export async function installEdgeProxy(): Promise<void> {
       const proxyUrl = buildProxyUrl(url, mode);
       const originalRequest = getOriginalRequest(input);
       const headers = mergeHeaders(input, init);
+      ensureAuthHeaders(headers);
 
       const proxyInit: RequestInit = {
         ...init,
