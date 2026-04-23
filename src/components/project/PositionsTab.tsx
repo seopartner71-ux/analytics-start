@@ -367,6 +367,7 @@ function PositionsDashboard({
   }, [projectInfo]);
 
   // ── Fetch rankings history ──
+  // refetchInterval: пока вкладка открыта, обновляем позиции каждые 10 минут.
   const { data: rankingsData, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["topvisor-rankings-history", tvProjectId, dateFrom, dateTo, allRegionIndexes.join(",")],
     queryFn: async () => {
@@ -379,6 +380,8 @@ function PositionsDashboard({
     },
     enabled: allRegionIndexes.length > 0,
     retry: 1,
+    refetchInterval: 10 * 60 * 1000,
+    refetchIntervalInBackground: false,
   });
 
   // ── Parse response ──
