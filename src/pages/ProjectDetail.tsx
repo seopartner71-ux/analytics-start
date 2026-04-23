@@ -564,7 +564,7 @@ function ProjectDetailInner() {
             lastUpdated={lastUpdated}
           />
           <main className="flex-1 p-4 sm:p-6 lg:p-8 pb-20 md:pb-8">
-            {renderContent()}
+            <Suspense fallback={<TabFallback />}>{renderContent()}</Suspense>
           </main>
         </div>
         <MobileBottomNav activeTab={activeTab} onTabChange={setActiveTab} />
