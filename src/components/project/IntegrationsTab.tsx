@@ -411,12 +411,6 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
       externalProjectId: tvProjectId.trim(),
       counterId: tvUserId.trim(),
     });
-    connectMutation.mutate({
-      serviceName: "topvisor",
-      apiKey: tvApiKey.trim(),
-      externalProjectId: tvProjectId.trim(),
-      counterId: normalizedUserId,
-    });
     setTopvisorDialog(false);
     setTvApiKey("");
     setTvUserId("");
