@@ -13,13 +13,57 @@ import { useNotificationSound } from "@/hooks/useNotificationSound";
 interface Notification {
   id: string;
   user_id: string;
-  project_id: string;
+  project_id: string | null;
   title: string;
   body: string;
   error_id: string | null;
+  kind: string;
   is_read: boolean;
   created_at: string;
   project?: { name: string } | null;
+}
+
+function getNotifRoute(notif: Notification): string {
+  const title = (notif.title || "").toLowerCase();
+  const kind = (notif.kind || "").toLowerCase();
+
+  // Finance reminders → finance page
+  if (kind === "finance") return "/finance";
+
+  // Weekly report ready
+  if (title.includes("недельный отчёт") || title.includes("недельный отчет") || title.includes("weekly")) {
+    return notif.project_id ? `/crm-projects/${notif.project_id}?tab=weekly-reports` : "/crm-projects";
+  }
+
+  // New user awaiting confirmation
+  if (title.includes("пользовател") && (title.includes("ждёт") || title.includes("ждет") || title.includes("подтвержд"))) {
+    return "/admin/users";
+  }
+
+  // New project / new client (onboarding)
+  if (title.includes("новый проект") || title.includes("новый клиент")) {
+    return notif.project_id ? `/crm-projects/${notif.project_id}` : "/crm-projects";
+  }
+
+  // Chat mention
+  if (title.includes("упомянули в чате") || title.includes("чат")) {
+    return notif.project_id ? `/crm-projects/${notif.project_id}?tab=chat` : "/chat";
+  }
+
+  // Link lost
+  if (kind === "link_lost" || title.includes("ссылк")) {
+    return notif.project_id ? `/crm-projects/${notif.project_id}?tab=links` : "/crm-projects";
+  }
+
+  // Plan overrun
+  if (title.includes("перерасход") || title.includes("план")) {
+    return notif.project_id ? `/crm-projects/${notif.project_id}?tab=work-log` : "/crm-projects";
+  }
+
+  // Site error / health (default for project-bound notifs)
+  if (notif.project_id) return `/crm-projects/${notif.project_id}?tab=health`;
+
+  return "/";
 }
 
 export function NotificationBell() {
