@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format as fmtDate } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,6 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   TrendingUp, TrendingDown, BarChart3, Search, Loader2,
   MousePointerClick, Layers, Clock, Users, Target,
@@ -133,6 +134,11 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
   });
   const [channel, setChannel] = useState<TrafficChannel>("all");
 
+  // ── Topvisor searcher/region filter ──
+  // searcherKey: 0 = Google, 1 = Yandex (Topvisor convention)
+  const [tvSearcherKey, setTvSearcherKey] = useState<number | null>(null);
+  const [tvRegionIndex, setTvRegionIndex] = useState<string | null>(null);
+
   // ── Data queries — fetch ALL metrika snapshots and merge ──
   const { data: allMetrikaStats = [], isLoading: metrikaLoading } = useQuery({
     queryKey: ["metrika-stats-analytics", projectId],
@@ -236,15 +242,74 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     enabled: !!projectId,
   });
 
+  // ── Load Topvisor project info (searchers + regions) for tabs/region select ──
+  // ── Load Topvisor project info (searchers + regions) for tabs/region select ──
+  const { data: tvProjectInfo } = useQuery({
+    queryKey: ["tv-project-info-analytics", project?.topvisor_project_id, project?.topvisor_api_key],
+    queryFn: async () => {
+      if (!project?.topvisor_api_key || !project?.topvisor_user_id) return null;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return null;
+      const r = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/topvisor-api`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({
+          action: "get-projects",
+          api_key: project.topvisor_api_key,
+          user_id: project.topvisor_user_id,
+        }),
+      });
+      if (!r.ok) return null;
+      const data = await r.json();
+      const projects = (data?.result || []) as any[];
+      return projects.find((p) => String(p.id) === String(project.topvisor_project_id)) || null;
+    },
+    enabled: !!project?.topvisor_api_key && !!project?.topvisor_project_id && !!project?.topvisor_user_id,
+    staleTime: 30 * 60_000,
+  });
+
+  // Build searcher list (Yandex/Google) and regions per searcher
+  const tvSearchers = useMemo(() => {
+    const raw = (tvProjectInfo?.searchers || []) as Array<{ key: number; name: string; regions: any[] }>;
+    return raw.map((s) => ({
+      key: s.key,
+      name: s.name || (s.key === 1 ? "Yandex" : s.key === 0 ? "Google" : `Searcher ${s.key}`),
+      regions: (s.regions || []).map((r: any) => ({
+        index: String(r.index),
+        name: r.name || `${r.areaName || ""} ${r.device_name || ""}`.trim() || `Region ${r.index}`,
+      })),
+    }));
+  }, [tvProjectInfo]);
+
+  // Auto-select first searcher/region once data arrives
+  useEffect(() => {
+    if (tvSearchers.length === 0) return;
+    if (tvSearcherKey === null) {
+      // Prefer Yandex (key=1), fallback first
+      const yandex = tvSearchers.find((s) => s.key === 1) || tvSearchers[0];
+      setTvSearcherKey(yandex.key);
+      setTvRegionIndex(yandex.regions[0]?.index || null);
+    } else {
+      const cur = tvSearchers.find((s) => s.key === tvSearcherKey);
+      if (cur && (!tvRegionIndex || !cur.regions.some((r) => r.index === tvRegionIndex))) {
+        setTvRegionIndex(cur.regions[0]?.index || null);
+      }
+    }
+  }, [tvSearchers, tvSearcherKey, tvRegionIndex]);
+
+  const allTvRegionIndexes = useMemo(
+    () => tvSearchers.flatMap((s) => s.regions.map((r) => r.index)),
+    [tvSearchers]
+  );
+
   const { data: topvisorData, isLoading: tvLoading } = useQuery({
-    queryKey: ["tv-positions-analytics", projectId, project?.topvisor_project_id, project?.topvisor_api_key],
+    queryKey: ["tv-positions-analytics", projectId, project?.topvisor_project_id, project?.topvisor_api_key, allTvRegionIndexes.join(",")],
     queryFn: async () => {
       if (!project?.topvisor_api_key || !project?.topvisor_project_id || !project?.topvisor_user_id) {
-        console.warn("[Topvisor] Missing config:", { 
-          api_key: !!project?.topvisor_api_key, 
-          project_id: project?.topvisor_project_id,
-          user_id: project?.topvisor_user_id 
-        });
         return null;
       }
       const { data: { session } } = await supabase.auth.getSession();
@@ -253,12 +318,6 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
       const now = new Date();
       const date2 = format(now, "yyyy-MM-dd");
       const date1 = format(subMonths(now, 1), "yyyy-MM-dd");
-
-      console.log("[Topvisor] Fetching rankings history:", { 
-        project_id: project.topvisor_project_id, 
-        user_id: project.topvisor_user_id, 
-        date_from: date1, date_to: date2 
-      });
 
       const r = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/topvisor-api`,
@@ -278,16 +337,13 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
               date_from: date1,
               date_to: date2,
               show_headers: 1,
+              ...(allTvRegionIndexes.length > 0 ? { regions_indexes: allTvRegionIndexes } : {}),
             },
           }),
         }
       );
       const data = await r.json();
-      if (!r.ok) {
-        console.error("[Topvisor] API error:", r.status, data);
-        return null;
-      }
-      console.log("[Topvisor] Got data, keywords count:", data?.result?.keywords?.length || (Array.isArray(data?.result) ? data.result.length : 0));
+      if (!r.ok) return null;
       return data;
     },
     enabled: !!project?.topvisor_api_key && !!project?.topvisor_project_id,
@@ -476,37 +532,60 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     "hsl(var(--chart-5))",
   ];
 
-  // ── Keywords parsing (with per-date positions for table) ──
+  // ── Keywords parsing (per-date positions, filtered by selected region/searcher) ──
   const { keywords, keywordDates } = useMemo(() => {
     if (!topvisorData?.result) return { keywords: [], keywordDates: [] as string[] };
     const result = topvisorData.result;
     const rows = Array.isArray(result) ? result : result?.keywords || [];
     const allDatesSet = new Set<string>();
 
+    // Region filter: if regionIndex is set, only keep positions for that region
+    const targetRegion = tvRegionIndex;
+
     const parsed = rows
       .filter((row: any) => row?.name)
       .map((row: any) => {
         const positionsObj = row.positionsData || row.positions || row.position || {};
-        const entries = Object.entries(positionsObj);
         const datePositions: Record<string, number> = {};
 
-        for (const [key, val] of entries) {
-          if (typeof val === "object" && val !== null && !Array.isArray(val)) {
-            const valObj = val as Record<string, any>;
+        for (const [key, val] of Object.entries(positionsObj)) {
+          if (typeof val !== "object" || val === null || Array.isArray(val)) continue;
+          const valObj = val as Record<string, any>;
+
+          // Topvisor key formats:
+          //   "<regionIndex>:<YYYY-MM-DD>" → val = { position }
+          //   "<regionIndex>"               → val = { "<YYYY-MM-DD>": { position } }
+          //   "<YYYY-MM-DD>"                → val = { position }  (legacy / no region)
+          const isDateKey = /^\d{4}-\d{2}-\d{2}$/.test(key);
+          const isCompositeKey = key.includes(":");
+
+          if (isCompositeKey) {
+            const [regionPart, datePart] = key.split(":");
+            if (targetRegion && String(regionPart) !== String(targetRegion)) continue;
+            if (!datePart) continue;
+            const posVal = Number(valObj.position);
+            if (posVal > 0) {
+              datePositions[datePart] = posVal;
+              allDatesSet.add(datePart);
+            }
+          } else if (isDateKey) {
+            // No region info — accept (legacy)
             if ("position" in valObj) {
-              const datePart = key.split(":")[0];
               const posVal = Number(valObj.position);
               if (posVal > 0) {
-                datePositions[datePart] = posVal;
-                allDatesSet.add(datePart);
+                datePositions[key] = posVal;
+                allDatesSet.add(key);
               }
-            } else {
-              for (const [dateKey, dateVal] of Object.entries(valObj)) {
-                const posVal = typeof dateVal === "object" ? Number((dateVal as any)?.position) : Number(dateVal);
-                if (posVal > 0) {
-                  datePositions[dateKey] = posVal;
-                  allDatesSet.add(dateKey);
-                }
+            }
+          } else {
+            // key is a region index
+            if (targetRegion && String(key) !== String(targetRegion)) continue;
+            for (const [dateKey, dateVal] of Object.entries(valObj)) {
+              if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) continue;
+              const posVal = typeof dateVal === "object" ? Number((dateVal as any)?.position) : Number(dateVal);
+              if (posVal > 0) {
+                datePositions[dateKey] = posVal;
+                allDatesSet.add(dateKey);
               }
             }
           }
@@ -528,9 +607,9 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
       .filter((k: any) => k.position > 0)
       .sort((a: any, b: any) => a.position - b.position);
 
-    const keywordDates = Array.from(allDatesSet).sort().reverse(); // newest first
+    const keywordDates = Array.from(allDatesSet).sort().reverse();
     return { keywords: parsed, keywordDates };
-  }, [topvisorData]);
+  }, [topvisorData, tvRegionIndex]);
 
   const topProjectPositions = useMemo(() => keywords.slice(0, 50), [keywords]);
 
@@ -1313,8 +1392,50 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
         ];
         return (
           <Card className="bg-card rounded-lg shadow-sm border border-border p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-foreground">Сводка позиций Topvisor</h3>
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+              <div className="flex items-center gap-3 flex-wrap">
+                <h3 className="text-sm font-semibold text-foreground">Сводка позиций Topvisor</h3>
+                {tvSearchers.length > 0 && (
+                  <Tabs
+                    value={tvSearcherKey != null ? String(tvSearcherKey) : ""}
+                    onValueChange={(v) => {
+                      const k = Number(v);
+                      setTvSearcherKey(k);
+                      const next = tvSearchers.find((s) => s.key === k);
+                      setTvRegionIndex(next?.regions[0]?.index || null);
+                    }}
+                  >
+                    <TabsList className="h-7 bg-muted/50">
+                      {tvSearchers.map((s) => (
+                        <TabsTrigger key={s.key} value={String(s.key)} className="text-[11px] h-6 px-2.5">
+                          {s.name}
+                        </TabsTrigger>
+                      ))}
+                    </TabsList>
+                  </Tabs>
+                )}
+                {tvSearcherKey != null && (() => {
+                  const cur = tvSearchers.find((s) => s.key === tvSearcherKey);
+                  if (!cur || cur.regions.length === 0) return null;
+                  return (
+                    <Select
+                      value={tvRegionIndex || ""}
+                      onValueChange={(v) => setTvRegionIndex(v)}
+                    >
+                      <SelectTrigger className="h-7 text-[11px] w-auto min-w-[160px]">
+                        <SelectValue placeholder="Регион" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {cur.regions.map((r) => (
+                          <SelectItem key={r.index} value={r.index} className="text-[12px]">
+                            {r.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  );
+                })()}
+              </div>
               <span className="text-[11px] text-muted-foreground">
                 Данные за: <span className="text-foreground font-medium">{keywordDates[0] ? format(new Date(keywordDates[0]), "dd.MM.yyyy") : "—"}</span>
               </span>
