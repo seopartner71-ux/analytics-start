@@ -23,6 +23,7 @@ import { format, parseISO, subMonths, subDays, subYears, differenceInDays, start
 import { ru } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import AiMonthlyReport from "./AiMonthlyReport";
+import { AnalyticsSkeleton } from "./AnalyticsSkeleton";
 
 interface Props {
   projectId: string;
@@ -826,11 +827,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
   const hasTopvisor = keywords.length > 0;
 
   if (isLoading) {
-    return (
-      <div className="flex justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <AnalyticsSkeleton />;
   }
 
   return (

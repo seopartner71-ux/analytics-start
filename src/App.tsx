@@ -11,6 +11,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { FinanceGuard } from "@/components/FinanceGuard";
 import { CrmLayout } from "./components/CrmLayout";
 import { Loader2 } from "lucide-react";
+import { GlobalProgressBar } from "./components/GlobalProgressBar";
 
 // Eagerly load core / public routes
 import Index from "./pages/Index";
@@ -75,6 +76,7 @@ const App = () => (
           <TooltipProvider>
             <Toaster />
             <Sonner />
+            <GlobalProgressBar />
             <BrowserRouter>
               <Suspense fallback={<PageFallback />}>
                 <Routes>
