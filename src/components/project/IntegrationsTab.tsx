@@ -118,6 +118,13 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
   const [tvApiKey, setTvApiKey] = useState("");
   const [tvUserId, setTvUserId] = useState("");
   const [tvProjectId, setTvProjectId] = useState("");
+  const tvUserIdValidation = useMemo(() => validateTvUserId(tvUserId), [tvUserId]);
+  const tvApiKeyValidation = useMemo(() => validateTvApiKey(tvApiKey), [tvApiKey]);
+  const tvProjectIdValidation = useMemo(() => validateTvProjectId(tvProjectId), [tvProjectId]);
+  const canConnectTopvisor =
+    tvUserIdValidation.state === "valid" &&
+    tvApiKeyValidation.state === "valid" &&
+    tvProjectIdValidation.state === "valid";
 
   // Yandex Webmaster dialog state
   const [wmDialog, setWmDialog] = useState(false);
