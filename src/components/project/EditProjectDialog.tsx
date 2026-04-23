@@ -627,9 +627,27 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
                       </div>
                     </div>
                     {isConnected ? (
-                      <Badge className="bg-emerald-500/10 text-emerald-500 border-0 gap-1 text-[11px]">
-                        <CheckCircle2 className="h-3 w-3" /> Подключено
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-emerald-500/10 text-emerald-500 border-0 gap-1 text-[11px]">
+                          <CheckCircle2 className="h-3 w-3" /> Подключено
+                        </Badge>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 px-2 text-[11px] gap-1 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          disabled={disconnectIntegration.isPending}
+                          onClick={() => {
+                            if (confirm(`Отключить ${def.label}? Сохранённые данные останутся, отключатся только текущие учётные данные.`)) {
+                              disconnectIntegration.mutate(def.key);
+                            }
+                          }}
+                        >
+                          {disconnectIntegration.isPending && disconnectIntegration.variables === def.key
+                            ? <Loader2 className="h-3 w-3 animate-spin" />
+                            : <Unplug className="h-3 w-3" />}
+                          Отключить
+                        </Button>
+                      </div>
                     ) : (
                       <Badge variant="secondary" className="gap-1 text-[11px]">
                         <AlertCircle className="h-3 w-3" /> Не подключено
