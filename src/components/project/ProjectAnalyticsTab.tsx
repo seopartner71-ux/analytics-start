@@ -1437,7 +1437,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
                 })()}
               </div>
               <span className="text-[11px] text-muted-foreground">
-                Данные за: <span className="text-foreground font-medium">{keywordDates[0] ? format(new Date(keywordDates[0]), "dd.MM.yyyy") : "—"}</span>
+                Данные за: <span className="text-foreground font-medium">{(() => { if (!keywordDates[0]) return "—"; const d = new Date(keywordDates[0]); return isNaN(d.getTime()) ? String(keywordDates[0]) : format(d, "dd.MM.yyyy"); })()}</span>
               </span>
             </div>
             <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-2">
@@ -1487,11 +1487,15 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
                   <th className="text-left px-4 py-2.5 font-medium text-muted-foreground w-8">#</th>
                   <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Запросы ({keywords.length})</th>
                   <th className="text-center px-3 py-2.5 font-medium text-muted-foreground w-20">Частота</th>
-                  {keywordDates.slice(0, 5).map(date => (
-                    <th key={date} className="text-center px-3 py-2.5 font-medium text-muted-foreground w-24 whitespace-nowrap">
-                      {format(new Date(date), "dd.MM.yyyy")}
-                    </th>
-                  ))}
+                  {keywordDates.slice(0, 5).map(date => {
+                    const d = new Date(date);
+                    const label = isNaN(d.getTime()) ? String(date) : format(d, "dd.MM.yyyy");
+                    return (
+                      <th key={date} className="text-center px-3 py-2.5 font-medium text-muted-foreground w-24 whitespace-nowrap">
+                        {label}
+                      </th>
+                    );
+                  })}
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/40">
