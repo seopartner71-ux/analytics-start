@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -10,28 +10,36 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Copy, Pencil, Upload, X, User, Link2, Calendar, Plug } from "lucide-react";
+import { Copy, Pencil, Upload, X, User, Link2, Calendar, Plug, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { IntegrationsTab } from "@/components/project/IntegrationsTab";
-import { WorkLogTab } from "@/components/project/WorkLogTab";
-import { GoalsTab } from "@/components/project/GoalsTab";
-import { SeoTab } from "@/components/project/SeoTab";
-import { TrafficTab } from "@/components/project/TrafficTab";
-import { SearchSystemsTab } from "@/components/project/SearchSystemsTab";
-import { PagesTab } from "@/components/project/PagesTab";
-import { SiteHealthTab } from "@/components/project/SiteHealthTab";
 import { AiInsightsBlock } from "@/components/project/AiInsightsBlock";
-import { AiAnalyticsTab } from "@/components/project/AiAnalyticsTab";
-import { ReportBuilderTab } from "@/components/project/ReportBuilderTab";
-import { ComparisonTab } from "@/components/project/ComparisonTab";
-import { DashboardTab } from "@/components/project/DashboardTab";
-import { PositionsTab } from "@/components/project/PositionsTab";
-import { ProjectChatTab } from "@/components/project/ProjectChatTab";
-import { LinkProfileTab } from "@/components/project/LinkProfileTab";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { supabase } from "@/integrations/supabase/client";
 import { DateRangeProvider, useDateRange } from "@/contexts/DateRangeContext";
 import { format } from "date-fns";
+
+// Lazy-load heavy tabs — they're only mounted when the user opens them
+const WorkLogTab = lazy(() => import("@/components/project/WorkLogTab").then(m => ({ default: m.WorkLogTab })));
+const GoalsTab = lazy(() => import("@/components/project/GoalsTab").then(m => ({ default: m.GoalsTab })));
+const SeoTab = lazy(() => import("@/components/project/SeoTab").then(m => ({ default: m.SeoTab })));
+const TrafficTab = lazy(() => import("@/components/project/TrafficTab").then(m => ({ default: m.TrafficTab })));
+const SearchSystemsTab = lazy(() => import("@/components/project/SearchSystemsTab").then(m => ({ default: m.SearchSystemsTab })));
+const PagesTab = lazy(() => import("@/components/project/PagesTab").then(m => ({ default: m.PagesTab })));
+const SiteHealthTab = lazy(() => import("@/components/project/SiteHealthTab").then(m => ({ default: m.SiteHealthTab })));
+const AiAnalyticsTab = lazy(() => import("@/components/project/AiAnalyticsTab").then(m => ({ default: m.AiAnalyticsTab })));
+const ReportBuilderTab = lazy(() => import("@/components/project/ReportBuilderTab").then(m => ({ default: m.ReportBuilderTab })));
+const ComparisonTab = lazy(() => import("@/components/project/ComparisonTab").then(m => ({ default: m.ComparisonTab })));
+const DashboardTab = lazy(() => import("@/components/project/DashboardTab").then(m => ({ default: m.DashboardTab })));
+const PositionsTab = lazy(() => import("@/components/project/PositionsTab").then(m => ({ default: m.PositionsTab })));
+const ProjectChatTab = lazy(() => import("@/components/project/ProjectChatTab").then(m => ({ default: m.ProjectChatTab })));
+const LinkProfileTab = lazy(() => import("@/components/project/LinkProfileTab").then(m => ({ default: m.LinkProfileTab })));
+
+const TabFallback = () => (
+  <div className="flex justify-center py-20">
+    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+  </div>
+);
 
 /** Inner component that can use DateRange context */
 function ProjectDetailInner() {
