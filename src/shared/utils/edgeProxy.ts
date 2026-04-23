@@ -2,17 +2,22 @@
  * Edge proxy для обхода блокировки Supabase в РФ.
  *
  * Подменяет глобальный fetch: все запросы к *.supabase.co перенаправляются
- * на /api/proxy.php?path=... того же домена (Beget). PHP-скрипт форвардит
- * запрос в Supabase и возвращает ответ.
+ * на прокси того же домена.
  *
- * Активируется только на production-доменах. В Lovable preview / localhost
- * работает напрямую. При недоступности прокси (HTML/404) — авто-фоллбэк
- * на прямые запросы.
+ * Стратегия по доменам:
+ *   - crm.seo-modul.pro      → Nginx reverse proxy: /supabase-proxy/<path>
+ *   - другие prod-домены     → PHP fallback: /api/proxy.php?path=<path>
+ *   - localhost / lovable.*  → напрямую (без прокси)
+ *
+ * При недоступности прокси (HTML/404) — авто-фоллбэк на прямые запросы.
  */
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
-const PROXY_PATH = "/api/proxy.php";
+
+const NGINX_PROXY_HOST = "crm.seo-modul.pro";
+const NGINX_PROXY_PREFIX = "/supabase-proxy";
+const PHP_PROXY_PATH = "/api/proxy.php";
 
 const ALLOWED_PREFIXES = [
   "/functions/v1/",
@@ -24,10 +29,11 @@ const ALLOWED_PREFIXES = [
 let installed = false;
 let proxyDisabled = false; // авто-фоллбэк при поломке прокси
 
-function shouldUseProxy(): boolean {
-  if (typeof window === "undefined") return false;
+type ProxyMode = "nginx" | "php" | "none";
+
+function getProxyMode(): ProxyMode {
+  if (typeof window === "undefined") return "none";
   const host = window.location.hostname;
-  // Не использовать прокси на dev / lovable preview
   if (
     host === "localhost" ||
     host === "127.0.0.1" ||
@@ -35,18 +41,14 @@ function shouldUseProxy(): boolean {
     host.endsWith(".lovable.dev") ||
     host.endsWith(".lovableproject.com")
   ) {
-    return false;
+    return "none";
   }
-  return true;
+  if (host === NGINX_PROXY_HOST) return "nginx";
+  return "php";
 }
 
 function isSupabaseUrl(url: string): boolean {
   return !!SUPABASE_URL && url.startsWith(SUPABASE_URL);
-}
-
-function buildProxyUrl(originalUrl: string): string {
-  const upstreamPath = originalUrl.slice(SUPABASE_URL.length); // напр. /auth/v1/token?grant_type=password
-  return `${PROXY_PATH}?path=${encodeURIComponent(upstreamPath)}`;
 }
 
 function isAllowed(originalUrl: string): boolean {
@@ -54,9 +56,19 @@ function isAllowed(originalUrl: string): boolean {
   return ALLOWED_PREFIXES.some((p) => path.startsWith(p));
 }
 
+function buildProxyUrl(originalUrl: string, mode: ProxyMode): string {
+  const upstreamPath = originalUrl.slice(SUPABASE_URL.length); // напр. /auth/v1/token?grant_type=password
+  if (mode === "nginx") {
+    // Nginx сам форвардит путь и query-string как есть
+    return `${NGINX_PROXY_PREFIX}${upstreamPath}`;
+  }
+  return `${PHP_PROXY_PATH}?path=${encodeURIComponent(upstreamPath)}`;
+}
+
 export function installEdgeProxy(): void {
   if (installed) return;
-  if (!shouldUseProxy()) return;
+  const mode = getProxyMode();
+  if (mode === "none") return;
   if (!SUPABASE_URL) return;
 
   installed = true;
@@ -75,21 +87,28 @@ export function installEdgeProxy(): void {
         return nativeFetch(input as any, init);
       }
 
-      const proxyUrl = buildProxyUrl(url);
+      const proxyUrl = buildProxyUrl(url, mode);
 
       // Гарантируем apikey, если клиент его не выставил
-      const headers = new Headers(init?.headers || (typeof input !== "string" && !(input instanceof URL) ? input.headers : undefined));
+      const headers = new Headers(
+        init?.headers ||
+          (typeof input !== "string" && !(input instanceof URL) ? input.headers : undefined)
+      );
       if (!headers.has("apikey") && SUPABASE_ANON_KEY) {
         headers.set("apikey", SUPABASE_ANON_KEY);
       }
 
       const proxyInit: RequestInit = {
         ...init,
-        method: init?.method || (typeof input !== "string" && !(input instanceof URL) ? input.method : "GET"),
+        method:
+          init?.method ||
+          (typeof input !== "string" && !(input instanceof URL) ? input.method : "GET"),
         headers,
         body:
           init?.body ??
-          (typeof input !== "string" && !(input instanceof URL) ? (input as Request).body : undefined),
+          (typeof input !== "string" && !(input instanceof URL)
+            ? (input as Request).body
+            : undefined),
         credentials: "omit",
       };
 
