@@ -6,6 +6,45 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// --- Per-token concurrency limiter + quota-aware retry ---
+// Yandex Metrika rejects parallel requests from the same user with:
+// "Quota exceeded for quantity of parallel user requests".
+// We serialize fetches per access_token and retry transient quota errors.
+const tokenQueues = new Map<string, Promise<unknown>>();
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+async function yandexFetch(token: string, url: string, init: RequestInit = {}): Promise<Response> {
+  const key = token || "anon";
+  const prev = tokenQueues.get(key) ?? Promise.resolve();
+  const run = prev.then(async () => {
+    const headers = { ...(init.headers || {}), Authorization: `OAuth ${token}` };
+    let lastResp: Response | null = null;
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const resp = await fetch(url, { ...init, headers });
+      if (resp.status !== 429 && resp.status !== 503) {
+        // Inspect body for "Quota exceeded" even on non-429 (Yandex sometimes returns 400/200)
+        const cloned = resp.clone();
+        const text = await cloned.text();
+        if (/Quota exceeded/i.test(text) && attempt < 3) {
+          await sleep(500 * (attempt + 1));
+          continue;
+        }
+        // Re-create response since we consumed clone (original body still intact)
+        return resp;
+      }
+      lastResp = resp;
+      await sleep(500 * (attempt + 1));
+    }
+    return lastResp as Response;
+  });
+  tokenQueues.set(key, run.catch(() => {}));
+  try {
+    return (await run) as Response;
+  } finally {
+    if (tokenQueues.get(key) === run.catch(() => {})) tokenQueues.delete(key);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
