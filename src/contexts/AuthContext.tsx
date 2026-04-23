@@ -37,6 +37,12 @@ const AuthContext = createContext<AuthContextType>({
 
 export const useAuth = () => useContext(AuthContext);
 
+const ROLE_PRIORITY: AppRole[] = ["admin", "director", "manager", "seo", "junior", "viewer"];
+
+function resolveHighestRole(roles: AppRole[]): AppRole | null {
+  return ROLE_PRIORITY.find((role) => roles.includes(role)) ?? roles[0] ?? null;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -45,34 +51,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
+    let mounted = true;
 
-        if (session?.user) {
-          setTimeout(async () => {
-            const [{ data: roles }, { data: prof }] = await Promise.all([
-              supabase.from("user_roles").select("role").eq("user_id", session.user.id).limit(1),
-              supabase.from("profiles").select("*").eq("user_id", session.user.id).single(),
-            ]);
-            setRole(roles?.[0]?.role ?? null);
-            setProfile(prof);
-            setLoading(false);
-          }, 0);
-        } else {
-          setRole(null);
-          setProfile(null);
-          setLoading(false);
-        }
+    const syncAuthState = async (nextSession: Session | null) => {
+      if (!mounted) return;
+
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
+
+      if (!nextSession?.user) {
+        setRole(null);
+        setProfile(null);
+        setLoading(false);
+        return;
       }
-    );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) setLoading(false);
+      setLoading(true);
+
+      const [{ data: roles, error: rolesError }, { data: prof, error: profileError }] = await Promise.all([
+        supabase.from("user_roles").select("role").eq("user_id", nextSession.user.id),
+        supabase.from("profiles").select("*").eq("user_id", nextSession.user.id).single(),
+      ]);
+
+      if (!mounted) return;
+
+      if (rolesError) console.warn("[auth] Не удалось загрузить роли:", rolesError.message);
+      if (profileError) console.warn("[auth] Не удалось загрузить профиль:", profileError.message);
+
+      const roleList = (roles ?? []).map((item) => item.role);
+      setRole(resolveHighestRole(roleList));
+      setProfile(profileError ? null : prof);
+      setLoading(false);
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      void syncAuthState(nextSession);
     });
 
-    return () => subscription.unsubscribe();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      void syncAuthState(session);
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const refreshProfile = async () => {
