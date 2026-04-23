@@ -726,12 +726,12 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
   }, [dailyData, appliedRange]);
 
   const filteredCompData = useMemo(() => {
-    if (dailyData.length === 0) return [];
-    const lastDataDate = dailyData[dailyData.length - 1].date;
-    const rangeEnd = appliedCompRange.to > lastDataDate ? lastDataDate : appliedCompRange.to;
-    const days = differenceInDays(rangeEnd, appliedCompRange.from);
+    // Prefer live comparison data; fallback to merged dailyData
+    const source = compDailyData.length > 0 ? compDailyData : dailyData;
+    if (source.length === 0) return [];
+    const days = differenceInDays(appliedCompRange.to, appliedCompRange.from);
     if (days < 0) return [];
-    const dailyMap = new Map(dailyData.map(d => [format(d.date, "yyyy-MM-dd"), d as { date: Date; dateStr: string; visits: number }]));
+    const dailyMap = new Map(source.map((d: any) => [format(d.date, "yyyy-MM-dd"), d as { date: Date; dateStr: string; visits: number }]));
     const result = [];
     for (let i = 0; i <= days; i++) {
       const date = new Date(appliedCompRange.from);
@@ -745,7 +745,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
       });
     }
     return result;
-  }, [dailyData, appliedCompRange]);
+  }, [dailyData, compDailyData, appliedCompRange]);
 
   // ── Channel ratios for splitting (prefer live traffic sources) ──
   const channelRatios = useMemo(() => {
