@@ -277,7 +277,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     const raw = (tvProjectInfo?.searchers || []) as Array<{ key: number; name: string; regions: any[] }>;
     return raw.map((s) => ({
       key: s.key,
-      name: s.name || (s.key === 1 ? "Yandex" : s.key === 0 ? "Google" : `Searcher ${s.key}`),
+      name: s.name || (s.key === 0 ? "Yandex" : s.key === 1 ? "Google" : `Searcher ${s.key}`),
       regions: (s.regions || []).map((r: any) => ({
         index: String(r.index),
         name: r.name || `${r.areaName || ""} ${r.device_name || ""}`.trim() || `Region ${r.index}`,
@@ -289,8 +289,8 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
   useEffect(() => {
     if (tvSearchers.length === 0) return;
     if (tvSearcherKey === null) {
-      // Prefer Yandex (key=1), fallback first
-      const yandex = tvSearchers.find((s) => s.key === 1) || tvSearchers[0];
+      // Prefer Yandex (key=0), fallback first
+      const yandex = tvSearchers.find((s) => s.key === 0) || tvSearchers[0];
       setTvSearcherKey(yandex.key);
       setTvRegionIndex(yandex.regions[0]?.index || null);
     } else {
@@ -307,7 +307,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
   );
 
   const { data: topvisorData, isLoading: tvLoading } = useQuery({
-    queryKey: ["tv-positions-analytics", projectId, project?.topvisor_project_id, project?.topvisor_api_key, allTvRegionIndexes.join(",")],
+    queryKey: ["tv-positions-analytics", projectId, project?.topvisor_project_id, project?.topvisor_api_key, project?.topvisor_user_id, allTvRegionIndexes.join(",")],
     queryFn: async () => {
       if (!project?.topvisor_api_key || !project?.topvisor_project_id || !project?.topvisor_user_id) {
         return null;
@@ -346,7 +346,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
       if (!r.ok) return null;
       return data;
     },
-    enabled: !!project?.topvisor_api_key && !!project?.topvisor_project_id,
+    enabled: !!project?.topvisor_api_key && !!project?.topvisor_project_id && !!project?.topvisor_user_id && allTvRegionIndexes.length > 0,
     staleTime: 10 * 60_000,
   });
 
