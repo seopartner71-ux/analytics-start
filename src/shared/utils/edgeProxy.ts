@@ -36,6 +36,27 @@ const ALLOWED_PREFIXES = [
 let installed = false;
 let proxyDisabled = false; // авто-фоллбэк при поломке прокси
 let healthCheckPromise: Promise<void> | null = null;
+let proxyReadyResolve: (() => void) | null = null;
+const proxyReadyPromise: Promise<void> = new Promise((resolve) => {
+  proxyReadyResolve = resolve;
+});
+
+/**
+ * Промис, который резолвится после того, как edge proxy установлен
+ * и (если применимо) выполнен health-check Nginx-прокси.
+ * AuthContext ждёт его перед первым getSession(), чтобы не словить
+ * "Failed to fetch" из-за гонки с активацией прокси.
+ */
+export function waitForEdgeProxyReady(): Promise<void> {
+  return proxyReadyPromise;
+}
+
+/**
+ * Возвращает true, если nginx-прокси отключён (фоллбэк на прямые запросы).
+ */
+export function isProxyDisabled(): boolean {
+  return proxyDisabled;
+}
 
 type ProxyMode = "nginx" | "php" | "none";
 
