@@ -206,6 +206,7 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
     editAssigneeId !== (task.assignee_id || "") ? "Исполнитель" : null,
   ].filter(Boolean) as string[] : [];
   const isDirty = changedFields.length > 0;
+  const canShowSaveButton = canEditFields;
   const needsConfirm = changedFields.length >= 3;
   const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
 
@@ -775,13 +776,19 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
 
             {/* Sticky bottom action bar — primary CTA */}
             <div className="border-t border-border/60 bg-card px-5 py-3 shrink-0 space-y-2">
-              {canEditFields && isDirty && (
+              {canShowSaveButton && (
                 <Button
                   size="lg"
                   className="w-full h-11 gap-2 text-sm font-semibold shadow-md"
-                  onClick={() => needsConfirm ? setConfirmSaveOpen(true) : saveAll.mutate()}
+                  onClick={() => {
+                    if (!isDirty) {
+                      toast.info("Изменений нет");
+                      return;
+                    }
+                    needsConfirm ? setConfirmSaveOpen(true) : saveAll.mutate();
+                  }}
                   disabled={saveAll.isPending}
-                  variant="default"
+                  variant={isDirty ? "default" : "outline"}
                 >
                   {saveAll.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                   Сохранить изменения{changedFields.length > 0 ? ` (${changedFields.length})` : ""}

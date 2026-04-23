@@ -43,7 +43,7 @@ const Index = () => {
     },
   });
 
-  const activeProjectIds = useMemo(() => projects.map(p => p.id), [projects]);
+  const activeProjectIds = useMemo(() => projects.map((p) => p.id), [projects]);
 
   // ─── Tasks (only from active projects, non-archived tasks) ───
   const { data: tasks = [], isLoading: loadingTasks } = useQuery({
@@ -75,7 +75,23 @@ const Index = () => {
     },
   });
 
-  // ─── Metrika stats (only for active projects) ───
+  const { data: metrikaIntegrations = [] } = useQuery({
+    queryKey: ["dashboard-metrika-integrations", activeProjectIds.join(",")],
+    queryFn: async () => {
+      if (activeProjectIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from("integrations")
+        .select("project_id, access_token, counter_id, connected")
+        .eq("service_name", "yandexMetrika")
+        .eq("connected", true)
+        .in("project_id", activeProjectIds);
+      if (error) throw error;
+      return data;
+    },
+    enabled: activeProjectIds.length > 0,
+  });
+
+  // ─── Metrika stats (active projects, cached) ───
   const { data: metrikaStats = [] } = useQuery({
     queryKey: ["dashboard-metrika", activeProjectIds.join(",")],
     queryFn: async () => {
@@ -92,6 +108,50 @@ const Index = () => {
     enabled: activeProjectIds.length > 0,
   });
 
+  // ─── Live Metrika totals fallback ───
+  const { data: liveMetrikaTotals = [] } = useQuery({
+    queryKey: ["dashboard-live-metrika", activeProjectIds.join(",")],
+    queryFn: async () => {
+      if (!metrikaIntegrations.length) return [];
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return [];
+
+      const results = await Promise.all(
+        metrikaIntegrations.map(async (integration) => {
+          if (!integration.access_token || !integration.counter_id) return null;
+          const r = await fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/yandex-metrika-auth?action=fetch-stats`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${session.access_token}`,
+                apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+              },
+              body: JSON.stringify({
+                access_token: integration.access_token,
+                counter_id: integration.counter_id,
+                date1: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10),
+                date2: new Date().toISOString().slice(0, 10),
+              }),
+            }
+          );
+          if (!r.ok) return null;
+          const data = await r.json();
+          const totals = data?.totals?.data?.[0]?.metrics;
+          return {
+            project_id: integration.project_id,
+            total_visits: Math.round(totals?.[0] || 0),
+          };
+        })
+      );
+
+      return results.filter(Boolean);
+    },
+    enabled: metrikaIntegrations.length > 0,
+    staleTime: 5 * 60 * 1000,
+  });
+
   // ─── Computed metrics ───
   const activeProjects = projects.filter(p => p.privacy === "В работе" || !p.privacy).length;
   const pausedProjects = projects.filter(p => p.privacy === "На паузе").length;
@@ -106,18 +166,21 @@ const Index = () => {
   const completedTasks = tasks.filter(t => t.stage === "Завершена").length;
   const taskCompletionPct = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-  // Total traffic from latest metrika snapshots (deduplicated by project)
+  // Total traffic from latest metrika snapshots (deduplicated by project), with live fallback
   const totalTraffic = useMemo(() => {
-    const seen = new Set<string>();
-    let sum = 0;
+    const cachedByProject = new Map<string, number>();
     for (const s of metrikaStats) {
-      if (!seen.has(s.project_id)) {
-        seen.add(s.project_id);
-        sum += s.total_visits;
+      if (!cachedByProject.has(s.project_id)) {
+        cachedByProject.set(s.project_id, s.total_visits);
       }
     }
-    return sum;
-  }, [metrikaStats]);
+
+    if (cachedByProject.size > 0) {
+      return Array.from(cachedByProject.values()).reduce((sum, value) => sum + value, 0);
+    }
+
+    return liveMetrikaTotals.reduce((sum, row) => sum + (row?.total_visits || 0), 0);
+  }, [metrikaStats, liveMetrikaTotals]);
 
   // ─── Manager KPI: % of completed tasks per assignee ───
   const managerKpi = useMemo(() => {
