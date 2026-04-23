@@ -18,6 +18,7 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 
 const NGINX_PROXY_HOST = "crm.seo-modul.pro";
+const NGINX_PROXY_ORIGIN = `https://${NGINX_PROXY_HOST}`;
 const NGINX_PROXY_PREFIX = "/supabase-proxy";
 const PHP_PROXY_PATH = "/api/proxy.php";
 
@@ -62,9 +63,24 @@ function isAllowed(originalUrl: string): boolean {
 function buildProxyUrl(originalUrl: string, mode: ProxyMode): string {
   const upstreamPath = originalUrl.slice(SUPABASE_URL.length);
   if (mode === "nginx") {
-    return `${NGINX_PROXY_PREFIX}${upstreamPath}`;
+    return `${NGINX_PROXY_ORIGIN}${NGINX_PROXY_PREFIX}${upstreamPath}`;
   }
   return `${PHP_PROXY_PATH}?path=${encodeURIComponent(upstreamPath)}`;
+}
+
+function getOriginalRequest(input: RequestInfo | URL): Request | null {
+  return typeof input !== "string" && !(input instanceof URL) ? input : null;
+}
+
+function mergeHeaders(input: RequestInfo | URL, init?: RequestInit): Headers {
+  const headers = new Headers(getOriginalRequest(input)?.headers);
+  const initHeaders = new Headers(init?.headers);
+
+  initHeaders.forEach((value, key) => {
+    headers.set(key, value);
+  });
+
+  return headers;
 }
 
 /**
@@ -78,7 +94,6 @@ async function checkNginxProxyHealth(nativeFetch: typeof fetch): Promise<void> {
     const headers: Record<string, string> = {};
     if (SUPABASE_ANON_KEY) {
       headers["apikey"] = SUPABASE_ANON_KEY;
-      headers["Authorization"] = `Bearer ${SUPABASE_ANON_KEY}`;
     }
     const response = await nativeFetch(url, { method: "GET", headers });
     const ct = response.headers.get("content-type") || "";
@@ -141,27 +156,22 @@ export async function installEdgeProxy(): Promise<void> {
       }
 
       const proxyUrl = buildProxyUrl(url, mode);
-
-      const headers = new Headers(
-        init?.headers ||
-          (typeof input !== "string" && !(input instanceof URL) ? input.headers : undefined)
-      );
-      if (!headers.has("apikey") && SUPABASE_ANON_KEY) {
-        headers.set("apikey", SUPABASE_ANON_KEY);
-      }
+      const originalRequest = getOriginalRequest(input);
+      const headers = mergeHeaders(input, init);
 
       const proxyInit: RequestInit = {
         ...init,
         method:
           init?.method ||
-          (typeof input !== "string" && !(input instanceof URL) ? input.method : "GET"),
+          originalRequest?.method ||
+          "GET",
         headers,
         body:
           init?.body ??
-          (typeof input !== "string" && !(input instanceof URL)
-            ? (input as Request).body
-            : undefined),
-        credentials: "omit",
+          originalRequest?.body,
+        credentials:
+          init?.credentials ??
+          originalRequest?.credentials,
       };
 
       const response = await nativeFetch(proxyUrl, proxyInit);
