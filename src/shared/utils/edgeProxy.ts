@@ -19,7 +19,7 @@ const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as strin
 
 const NGINX_PROXY_HOST = "crm.seo-modul.pro";
 const NGINX_PROXY_ORIGIN = `https://${NGINX_PROXY_HOST}`;
-const NGINX_PROXY_PREFIX = "/supabase-proxy";
+const NGINX_PROXY_PREFIX = "/api-proxy";
 const PHP_PROXY_PATH = "/api/proxy.php";
 
 const ALLOWED_PREFIXES = [
