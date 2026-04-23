@@ -245,12 +245,73 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
   const { data: topvisorData, isLoading: tvLoading } = useQuery({
     queryKey: ["tv-positions-analytics", projectId, project?.topvisor_project_id, project?.topvisor_api_key],
     queryFn: async () => {
+  // ── Load Topvisor project info (searchers + regions) for tabs/region select ──
+  const { data: tvProjectInfo } = useQuery({
+    queryKey: ["tv-project-info-analytics", project?.topvisor_project_id, project?.topvisor_api_key],
+    queryFn: async () => {
+      if (!project?.topvisor_api_key || !project?.topvisor_user_id) return null;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return null;
+      const r = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/topvisor-api`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({
+          action: "get-projects",
+          api_key: project.topvisor_api_key,
+          user_id: project.topvisor_user_id,
+        }),
+      });
+      if (!r.ok) return null;
+      const data = await r.json();
+      const projects = (data?.result || []) as any[];
+      return projects.find((p) => String(p.id) === String(project.topvisor_project_id)) || null;
+    },
+    enabled: !!project?.topvisor_api_key && !!project?.topvisor_project_id && !!project?.topvisor_user_id,
+    staleTime: 30 * 60_000,
+  });
+
+  // Build searcher list (Yandex/Google) and regions per searcher
+  const tvSearchers = useMemo(() => {
+    const raw = (tvProjectInfo?.searchers || []) as Array<{ key: number; name: string; regions: any[] }>;
+    return raw.map((s) => ({
+      key: s.key,
+      name: s.name || (s.key === 1 ? "Yandex" : s.key === 0 ? "Google" : `Searcher ${s.key}`),
+      regions: (s.regions || []).map((r: any) => ({
+        index: String(r.index),
+        name: r.name || `${r.areaName || ""} ${r.device_name || ""}`.trim() || `Region ${r.index}`,
+      })),
+    }));
+  }, [tvProjectInfo]);
+
+  // Auto-select first searcher/region once data arrives
+  useEffect(() => {
+    if (tvSearchers.length === 0) return;
+    if (tvSearcherKey === null) {
+      // Prefer Yandex (key=1), fallback first
+      const yandex = tvSearchers.find((s) => s.key === 1) || tvSearchers[0];
+      setTvSearcherKey(yandex.key);
+      setTvRegionIndex(yandex.regions[0]?.index || null);
+    } else {
+      const cur = tvSearchers.find((s) => s.key === tvSearcherKey);
+      if (cur && (!tvRegionIndex || !cur.regions.some((r) => r.index === tvRegionIndex))) {
+        setTvRegionIndex(cur.regions[0]?.index || null);
+      }
+    }
+  }, [tvSearchers, tvSearcherKey, tvRegionIndex]);
+
+  const allTvRegionIndexes = useMemo(
+    () => tvSearchers.flatMap((s) => s.regions.map((r) => r.index)),
+    [tvSearchers]
+  );
+
+  const { data: topvisorData, isLoading: tvLoading } = useQuery({
+    queryKey: ["tv-positions-analytics", projectId, project?.topvisor_project_id, project?.topvisor_api_key, allTvRegionIndexes.join(",")],
+    queryFn: async () => {
       if (!project?.topvisor_api_key || !project?.topvisor_project_id || !project?.topvisor_user_id) {
-        console.warn("[Topvisor] Missing config:", { 
-          api_key: !!project?.topvisor_api_key, 
-          project_id: project?.topvisor_project_id,
-          user_id: project?.topvisor_user_id 
-        });
         return null;
       }
       const { data: { session } } = await supabase.auth.getSession();
@@ -259,12 +320,6 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
       const now = new Date();
       const date2 = format(now, "yyyy-MM-dd");
       const date1 = format(subMonths(now, 1), "yyyy-MM-dd");
-
-      console.log("[Topvisor] Fetching rankings history:", { 
-        project_id: project.topvisor_project_id, 
-        user_id: project.topvisor_user_id, 
-        date_from: date1, date_to: date2 
-      });
 
       const r = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/topvisor-api`,
@@ -284,16 +339,13 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
               date_from: date1,
               date_to: date2,
               show_headers: 1,
+              ...(allTvRegionIndexes.length > 0 ? { regions_indexes: allTvRegionIndexes } : {}),
             },
           }),
         }
       );
       const data = await r.json();
-      if (!r.ok) {
-        console.error("[Topvisor] API error:", r.status, data);
-        return null;
-      }
-      console.log("[Topvisor] Got data, keywords count:", data?.result?.keywords?.length || (Array.isArray(data?.result) ? data.result.length : 0));
+      if (!r.ok) return null;
       return data;
     },
     enabled: !!project?.topvisor_api_key && !!project?.topvisor_project_id,
