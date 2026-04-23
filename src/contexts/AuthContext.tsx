@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { waitForEdgeProxyReady, isProxyDisabled } from "@/shared/utils/edgeProxy";
 import type { Database } from "@/integrations/supabase/types";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
@@ -102,12 +103,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       void syncAuthState(nextSession);
     });
 
-    supabase.auth
-      .getSession()
-      .then(({ data: { session } }) => {
-        void syncAuthState(session);
-      })
-      .catch((error) => {
+    // Дожидаемся готовности edge proxy (health-check Nginx) перед первым
+    // запросом getSession(). Иначе гонка: запрос уходит до того, как
+    // healthCheck успел отметить proxyDisabled, и мы получаем "Failed to fetch".
+    const initSession = async () => {
+      try {
+        await waitForEdgeProxyReady();
+        console.info(
+          `[auth] Edge proxy готов (proxyDisabled=${isProxyDisabled()}), запускаем getSession()`
+        );
+        const { data: { session } } = await supabase.auth.getSession();
+        await syncAuthState(session);
+      } catch (error) {
         console.warn("[auth] Не удалось восстановить сессию:", error);
         if (!mounted) return;
         setSession(null);
@@ -115,7 +122,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setRole(null);
         setProfile(null);
         setLoading(false);
-      });
+      }
+    };
+
+    void initSession();
 
     return () => {
       mounted = false;
