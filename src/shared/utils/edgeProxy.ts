@@ -9,7 +9,9 @@
  *   - другие prod-домены     → PHP fallback: /api/proxy.php?path=<path>
  *   - localhost / lovable.*  → напрямую (без прокси)
  *
- * При недоступности прокси (HTML/404) — авто-фоллбэк на прямые запросы.
+ * Перед активацией на crm.seo-modul.pro выполняется health-check:
+ * если /supabase-proxy/auth/v1/health не вернул JSON — прокси отключается
+ * и запросы идут напрямую (с предупреждением в консоль).
  */
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
@@ -28,6 +30,7 @@ const ALLOWED_PREFIXES = [
 
 let installed = false;
 let proxyDisabled = false; // авто-фоллбэк при поломке прокси
+let healthCheckPromise: Promise<void> | null = null;
 
 type ProxyMode = "nginx" | "php" | "none";
 
@@ -57,12 +60,50 @@ function isAllowed(originalUrl: string): boolean {
 }
 
 function buildProxyUrl(originalUrl: string, mode: ProxyMode): string {
-  const upstreamPath = originalUrl.slice(SUPABASE_URL.length); // напр. /auth/v1/token?grant_type=password
+  const upstreamPath = originalUrl.slice(SUPABASE_URL.length);
   if (mode === "nginx") {
-    // Nginx сам форвардит путь и query-string как есть
     return `${NGINX_PROXY_PREFIX}${upstreamPath}`;
   }
   return `${PHP_PROXY_PATH}?path=${encodeURIComponent(upstreamPath)}`;
+}
+
+/**
+ * Проверяет, что Nginx-прокси действительно форвардит на Supabase
+ * и возвращает JSON, а не HTML SPA / 404.
+ * Использует нативный fetch (до подмены), чтобы не зациклиться.
+ */
+async function checkNginxProxyHealth(nativeFetch: typeof fetch): Promise<void> {
+  try {
+    const url = `${NGINX_PROXY_PREFIX}/auth/v1/health`;
+    const headers: Record<string, string> = {};
+    if (SUPABASE_ANON_KEY) {
+      headers["apikey"] = SUPABASE_ANON_KEY;
+      headers["Authorization"] = `Bearer ${SUPABASE_ANON_KEY}`;
+    }
+    const response = await nativeFetch(url, { method: "GET", headers });
+    const ct = response.headers.get("content-type") || "";
+
+    if (response.status === 404 || ct.includes("text/html")) {
+      console.warn(
+        `[edgeProxy] Nginx-прокси ${NGINX_PROXY_PREFIX} вернул ${response.status} / ${ct}. Фоллбэк на прямые запросы.`
+      );
+      proxyDisabled = true;
+      return;
+    }
+
+    if (!ct.includes("application/json")) {
+      console.warn(
+        `[edgeProxy] Nginx-прокси не вернул JSON (content-type: ${ct}). Фоллбэк на прямые запросы.`
+      );
+      proxyDisabled = true;
+      return;
+    }
+
+    console.info("[edgeProxy] Nginx-прокси активен и отвечает JSON.");
+  } catch (err) {
+    console.warn("[edgeProxy] health-check провалился, фоллбэк на прямые запросы:", err);
+    proxyDisabled = true;
+  }
 }
 
 export function installEdgeProxy(): void {
@@ -74,6 +115,12 @@ export function installEdgeProxy(): void {
   installed = true;
   const nativeFetch = window.fetch.bind(window);
 
+  // На crm.seo-modul.pro прогреваем health-check, чтобы первый же
+  // ошибочный ответ не сломал авторизацию.
+  if (mode === "nginx") {
+    healthCheckPromise = checkNginxProxyHealth(nativeFetch);
+  }
+
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     try {
       const url =
@@ -83,13 +130,17 @@ export function installEdgeProxy(): void {
           ? input.toString()
           : input.url;
 
+      // Дожидаемся health-check перед первым проксированным запросом
+      if (healthCheckPromise && isSupabaseUrl(url)) {
+        await healthCheckPromise;
+      }
+
       if (proxyDisabled || !isSupabaseUrl(url) || !isAllowed(url)) {
         return nativeFetch(input as any, init);
       }
 
       const proxyUrl = buildProxyUrl(url, mode);
 
-      // Гарантируем apikey, если клиент его не выставил
       const headers = new Headers(
         init?.headers ||
           (typeof input !== "string" && !(input instanceof URL) ? input.headers : undefined)
@@ -114,18 +165,15 @@ export function installEdgeProxy(): void {
 
       const response = await nativeFetch(proxyUrl, proxyInit);
 
-      // Авто-фоллбэк: если прокси вернул HTML или 404 — отключаем и идём напрямую
       const ct = response.headers.get("content-type") || "";
       if (response.status === 404 || ct.includes("text/html")) {
-        // eslint-disable-next-line no-console
-        console.warn("[edgeProxy] прокси недоступен, фоллбэк на прямые запросы");
+        console.warn("[edgeProxy] прокси вернул HTML/404 на боевом запросе, фоллбэк");
         proxyDisabled = true;
         return nativeFetch(input as any, init);
       }
 
       return response;
     } catch (err) {
-      // eslint-disable-next-line no-console
       console.warn("[edgeProxy] ошибка прокси, фоллбэк:", err);
       proxyDisabled = true;
       return nativeFetch(input as any, init);
