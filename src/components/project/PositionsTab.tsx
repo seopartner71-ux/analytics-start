@@ -98,6 +98,111 @@ async function callTopvisor(action: string, apiKey: string, userId: string, payl
 }
 
 /* ═══════════════════════════════════════════════════════
+   Topvisor User ID validator (numeric ID or account email)
+   ═══════════════════════════════════════════════════════ */
+type UidValidation =
+  | { state: "empty"; message: string }
+  | { state: "valid"; kind: "numeric" | "email"; message: string }
+  | { state: "invalid"; message: string };
+
+function validateTopvisorUserId(raw: string, isRu: boolean): UidValidation {
+  const v = raw.trim();
+  if (!v) {
+    return {
+      state: "empty",
+      message: isRu
+        ? "Введите числовой User ID (например, 123456) или email аккаунта Topvisor"
+        : "Enter numeric User ID (e.g. 123456) or Topvisor account email",
+    };
+  }
+  if (/^\d+$/.test(v)) {
+    if (v.length < 3) {
+      return {
+        state: "invalid",
+        message: isRu
+          ? "Числовой User ID слишком короткий — проверьте значение в настройках профиля Topvisor"
+          : "Numeric User ID is too short — check your Topvisor profile settings",
+      };
+    }
+    return {
+      state: "valid",
+      kind: "numeric",
+      message: isRu ? `Числовой User ID распознан (${v.length} цифр)` : `Numeric User ID detected (${v.length} digits)`,
+    };
+  }
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) {
+    return {
+      state: "valid",
+      kind: "email",
+      message: isRu ? "Email аккаунта распознан" : "Account email detected",
+    };
+  }
+  // Common mistakes
+  if (v.includes(" ")) {
+    return { state: "invalid", message: isRu ? "Уберите пробелы" : "Remove spaces" };
+  }
+  if (v.includes("@") && !/\.[^\s@]+$/.test(v)) {
+    return {
+      state: "invalid",
+      message: isRu ? "Email указан не полностью (нет домена после точки)" : "Email is incomplete (missing domain)",
+    };
+  }
+  if (/^[A-Za-z]/.test(v) && !v.includes("@")) {
+    return {
+      state: "invalid",
+      message: isRu
+        ? "Похоже, это логин. Нужен числовой User ID из настроек профиля или полный email"
+        : "Looks like a login. Use the numeric User ID from profile settings or a full email",
+    };
+  }
+  return {
+    state: "invalid",
+    message: isRu
+      ? "Неверный формат. Допустимы: число (User ID) или email"
+      : "Invalid format. Allowed: number (User ID) or email",
+  };
+}
+
+function validateTopvisorApiKey(raw: string, isRu: boolean): UidValidation {
+  const v = raw.trim();
+  if (!v) {
+    return { state: "empty", message: isRu ? "Введите API Key из раздела «API» в Topvisor" : "Enter API Key from Topvisor «API» section" };
+  }
+  if (v.length < 20) {
+    return {
+      state: "invalid",
+      message: isRu
+        ? `API Key подозрительно короткий (${v.length} симв.) — должен быть 30+ символов`
+        : `API Key looks too short (${v.length} chars) — usually 30+`,
+    };
+  }
+  if (/\s/.test(v)) {
+    return { state: "invalid", message: isRu ? "В API Key не должно быть пробелов" : "API Key must not contain spaces" };
+  }
+  return { state: "valid", kind: "numeric", message: isRu ? "Формат API Key корректный" : "API Key format looks valid" };
+}
+
+function FieldHint({ v }: { v: UidValidation }) {
+  if (v.state === "empty") {
+    return <p className="text-xs text-muted-foreground">{v.message}</p>;
+  }
+  if (v.state === "valid") {
+    return (
+      <p className="text-xs text-emerald-500 flex items-center gap-1">
+        <CheckCircle2 className="h-3 w-3" />
+        {v.message}
+      </p>
+    );
+  }
+  return (
+    <p className="text-xs text-destructive flex items-center gap-1">
+      <AlertCircle className="h-3 w-3" />
+      {v.message}
+    </p>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
    Setup Form (Empty State)
    ═══════════════════════════════════════════════════════ */
 function TopvisorSetupForm({ projectId, onConnected }: { projectId: string; onConnected: () => void }) {
@@ -107,20 +212,20 @@ function TopvisorSetupForm({ projectId, onConnected }: { projectId: string; onCo
   const [userId, setUserId] = useState("");
   const [testing, setTesting] = useState(false);
 
+  const uidValidation = useMemo(() => validateTopvisorUserId(userId, isRu), [userId, isRu]);
+  const keyValidation = useMemo(() => validateTopvisorApiKey(apiKey, isRu), [apiKey, isRu]);
+  const canSubmit = uidValidation.state === "valid" && keyValidation.state === "valid" && !testing;
+
   const handleTest = async () => {
+    if (uidValidation.state !== "valid") {
+      toast.error(uidValidation.message);
+      return;
+    }
+    if (keyValidation.state !== "valid") {
+      toast.error(keyValidation.message);
+      return;
+    }
     const normalizedUserId = userId.trim();
-    if (!apiKey.trim() || !normalizedUserId) {
-      toast.error(isRu ? "Заполните оба поля" : "Fill in both fields");
-      return;
-    }
-    const isNumeric = /^\d+$/.test(normalizedUserId);
-    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedUserId);
-    if (!isNumeric && !isEmail) {
-      toast.error(isRu
-        ? "Укажите числовой User ID из настроек профиля Topvisor (или email аккаунта)"
-        : "Enter the numeric User ID from your Topvisor profile (or account email)");
-      return;
-    }
     setTesting(true);
     try {
       await callTopvisor("test-connection", apiKey.trim(), normalizedUserId);
@@ -139,8 +244,6 @@ function TopvisorSetupForm({ projectId, onConnected }: { projectId: string; onCo
           counter_id: normalizedUserId, connected: true, last_sync: new Date().toISOString(),
         });
       }
-      // Если проект Topvisor уже привязан — сразу запускаем съём позиций,
-      // чтобы данные подтянулись без ручного нажатия.
       const tvPid = existing.data?.external_project_id;
       if (tvPid) {
         try {
@@ -179,19 +282,39 @@ function TopvisorSetupForm({ projectId, onConnected }: { projectId: string; onCo
         <CardContent className="p-6 space-y-4">
           <div className="space-y-2">
             <Label>User ID Topvisor *</Label>
-            <Input value={userId} onChange={(e) => setUserId(e.target.value)} placeholder="123456 или user@example.com" />
-            <p className="text-xs text-muted-foreground">{isRu ? "Числовой User ID из настроек профиля Topvisor (или email аккаунта)" : "Numeric User ID from your Topvisor profile settings (or account email)"}</p>
+            <Input
+              value={userId}
+              onChange={(e) => setUserId(e.target.value)}
+              placeholder="123456 или user@example.com"
+              aria-invalid={uidValidation.state === "invalid"}
+              className={cn(
+                uidValidation.state === "invalid" && "border-destructive focus-visible:ring-destructive",
+                uidValidation.state === "valid" && "border-emerald-500/60",
+              )}
+            />
+            <FieldHint v={uidValidation} />
           </div>
           <div className="space-y-2">
             <Label>API Key *</Label>
-            <Input value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="tv_xxxxxxxxxxxxxxxx" type="password" />
+            <Input
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              placeholder="tv_xxxxxxxxxxxxxxxx"
+              type="password"
+              aria-invalid={keyValidation.state === "invalid"}
+              className={cn(
+                keyValidation.state === "invalid" && "border-destructive focus-visible:ring-destructive",
+                keyValidation.state === "valid" && "border-emerald-500/60",
+              )}
+            />
+            <FieldHint v={keyValidation} />
           </div>
           <a href="https://topvisor.com/ru/support/api/getting-started/" target="_blank" rel="noopener noreferrer"
             className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
             <LinkIcon className="h-3 w-3" />
             {isRu ? "Где взять ключи в Topvisor?" : "Where to get Topvisor keys?"}
           </a>
-          <Button onClick={handleTest} disabled={testing} className="w-full gap-2">
+          <Button onClick={handleTest} disabled={!canSubmit} className="w-full gap-2">
             {testing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
             {isRu ? "Проверить подключение" : "Test Connection"}
           </Button>
