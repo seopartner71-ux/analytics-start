@@ -174,10 +174,9 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
         if (!mainVal) continue;
 
         if (def.key === "topvisor") {
-          const topvisorEmail = vals.counter_id?.trim();
-          const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-          if (!topvisorEmail || !emailPattern.test(topvisorEmail)) {
-            throw new Error("Для Topvisor в поле User ID нужно указать email аккаунта");
+          const topvisorUserId = vals.counter_id?.trim();
+          if (!isValidTopvisorUserId(topvisorUserId)) {
+            throw new Error("Для Topvisor в поле User ID укажите числовой ID пользователя или полный email аккаунта");
           }
         }
 
