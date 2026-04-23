@@ -552,50 +552,47 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
           if (typeof val !== "object" || val === null || Array.isArray(val)) continue;
           const valObj = val as Record<string, any>;
 
-          // Topvisor key formats:
-          //   "<regionIndex>:<YYYY-MM-DD>" → val = { position }
-          //   "<regionIndex>"               → val = { "<YYYY-MM-DD>": { position } }
-          //   "<YYYY-MM-DD>"                → val = { position }  (legacy / no region)
+          // Topvisor key formats seen in the app:
+          //   "<YYYY-MM-DD>:<regionIndex>"
+          //   "<YYYY-MM-DD>:<something>:<regionIndex>"
+          //   "<regionIndex>" -> { "<YYYY-MM-DD>": { position } }
+          //   "<YYYY-MM-DD>" -> { position }
           const isDateKey = /^\d{4}-\d{2}-\d{2}$/.test(key);
           const isCompositeKey = key.includes(":");
 
           if (isCompositeKey) {
-            // Topvisor returns "<YYYY-MM-DD>:<regionIndex>" (date first, region second).
-            // Be defensive and accept the reverse order too.
             const parts = key.split(":");
-            let datePart = "";
-            let regionPart = "";
-            if (/^\d{4}-\d{2}-\d{2}$/.test(parts[0])) {
-              datePart = parts[0];
-              regionPart = parts[1] || "";
-            } else if (parts[1] && /^\d{4}-\d{2}-\d{2}$/.test(parts[1])) {
-              regionPart = parts[0];
-              datePart = parts[1];
-            }
-            if (!datePart) continue;
+            const datePart = parts[0];
+            const regionPart = parts[2] || parts[1] || "";
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(datePart)) continue;
             if (targetRegion && regionPart && String(regionPart) !== String(targetRegion)) continue;
-            const posVal = Number(valObj.position);
-            if (posVal > 0) {
+
+            const posValRaw = valObj.position;
+            let posVal: number | null = null;
+            if (posValRaw !== null && posValRaw !== undefined && posValRaw !== "--" && posValRaw !== "" && posValRaw !== "0") {
+              const n = Number(posValRaw);
+              posVal = Number.isFinite(n) && n > 0 ? n : null;
+            }
+
+            if (posVal) {
               datePositions[datePart] = posVal;
               allDatesSet.add(datePart);
             }
           } else if (isDateKey) {
-            // No region info — accept (legacy)
             if ("position" in valObj) {
               const posVal = Number(valObj.position);
-              if (posVal > 0) {
+              if (Number.isFinite(posVal) && posVal > 0) {
                 datePositions[key] = posVal;
                 allDatesSet.add(key);
               }
             }
           } else {
-            // key is a region index
             if (targetRegion && String(key) !== String(targetRegion)) continue;
             for (const [dateKey, dateVal] of Object.entries(valObj)) {
               if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) continue;
-              const posVal = typeof dateVal === "object" ? Number((dateVal as any)?.position) : Number(dateVal);
-              if (posVal > 0) {
-                datePositions[dateKey] = posVal;
+              const rawPos = typeof dateVal === "object" ? Number((dateVal as any)?.position) : Number(dateVal);
+              if (Number.isFinite(rawPos) && rawPos > 0) {
+                datePositions[dateKey] = rawPos;
                 allDatesSet.add(dateKey);
               }
             }
