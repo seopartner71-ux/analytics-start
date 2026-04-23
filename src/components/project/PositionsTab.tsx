@@ -622,80 +622,107 @@ function PositionsDashboard({
       );
     }
 
-    // KPI
-    const allPositions: number[] = [];
-    const prevPositions: number[] = [];
+    // KPI — данные за ПОСЛЕДНИЙ снятый срез (как в Topvisor)
+    const latestDate = dates[0];
+    const latestPositions: number[] = [];
     filtered.forEach((kw) => {
-      const latestDate = dates[0];
-      const prevDate = dates[1];
       regionIndexes.forEach((ri) => {
         const cur = kw.positions[`${latestDate}:${ri}`];
-        const prev = kw.positions[`${prevDate}:${ri}`];
-        if (cur !== null && cur !== undefined) allPositions.push(cur);
-        if (prev !== null && prev !== undefined) prevPositions.push(prev);
+        if (cur !== null && cur !== undefined) latestPositions.push(cur);
       });
     });
 
-    const avgPos = allPositions.length > 0 ? allPositions.reduce((a, b) => a + b, 0) / allPositions.length : 0;
-    const prevAvgPos = prevPositions.length > 0 ? prevPositions.reduce((a, b) => a + b, 0) / prevPositions.length : 0;
-    const posChange = prevAvgPos > 0 ? prevAvgPos - avgPos : 0;
+    const totalKw = filtered.length || 1;
+    const checkedCount = latestPositions.length;
+    const noDataCount = Math.max(0, filtered.length - checkedCount);
+    const avgPos = checkedCount > 0
+      ? latestPositions.reduce((a, b) => a + b, 0) / checkedCount
+      : 0;
 
-    const top3 = allPositions.filter((p) => p <= 3).length;
-    const top10 = allPositions.filter((p) => p <= 10).length;
-    const top30 = allPositions.filter((p) => p <= 30).length;
-    const outside = allPositions.length - top30;
-    const total = allPositions.length || 1;
-    const visibility = Math.round((top10 / total) * 100);
+    const top3 = latestPositions.filter((p) => p <= 3).length;
+    const top10 = latestPositions.filter((p) => p <= 10).length;
+    const top30 = latestPositions.filter((p) => p <= 30).length;
+    const top50 = latestPositions.filter((p) => p <= 50).length;
+    const top100 = latestPositions.filter((p) => p <= 100).length;
+
+    const b1_3 = top3;
+    const b1_10 = top10;
+    const b11_30 = top30 - top10;
+    const b31_50 = top50 - top30;
+    const b51_100 = top100 - top50;
+    const b100plus = checkedCount - top100;
+
+    // Видимость (упрощённая): доля попаданий в Топ-10 + полу-вес для топ-30
+    const visibility = checkedCount > 0
+      ? Math.round(((top10 + (top30 - top10) * 0.3) / totalKw) * 100)
+      : 0;
+
+    const pct = (n: number) => totalKw > 0 ? Math.round((n / totalKw) * 100) : 0;
 
     return (
       <div className="space-y-4">
-        {/* KPI row */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <StandardKpiCard
-            label={isRu ? "Средняя позиция" : "Avg Position"}
-            value={avgPos > 0 ? avgPos.toFixed(1) : "—"}
-            change={posChange}
-            invertChange
-            tooltipKey="avgPosition"
-            loading={isRefreshing}
-          />
-          <StandardKpiCard
-            label={isRu ? "Видимость" : "Visibility"}
-            value={`${visibility}%`}
-            change={0}
-            loading={isRefreshing}
-          />
-          <GlassCard>
-            <CardContent className="p-4 space-y-2">
-              <span className="text-xs text-muted-foreground font-medium">
-                {isRu ? "Распределение" : "Distribution"}
-              </span>
-              <div className="flex h-3 rounded-full overflow-hidden bg-muted">
-                {top3 > 0 && <div className="bg-amber-400" style={{ width: `${(top3 / total) * 100}%` }} />}
-                {(top10 - top3) > 0 && <div className="bg-emerald-500" style={{ width: `${((top10 - top3) / total) * 100}%` }} />}
-                {(top30 - top10) > 0 && <div className="bg-primary" style={{ width: `${((top30 - top10) / total) * 100}%` }} />}
-                {outside > 0 && <div className="bg-muted-foreground/30" style={{ width: `${(outside / total) * 100}%` }} />}
+        {/* Topvisor-style summary panel — последний снятый срез */}
+        <GlassCard>
+          <CardContent className="p-3">
+            <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-11 gap-2">
+              <div className="flex flex-col items-center justify-center px-2 py-2 rounded-md border border-border/50">
+                <span className="text-[10px] text-emerald-500 font-medium">▲ (0%)</span>
+                <span className="text-xl font-bold text-foreground mt-0.5">0</span>
               </div>
-              <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-muted-foreground">
-                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-400" />Top 3: {top3}</span>
-                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-500" />Top 10: {top10 - top3}</span>
-                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-primary" />Top 30: {top30 - top10}</span>
-                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-muted-foreground/30" />{isRu ? "Вне" : "Out"}: {outside}</span>
+              <div className="flex flex-col items-center justify-center px-2 py-2 rounded-md border border-border/50">
+                <span className="text-[10px] text-muted-foreground font-medium">⊖ (100%)</span>
+                <span className="text-xl font-bold text-foreground mt-0.5">{checkedCount}</span>
               </div>
-            </CardContent>
-          </GlassCard>
-          <GlassCard>
-            <CardContent className="p-4 space-y-2">
-              <span className="text-xs text-muted-foreground font-medium">
-                {isRu ? "Запросов" : "Keywords"}
-              </span>
-              <p className="text-2xl font-bold text-foreground">{filtered.length}</p>
-              <p className="text-[10px] text-muted-foreground">
-                {searcherName} • {regionName}
-              </p>
-            </CardContent>
-          </GlassCard>
-        </div>
+              <div className="flex flex-col items-center justify-center px-2 py-2 rounded-md border border-border/50">
+                <span className="text-[10px] text-destructive font-medium">▼ (0%)</span>
+                <span className="text-xl font-bold text-foreground mt-0.5">0</span>
+              </div>
+
+              <div className="flex flex-col items-center justify-center px-2 py-2 rounded-md border border-border bg-muted/30">
+                <span className="text-[10px] text-muted-foreground font-medium">{isRu ? "Средняя" : "Average"}</span>
+                <span className="text-xl font-bold text-foreground mt-0.5">{avgPos > 0 ? avgPos.toFixed(0) : "—"}</span>
+              </div>
+
+              <div className="flex flex-col items-center justify-center px-2 py-2 rounded-md border border-border bg-muted/30">
+                <span className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
+                  {isRu ? "Видимость (%)" : "Visibility (%)"}
+                  <AlertCircle className="h-3 w-3 text-amber-500" />
+                </span>
+                <span className="text-xl font-bold text-foreground mt-0.5">{visibility}</span>
+              </div>
+
+              <div className="flex flex-col items-center justify-center px-2 py-2 rounded-md border border-border/50">
+                <span className="text-[10px] text-muted-foreground font-medium">1-3 <span className="text-emerald-500">({pct(b1_3)}%)</span></span>
+                <span className="text-xl font-bold text-foreground mt-0.5">{b1_3}</span>
+              </div>
+              <div className="flex flex-col items-center justify-center px-2 py-2 rounded-md border border-border/50">
+                <span className="text-[10px] text-muted-foreground font-medium">1-10 <span className="text-emerald-500">({pct(b1_10)}%)</span></span>
+                <span className="text-xl font-bold text-foreground mt-0.5">{b1_10}</span>
+              </div>
+              <div className="flex flex-col items-center justify-center px-2 py-2 rounded-md border border-border/50">
+                <span className="text-[10px] text-muted-foreground font-medium">11-30 <span className="text-primary">({pct(b11_30)}%)</span></span>
+                <span className="text-xl font-bold text-foreground mt-0.5">{b11_30}</span>
+              </div>
+              <div className="flex flex-col items-center justify-center px-2 py-2 rounded-md border border-border/50">
+                <span className="text-[10px] text-muted-foreground font-medium">31-50 <span className="text-amber-500">({pct(b31_50)}%)</span></span>
+                <span className="text-xl font-bold text-foreground mt-0.5">{b31_50}</span>
+              </div>
+              <div className="flex flex-col items-center justify-center px-2 py-2 rounded-md border border-border/50">
+                <span className="text-[10px] text-muted-foreground font-medium">51-100 <span className="text-amber-500">({pct(b51_100)}%)</span></span>
+                <span className="text-xl font-bold text-foreground mt-0.5">{b51_100}</span>
+              </div>
+              <div className="flex flex-col items-center justify-center px-2 py-2 rounded-md border border-border/50">
+                <span className="text-[10px] text-muted-foreground font-medium">100+ <span className="text-destructive">({pct(b100plus + noDataCount)}%)</span></span>
+                <span className="text-xl font-bold text-foreground mt-0.5">{b100plus + noDataCount}</span>
+              </div>
+            </div>
+            <div className="mt-2 px-1 text-[10px] text-muted-foreground">
+              {isRu ? "Данные за" : "Data for"}: <span className="text-foreground font-medium">{latestDate || "—"}</span>
+              {" • "}{searcherName} • {regionName}
+              {" • "}{isRu ? "всего запросов" : "total keywords"}: <span className="text-foreground font-medium">{filtered.length}</span>
+            </div>
+          </CardContent>
+        </GlassCard>
 
         {/* Rankings table */}
         <GlassCard>
