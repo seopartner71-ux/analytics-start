@@ -393,18 +393,24 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
   };
 
   const handleTopvisorConnect = () => {
-    const normalizedUserId = tvUserId.trim();
-    if (!tvApiKey.trim() || !tvProjectId.trim() || !normalizedUserId) {
-      toast.error(t("integrations.fillFields"));
+    if (tvUserIdValidation.state !== "valid") {
+      toast.error(tvUserIdValidation.message);
       return;
     }
-    // Topvisor accepts numeric User ID (из настроек профиля) или email аккаунта
-    const isNumeric = /^\d+$/.test(normalizedUserId);
-    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedUserId);
-    if (!isNumeric && !isEmail) {
-      toast.error("Укажите числовой User ID из настроек профиля Topvisor (или email аккаунта)");
+    if (tvApiKeyValidation.state !== "valid") {
+      toast.error(tvApiKeyValidation.message);
       return;
     }
+    if (tvProjectIdValidation.state !== "valid") {
+      toast.error(tvProjectIdValidation.message);
+      return;
+    }
+    connectMutation.mutate({
+      serviceName: "topvisor",
+      apiKey: tvApiKey.trim(),
+      externalProjectId: tvProjectId.trim(),
+      counterId: tvUserId.trim(),
+    });
     connectMutation.mutate({
       serviceName: "topvisor",
       apiKey: tvApiKey.trim(),
