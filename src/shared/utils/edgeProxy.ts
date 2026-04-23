@@ -63,17 +63,27 @@ type ProxyMode = "nginx" | "php" | "none";
 function getProxyMode(): ProxyMode {
   if (typeof window === "undefined") return "none";
   const host = window.location.hostname;
+
+  // Локальная разработка — напрямую.
   if (host === "localhost" || host === "127.0.0.1") {
     return "none";
   }
+
+  // Preview-домены Lovable. Здесь прокси на crm.seo-modul.pro работать НЕ может
+  // (CORS заблокирует чужой origin), а Supabase доступен напрямую.
+  // Поэтому — никакого прокси, идём в Supabase напрямую.
   if (
     host.endsWith(".lovable.app") ||
     host.endsWith(".lovable.dev") ||
     host.endsWith(".lovableproject.com")
   ) {
-    return "nginx";
+    return "none";
   }
+
+  // Боевой домен с настроенным Nginx reverse proxy.
   if (host === NGINX_PROXY_HOST) return "nginx";
+
+  // Остальные prod-домены — PHP fallback.
   return "php";
 }
 
