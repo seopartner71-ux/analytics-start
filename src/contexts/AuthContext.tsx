@@ -68,10 +68,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setLoading(true);
 
-      const [{ data: roles, error: rolesError }, { data: prof, error: profileError }] = await Promise.all([
-        supabase.from("user_roles").select("role").eq("user_id", nextSession.user.id),
-        supabase.from("profiles").select("*").eq("user_id", nextSession.user.id).single(),
-      ]);
+      let roles: { role: AppRole }[] | null = null;
+      let rolesError: Error | null = null;
+      let prof: Database["public"]["Tables"]["profiles"]["Row"] | null = null;
+      let profileError: Error | null = null;
+
+      try {
+        const [rolesResult, profileResult] = await Promise.all([
+          supabase.from("user_roles").select("role").eq("user_id", nextSession.user.id),
+          supabase.from("profiles").select("*").eq("user_id", nextSession.user.id).single(),
+        ]);
+
+        roles = (rolesResult.data as { role: AppRole }[] | null) ?? null;
+        rolesError = (rolesResult.error as Error | null) ?? null;
+        prof = (profileResult.error ? null : profileResult.data) ?? null;
+        profileError = (profileResult.error as Error | null) ?? null;
+      } catch (error) {
+        console.warn("[auth] Ошибка инициализации профиля:", error);
+      }
 
       if (!mounted) return;
 
@@ -88,9 +102,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       void syncAuthState(nextSession);
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      void syncAuthState(session);
-    });
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => {
+        void syncAuthState(session);
+      })
+      .catch((error) => {
+        console.warn("[auth] Не удалось восстановить сессию:", error);
+        if (!mounted) return;
+        setSession(null);
+        setUser(null);
+        setRole(null);
+        setProfile(null);
+        setLoading(false);
+      });
 
     return () => {
       mounted = false;
