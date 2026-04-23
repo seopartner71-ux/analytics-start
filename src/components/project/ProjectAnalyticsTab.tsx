@@ -532,37 +532,60 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     "hsl(var(--chart-5))",
   ];
 
-  // ── Keywords parsing (with per-date positions for table) ──
+  // ── Keywords parsing (per-date positions, filtered by selected region/searcher) ──
   const { keywords, keywordDates } = useMemo(() => {
     if (!topvisorData?.result) return { keywords: [], keywordDates: [] as string[] };
     const result = topvisorData.result;
     const rows = Array.isArray(result) ? result : result?.keywords || [];
     const allDatesSet = new Set<string>();
 
+    // Region filter: if regionIndex is set, only keep positions for that region
+    const targetRegion = tvRegionIndex;
+
     const parsed = rows
       .filter((row: any) => row?.name)
       .map((row: any) => {
         const positionsObj = row.positionsData || row.positions || row.position || {};
-        const entries = Object.entries(positionsObj);
         const datePositions: Record<string, number> = {};
 
-        for (const [key, val] of entries) {
-          if (typeof val === "object" && val !== null && !Array.isArray(val)) {
-            const valObj = val as Record<string, any>;
+        for (const [key, val] of Object.entries(positionsObj)) {
+          if (typeof val !== "object" || val === null || Array.isArray(val)) continue;
+          const valObj = val as Record<string, any>;
+
+          // Topvisor key formats:
+          //   "<regionIndex>:<YYYY-MM-DD>" → val = { position }
+          //   "<regionIndex>"               → val = { "<YYYY-MM-DD>": { position } }
+          //   "<YYYY-MM-DD>"                → val = { position }  (legacy / no region)
+          const isDateKey = /^\d{4}-\d{2}-\d{2}$/.test(key);
+          const isCompositeKey = key.includes(":");
+
+          if (isCompositeKey) {
+            const [regionPart, datePart] = key.split(":");
+            if (targetRegion && String(regionPart) !== String(targetRegion)) continue;
+            if (!datePart) continue;
+            const posVal = Number(valObj.position);
+            if (posVal > 0) {
+              datePositions[datePart] = posVal;
+              allDatesSet.add(datePart);
+            }
+          } else if (isDateKey) {
+            // No region info — accept (legacy)
             if ("position" in valObj) {
-              const datePart = key.split(":")[0];
               const posVal = Number(valObj.position);
               if (posVal > 0) {
-                datePositions[datePart] = posVal;
-                allDatesSet.add(datePart);
+                datePositions[key] = posVal;
+                allDatesSet.add(key);
               }
-            } else {
-              for (const [dateKey, dateVal] of Object.entries(valObj)) {
-                const posVal = typeof dateVal === "object" ? Number((dateVal as any)?.position) : Number(dateVal);
-                if (posVal > 0) {
-                  datePositions[dateKey] = posVal;
-                  allDatesSet.add(dateKey);
-                }
+            }
+          } else {
+            // key is a region index
+            if (targetRegion && String(key) !== String(targetRegion)) continue;
+            for (const [dateKey, dateVal] of Object.entries(valObj)) {
+              if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) continue;
+              const posVal = typeof dateVal === "object" ? Number((dateVal as any)?.position) : Number(dateVal);
+              if (posVal > 0) {
+                datePositions[dateKey] = posVal;
+                allDatesSet.add(dateKey);
               }
             }
           }
@@ -584,9 +607,9 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
       .filter((k: any) => k.position > 0)
       .sort((a: any, b: any) => a.position - b.position);
 
-    const keywordDates = Array.from(allDatesSet).sort().reverse(); // newest first
+    const keywordDates = Array.from(allDatesSet).sort().reverse();
     return { keywords: parsed, keywordDates };
-  }, [topvisorData]);
+  }, [topvisorData, tvRegionIndex]);
 
   const topProjectPositions = useMemo(() => keywords.slice(0, 50), [keywords]);
 
