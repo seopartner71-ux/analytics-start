@@ -53,21 +53,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
+    let currentUserId: string | null = null;
 
-    const syncAuthState = async (nextSession: Session | null) => {
+    const syncAuthState = async (nextSession: Session | null, opts?: { skipLoading?: boolean }) => {
       if (!mounted) return;
 
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
 
       if (!nextSession?.user) {
+        currentUserId = null;
         setRole(null);
         setProfile(null);
         setLoading(false);
         return;
       }
 
-      setLoading(true);
+      // Если auth-событие пришло для того же пользователя (например TOKEN_REFRESHED
+      // при возврате на вкладку) — НЕ перезагружаем профиль и не дёргаем loading,
+      // иначе ProtectedRoute размонтирует дерево и пользователь теряет данные форм.
+      if (currentUserId === nextSession.user.id) {
+        return;
+      }
+      currentUserId = nextSession.user.id;
+
+      if (!opts?.skipLoading) setLoading(true);
 
       let roles: { role: AppRole }[] | null = null;
       let rolesError: Error | null = null;
