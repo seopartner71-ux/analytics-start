@@ -612,8 +612,11 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
           datePositions,
         };
       })
-      .filter((k: any) => k.position > 0)
-      .sort((a: any, b: any) => a.position - b.position);
+      .sort((a: any, b: any) => {
+        const ap = a.position > 0 ? a.position : Number.MAX_SAFE_INTEGER;
+        const bp = b.position > 0 ? b.position : Number.MAX_SAFE_INTEGER;
+        return ap - bp;
+      });
 
     const keywordDates = Array.from(allDatesSet).sort().reverse();
     return { keywords: parsed, keywordDates };
