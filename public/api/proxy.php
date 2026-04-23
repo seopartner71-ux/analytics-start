@@ -8,12 +8,12 @@
  * ВАЖНО:
  *  - В Nginx должен быть отключён gzip для этого location, иначе двойное
  *    сжатие сломает бинарные ответы (ERR_CONTENT_DECODING_FAILED).
- *  - Anon key захардкожен ниже — при ротации обновлять вручную.
+ *  - Используется актуальный publishable key нового формата.
  */
 
 // === КОНФИГ ===
 $SUPABASE_URL = 'https://iigedewmxyqigivsqwqz.supabase.co';
-$SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlpZ2VkZXdteHlxaWdpdnNxd3F6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2MDU4MTMsImV4cCI6MjA5MDE4MTgxM30.11sID9y098DL29ocSLP109NuUyjF1I-hxY_1Rb3kKao';
+$SUPABASE_ANON_KEY = 'sb_publishable_H_WXKp-tSppfXI0D7w0c6w_jrjghQxO';
 $ALLOWED_PREFIXES = ['/functions/v1/', '/rest/v1/', '/auth/v1/', '/storage/v1/'];
 
 // Отключаем сжатие на стороне PHP — иначе двойной gzip
@@ -78,6 +78,9 @@ foreach ($incomingHeaders as $name => $value) {
 }
 if (!$hasApiKey) {
     $forwardHeaders[] = 'apikey: ' . $SUPABASE_ANON_KEY;
+}
+if (!array_filter($forwardHeaders, fn($header) => stripos($header, 'authorization:') === 0)) {
+    $forwardHeaders[] = 'Authorization: Bearer ' . $SUPABASE_ANON_KEY;
 }
 // Запрашиваем у апстрима без сжатия — PHP всё равно не умеет ретранслировать
 $forwardHeaders[] = 'Accept-Encoding: identity';
