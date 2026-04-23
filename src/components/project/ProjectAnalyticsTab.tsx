@@ -14,7 +14,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   TrendingUp, TrendingDown, BarChart3, Search, Loader2,
   MousePointerClick, Layers, Clock, Users, Target,
-  CalendarDays, ArrowRightLeft, Filter,
+  CalendarDays, ArrowRightLeft, Filter, Info,
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
