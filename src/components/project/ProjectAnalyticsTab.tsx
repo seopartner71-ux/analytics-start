@@ -1290,6 +1290,51 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
         </Card>
       )}
       
+      {/* Topvisor summary panel — distribution at latest crawl */}
+      {keywords.length > 0 && (() => {
+        const totalKw = keywords.length;
+        const positions = keywords.map((k: any) => Number(k.position)).filter((p: number) => Number.isFinite(p) && p > 0);
+        const top1_3 = positions.filter((p) => p <= 3).length;
+        const top1_10 = positions.filter((p) => p <= 10).length;
+        const r11_30 = positions.filter((p) => p >= 11 && p <= 30).length;
+        const r31_50 = positions.filter((p) => p >= 31 && p <= 50).length;
+        const r51_100 = positions.filter((p) => p >= 51 && p <= 100).length;
+        const r100p = totalKw - positions.length;
+        const avgPos = positions.length ? +(positions.reduce((a, b) => a + b, 0) / positions.length).toFixed(1) : 0;
+        const visibility = totalKw > 0 ? Math.round(((top1_10 + r11_30 * 0.3) / totalKw) * 100) : 0;
+        const pct = (n: number) => totalKw > 0 ? Math.round((n / totalKw) * 100) : 0;
+        const cells: Array<{ label: string; value: number | string; sub?: string; tone?: string }> = [
+          { label: "Ср. поз.", value: avgPos > 0 ? avgPos : "—" },
+          { label: "Видимость", value: `${visibility}%` },
+          { label: "Запросов", value: totalKw },
+          { label: "1-3", value: top1_3, sub: `${pct(top1_3)}%`, tone: "text-emerald-500" },
+          { label: "1-10", value: top1_10, sub: `${pct(top1_10)}%`, tone: "text-emerald-500" },
+          { label: "11-30", value: r11_30, sub: `${pct(r11_30)}%`, tone: "text-amber-500" },
+          { label: "31-50", value: r31_50, sub: `${pct(r31_50)}%`, tone: "text-orange-500" },
+          { label: "51-100", value: r51_100, sub: `${pct(r51_100)}%`, tone: "text-red-500" },
+          { label: "101+", value: r100p, sub: `${pct(r100p)}%`, tone: "text-muted-foreground" },
+        ];
+        return (
+          <Card className="bg-card rounded-lg shadow-sm border border-border p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-foreground">Сводка позиций Topvisor</h3>
+              <span className="text-[11px] text-muted-foreground">
+                Данные за: <span className="text-foreground font-medium">{keywordDates[0] ? format(new Date(keywordDates[0]), "dd.MM.yyyy") : "—"}</span>
+              </span>
+            </div>
+            <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-2">
+              {cells.map((c) => (
+                <div key={c.label} className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-center">
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">{c.label}</div>
+                  <div className={cn("text-lg font-semibold", c.tone || "text-foreground")}>{c.value}</div>
+                  {c.sub && <div className="text-[10px] text-muted-foreground mt-0.5">{c.sub}</div>}
+                </div>
+              ))}
+            </div>
+          </Card>
+        );
+      })()}
+
       <Card className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
         <div className="flex items-center gap-2 p-4 border-b border-border">
           <Search className="h-4 w-4 text-muted-foreground" />
