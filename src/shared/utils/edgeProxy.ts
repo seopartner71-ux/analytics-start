@@ -22,7 +22,7 @@ const NGINX_PROXY_HOST = "crm.seo-modul.pro";
 const NGINX_PROXY_ORIGIN = `https://${NGINX_PROXY_HOST}`;
 const NGINX_PROXY_PREFIX = "/api-proxy";
 const PHP_PROXY_PATH = "/api/proxy.php";
-const HEALTH_CHECK_TIMEOUT_MS = 4000;
+const HEALTH_CHECK_TIMEOUT_MS = 10000;
 const HEALTH_CHECK_URL = "https://crm.seo-modul.pro/api-proxy/auth/v1/health";
 const HEALTH_CHECK_API_KEY = "sb_publishable_H_WXKp-tSppfXI0D7w0c6w_jrjghQxO";
 
