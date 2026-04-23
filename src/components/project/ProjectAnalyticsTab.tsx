@@ -393,6 +393,47 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     staleTime: 5 * 60_000,
   });
 
+  // ── Live Metrika data for comparison period (Period B) ──
+  const compDateFrom = fmtDate(appliedCompRange.from, "yyyy-MM-dd");
+  const compDateTo = fmtDate(appliedCompRange.to, "yyyy-MM-dd");
+  const { data: liveCompMetrikaData } = useQuery({
+    queryKey: ["metrika-live-stats-comp", projectId, compDateFrom, compDateTo],
+    queryFn: async () => {
+      if (!integration?.access_token || !integration?.counter_id) return null;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return null;
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/yandex-metrika-auth?action=fetch-stats`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            access_token: integration.access_token,
+            counter_id: integration.counter_id,
+            date1: compDateFrom,
+            date2: compDateTo,
+          }),
+        }
+      );
+      if (!resp.ok) return null;
+      return resp.json();
+    },
+    enabled: !!integration?.access_token && !!integration?.counter_id && showComparison,
+    staleTime: 5 * 60_000,
+  });
+
+  // Daily series for comparison period from live API
+  const compDailyData = useMemo(() => {
+    if (!liveCompMetrikaData?.timeSeries?.data?.[0]?.metrics?.[0]) return [];
+    const timeLabels = liveCompMetrikaData.timeSeries.time_intervals || [];
+    const visits = liveCompMetrikaData.timeSeries.data[0].metrics[0];
+    return visits.map((v: number, i: number) => {
+      const dateStr = timeLabels[i]?.[0];
+      const date = dateStr ? new Date(dateStr) : new Date();
+      return { date, dateStr: format(date, "dd.MM", { locale: ru }), visits: Math.round(v) };
+    });
+  }, [liveCompMetrikaData]);
+
   const { data: goalsData = [] } = useQuery({
     queryKey: ["metrika-goals-ai", projectId, dateFrom30, dateTo30],
     queryFn: async () => {
