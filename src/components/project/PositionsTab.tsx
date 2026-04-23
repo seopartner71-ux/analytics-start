@@ -113,9 +113,12 @@ function TopvisorSetupForm({ projectId, onConnected }: { projectId: string; onCo
       toast.error(isRu ? "Заполните оба поля" : "Fill in both fields");
       return;
     }
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailPattern.test(normalizedUserId)) {
-      toast.error(isRu ? "Для Topvisor в поле User ID нужно указать email аккаунта" : "Use your Topvisor account email in the User ID field");
+    const isNumeric = /^\d+$/.test(normalizedUserId);
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedUserId);
+    if (!isNumeric && !isEmail) {
+      toast.error(isRu
+        ? "Укажите числовой User ID из настроек профиля Topvisor (или email аккаунта)"
+        : "Enter the numeric User ID from your Topvisor profile (or account email)");
       return;
     }
     setTesting(true);
