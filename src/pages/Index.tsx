@@ -11,7 +11,70 @@ import {
   FolderKanban, TrendingUp, Key, AlertTriangle, Users,
   ArrowUp, ArrowDown, Loader2, CheckCircle2, FileText, Calendar, Sparkles,
 } from "lucide-react";
-...
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie,
+} from "recharts";
+import { format, isPast, parseISO, subMonths, startOfMonth, endOfMonth } from "date-fns";
+import { ru as ruLocale } from "date-fns/locale";
+import { cn } from "@/lib/utils";
+import CompanyNewsWidget from "@/components/dashboard/CompanyNewsWidget";
+
+const STAGE_COLORS: Record<string, string> = {
+  "В работе": "#4CAF50",
+  "На паузе": "#FF9800",
+};
+
+const Index = () => {
+  const navigate = useNavigate();
+  const { user, profile } = useAuth();
+
+  // ─── Projects (only active, non-archived) ───
+  const { data: projects = [], isLoading: loadingProjects } = useQuery({
+    queryKey: ["dashboard-projects"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("id, name, url, privacy, efficiency, created_at, deadline, seo_specialist_id, account_manager_id")
+        .is("archived_at", null)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const activeProjectIds = useMemo(() => projects.map((p) => p.id), [projects]);
+
+  // ─── Tasks (only from active projects, non-archived tasks) ───
+  const { data: tasks = [], isLoading: loadingTasks } = useQuery({
+    queryKey: ["dashboard-tasks", activeProjectIds.join(",")],
+    queryFn: async () => {
+      if (activeProjectIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from("crm_tasks")
+        .select("id, title, stage, deadline, assignee_id, project_id, stage_color, priority")
+        .is("archived_at", null)
+        .in("project_id", activeProjectIds)
+        .order("deadline", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !loadingProjects,
+  });
+
+  // ─── Team members ───
+  const { data: members = [] } = useQuery({
+    queryKey: ["dashboard-members"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("team_members")
+        .select("id, full_name, role")
+        .order("full_name");
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const { data: metrikaIntegrations = [] } = useQuery({
     queryKey: ["dashboard-metrika-integrations", activeProjectIds.join(",")],
     queryFn: async () => {
@@ -29,7 +92,7 @@ import {
   });
 
   // ─── Metrika stats (active projects, cached) ───
-  const { data: metrikaStats = [], isLoading: loadingMetrikaStats } = useQuery({
+  const { data: metrikaStats = [] } = useQuery({
     queryKey: ["dashboard-metrika", activeProjectIds.join(",")],
     queryFn: async () => {
       if (activeProjectIds.length === 0) return [];
@@ -46,7 +109,7 @@ import {
   });
 
   // ─── Live Metrika totals fallback ───
-  const { data: liveMetrikaTotals = [], isLoading: loadingLiveMetrika } = useQuery({
+  const { data: liveMetrikaTotals = [] } = useQuery({
     queryKey: ["dashboard-live-metrika", activeProjectIds.join(",")],
     queryFn: async () => {
       if (!metrikaIntegrations.length) return [];
@@ -103,18 +166,21 @@ import {
   const completedTasks = tasks.filter(t => t.stage === "Завершена").length;
   const taskCompletionPct = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-  // Total traffic from latest metrika snapshots (deduplicated by project)
+  // Total traffic from latest metrika snapshots (deduplicated by project), with live fallback
   const totalTraffic = useMemo(() => {
-    const seen = new Set<string>();
-    let sum = 0;
+    const cachedByProject = new Map<string, number>();
     for (const s of metrikaStats) {
-      if (!seen.has(s.project_id)) {
-        seen.add(s.project_id);
-        sum += s.total_visits;
+      if (!cachedByProject.has(s.project_id)) {
+        cachedByProject.set(s.project_id, s.total_visits);
       }
     }
-    return sum;
-  }, [metrikaStats]);
+
+    if (cachedByProject.size > 0) {
+      return Array.from(cachedByProject.values()).reduce((sum, value) => sum + value, 0);
+    }
+
+    return liveMetrikaTotals.reduce((sum, row) => sum + (row?.total_visits || 0), 0);
+  }, [metrikaStats, liveMetrikaTotals]);
 
   // ─── Manager KPI: % of completed tasks per assignee ───
   const managerKpi = useMemo(() => {
