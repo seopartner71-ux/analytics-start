@@ -29,30 +29,37 @@ const Index = () => {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
 
-  // ─── Projects ───
+  // ─── Projects (only active, non-archived) ───
   const { data: projects = [], isLoading: loadingProjects } = useQuery({
     queryKey: ["dashboard-projects"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
         .select("id, name, url, privacy, efficiency, created_at, deadline, seo_specialist_id, account_manager_id")
+        .is("archived_at", null)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
   });
 
-  // ─── Tasks ───
+  const activeProjectIds = useMemo(() => projects.map(p => p.id), [projects]);
+
+  // ─── Tasks (only from active projects, non-archived tasks) ───
   const { data: tasks = [], isLoading: loadingTasks } = useQuery({
-    queryKey: ["dashboard-tasks"],
+    queryKey: ["dashboard-tasks", activeProjectIds.join(",")],
     queryFn: async () => {
+      if (activeProjectIds.length === 0) return [];
       const { data, error } = await supabase
         .from("crm_tasks")
         .select("id, title, stage, deadline, assignee_id, project_id, stage_color, priority")
+        .is("archived_at", null)
+        .in("project_id", activeProjectIds)
         .order("deadline", { ascending: true });
       if (error) throw error;
       return data;
     },
+    enabled: !loadingProjects,
   });
 
   // ─── Team members ───
@@ -68,18 +75,21 @@ const Index = () => {
     },
   });
 
-  // ─── Metrika stats (for traffic card & chart) ───
+  // ─── Metrika stats (only for active projects) ───
   const { data: metrikaStats = [] } = useQuery({
-    queryKey: ["dashboard-metrika"],
+    queryKey: ["dashboard-metrika", activeProjectIds.join(",")],
     queryFn: async () => {
+      if (activeProjectIds.length === 0) return [];
       const { data, error } = await supabase
         .from("metrika_stats")
         .select("project_id, total_visits, total_users, date_from, date_to, fetched_at")
+        .in("project_id", activeProjectIds)
         .order("fetched_at", { ascending: false })
         .limit(50);
       if (error) throw error;
       return data;
     },
+    enabled: activeProjectIds.length > 0,
   });
 
   // ─── Computed metrics ───
