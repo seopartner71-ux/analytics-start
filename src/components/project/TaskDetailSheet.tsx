@@ -292,7 +292,12 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
     }
     const projectId = editProjectId || task.project_id;
     let managerName = "";
-    if (projectId) {
+    // Приоритет: постановщик задачи (creator). Если его нет — аккаунт-менеджер проекта.
+    if (task.creator_id) {
+      const { data: tm } = await supabase.from("team_members").select("full_name").eq("id", task.creator_id).maybeSingle();
+      if (tm?.full_name) managerName = tm.full_name;
+    }
+    if (!managerName && projectId) {
       const { data: fullProj } = await supabase.from("projects").select("account_manager_id, name").eq("id", projectId).single();
       if (fullProj?.account_manager_id) {
         const { data: tm } = await supabase.from("team_members").select("full_name").eq("id", fullProj.account_manager_id).single();
