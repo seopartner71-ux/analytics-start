@@ -1,3 +1,6 @@
+import { installEdgeProxy } from "./shared/utils/edgeProxy";
+installEdgeProxy();
+
 import "./i18n";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
