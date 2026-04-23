@@ -43,7 +43,7 @@ const INTEGRATION_KEYS = [
 
 export default function AdminPanel() {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { isAdmin, loading: authLoading } = useAuth();
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const defaultTab = searchParams.get("tab") || "projects";
@@ -51,19 +51,6 @@ export default function AdminPanel() {
   const [keyValues, setKeyValues] = useState<Record<string, string>>({});
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
   const [savingKeys, setSavingKeys] = useState(false);
-
-  // Check admin role
-  const { data: isAdmin, isLoading: checkingRole } = useQuery({
-    queryKey: ["user-role", user?.id],
-    queryFn: async () => {
-      const { data } = await supabase.rpc("has_role", {
-        _user_id: user!.id,
-        _role: "admin",
-      });
-      return data === true;
-    },
-    enabled: !!user,
-  });
 
   // All projects
   const { data: allProjects = [] } = useQuery({
@@ -132,7 +119,7 @@ export default function AdminPanel() {
     }
   };
 
-  if (checkingRole) {
+  if (authLoading) {
     return <p className="text-muted-foreground p-6">{t("common.loading")}</p>;
   }
 
