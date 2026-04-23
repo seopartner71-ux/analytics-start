@@ -63,3 +63,34 @@ export function formatDeadline(deadline: string): string {
 export function getDaysUntilDeadline(deadline: string): number {
   return Math.ceil((new Date(deadline).getTime() - Date.now()) / 86400000);
 }
+
+/**
+ * Возвращает team_members.id текущего auth-пользователя.
+ * Используется для записи creator_id в crm_tasks (постановщик задачи).
+ * Логика: ищем запись team_members, где owner_id = auth user id ИЛИ email совпадает.
+ */
+export async function resolveCurrentTeamMemberId(
+  supabase: any,
+  userId: string,
+  email?: string | null
+): Promise<string | null> {
+  // 1. По owner_id
+  const { data: byOwner } = await supabase
+    .from("team_members")
+    .select("id")
+    .eq("owner_id", userId)
+    .limit(1)
+    .maybeSingle();
+  if (byOwner?.id) return byOwner.id as string;
+  // 2. По email
+  if (email) {
+    const { data: byEmail } = await supabase
+      .from("team_members")
+      .select("id")
+      .ilike("email", email)
+      .limit(1)
+      .maybeSingle();
+    if (byEmail?.id) return byEmail.id as string;
+  }
+  return null;
+}
