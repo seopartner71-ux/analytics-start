@@ -14,7 +14,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   TrendingUp, TrendingDown, BarChart3, Search, Loader2,
   MousePointerClick, Layers, Clock, Users, Target,
-  CalendarDays, ArrowRightLeft, Filter,
+  CalendarDays, ArrowRightLeft, Filter, Info,
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
@@ -844,12 +844,40 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
           { label: "Вне ТОП", value: topvisorSummary.outside, tone: "bg-muted/50 text-muted-foreground" },
           { label: "Ср. позиция", value: topvisorSummary.avgPosition > 0 ? topvisorSummary.avgPosition.toFixed(1) : "—", delta: topvisorSummary.avgDelta, invert: true, tone: "bg-muted/50 text-foreground" },
           { label: "Видимость", value: `${topvisorSummary.visibility}%`, tone: "bg-muted/50 text-foreground" },
-          { label: "Запросов", value: topvisorSummary.keywordsCount, tone: "bg-muted/50 text-foreground" },
-        ].map((item) => {
+          { label: "Запросов", value: topvisorSummary.keywordsCount, tone: "bg-muted/50 text-foreground", info: true },
+        ].map((item: any) => {
           const positive = item.invert ? Number(item.delta) > 0 : Number(item.delta) > 0;
           return (
             <div key={item.label} className={cn("rounded-lg px-3 py-2", item.tone)}>
-              <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">{item.label}</p>
+              <div className="flex items-center gap-1 mb-1">
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{item.label}</p>
+                {item.info && (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button
+                        type="button"
+                        className="text-muted-foreground hover:text-foreground transition-colors"
+                        aria-label="Почему количество запросов может отличаться"
+                      >
+                        <Info className="h-3 w-3" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent side="bottom" align="start" className="w-80 text-xs space-y-2">
+                      <p className="font-semibold text-sm">Почему «Запросов» может отличаться</p>
+                      <p className="text-muted-foreground">
+                        Количество запросов одинаково для Яндекса и Google — это ядро проекта в Topvisor. Разница в цифрах обычно связана с фильтрами:
+                      </p>
+                      <ul className="list-disc pl-4 space-y-1 text-muted-foreground">
+                        <li><span className="text-foreground">Регион</span> — у разных регионов может быть своё ядро.</li>
+                        <li><span className="text-foreground">Группа запросов</span> — выбранная папка в Topvisor.</li>
+                        <li><span className="text-foreground">Период</span> — учитываются только проверки внутри выбранных дат.</li>
+                        <li><span className="text-foreground">ПС (Яндекс/Google)</span> — снятие позиций могло не запуститься в одной из систем.</li>
+                        <li><span className="text-foreground">Новые/удалённые запросы</span> — добавленные или архивные ключи в выбранном периоде.</li>
+                      </ul>
+                    </PopoverContent>
+                  </Popover>
+                )}
+              </div>
               <div className="flex items-end gap-1.5">
                 <p className="text-lg font-bold leading-none">{item.value}</p>
                 {item.delta !== undefined && item.delta !== 0 && (
