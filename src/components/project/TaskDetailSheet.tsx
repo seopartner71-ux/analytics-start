@@ -823,39 +823,69 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                   Редактировать задачу может только постановщик, администратор или директор
                 </p>
               )}
-              <Button
-                size="lg"
-                className="w-full h-11 gap-2 text-sm font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-md"
-                onClick={() => setCompleteOpen(true)}
-                disabled={editStage === "Принята" || editStage === "Завершена"}
-              >
-                <CheckCircle2 className="h-4 w-4" /> Завершить задачу
-              </Button>
-              <div className="flex items-center gap-2 flex-wrap">
-                {(editStage === "Новые" || editStage === "Возвращена") && (
-                  <Button size="sm" variant="outline" className="gap-1.5" onClick={startTask}>
-                    <Play className="h-3.5 w-3.5" /> Начать
+              {/* Исполнитель: только Начать → Отправить на проверку */}
+              {isAssignee && !canApproveTask && (editStage === "Новые" || editStage === "Возвращена") && (
+                <Button
+                  size="lg"
+                  className="w-full h-11 gap-2 text-sm font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-md"
+                  onClick={startTask}
+                >
+                  <Play className="h-4 w-4" /> Начать работу
+                </Button>
+              )}
+              {isAssignee && !canApproveTask && editStage === "В работе" && (
+                <Button
+                  size="lg"
+                  className="w-full h-11 gap-2 text-sm font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-md"
+                  onClick={sendForReview}
+                >
+                  <CheckCircle2 className="h-4 w-4" /> Отправить на проверку
+                </Button>
+              )}
+              {isAssignee && !canApproveTask && editStage === "На проверке" && (
+                <p className="text-[12px] text-muted-foreground text-center py-2">
+                  Задача на проверке у аккаунт-менеджера. Закрыть её может только он.
+                </p>
+              )}
+
+              {/* Аккаунт-менеджер / админ / директор / постановщик */}
+              {canApproveTask && (
+                <>
+                  <Button
+                    size="lg"
+                    className="w-full h-11 gap-2 text-sm font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-md"
+                    onClick={() => setCompleteOpen(true)}
+                    disabled={editStage === "Принята" || editStage === "Завершена" || editStage === "Выполнено"}
+                  >
+                    <CheckCircle2 className="h-4 w-4" /> Завершить задачу
                   </Button>
-                )}
-                {editStage === "На проверке" && (
-                  <>
-                    <Button size="sm" variant="outline" className="gap-1.5 border-emerald-600/30 text-emerald-600 hover:bg-emerald-600/5" onClick={acceptTask}>
-                      <ThumbsUp className="h-3.5 w-3.5" /> Принять
-                    </Button>
-                    <Button size="sm" variant="outline" className="gap-1.5 border-destructive/30 text-destructive hover:bg-destructive/5" onClick={returnTask}>
-                      <ThumbsDown className="h-3.5 w-3.5" /> Вернуть
-                    </Button>
-                  </>
-                )}
-                {(editStage === "Принята" || editStage === "Завершена") && (
-                  <Button variant="outline" size="sm" className="gap-1.5 border-primary/30 text-primary hover:bg-primary/5" onClick={resumeTask}>
-                    <RotateCcw className="h-3.5 w-3.5" /> Возобновить
-                  </Button>
-                )}
-                <Badge className="ml-auto text-[10px]" style={{ backgroundColor: `${task.stage_color || '#3b82f6'}20`, color: task.stage_color || '#3b82f6' }}>
-                  {editStage || task.stage}
-                </Badge>
-              </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {(editStage === "Новые" || editStage === "Возвращена") && (
+                      <Button size="sm" variant="outline" className="gap-1.5" onClick={startTask}>
+                        <Play className="h-3.5 w-3.5" /> Начать
+                      </Button>
+                    )}
+                    {editStage === "На проверке" && (
+                      <>
+                        <Button size="sm" variant="outline" className="gap-1.5 border-emerald-600/30 text-emerald-600 hover:bg-emerald-600/5" onClick={acceptTask}>
+                          <ThumbsUp className="h-3.5 w-3.5" /> Принять
+                        </Button>
+                        <Button size="sm" variant="outline" className="gap-1.5 border-destructive/30 text-destructive hover:bg-destructive/5" onClick={returnTask}>
+                          <ThumbsDown className="h-3.5 w-3.5" /> Вернуть
+                        </Button>
+                      </>
+                    )}
+                    {(editStage === "Принята" || editStage === "Завершена" || editStage === "Выполнено") && (
+                      <Button variant="outline" size="sm" className="gap-1.5 border-primary/30 text-primary hover:bg-primary/5" onClick={resumeTask}>
+                        <RotateCcw className="h-3.5 w-3.5" /> Возобновить
+                      </Button>
+                    )}
+                    <Badge className="ml-auto text-[10px]" style={{ backgroundColor: `${task.stage_color || '#3b82f6'}20`, color: task.stage_color || '#3b82f6' }}>
+                      {editStage || task.stage}
+                    </Badge>
+                  </div>
+                </>
+              )}
             </div>
           </div>
           {/* RIGHT COLUMN: Chat */}
