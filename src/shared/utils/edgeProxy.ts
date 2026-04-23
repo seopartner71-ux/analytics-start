@@ -106,7 +106,7 @@ async function checkNginxProxyHealth(nativeFetch: typeof fetch): Promise<void> {
   }
 }
 
-export function installEdgeProxy(): void {
+export async function installEdgeProxy(): Promise<void> {
   if (installed) return;
   const mode = getProxyMode();
   if (mode === "none") return;
@@ -119,6 +119,7 @@ export function installEdgeProxy(): void {
   // ошибочный ответ не сломал авторизацию.
   if (mode === "nginx") {
     healthCheckPromise = checkNginxProxyHealth(nativeFetch);
+    await healthCheckPromise;
   }
 
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
