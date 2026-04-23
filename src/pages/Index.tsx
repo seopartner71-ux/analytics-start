@@ -11,72 +11,25 @@ import {
   FolderKanban, TrendingUp, Key, AlertTriangle, Users,
   ArrowUp, ArrowDown, Loader2, CheckCircle2, FileText, Calendar, Sparkles,
 } from "lucide-react";
-import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie,
-} from "recharts";
-import { format, isPast, parseISO, subMonths, startOfMonth, endOfMonth } from "date-fns";
-import { ru as ruLocale } from "date-fns/locale";
-import { cn } from "@/lib/utils";
-import CompanyNewsWidget from "@/components/dashboard/CompanyNewsWidget";
-
-const STAGE_COLORS: Record<string, string> = {
-  "В работе": "#4CAF50",
-  "На паузе": "#FF9800",
-};
-
-const Index = () => {
-  const navigate = useNavigate();
-  const { user, profile } = useAuth();
-
-  // ─── Projects (only active, non-archived) ───
-  const { data: projects = [], isLoading: loadingProjects } = useQuery({
-    queryKey: ["dashboard-projects"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("projects")
-        .select("id, name, url, privacy, efficiency, created_at, deadline, seo_specialist_id, account_manager_id")
-        .is("archived_at", null)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const activeProjectIds = useMemo(() => projects.map(p => p.id), [projects]);
-
-  // ─── Tasks (only from active projects, non-archived tasks) ───
-  const { data: tasks = [], isLoading: loadingTasks } = useQuery({
-    queryKey: ["dashboard-tasks", activeProjectIds.join(",")],
+...
+  const { data: metrikaIntegrations = [] } = useQuery({
+    queryKey: ["dashboard-metrika-integrations", activeProjectIds.join(",")],
     queryFn: async () => {
       if (activeProjectIds.length === 0) return [];
       const { data, error } = await supabase
-        .from("crm_tasks")
-        .select("id, title, stage, deadline, assignee_id, project_id, stage_color, priority")
-        .is("archived_at", null)
-        .in("project_id", activeProjectIds)
-        .order("deadline", { ascending: true });
+        .from("integrations")
+        .select("project_id, access_token, counter_id, connected")
+        .eq("service_name", "yandexMetrika")
+        .eq("connected", true)
+        .in("project_id", activeProjectIds);
       if (error) throw error;
       return data;
     },
-    enabled: !loadingProjects,
+    enabled: activeProjectIds.length > 0,
   });
 
-  // ─── Team members ───
-  const { data: members = [] } = useQuery({
-    queryKey: ["dashboard-members"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("team_members")
-        .select("id, full_name, role")
-        .order("full_name");
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  // ─── Metrika stats (only for active projects) ───
-  const { data: metrikaStats = [] } = useQuery({
+  // ─── Metrika stats (active projects, cached) ───
+  const { data: metrikaStats = [], isLoading: loadingMetrikaStats } = useQuery({
     queryKey: ["dashboard-metrika", activeProjectIds.join(",")],
     queryFn: async () => {
       if (activeProjectIds.length === 0) return [];
@@ -90,6 +43,50 @@ const Index = () => {
       return data;
     },
     enabled: activeProjectIds.length > 0,
+  });
+
+  // ─── Live Metrika totals fallback ───
+  const { data: liveMetrikaTotals = [], isLoading: loadingLiveMetrika } = useQuery({
+    queryKey: ["dashboard-live-metrika", activeProjectIds.join(",")],
+    queryFn: async () => {
+      if (!metrikaIntegrations.length) return [];
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return [];
+
+      const results = await Promise.all(
+        metrikaIntegrations.map(async (integration) => {
+          if (!integration.access_token || !integration.counter_id) return null;
+          const r = await fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/yandex-metrika-auth?action=fetch-stats`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${session.access_token}`,
+                apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+              },
+              body: JSON.stringify({
+                access_token: integration.access_token,
+                counter_id: integration.counter_id,
+                date1: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10),
+                date2: new Date().toISOString().slice(0, 10),
+              }),
+            }
+          );
+          if (!r.ok) return null;
+          const data = await r.json();
+          const totals = data?.totals?.data?.[0]?.metrics;
+          return {
+            project_id: integration.project_id,
+            total_visits: Math.round(totals?.[0] || 0),
+          };
+        })
+      );
+
+      return results.filter(Boolean);
+    },
+    enabled: metrikaIntegrations.length > 0,
+    staleTime: 5 * 60 * 1000,
   });
 
   // ─── Computed metrics ───
