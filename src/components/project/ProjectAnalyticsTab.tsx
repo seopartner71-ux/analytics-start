@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format as fmtDate } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
