@@ -80,12 +80,36 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
 
   const { isAdmin, role } = useAuth();
   const isDirector = role === "director";
+  const isManagerRole = role === "manager";
   // Постановщик: creator_id ссылается на team_members; связываем через owner_id team_member → auth user
   const isCreator = !!user && (
     task?.creator?.owner_id === user.id ||
     task?.owner_id === user.id
   );
+  // Исполнитель — текущий назначенный
+  const isAssignee = !!user && task?.assignee?.owner_id === user.id;
   const canEditFields = isAdmin || isDirector || isCreator;
+
+  // Аккаунт-менеджер проекта (по projects.account_manager_id → team_members.owner_id)
+  const [isProjectAccountManager, setIsProjectAccountManager] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    const check = async () => {
+      const pid = task?.project_id;
+      if (!pid || !user) { setIsProjectAccountManager(false); return; }
+      const { data: proj } = await supabase
+        .from("projects").select("account_manager_id").eq("id", pid).maybeSingle();
+      if (!proj?.account_manager_id) { if (!cancelled) setIsProjectAccountManager(false); return; }
+      const { data: tm } = await supabase
+        .from("team_members").select("owner_id").eq("id", proj.account_manager_id).maybeSingle();
+      if (!cancelled) setIsProjectAccountManager(tm?.owner_id === user.id);
+    };
+    void check();
+    return () => { cancelled = true; };
+  }, [task?.project_id, user?.id]);
+
+  // Право принимать/возвращать/закрывать как «Завершена»
+  const canApproveTask = isAdmin || isDirector || isManagerRole || isCreator || isProjectAccountManager;
 
   const { data: comments = [] } = useQuery({
     queryKey: ["task-comments", task?.id],
