@@ -560,9 +560,20 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
           const isCompositeKey = key.includes(":");
 
           if (isCompositeKey) {
-            const [regionPart, datePart] = key.split(":");
-            if (targetRegion && String(regionPart) !== String(targetRegion)) continue;
+            // Topvisor returns "<YYYY-MM-DD>:<regionIndex>" (date first, region second).
+            // Be defensive and accept the reverse order too.
+            const parts = key.split(":");
+            let datePart = "";
+            let regionPart = "";
+            if (/^\d{4}-\d{2}-\d{2}$/.test(parts[0])) {
+              datePart = parts[0];
+              regionPart = parts[1] || "";
+            } else if (parts[1] && /^\d{4}-\d{2}-\d{2}$/.test(parts[1])) {
+              regionPart = parts[0];
+              datePart = parts[1];
+            }
             if (!datePart) continue;
+            if (targetRegion && regionPart && String(regionPart) !== String(targetRegion)) continue;
             const posVal = Number(valObj.position);
             if (posVal > 0) {
               datePositions[datePart] = posVal;
