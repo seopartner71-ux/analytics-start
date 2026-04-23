@@ -598,9 +598,9 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
               <p className="text-[11px] text-muted-foreground">Settings → API → API key</p>
             </div>
             <div className="space-y-2">
-              <Label>User ID (email) *</Label>
-              <Input value={tvUserId} onChange={(e) => setTvUserId(e.target.value)} placeholder="user@example.com" />
-              <p className="text-[11px] text-muted-foreground">Email вашего аккаунта Topvisor</p>
+              <Label>User ID Topvisor *</Label>
+              <Input value={tvUserId} onChange={(e) => setTvUserId(e.target.value)} placeholder="123456 или user@example.com" />
+              <p className="text-[11px] text-muted-foreground">Числовой User ID из настроек профиля Topvisor (или email аккаунта)</p>
             </div>
             <div className="space-y-2">
               <Label>Project ID *</Label>
