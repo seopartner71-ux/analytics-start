@@ -80,8 +80,9 @@ export default function MyTasksPage() {
         .order("deadline", { ascending: true, nullsFirst: false });
 
       if (myTeamMemberIds.length > 0) {
+        const tmList = myTeamMemberIds.join(",");
         query = query.or(
-          `owner_id.eq.${user!.id},assignee_id.in.(${myTeamMemberIds.join(",")})`
+          `owner_id.eq.${user!.id},assignee_id.in.(${tmList}),creator_id.in.(${tmList})`
         );
       } else {
         query = query.eq("owner_id", user!.id);
