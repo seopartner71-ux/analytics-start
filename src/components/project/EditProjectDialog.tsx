@@ -12,7 +12,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Settings2, Globe, CalendarDays, Link2, Wifi, WifiOff,
   Users, Save, X, BarChart3, Search, Eye, UserPlus,
-  CheckCircle2, AlertCircle, ExternalLink, Loader2, Clock, DollarSign, Wallet,
+  CheckCircle2, AlertCircle, ExternalLink, Loader2, Clock, DollarSign, Wallet, Unplug,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -200,6 +200,47 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
       onOpenChange(false);
     },
     onError: (e: any) => toast.error(e.message || "Ошибка сохранения"),
+  });
+
+  // Отключение интеграции: помечаем connected=false, чистим креды.
+  // Для Topvisor дополнительно зануляем зеркальные поля в projects.
+  const disconnectIntegration = useMutation({
+    mutationFn: async (serviceKey: string) => {
+      const existing = integrations.find(i => i.service_name === serviceKey);
+      if (existing) {
+        const { error } = await supabase.from("integrations").update({
+          connected: false,
+          access_token: null,
+          api_key: null,
+          external_project_id: null,
+        }).eq("id", existing.id);
+        if (error) throw error;
+      }
+      if (serviceKey === "topvisor") {
+        await supabase.from("projects").update({
+          topvisor_api_key: null,
+          topvisor_user_id: null,
+          topvisor_project_id: null,
+        } as any).eq("id", projectId);
+      }
+      if (serviceKey === "yandexMetrika") {
+        await supabase.from("projects").update({ metrika_counter_id: null } as any).eq("id", projectId);
+      }
+      if (serviceKey === "yandexWebmaster") {
+        await supabase.from("projects").update({ yandex_webmaster_host_id: null } as any).eq("id", projectId);
+      }
+    },
+    onSuccess: (_data, serviceKey) => {
+      // Чистим локальный стейт полей
+      setIntegrationValues(prev => ({
+        ...prev,
+        [serviceKey]: { connected: "false" },
+      }));
+      queryClient.invalidateQueries({ queryKey: ["project-integrations-edit", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["project-detail", projectId] });
+      toast.success("Интеграция отключена");
+    },
+    onError: (e: any) => toast.error(e.message || "Не удалось отключить"),
   });
 
   const getSession = async () => {
