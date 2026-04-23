@@ -277,7 +277,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     const raw = (tvProjectInfo?.searchers || []) as Array<{ key: number; name: string; regions: any[] }>;
     return raw.map((s) => ({
       key: s.key,
-      name: s.name || (s.key === 1 ? "Yandex" : s.key === 0 ? "Google" : `Searcher ${s.key}`),
+      name: s.name || (s.key === 0 ? "Yandex" : s.key === 1 ? "Google" : `Searcher ${s.key}`),
       regions: (s.regions || []).map((r: any) => ({
         index: String(r.index),
         name: r.name || `${r.areaName || ""} ${r.device_name || ""}`.trim() || `Region ${r.index}`,
@@ -289,8 +289,8 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
   useEffect(() => {
     if (tvSearchers.length === 0) return;
     if (tvSearcherKey === null) {
-      // Prefer Yandex (key=1), fallback first
-      const yandex = tvSearchers.find((s) => s.key === 1) || tvSearchers[0];
+      // Prefer Yandex (key=0), fallback first
+      const yandex = tvSearchers.find((s) => s.key === 0) || tvSearchers[0];
       setTvSearcherKey(yandex.key);
       setTvRegionIndex(yandex.regions[0]?.index || null);
     } else {
@@ -307,7 +307,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
   );
 
   const { data: topvisorData, isLoading: tvLoading } = useQuery({
-    queryKey: ["tv-positions-analytics", projectId, project?.topvisor_project_id, project?.topvisor_api_key, allTvRegionIndexes.join(",")],
+    queryKey: ["tv-positions-analytics", projectId, project?.topvisor_project_id, project?.topvisor_api_key, project?.topvisor_user_id, allTvRegionIndexes.join(",")],
     queryFn: async () => {
       if (!project?.topvisor_api_key || !project?.topvisor_project_id || !project?.topvisor_user_id) {
         return null;
@@ -346,7 +346,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
       if (!r.ok) return null;
       return data;
     },
-    enabled: !!project?.topvisor_api_key && !!project?.topvisor_project_id,
+    enabled: !!project?.topvisor_api_key && !!project?.topvisor_project_id && !!project?.topvisor_user_id && allTvRegionIndexes.length > 0,
     staleTime: 10 * 60_000,
   });
 
@@ -552,50 +552,47 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
           if (typeof val !== "object" || val === null || Array.isArray(val)) continue;
           const valObj = val as Record<string, any>;
 
-          // Topvisor key formats:
-          //   "<regionIndex>:<YYYY-MM-DD>" → val = { position }
-          //   "<regionIndex>"               → val = { "<YYYY-MM-DD>": { position } }
-          //   "<YYYY-MM-DD>"                → val = { position }  (legacy / no region)
+          // Topvisor key formats seen in the app:
+          //   "<YYYY-MM-DD>:<regionIndex>"
+          //   "<YYYY-MM-DD>:<something>:<regionIndex>"
+          //   "<regionIndex>" -> { "<YYYY-MM-DD>": { position } }
+          //   "<YYYY-MM-DD>" -> { position }
           const isDateKey = /^\d{4}-\d{2}-\d{2}$/.test(key);
           const isCompositeKey = key.includes(":");
 
           if (isCompositeKey) {
-            // Topvisor returns "<YYYY-MM-DD>:<regionIndex>" (date first, region second).
-            // Be defensive and accept the reverse order too.
             const parts = key.split(":");
-            let datePart = "";
-            let regionPart = "";
-            if (/^\d{4}-\d{2}-\d{2}$/.test(parts[0])) {
-              datePart = parts[0];
-              regionPart = parts[1] || "";
-            } else if (parts[1] && /^\d{4}-\d{2}-\d{2}$/.test(parts[1])) {
-              regionPart = parts[0];
-              datePart = parts[1];
-            }
-            if (!datePart) continue;
+            const datePart = parts[0];
+            const regionPart = parts[2] || parts[1] || "";
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(datePart)) continue;
             if (targetRegion && regionPart && String(regionPart) !== String(targetRegion)) continue;
-            const posVal = Number(valObj.position);
-            if (posVal > 0) {
+
+            const posValRaw = valObj.position;
+            let posVal: number | null = null;
+            if (posValRaw !== null && posValRaw !== undefined && posValRaw !== "--" && posValRaw !== "" && posValRaw !== "0") {
+              const n = Number(posValRaw);
+              posVal = Number.isFinite(n) && n > 0 ? n : null;
+            }
+
+            if (posVal) {
               datePositions[datePart] = posVal;
               allDatesSet.add(datePart);
             }
           } else if (isDateKey) {
-            // No region info — accept (legacy)
             if ("position" in valObj) {
               const posVal = Number(valObj.position);
-              if (posVal > 0) {
+              if (Number.isFinite(posVal) && posVal > 0) {
                 datePositions[key] = posVal;
                 allDatesSet.add(key);
               }
             }
           } else {
-            // key is a region index
             if (targetRegion && String(key) !== String(targetRegion)) continue;
             for (const [dateKey, dateVal] of Object.entries(valObj)) {
               if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) continue;
-              const posVal = typeof dateVal === "object" ? Number((dateVal as any)?.position) : Number(dateVal);
-              if (posVal > 0) {
-                datePositions[dateKey] = posVal;
+              const rawPos = typeof dateVal === "object" ? Number((dateVal as any)?.position) : Number(dateVal);
+              if (Number.isFinite(rawPos) && rawPos > 0) {
+                datePositions[dateKey] = rawPos;
                 allDatesSet.add(dateKey);
               }
             }
