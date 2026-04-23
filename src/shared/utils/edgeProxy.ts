@@ -22,6 +22,7 @@ const NGINX_PROXY_HOST = "crm.seo-modul.pro";
 const NGINX_PROXY_ORIGIN = `https://${NGINX_PROXY_HOST}`;
 const NGINX_PROXY_PREFIX = "/api-proxy";
 const PHP_PROXY_PATH = "/api/proxy.php";
+const HEALTH_CHECK_TIMEOUT_MS = 4000;
 
 const ALLOWED_PREFIXES = [
   "/functions/v1/",
@@ -106,13 +107,20 @@ function ensureAuthHeaders(headers: Headers): void {
  * Использует нативный fetch (до подмены), чтобы не зациклиться.
  */
 async function checkNginxProxyHealth(nativeFetch: typeof fetch): Promise<void> {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), HEALTH_CHECK_TIMEOUT_MS);
+
   try {
     const url = `${NGINX_PROXY_ORIGIN}${NGINX_PROXY_PREFIX}/auth/v1/health`;
     const headers: Record<string, string> = {};
     if (SUPABASE_ANON_KEY) {
       headers["apikey"] = SUPABASE_ANON_KEY;
     }
-    const response = await nativeFetch(url, { method: "GET", headers });
+    const response = await nativeFetch(url, {
+      method: "GET",
+      headers,
+      signal: controller.signal,
+    });
     const ct = response.headers.get("content-type") || "";
 
     if (response.status === 404 || ct.includes("text/html")) {
@@ -120,6 +128,13 @@ async function checkNginxProxyHealth(nativeFetch: typeof fetch): Promise<void> {
         `[edgeProxy] Nginx-прокси ${NGINX_PROXY_PREFIX} вернул ${response.status} / ${ct}. Фоллбэк на прямые запросы.`
       );
       proxyDisabled = true;
+      return;
+    }
+
+    if (!response.ok) {
+      console.warn(
+        `[edgeProxy] health-check вернул ${response.status}. Продолжаем через прокси без авто-отключения.`
+      );
       return;
     }
 
@@ -133,8 +148,9 @@ async function checkNginxProxyHealth(nativeFetch: typeof fetch): Promise<void> {
 
     console.info("[edgeProxy] Nginx-прокси активен и отвечает JSON.");
   } catch (err) {
-    console.warn("[edgeProxy] health-check провалился, фоллбэк на прямые запросы:", err);
-    proxyDisabled = true;
+    console.warn("[edgeProxy] health-check недоступен, продолжаем через прокси:", err);
+  } finally {
+    window.clearTimeout(timeoutId);
   }
 }
 
@@ -147,11 +163,8 @@ export async function installEdgeProxy(): Promise<void> {
   installed = true;
   const nativeFetch = window.fetch.bind(window);
 
-  // На crm.seo-modul.pro прогреваем health-check, чтобы первый же
-  // ошибочный ответ не сломал авторизацию.
   if (mode === "nginx") {
     healthCheckPromise = checkNginxProxyHealth(nativeFetch);
-    await healthCheckPromise;
   }
 
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
@@ -162,11 +175,6 @@ export async function installEdgeProxy(): Promise<void> {
           : input instanceof URL
           ? input.toString()
           : input.url;
-
-      // Дожидаемся health-check перед первым проксированным запросом
-      if (healthCheckPromise && isSupabaseUrl(url)) {
-        await healthCheckPromise;
-      }
 
       if (proxyDisabled || !isSupabaseUrl(url) || !isAllowed(url)) {
         return nativeFetch(input as any, init);
@@ -204,7 +212,6 @@ export async function installEdgeProxy(): Promise<void> {
       return response;
     } catch (err) {
       console.warn("[edgeProxy] ошибка прокси, фоллбэк:", err);
-      proxyDisabled = true;
       return nativeFetch(input as any, init);
     }
   };
