@@ -176,16 +176,30 @@ async function checkNginxProxyHealth(nativeFetch: typeof fetch): Promise<void> {
 }
 
 export async function installEdgeProxy(): Promise<void> {
-  if (installed) return;
+  if (installed) {
+    return proxyReadyPromise;
+  }
   const mode = getProxyMode();
-  if (mode === "none") return;
-  if (!SUPABASE_URL) return;
+  if (mode === "none") {
+    proxyReadyResolve?.();
+    return;
+  }
+  if (!SUPABASE_URL) {
+    proxyReadyResolve?.();
+    return;
+  }
 
   installed = true;
   const nativeFetch = window.fetch.bind(window);
 
   if (mode === "nginx") {
-    healthCheckPromise = checkNginxProxyHealth(nativeFetch);
+    healthCheckPromise = checkNginxProxyHealth(nativeFetch).finally(() => {
+      proxyReadyResolve?.();
+    });
+    // Не блокируем установку fetch-патча — health-check работает параллельно,
+    // а ожидающие waitForEdgeProxyReady() дождутся завершения.
+  } else {
+    proxyReadyResolve?.();
   }
 
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
