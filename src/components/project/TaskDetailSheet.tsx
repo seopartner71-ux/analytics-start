@@ -849,7 +849,7 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
               )}
               {isAssignee && !canApproveTask && editStage === "На проверке" && (
                 <p className="text-[12px] text-muted-foreground text-center py-2">
-                  Задача на проверке у аккаунт-менеджера. Закрыть её может только он.
+                  Задача отправлена постановщику на проверку. Закрыть её может только он.
                 </p>
               )}
 
