@@ -784,7 +784,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     const applyRatio = (v: number) => Math.round(v * channelVisitRatio);
     const buildRow = (dateStr: string, visits: number) => {
       if (channel === "all") {
-        const row: any = { date: dateStr };
+        const row: any = { date: dateStr, visits };
         for (const ch of ALL_CHANNELS) {
           row[ch] = Math.round(visits * (channelRatios[ch] || 0));
         }
@@ -801,7 +801,9 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
     const result = [];
     for (let i = 0; i < maxLen; i++) {
       const row = buildRow(filteredData[i]?.dateStr || `${i + 1}`, filteredData[i]?.visits || 0);
-      row.previous = applyRatio(filteredCompData[i]?.visits || 0);
+      row.previous = channel === "all"
+        ? (filteredCompData[i]?.visits || 0)
+        : applyRatio(filteredCompData[i]?.visits || 0);
       result.push(row);
     }
     return result;
