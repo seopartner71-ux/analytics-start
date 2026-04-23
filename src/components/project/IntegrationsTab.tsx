@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,13 +13,67 @@ import {
 } from "@/components/ui/dialog";
 import {
   BarChart3, Globe, Search, Target,
-  CheckCircle2, Unplug, KeyRound, RefreshCw, Lock, ShieldAlert,
+  CheckCircle2, Unplug, KeyRound, RefreshCw, Lock, ShieldAlert, AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { MetrikaOAuthDialog } from "./MetrikaOAuthDialog";
+import { cn } from "@/lib/utils";
+
+/** Live-валидация полей Topvisor (User ID / API Key / Project ID) */
+type TvFieldValidation =
+  | { state: "empty"; message: string }
+  | { state: "valid"; message: string }
+  | { state: "invalid"; message: string };
+
+function validateTvUserId(raw: string): TvFieldValidation {
+  const v = raw.trim();
+  if (!v) return { state: "empty", message: "Введите числовой User ID (например, 123456) или email аккаунта Topvisor" };
+  if (/^\d+$/.test(v)) {
+    if (v.length < 3) return { state: "invalid", message: "Числовой User ID слишком короткий — проверьте в настройках профиля Topvisor" };
+    return { state: "valid", message: `Числовой User ID распознан (${v.length} цифр)` };
+  }
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return { state: "valid", message: "Email аккаунта распознан" };
+  if (v.includes(" ")) return { state: "invalid", message: "Уберите пробелы" };
+  if (v.includes("@")) return { state: "invalid", message: "Email указан не полностью (нет домена после точки)" };
+  if (/^[A-Za-z]/.test(v)) return { state: "invalid", message: "Похоже, это логин. Нужен числовой User ID или полный email" };
+  return { state: "invalid", message: "Неверный формат. Допустимы: число (User ID) или email" };
+}
+
+function validateTvApiKey(raw: string): TvFieldValidation {
+  const v = raw.trim();
+  if (!v) return { state: "empty", message: "Settings → API → API key в Topvisor" };
+  if (/\s/.test(v)) return { state: "invalid", message: "В API Key не должно быть пробелов" };
+  if (v.length < 20) return { state: "invalid", message: `API Key короткий (${v.length} симв.) — обычно 30+ символов` };
+  return { state: "valid", message: "Формат API Key корректный" };
+}
+
+function validateTvProjectId(raw: string): TvFieldValidation {
+  const v = raw.trim();
+  if (!v) return { state: "empty", message: "ID проекта в Topvisor (виден в URL)" };
+  if (!/^\d+$/.test(v)) return { state: "invalid", message: "Project ID должен состоять только из цифр" };
+  if (v.length < 4) return { state: "invalid", message: "Project ID слишком короткий" };
+  return { state: "valid", message: "Project ID распознан" };
+}
+
+function TvFieldHint({ v }: { v: TvFieldValidation }) {
+  if (v.state === "empty") return <p className="text-[11px] text-muted-foreground">{v.message}</p>;
+  if (v.state === "valid") {
+    return (
+      <p className="text-[11px] text-emerald-500 flex items-center gap-1">
+        <CheckCircle2 className="h-3 w-3" />{v.message}
+      </p>
+    );
+  }
+  return (
+    <p className="text-[11px] text-destructive flex items-center gap-1">
+      <AlertCircle className="h-3 w-3" />{v.message}
+    </p>
+  );
+}
+
 
 /** Перевод RLS / Postgres ошибок в понятный человеку текст */
 function humanizePermissionError(err: Error): string {
