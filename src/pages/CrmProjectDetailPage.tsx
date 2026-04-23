@@ -424,47 +424,47 @@ export default function CrmProjectDetailPage() {
         </TabsList>
 
         <TabsContent value="team">
-          <ProjectTeamTab projectId={id!} />
+          <Suspense fallback={<TabFallback />}><ProjectTeamTab projectId={id!} /></Suspense>
         </TabsContent>
 
         <TabsContent value="periods">
-          <PeriodsTab projectId={id!} />
+          <Suspense fallback={<TabFallback />}><PeriodsTab projectId={id!} /></Suspense>
         </TabsContent>
 
         <TabsContent value="weekly">
-          <WeeklyReportsTab projectId={id!} />
+          <Suspense fallback={<TabFallback />}><WeeklyReportsTab projectId={id!} /></Suspense>
         </TabsContent>
 
         <TabsContent value="links">
-          <LinkProfileTab projectId={id!} />
+          <Suspense fallback={<TabFallback />}><LinkProfileTab projectId={id!} /></Suspense>
         </TabsContent>
 
         <TabsContent value="chat">
-          <ProjectChatTab projectId={id!} projectName={project?.name || ""} />
+          <Suspense fallback={<TabFallback />}><ProjectChatTab projectId={id!} projectName={project?.name || ""} /></Suspense>
         </TabsContent>
 
         <TabsContent value="analytics">
-          <ProjectAnalyticsTab projectId={id!} />
+          <Suspense fallback={<TabFallback />}><ProjectAnalyticsTab projectId={id!} /></Suspense>
         </TabsContent>
 
         <TabsContent value="health">
-          <YandexWebmasterTab projectId={id!} />
+          <Suspense fallback={<TabFallback />}><YandexWebmasterTab projectId={id!} /></Suspense>
         </TabsContent>
 
         <TabsContent value="gsc">
-          <GscAnalysisTab projectId={id!} />
+          <Suspense fallback={<TabFallback />}><GscAnalysisTab projectId={id!} /></Suspense>
         </TabsContent>
 
         <TabsContent value="audit">
-          <TechnicalAuditTab projectId={id!} />
+          <Suspense fallback={<TabFallback />}><TechnicalAuditTab projectId={id!} /></Suspense>
         </TabsContent>
 
         <TabsContent value="mobile">
-          <MobileFriendlyTab projectId={id!} />
+          <Suspense fallback={<TabFallback />}><MobileFriendlyTab projectId={id!} /></Suspense>
         </TabsContent>
 
         <TabsContent value="pagespeed">
-          <PageSpeedTab projectId={id!} />
+          <Suspense fallback={<TabFallback />}><PageSpeedTab projectId={id!} /></Suspense>
         </TabsContent>
 
         <TabsContent value="checklist">
@@ -773,7 +773,11 @@ export default function CrmProjectDetailPage() {
       </div>
         </TabsContent>
       </Tabs>
-      <EditProjectDialog open={editOpen} onOpenChange={setEditOpen} project={project} projectId={id!} />
+      {editOpen && (
+        <Suspense fallback={null}>
+          <EditProjectDialog open={editOpen} onOpenChange={setEditOpen} project={project} projectId={id!} />
+        </Suspense>
+      )}
       <TaskDetailSheet task={selectedTask} open={!!selectedTask} onClose={() => setSelectedTask(null)} />
     </div>
   );
