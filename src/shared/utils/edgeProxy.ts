@@ -5,9 +5,10 @@
  * на прокси того же домена.
  *
  * Стратегия по доменам:
- *   - crm.seo-modul.pro      → Nginx reverse proxy: /supabase-proxy/<path>
+ *   - crm.seo-modul.pro      → Nginx reverse proxy: https://crm.seo-modul.pro/api-proxy/<path>
+ *   - lovable preview-домены → тот же Nginx proxy удалённо
  *   - другие prod-домены     → PHP fallback: /api/proxy.php?path=<path>
- *   - localhost / lovable.*  → напрямую (без прокси)
+ *   - localhost              → напрямую (без прокси)
  *
  * Перед активацией на crm.seo-modul.pro выполняется health-check:
  * если /supabase-proxy/auth/v1/health не вернул JSON — прокси отключается
@@ -38,14 +39,15 @@ type ProxyMode = "nginx" | "php" | "none";
 function getProxyMode(): ProxyMode {
   if (typeof window === "undefined") return "none";
   const host = window.location.hostname;
+  if (host === "localhost" || host === "127.0.0.1") {
+    return "none";
+  }
   if (
-    host === "localhost" ||
-    host === "127.0.0.1" ||
     host.endsWith(".lovable.app") ||
     host.endsWith(".lovable.dev") ||
     host.endsWith(".lovableproject.com")
   ) {
-    return "none";
+    return "nginx";
   }
   if (host === NGINX_PROXY_HOST) return "nginx";
   return "php";
@@ -105,7 +107,7 @@ function ensureAuthHeaders(headers: Headers): void {
  */
 async function checkNginxProxyHealth(nativeFetch: typeof fetch): Promise<void> {
   try {
-    const url = `${NGINX_PROXY_PREFIX}/auth/v1/health`;
+    const url = `${NGINX_PROXY_ORIGIN}${NGINX_PROXY_PREFIX}/auth/v1/health`;
     const headers: Record<string, string> = {};
     if (SUPABASE_ANON_KEY) {
       headers["apikey"] = SUPABASE_ANON_KEY;
