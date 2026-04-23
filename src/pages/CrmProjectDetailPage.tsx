@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -23,24 +24,31 @@ import { toast } from "sonner";
 import { format, isPast, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
-import ProjectAnalyticsTab from "@/components/project/ProjectAnalyticsTab";
-import SiteHealthDetailTab from "@/components/project/SiteHealthDetailTab";
-import EditProjectDialog from "@/components/project/EditProjectDialog";
 import { TaskDetailSheet, CrmTask } from "@/components/project/TaskDetailSheet";
-import { TechnicalAuditTab } from "@/components/project/TechnicalAuditTab";
-import { MobileFriendlyTab } from "@/components/project/MobileFriendlyTab";
-import { PageSpeedTab } from "@/components/project/PageSpeedTab";
-
-import { YandexWebmasterTab } from "@/components/project/YandexWebmasterTab";
-import { GscAnalysisTab } from "@/components/project/GscAnalysisTab";
-import { ProjectChatTab } from "@/components/project/ProjectChatTab";
-import { LinkProfileTab } from "@/components/project/LinkProfileTab";
-import { OnboardingTasksTab } from "@/components/onboarding/OnboardingTasksTab";
-import { WeeklyReportsTab } from "@/components/project/WeeklyReportsTab";
-import { ProjectTeamTab } from "@/components/project/ProjectTeamTab";
-import { PeriodsTab } from "@/components/project/PeriodsTab";
 import { DeleteButton } from "@/components/common/DeleteButton";
 import { logDeletion } from "@/lib/deletion-log";
+
+// Lazy-load heavy tabs — they're only mounted when the user opens that tab
+const ProjectAnalyticsTab = lazy(() => import("@/components/project/ProjectAnalyticsTab"));
+const SiteHealthDetailTab = lazy(() => import("@/components/project/SiteHealthDetailTab"));
+const EditProjectDialog = lazy(() => import("@/components/project/EditProjectDialog"));
+const TechnicalAuditTab = lazy(() => import("@/components/project/TechnicalAuditTab").then(m => ({ default: m.TechnicalAuditTab })));
+const MobileFriendlyTab = lazy(() => import("@/components/project/MobileFriendlyTab").then(m => ({ default: m.MobileFriendlyTab })));
+const PageSpeedTab = lazy(() => import("@/components/project/PageSpeedTab").then(m => ({ default: m.PageSpeedTab })));
+const YandexWebmasterTab = lazy(() => import("@/components/project/YandexWebmasterTab").then(m => ({ default: m.YandexWebmasterTab })));
+const GscAnalysisTab = lazy(() => import("@/components/project/GscAnalysisTab").then(m => ({ default: m.GscAnalysisTab })));
+const ProjectChatTab = lazy(() => import("@/components/project/ProjectChatTab").then(m => ({ default: m.ProjectChatTab })));
+const LinkProfileTab = lazy(() => import("@/components/project/LinkProfileTab").then(m => ({ default: m.LinkProfileTab })));
+const OnboardingTasksTab = lazy(() => import("@/components/onboarding/OnboardingTasksTab").then(m => ({ default: m.OnboardingTasksTab })));
+const WeeklyReportsTab = lazy(() => import("@/components/project/WeeklyReportsTab").then(m => ({ default: m.WeeklyReportsTab })));
+const ProjectTeamTab = lazy(() => import("@/components/project/ProjectTeamTab").then(m => ({ default: m.ProjectTeamTab })));
+const PeriodsTab = lazy(() => import("@/components/project/PeriodsTab").then(m => ({ default: m.PeriodsTab })));
+
+const TabFallback = () => (
+  <div className="flex justify-center py-20">
+    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+  </div>
+);
 
 type TaskComment = Tables<"task_comments"> & {
   author?: Tables<"team_members"> | null;
@@ -416,47 +424,47 @@ export default function CrmProjectDetailPage() {
         </TabsList>
 
         <TabsContent value="team">
-          <ProjectTeamTab projectId={id!} />
+          <Suspense fallback={<TabFallback />}><ProjectTeamTab projectId={id!} /></Suspense>
         </TabsContent>
 
         <TabsContent value="periods">
-          <PeriodsTab projectId={id!} />
+          <Suspense fallback={<TabFallback />}><PeriodsTab projectId={id!} /></Suspense>
         </TabsContent>
 
         <TabsContent value="weekly">
-          <WeeklyReportsTab projectId={id!} />
+          <Suspense fallback={<TabFallback />}><WeeklyReportsTab projectId={id!} /></Suspense>
         </TabsContent>
 
         <TabsContent value="links">
-          <LinkProfileTab projectId={id!} />
+          <Suspense fallback={<TabFallback />}><LinkProfileTab projectId={id!} /></Suspense>
         </TabsContent>
 
         <TabsContent value="chat">
-          <ProjectChatTab projectId={id!} projectName={project?.name || ""} />
+          <Suspense fallback={<TabFallback />}><ProjectChatTab projectId={id!} projectName={project?.name || ""} /></Suspense>
         </TabsContent>
 
         <TabsContent value="analytics">
-          <ProjectAnalyticsTab projectId={id!} />
+          <Suspense fallback={<TabFallback />}><ProjectAnalyticsTab projectId={id!} /></Suspense>
         </TabsContent>
 
         <TabsContent value="health">
-          <YandexWebmasterTab projectId={id!} />
+          <Suspense fallback={<TabFallback />}><YandexWebmasterTab projectId={id!} /></Suspense>
         </TabsContent>
 
         <TabsContent value="gsc">
-          <GscAnalysisTab projectId={id!} />
+          <Suspense fallback={<TabFallback />}><GscAnalysisTab projectId={id!} /></Suspense>
         </TabsContent>
 
         <TabsContent value="audit">
-          <TechnicalAuditTab projectId={id!} />
+          <Suspense fallback={<TabFallback />}><TechnicalAuditTab projectId={id!} /></Suspense>
         </TabsContent>
 
         <TabsContent value="mobile">
-          <MobileFriendlyTab projectId={id!} />
+          <Suspense fallback={<TabFallback />}><MobileFriendlyTab projectId={id!} /></Suspense>
         </TabsContent>
 
         <TabsContent value="pagespeed">
-          <PageSpeedTab projectId={id!} />
+          <Suspense fallback={<TabFallback />}><PageSpeedTab projectId={id!} /></Suspense>
         </TabsContent>
 
         <TabsContent value="checklist">
@@ -765,7 +773,11 @@ export default function CrmProjectDetailPage() {
       </div>
         </TabsContent>
       </Tabs>
-      <EditProjectDialog open={editOpen} onOpenChange={setEditOpen} project={project} projectId={id!} />
+      {editOpen && (
+        <Suspense fallback={null}>
+          <EditProjectDialog open={editOpen} onOpenChange={setEditOpen} project={project} projectId={id!} />
+        </Suspense>
+      )}
       <TaskDetailSheet task={selectedTask} open={!!selectedTask} onClose={() => setSelectedTask(null)} />
     </div>
   );
