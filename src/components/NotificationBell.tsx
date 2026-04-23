@@ -32,12 +32,12 @@ function getNotifRoute(notif: Notification): string {
 
   // Weekly report ready
   if (title.includes("недельный отчёт") || title.includes("недельный отчет") || title.includes("weekly")) {
-    return notif.project_id ? `/crm-projects/${notif.project_id}?tab=weekly-reports` : "/crm-projects";
+    return notif.project_id ? `/crm-projects/${notif.project_id}?tab=weekly` : "/crm-projects";
   }
 
   // New user awaiting confirmation
   if (title.includes("пользовател") && (title.includes("ждёт") || title.includes("ждет") || title.includes("подтвержд"))) {
-    return "/admin/users";
+    return "/users";
   }
 
   // New project / new client (onboarding)
