@@ -394,8 +394,15 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
   });
 
   // ── Live Metrika data for comparison period (Period B) ──
-  const compDateFrom = fmtDate(appliedCompRange.from, "yyyy-MM-dd");
-  const compDateTo = fmtDate(appliedCompRange.to, "yyyy-MM-dd");
+  // Debounce comp range to avoid hammering API on quick date changes
+  const [debouncedCompRange, setDebouncedCompRange] = useState(appliedCompRange);
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedCompRange(appliedCompRange), 500);
+    return () => clearTimeout(t);
+  }, [appliedCompRange]);
+
+  const compDateFrom = fmtDate(debouncedCompRange.from, "yyyy-MM-dd");
+  const compDateTo = fmtDate(debouncedCompRange.to, "yyyy-MM-dd");
   const { data: liveCompMetrikaData } = useQuery({
     queryKey: ["metrika-live-stats-comp", projectId, compDateFrom, compDateTo],
     queryFn: async () => {
@@ -419,7 +426,10 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
       return resp.json();
     },
     enabled: !!integration?.access_token && !!integration?.counter_id && showComparison,
-    staleTime: 5 * 60_000,
+    staleTime: 30 * 60_000,
+    gcTime: 60 * 60_000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 
   // Daily series for comparison period from live API
