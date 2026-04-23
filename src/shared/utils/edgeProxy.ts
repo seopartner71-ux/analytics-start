@@ -173,6 +173,7 @@ export async function installEdgeProxy(): Promise<void> {
       const proxyUrl = buildProxyUrl(url, mode);
       const originalRequest = getOriginalRequest(input);
       const headers = mergeHeaders(input, init);
+      ensureAuthHeaders(headers);
 
       const proxyInit: RequestInit = {
         ...init,
