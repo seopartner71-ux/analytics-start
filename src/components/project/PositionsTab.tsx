@@ -125,7 +125,7 @@ function TopvisorSetupForm({ projectId, onConnected }: { projectId: string; onCo
         topvisor_api_key: apiKey.trim(),
         topvisor_user_id: normalizedUserId,
       } as any).eq("id", projectId);
-      const existing = await supabase.from("integrations").select("id").eq("project_id", projectId).eq("service_name", "topvisor").maybeSingle();
+      const existing = await supabase.from("integrations").select("id, external_project_id").eq("project_id", projectId).eq("service_name", "topvisor").maybeSingle();
       if (existing.data) {
         await supabase.from("integrations").update({
           api_key: apiKey.trim(), counter_id: normalizedUserId, connected: true, last_sync: new Date().toISOString(),
@@ -136,7 +136,21 @@ function TopvisorSetupForm({ projectId, onConnected }: { projectId: string; onCo
           counter_id: normalizedUserId, connected: true, last_sync: new Date().toISOString(),
         });
       }
-      toast.success(isRu ? "Topvisor подключен!" : "Topvisor connected!");
+      // Если проект Topvisor уже привязан — сразу запускаем съём позиций,
+      // чтобы данные подтянулись без ручного нажатия.
+      const tvPid = existing.data?.external_project_id;
+      if (tvPid) {
+        try {
+          await callTopvisor("run-check", apiKey.trim(), normalizedUserId, { project_id: tvPid });
+          toast.success(isRu
+            ? "Topvisor подключен! Запущен съём позиций — данные появятся через 1–5 мин."
+            : "Topvisor connected! Position check started — data in 1–5 min.");
+        } catch {
+          toast.success(isRu ? "Topvisor подключен!" : "Topvisor connected!");
+        }
+      } else {
+        toast.success(isRu ? "Topvisor подключен!" : "Topvisor connected!");
+      }
       onConnected();
     } catch (err: any) {
       toast.error(err.message || "Connection failed");
@@ -353,6 +367,7 @@ function PositionsDashboard({
   }, [projectInfo]);
 
   // ── Fetch rankings history ──
+  // refetchInterval: пока вкладка открыта, обновляем позиции каждые 10 минут.
   const { data: rankingsData, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["topvisor-rankings-history", tvProjectId, dateFrom, dateTo, allRegionIndexes.join(",")],
     queryFn: async () => {
@@ -365,6 +380,8 @@ function PositionsDashboard({
     },
     enabled: allRegionIndexes.length > 0,
     retry: 1,
+    refetchInterval: 10 * 60 * 1000,
+    refetchIntervalInBackground: false,
   });
 
   // ── Parse response ──
@@ -437,8 +454,8 @@ function PositionsDashboard({
           ? "Съём позиций запущен в Topvisor. Данные появятся через 1–5 мин."
           : "Position check started in Topvisor. Data will arrive in 1–5 min."
       );
-      // Refetch after a short delay to pick up new data when ready
-      setTimeout(() => refetch(), 60_000);
+      // Несколько повторных попыток подтянуть данные после запуска съёма
+      [60_000, 120_000, 240_000].forEach((ms) => setTimeout(() => refetch(), ms));
     } catch (e: any) {
       toast.error(e?.message || (isRu ? "Не удалось запустить съём" : "Failed to start check"));
     } finally {
