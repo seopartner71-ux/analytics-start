@@ -6,6 +6,45 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// --- Per-token concurrency limiter + quota-aware retry ---
+// Yandex Metrika rejects parallel requests from the same user with:
+// "Quota exceeded for quantity of parallel user requests".
+// We serialize fetches per access_token and retry transient quota errors.
+const tokenQueues = new Map<string, Promise<unknown>>();
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+async function yandexFetch(token: string, url: string, init: RequestInit = {}): Promise<Response> {
+  const key = token || "anon";
+  const prev = tokenQueues.get(key) ?? Promise.resolve();
+  const run = prev.then(async () => {
+    const headers = { ...(init.headers || {}), Authorization: `OAuth ${token}` };
+    let lastResp: Response | null = null;
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const resp = await fetch(url, { ...init, headers });
+      if (resp.status !== 429 && resp.status !== 503) {
+        // Inspect body for "Quota exceeded" even on non-429 (Yandex sometimes returns 400/200)
+        const cloned = resp.clone();
+        const text = await cloned.text();
+        if (/Quota exceeded/i.test(text) && attempt < 3) {
+          await sleep(500 * (attempt + 1));
+          continue;
+        }
+        // Re-create response since we consumed clone (original body still intact)
+        return resp;
+      }
+      lastResp = resp;
+      await sleep(500 * (attempt + 1));
+    }
+    return lastResp as Response;
+  });
+  tokenQueues.set(key, run.catch(() => {}));
+  try {
+    return (await run) as Response;
+  } finally {
+    if (tokenQueues.get(key) === run.catch(() => {})) tokenQueues.delete(key);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -103,10 +142,7 @@ Deno.serve(async (req) => {
         });
       }
 
-      const countersResp = await fetch(
-        "https://api-metrika.yandex.net/management/v1/counters?per_page=100",
-        { headers: { Authorization: `OAuth ${accessToken}` } }
-      );
+      const countersResp = await yandexFetch(accessToken, "https://api-metrika.yandex.net/management/v1/counters?per_page=100");
 
       const countersData = await countersResp.json();
       if (!countersResp.ok) {
@@ -145,10 +181,7 @@ Deno.serve(async (req) => {
       const accuracyParams = "robot_less=1&accuracy=full&attribution=lastsign";
 
       // Fetch visits by day
-      const visitsResp = await fetch(
-        `https://api-metrika.yandex.net/stat/v1/data/bytime?id=${counterId}&metrics=ym:s:visits,ym:s:bounceRate,ym:s:pageDepth,ym:s:avgVisitDurationSeconds&group=day&date1=${startDate}&date2=${endDate}&${accuracyParams}`,
-        { headers: { Authorization: `OAuth ${accessToken}` } }
-      );
+      const visitsResp = await yandexFetch(accessToken, `https://api-metrika.yandex.net/stat/v1/data/bytime?id=${counterId}&metrics=ym:s:visits,ym:s:bounceRate,ym:s:pageDepth,ym:s:avgVisitDurationSeconds&group=day&date1=${startDate}&date2=${endDate}&${accuracyParams}`);
 
       const visitsData = await visitsResp.json();
       if (!visitsResp.ok) {
@@ -159,32 +192,20 @@ Deno.serve(async (req) => {
       }
 
       // Fetch totals (including ym:s:users for Visitors count)
-      const totalsResp = await fetch(
-        `https://api-metrika.yandex.net/stat/v1/data?id=${counterId}&metrics=ym:s:visits,ym:s:users,ym:s:bounceRate,ym:s:pageDepth,ym:s:avgVisitDurationSeconds&date1=${startDate}&date2=${endDate}&${accuracyParams}`,
-        { headers: { Authorization: `OAuth ${accessToken}` } }
-      );
+      const totalsResp = await yandexFetch(accessToken, `https://api-metrika.yandex.net/stat/v1/data?id=${counterId}&metrics=ym:s:visits,ym:s:users,ym:s:bounceRate,ym:s:pageDepth,ym:s:avgVisitDurationSeconds&date1=${startDate}&date2=${endDate}&${accuracyParams}`);
 
       const totalsData = await totalsResp.json();
 
       // Fetch traffic sources
-      const sourcesResp = await fetch(
-        `https://api-metrika.yandex.net/stat/v1/data?id=${counterId}&metrics=ym:s:visits&dimensions=ym:s:lastSignTrafficSource&date1=${startDate}&date2=${endDate}&limit=20&${accuracyParams}`,
-        { headers: { Authorization: `OAuth ${accessToken}` } }
-      );
+      const sourcesResp = await yandexFetch(accessToken, `https://api-metrika.yandex.net/stat/v1/data?id=${counterId}&metrics=ym:s:visits&dimensions=ym:s:lastSignTrafficSource&date1=${startDate}&date2=${endDate}&limit=20&${accuracyParams}`);
       const sourcesData = await sourcesResp.json();
 
       // Fetch top pages
-      const pagesResp = await fetch(
-        `https://api-metrika.yandex.net/stat/v1/data?id=${counterId}&metrics=ym:s:visits,ym:s:pageviews&dimensions=ym:s:startURL&date1=${startDate}&date2=${endDate}&limit=10&sort=-ym:s:visits&${accuracyParams}`,
-        { headers: { Authorization: `OAuth ${accessToken}` } }
-      );
+      const pagesResp = await yandexFetch(accessToken, `https://api-metrika.yandex.net/stat/v1/data?id=${counterId}&metrics=ym:s:visits,ym:s:pageviews&dimensions=ym:s:startURL&date1=${startDate}&date2=${endDate}&limit=10&sort=-ym:s:visits&${accuracyParams}`);
       const pagesData = await pagesResp.json();
 
       // Fetch device category distribution
-      const devicesResp = await fetch(
-        `https://api-metrika.yandex.net/stat/v1/data?id=${counterId}&metrics=ym:s:visits&dimensions=ym:s:deviceCategory&date1=${startDate}&date2=${endDate}&${accuracyParams}`,
-        { headers: { Authorization: `OAuth ${accessToken}` } }
-      );
+      const devicesResp = await yandexFetch(accessToken, `https://api-metrika.yandex.net/stat/v1/data?id=${counterId}&metrics=ym:s:visits&dimensions=ym:s:deviceCategory&date1=${startDate}&date2=${endDate}&${accuracyParams}`);
       const devicesData = await devicesResp.json();
 
       return new Response(
@@ -233,18 +254,12 @@ Deno.serve(async (req) => {
       const filterParam = `&filters=ym:s:lastSignTrafficSource=='${sourceFilter}'`;
 
       // Fetch totals for the channel
-      const totalsResp = await fetch(
-        `https://api-metrika.yandex.net/stat/v1/data?id=${counterId}&metrics=ym:s:visits,ym:s:users,ym:s:bounceRate,ym:s:pageDepth,ym:s:avgVisitDurationSeconds&date1=${startDate}&date2=${endDate}&${accuracyParams}${filterParam}`,
-        { headers: { Authorization: `OAuth ${accessToken}` } }
-      );
+      const totalsResp = await yandexFetch(accessToken, `https://api-metrika.yandex.net/stat/v1/data?id=${counterId}&metrics=ym:s:visits,ym:s:users,ym:s:bounceRate,ym:s:pageDepth,ym:s:avgVisitDurationSeconds&date1=${startDate}&date2=${endDate}&${accuracyParams}${filterParam}`);
 
       const totalsData = await totalsResp.json();
 
       // Fetch daily visits for the channel
-      const dailyResp = await fetch(
-        `https://api-metrika.yandex.net/stat/v1/data/bytime?id=${counterId}&metrics=ym:s:visits&group=day&date1=${startDate}&date2=${endDate}&${accuracyParams}${filterParam}`,
-        { headers: { Authorization: `OAuth ${accessToken}` } }
-      );
+      const dailyResp = await yandexFetch(accessToken, `https://api-metrika.yandex.net/stat/v1/data/bytime?id=${counterId}&metrics=ym:s:visits&group=day&date1=${startDate}&date2=${endDate}&${accuracyParams}${filterParam}`);
 
       const dailyData = await dailyResp.json();
 
@@ -287,10 +302,7 @@ Deno.serve(async (req) => {
       }
 
       // 1. Fetch list of goals
-      const goalsResp = await fetch(
-        `https://api-metrika.yandex.net/management/v1/counter/${counterId}/goals`,
-        { headers: { Authorization: `OAuth ${accessToken}` } }
-      );
+      const goalsResp = await yandexFetch(accessToken, `https://api-metrika.yandex.net/management/v1/counter/${counterId}/goals`);
 
       if (!goalsResp.ok) {
         const errData = await goalsResp.json().catch(() => ({}));
@@ -318,19 +330,13 @@ Deno.serve(async (req) => {
       ]);
 
       // Fetch totals for current period
-      const statsResp = await fetch(
-        `https://api-metrika.yandex.net/stat/v1/data?id=${counterId}&metrics=${metricsArr.join(",")}&date1=${startDate}&date2=${endDate}&${accuracyParams}`,
-        { headers: { Authorization: `OAuth ${accessToken}` } }
-      );
+      const statsResp = await yandexFetch(accessToken, `https://api-metrika.yandex.net/stat/v1/data?id=${counterId}&metrics=${metricsArr.join(",")}&date1=${startDate}&date2=${endDate}&${accuracyParams}`);
       const statsData = await statsResp.json();
 
       // Fetch daily reaches for sparklines (all goals)
       const top5Ids = goalIds;
       const dailyMetrics = top5Ids.map((gid: number) => `ym:s:goal${gid}reaches`).join(",");
-      const dailyResp = await fetch(
-        `https://api-metrika.yandex.net/stat/v1/data/bytime?id=${counterId}&metrics=${dailyMetrics}&group=day&date1=${startDate}&date2=${endDate}&${accuracyParams}`,
-        { headers: { Authorization: `OAuth ${accessToken}` } }
-      );
+      const dailyResp = await yandexFetch(accessToken, `https://api-metrika.yandex.net/stat/v1/data/bytime?id=${counterId}&metrics=${dailyMetrics}&group=day&date1=${startDate}&date2=${endDate}&${accuracyParams}`);
       const dailyData = await dailyResp.json();
 
       // Also fetch previous period for change calculation
@@ -338,10 +344,7 @@ Deno.serve(async (req) => {
       const prevEnd = new Date(new Date(startDate).getTime() - 86400000).toISOString().split("T")[0];
       const prevStart = new Date(new Date(startDate).getTime() - (daysDiff + 1) * 86400000).toISOString().split("T")[0];
 
-      const prevResp = await fetch(
-        `https://api-metrika.yandex.net/stat/v1/data?id=${counterId}&metrics=${metricsArr.join(",")}&date1=${prevStart}&date2=${prevEnd}&${accuracyParams}`,
-        { headers: { Authorization: `OAuth ${accessToken}` } }
-      );
+      const prevResp = await yandexFetch(accessToken, `https://api-metrika.yandex.net/stat/v1/data?id=${counterId}&metrics=${metricsArr.join(",")}&date1=${prevStart}&date2=${prevEnd}&${accuracyParams}`);
       const prevData = await prevResp.json();
 
       // Build results
@@ -410,10 +413,7 @@ Deno.serve(async (req) => {
 
       // Fetch search phrases with engine breakdown using lastSign* dimensions
       // (required for lastsign attribution to match Metrika UI defaults)
-      const phrasesResp = await fetch(
-        `https://api-metrika.yandex.net/stat/v1/data?id=${counterId}&metrics=ym:s:visits,ym:s:users,ym:s:bounceRate,ym:s:pageDepth,ym:s:avgVisitDurationSeconds&dimensions=ym:s:lastSignSearchEngineRoot,ym:s:lastSignSearchPhrase&date1=${startDate}&date2=${endDate}&limit=10000&sort=-ym:s:visits&${accuracyParams}`,
-        { headers: { Authorization: `OAuth ${accessToken}` } }
-      );
+      const phrasesResp = await yandexFetch(accessToken, `https://api-metrika.yandex.net/stat/v1/data?id=${counterId}&metrics=ym:s:visits,ym:s:users,ym:s:bounceRate,ym:s:pageDepth,ym:s:avgVisitDurationSeconds&dimensions=ym:s:lastSignSearchEngineRoot,ym:s:lastSignSearchPhrase&date1=${startDate}&date2=${endDate}&limit=10000&sort=-ym:s:visits&${accuracyParams}`);
 
       if (!phrasesResp.ok) {
         const errData = await phrasesResp.json().catch(() => ({}));
@@ -426,17 +426,11 @@ Deno.serve(async (req) => {
       const phrasesData = await phrasesResp.json();
 
       // Also fetch engine-level totals
-      const enginesResp = await fetch(
-        `https://api-metrika.yandex.net/stat/v1/data?id=${counterId}&metrics=ym:s:visits,ym:s:users,ym:s:bounceRate,ym:s:pageDepth,ym:s:avgVisitDurationSeconds&dimensions=ym:s:lastSignSearchEngineRoot&date1=${startDate}&date2=${endDate}&limit=50&sort=-ym:s:visits&${accuracyParams}`,
-        { headers: { Authorization: `OAuth ${accessToken}` } }
-      );
+      const enginesResp = await yandexFetch(accessToken, `https://api-metrika.yandex.net/stat/v1/data?id=${counterId}&metrics=ym:s:visits,ym:s:users,ym:s:bounceRate,ym:s:pageDepth,ym:s:avgVisitDurationSeconds&dimensions=ym:s:lastSignSearchEngineRoot&date1=${startDate}&date2=${endDate}&limit=50&sort=-ym:s:visits&${accuracyParams}`);
       const enginesData = await enginesResp.json();
 
       // Fetch daily trend by search engine (limit=50 for all engines)
-      const trendResp = await fetch(
-        `https://api-metrika.yandex.net/stat/v1/data/bytime?id=${counterId}&metrics=ym:s:visits&dimensions=ym:s:lastSignSearchEngineRoot&group=day&date1=${startDate}&date2=${endDate}&limit=50&${accuracyParams}`,
-        { headers: { Authorization: `OAuth ${accessToken}` } }
-      );
+      const trendResp = await yandexFetch(accessToken, `https://api-metrika.yandex.net/stat/v1/data/bytime?id=${counterId}&metrics=ym:s:visits&dimensions=ym:s:lastSignSearchEngineRoot&group=day&date1=${startDate}&date2=${endDate}&limit=50&${accuracyParams}`);
       const trendData = await trendResp.json();
 
       return new Response(
@@ -465,10 +459,7 @@ Deno.serve(async (req) => {
       const accuracyParams = "robot_less=1&accuracy=full&attribution=lastsign";
 
       // Fetch visits by day broken down by traffic source
-      const resp = await fetch(
-        `https://api-metrika.yandex.net/stat/v1/data/bytime?id=${counterId}&metrics=ym:s:visits&dimensions=ym:s:lastSignTrafficSource&group=day&date1=${startDate}&date2=${endDate}&limit=50&${accuracyParams}`,
-        { headers: { Authorization: `OAuth ${accessToken}` } }
-      );
+      const resp = await yandexFetch(accessToken, `https://api-metrika.yandex.net/stat/v1/data/bytime?id=${counterId}&metrics=ym:s:visits&dimensions=ym:s:lastSignTrafficSource&group=day&date1=${startDate}&date2=${endDate}&limit=50&${accuracyParams}`);
 
       if (!resp.ok) {
         const errData = await resp.json().catch(() => ({}));
