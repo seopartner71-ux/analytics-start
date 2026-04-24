@@ -27,6 +27,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import { TaskDetailSheet, CrmTask } from "@/components/project/TaskDetailSheet";
 import { DeleteButton } from "@/components/common/DeleteButton";
 import { logDeletion } from "@/lib/deletion-log";
+import { linkify } from "@/lib/linkify";
 
 // Lazy-load heavy tabs — they're only mounted when the user opens that tab
 const ProjectAnalyticsTab = lazy(() => import("@/components/project/ProjectAnalyticsTab"));
@@ -653,7 +654,7 @@ export default function CrmProjectDetailPage() {
                         {format(parseISO(c.created_at), "dd.MM.yyyy HH:mm")}
                       </span>
                     </div>
-                    <p className="text-[13px] text-foreground leading-relaxed">{c.body}</p>
+                    <p className="text-[13px] text-foreground leading-relaxed whitespace-pre-wrap break-words">{linkify(c.body)}</p>
                   </div>
                 </div>
               ))}
