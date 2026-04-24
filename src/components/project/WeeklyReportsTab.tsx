@@ -14,7 +14,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { DeleteButton } from "@/components/common/DeleteButton";
 import { logDeletion } from "@/lib/deletion-log";
 
-interface PlannedItem { id?: string; title: string; source: "crm_task" | "manual"; hidden: boolean; }
+interface PlannedItem { id?: string; title: string; source: "crm_task" | "manual" | "period"; hidden: boolean; }
 interface DoneItem { title: string; status: "done" | "moved" | "in_progress"; source: string; }
 interface Metrics { positions_text?: string; traffic_text?: string; }
 
@@ -241,7 +241,16 @@ export function WeeklyReportsTab({ projectId }: { projectId: string }) {
                     onBlur={savePlanned}
                     className="h-7 text-[12px] border-0 bg-transparent focus-visible:bg-background flex-1"
                   />
-                  <Badge variant="outline" className="text-[10px] h-5">{it.source === "manual" ? "Вручную" : "Из задач"}</Badge>
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      "text-[10px] h-5",
+                      it.source === "period" && "border-amber-500/50 bg-amber-500/10 text-amber-700 dark:text-amber-400",
+                      it.source === "manual" && "text-muted-foreground",
+                    )}
+                  >
+                    {it.source === "manual" ? "Вручную" : it.source === "period" ? "Из периода" : "Из задач"}
+                  </Badge>
                   <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => togglePlannedHidden(idx)} title={it.hidden ? "Показать клиенту" : "Скрыть от клиента"}>
                     {it.hidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                   </Button>
