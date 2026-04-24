@@ -1211,6 +1211,20 @@ export function TechnicalAuditTab({ projectId }: Props) {
                 <><Download className="h-3.5 w-3.5" /> {lastDoneJobId ? "Скачать PDF отчёт" : "Сначала запустите аудит"}</>
               )}
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-[12px]"
+              disabled={!lastDoneJobId || downloadingTzReport}
+              onClick={handleDownloadTzReport}
+              title={!lastDoneJobId ? "Сначала запустите аудит" : undefined}
+            >
+              {downloadingTzReport ? (
+                <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Генерируем отчёт с ТЗ...</>
+              ) : (
+                <><FileSearch className="h-3.5 w-3.5" /> {lastDoneJobId ? "Скачать отчёт с ТЗ" : "Сначала запустите аудит"}</>
+              )}
+            </Button>
             {(jobId || scanStatus !== "idle") && (
               <Button
                 variant="outline"
