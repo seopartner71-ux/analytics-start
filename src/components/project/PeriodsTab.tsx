@@ -684,6 +684,21 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
         <Button onClick={() => setCreateOpen(true)} className="w-full" size="sm">
           <Plus className="h-4 w-4 mr-1.5" /> Новый период
         </Button>
+        <Button
+          onClick={() => generatePlans.mutate()}
+          variant="outline"
+          className="w-full"
+          size="sm"
+          disabled={!activePeriod || generatePlans.isPending || tasks.length === 0}
+          title={!activePeriod ? "Выберите период" : tasks.length === 0 ? "В периоде нет задач" : "Распределить задачи периода по неделям"}
+        >
+          {generatePlans.isPending ? (
+            <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+          ) : (
+            <CalendarRange className="h-4 w-4 mr-1.5" />
+          )}
+          Создать недельные планы
+        </Button>
         <div className="space-y-1.5 mt-3">
           {periods.length === 0 && (
             <Card className="p-4 text-center border-dashed">
