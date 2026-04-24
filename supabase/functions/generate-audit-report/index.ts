@@ -501,7 +501,17 @@ Deno.serve(async (req) => {
 - Итоговая оценка: ${stats.score}/100
 ` : "(статистика недоступна)";
 
-    const userPrompt = `## Данные аудита
+    const reportDate = new Date(job.finished_at || Date.now()).toLocaleDateString("ru-RU", {
+      day: "numeric", month: "short", year: "numeric"
+    }) + " г.";
+    const siteHost = (() => { try { return new URL(job.url).hostname; } catch { return job.url; } })();
+
+    const userPrompt = `## Параметры титульной страницы (используй ТОЧНО эти значения)
+- {url} = ${siteHost}
+- {date} = ${reportDate}
+- {period} = 2
+
+## Данные аудита
 
 **Сайт:** ${job.url}
 **Дата завершения:** ${job.finished_at || "—"}
@@ -512,7 +522,7 @@ ${statsBlock}
 ### Найденные проблемы (${groupedList.length} типов, всего ${(issues || []).length} вхождений):
 ${issueRows}
 
-Сформируй технический отчёт с ТЗ для каждого типа проблемы согласно инструкции.`;
+Сформируй технический отчёт с ТЗ для каждого типа проблемы согласно инструкции. Начни СТРОГО с титульной страницы по шаблону, подставив значения {url}, {date}, {period} выше.`;
 
     // 5. Call OpenRouter (Claude Sonnet 4.5) — streaming to avoid 504 gateway timeout
     const aiResp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
