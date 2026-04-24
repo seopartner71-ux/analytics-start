@@ -18,12 +18,23 @@ type Row = {
   active_seconds: number;
   name: string;
   email: string;
+  last_active: string | null; // ISO date (yyyy-MM-dd) последнего дня активности
 };
 
 function formatSeconds(total: number): string {
   const h = Math.floor(total / 3600);
   const m = Math.floor((total % 3600) / 60);
   return `${String(h).padStart(2, "0")} ч ${String(m).padStart(2, "0")} мин`;
+}
+
+function formatLastActive(date: string | null, today: string): string {
+  if (!date) return "Никогда";
+  if (date === today) return "Сегодня";
+  const d = new Date(date);
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (date === format(yesterday, "yyyy-MM-dd")) return "Вчера";
+  return format(d, "d MMMM yyyy", { locale: ru });
 }
 
 export default function AdminTimeStatsPage({ embedded = false }: { embedded?: boolean } = {}) {
@@ -44,7 +55,17 @@ export default function AdminTimeStatsPage({ embedded = false }: { embedded?: bo
     async function load() {
       setLoading(true);
       const day = format(date, "yyyy-MM-dd");
-      const { data: logs, error } = await supabase
+
+      // 1. Все сотрудники (профили) — активные, не архивные
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("user_id, first_name, last_name, full_name, email, archived_at")
+        .is("archived_at", null);
+
+      const profiles = profs ?? [];
+
+      // 2. Логи за выбранный день
+      const { data: dayLogs, error } = await supabase
         .from("user_time_logs")
         .select("user_id, active_seconds")
         .eq("log_date", day);
@@ -56,30 +77,47 @@ export default function AdminTimeStatsPage({ embedded = false }: { embedded?: bo
         }
         return;
       }
-      const ids = (logs ?? []).map((l) => l.user_id);
-      let profiles: Array<{ user_id: string; first_name: string | null; last_name: string | null; full_name: string | null; email: string }> = [];
-      if (ids.length) {
-        const { data: profs } = await supabase
-          .from("profiles")
-          .select("user_id, first_name, last_name, full_name, email")
-          .in("user_id", ids);
-        profiles = profs ?? [];
-      }
-      const merged: Row[] = (logs ?? []).map((l) => {
-        const p = profiles.find((pr) => pr.user_id === l.user_id);
+
+      // 3. Последняя активность по каждому пользователю (последний log_date)
+      const { data: allLogs } = await supabase
+        .from("user_time_logs")
+        .select("user_id, log_date")
+        .order("log_date", { ascending: false });
+
+      const lastActiveMap = new Map<string, string>();
+      (allLogs ?? []).forEach((l) => {
+        if (!lastActiveMap.has(l.user_id)) lastActiveMap.set(l.user_id, l.log_date);
+      });
+
+      const dayMap = new Map<string, number>();
+      (dayLogs ?? []).forEach((l) => dayMap.set(l.user_id, l.active_seconds ?? 0));
+
+      const merged: Row[] = profiles.map((p) => {
         const name =
           [p?.first_name, p?.last_name].filter(Boolean).join(" ") ||
           p?.full_name ||
           p?.email ||
           "—";
         return {
-          user_id: l.user_id,
-          active_seconds: l.active_seconds ?? 0,
+          user_id: p.user_id,
+          active_seconds: dayMap.get(p.user_id) ?? 0,
           name,
           email: p?.email ?? "",
+          last_active: lastActiveMap.get(p.user_id) ?? null,
         };
       });
-      merged.sort((a, b) => b.active_seconds - a.active_seconds);
+
+      // Сортировка: сначала те, у кого есть время за день, по убыванию;
+      // затем по последней активности (новее → старше); затем по имени.
+      merged.sort((a, b) => {
+        if (b.active_seconds !== a.active_seconds) return b.active_seconds - a.active_seconds;
+        if (a.last_active && b.last_active && a.last_active !== b.last_active)
+          return a.last_active < b.last_active ? 1 : -1;
+        if (a.last_active && !b.last_active) return -1;
+        if (!a.last_active && b.last_active) return 1;
+        return a.name.localeCompare(b.name);
+      });
+
       if (!cancelled) {
         setRows(merged);
         setLoading(false);
