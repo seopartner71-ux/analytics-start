@@ -107,14 +107,40 @@ export default function CrmProjectDetailPage() {
       const { data, error } = await supabase
         .from("crm_tasks")
         .select("*, assignee:team_members!crm_tasks_assignee_id_fkey(*)")
-        .eq("project_id", id!)
-        .order("deadline", { ascending: true, nullsFirst: false })
-        .order("created_at", { ascending: true });
+        .eq("project_id", id!);
       if (error) throw error;
-      return data as CrmTask[];
+      const all = (data || []) as CrmTask[];
+      // Группируем: родители (parent_id IS NULL) по дедлайну ↑, подзадачи следом за своим родителем
+      const byDeadline = (a: CrmTask, b: CrmTask) => {
+        const ad = (a as any).deadline as string | null;
+        const bd = (b as any).deadline as string | null;
+        if (!ad && !bd) return 0;
+        if (!ad) return 1;
+        if (!bd) return -1;
+        return ad.localeCompare(bd);
+      };
+      const parents = all.filter(t => !(t as any).parent_id).sort(byDeadline);
+      const childrenByParent = new Map<string, CrmTask[]>();
+      all.filter(t => (t as any).parent_id).forEach(c => {
+        const pid = (c as any).parent_id as string;
+        const arr = childrenByParent.get(pid) || [];
+        arr.push(c);
+        childrenByParent.set(pid, arr);
+      });
+      const ordered: CrmTask[] = [];
+      parents.forEach(p => {
+        ordered.push(p);
+        const kids = (childrenByParent.get(p.id) || []).sort(byDeadline);
+        ordered.push(...kids);
+      });
+      // Сироты (parent_id указан, но родителя нет в выборке) — в конец, по дедлайну
+      const orphanIds = new Set(ordered.map(t => t.id));
+      const orphans = all.filter(t => !orphanIds.has(t.id)).sort(byDeadline);
+      return [...ordered, ...orphans];
     },
     enabled: !!id,
   });
+
 
   // Members
   const { data: members = [] } = useQuery({
