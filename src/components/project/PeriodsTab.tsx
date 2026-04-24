@@ -836,7 +836,21 @@ function PeriodTasksPanel(props: {
   const [newDeadline, setNewDeadline] = useState<string>("");
   const [newCategory, setNewCategory] = useState<string>("general");
   const [newRequired, setNewRequired] = useState(false);
+  const [newWeekKey, setNewWeekKey] = useState<string>("none");
   const completed = tasks.filter((t) => t.completed).length;
+
+  // Список недель внутри периода (для селекта «Неделя выполнения»)
+  const weekOptions = useMemo<WeekOption[]>(() => {
+    if (!period.start_date || !period.end_date) return [];
+    return generateWeeksInRange(period.start_date, period.end_date);
+  }, [period.start_date, period.end_date]);
+
+  // Если пользователь выбрал срок — автоматически подставляем неделю, в которую он попадает
+  useEffect(() => {
+    if (!newDeadline || weekOptions.length === 0) return;
+    const w = findWeekForDate(weekOptions, newDeadline);
+    if (w) setNewWeekKey(`${w.week_year}-${w.week_number}`);
+  }, [newDeadline, weekOptions]);
 
   const handleQuickAdd = () => {
     const title = newTitle.trim();
@@ -851,12 +865,18 @@ function PeriodTasksPanel(props: {
       toast.error(taskDatesError);
       return;
     }
+    const week = newWeekKey === "none"
+      ? null
+      : weekOptions.find((w) => `${w.week_year}-${w.week_number}` === newWeekKey) || null;
     props.onAddTask({
       title,
       assignee_id: newAssignee === "none" ? null : newAssignee,
       deadline: newDeadline || null,
       category: newCategory,
       required: newRequired,
+      week_number: week?.week_number ?? null,
+      week_start: week?.start ?? null,
+      week_end: week?.end ?? null,
       // extras для пробрасывания в CRM-задачу
       ...( { start_date: newStartDate || null, watcher_id: newWatcher === "none" ? null : newWatcher } as any ),
     });
@@ -867,6 +887,7 @@ function PeriodTasksPanel(props: {
     setNewDeadline("");
     setNewCategory("general");
     setNewRequired(false);
+    setNewWeekKey("none");
   };
 
   return (
