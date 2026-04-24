@@ -129,9 +129,12 @@ export default function AdminTimeStatsPage({ embedded = false }: { embedded?: bo
     };
   }, [date]);
 
+  const todayStr = format(date, "yyyy-MM-dd");
+
   const totals = useMemo(() => {
     const sum = rows.reduce((a, r) => a + r.active_seconds, 0);
-    return { sum, count: rows.length };
+    const activeCount = rows.filter((r) => r.active_seconds > 0).length;
+    return { sum, count: activeCount };
   }, [rows]);
 
   if (!embedded && (authLoading || !allowed)) return null;
@@ -201,7 +204,7 @@ export default function AdminTimeStatsPage({ embedded = false }: { embedded?: bo
             </div>
           ) : rows.length === 0 ? (
             <p className="text-sm text-muted-foreground py-6 text-center">
-              За этот день нет данных об активности.
+              Нет сотрудников.
             </p>
           ) : (
             <div className="overflow-x-auto">
@@ -210,17 +213,24 @@ export default function AdminTimeStatsPage({ embedded = false }: { embedded?: bo
                 <TableRow>
                   <TableHead>Сотрудник</TableHead>
                   <TableHead>Email</TableHead>
+                  <TableHead>Последняя активность</TableHead>
                   <TableHead className="text-right">Чистое время</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {rows.map((r) => (
-                  <TableRow key={r.user_id}>
-                    <TableCell className="font-medium">{r.name}</TableCell>
-                    <TableCell className="text-muted-foreground">{r.email}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatSeconds(r.active_seconds)}</TableCell>
-                  </TableRow>
-                ))}
+                {rows.map((r) => {
+                  const inactive = r.active_seconds === 0;
+                  return (
+                    <TableRow key={r.user_id} className={inactive ? "opacity-60" : ""}>
+                      <TableCell className="font-medium">{r.name}</TableCell>
+                      <TableCell className="text-muted-foreground">{r.email}</TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {formatLastActive(r.last_active, todayStr)}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">{formatSeconds(r.active_seconds)}</TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
             </div>
