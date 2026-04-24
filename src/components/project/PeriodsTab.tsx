@@ -345,6 +345,9 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
             required: t.required || false,
             sort_order: i,
             crm_task_id: childId,
+            week_number: (t as any).week_number ?? null,
+            week_start: (t as any).week_start ?? null,
+            week_end: (t as any).week_end ?? null,
           });
         }
         const { error: te } = await supabase.from("period_tasks").insert(rows);
@@ -436,6 +439,9 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
         required: vars.required || false,
         sort_order,
         crm_task_id: childId,
+        week_number: vars.week_number ?? null,
+        week_start: vars.week_start ?? null,
+        week_end: vars.week_end ?? null,
       });
       if (error) throw error;
       await syncMainTaskStage(parentId);
