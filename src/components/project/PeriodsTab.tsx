@@ -1017,6 +1017,24 @@ function PeriodTasksPanel(props: {
             />
           </div>
         </div>
+        {weekOptions.length > 0 && (
+          <div className="space-y-1">
+            <Label className="text-[10px] text-muted-foreground">Неделя выполнения</Label>
+            <Select value={newWeekKey} onValueChange={setNewWeekKey}>
+              <SelectTrigger className="h-9 text-xs">
+                <SelectValue placeholder="Без привязки к неделе" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Без привязки к неделе</SelectItem>
+                {weekOptions.map((w) => (
+                  <SelectItem key={`${w.week_year}-${w.week_number}`} value={`${w.week_year}-${w.week_number}`}>
+                    {w.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
         <div className="flex items-center justify-between">
           <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
             <Checkbox checked={newRequired} onCheckedChange={(v) => setNewRequired(!!v)} />
