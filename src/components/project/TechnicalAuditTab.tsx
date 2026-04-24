@@ -841,6 +841,7 @@ export function TechnicalAuditTab({ projectId }: Props) {
   const [resetting, setResetting] = useState(false);
   const [stopping, setStopping] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [downloadingTzReport, setDownloadingTzReport] = useState(false);
   const [confirmStopOpen, setConfirmStopOpen] = useState(false);
   const [confirmResetOpen, setConfirmResetOpen] = useState(false);
   const [lastDoneJobId, setLastDoneJobId] = useState<string | null>(null);
@@ -876,6 +877,79 @@ export function TechnicalAuditTab({ projectId }: Props) {
       toast.error("Не удалось скачать PDF: " + (e?.message ?? ""));
     } finally {
       setDownloadingPdf(false);
+    }
+  };
+
+  const handleDownloadTzReport = async () => {
+    if (!lastDoneJobId) {
+      toast.error("Сначала запустите аудит");
+      return;
+    }
+    setDownloadingTzReport(true);
+    const toastId = toast.loading("Генерируем отчёт с ТЗ...");
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) throw new Error("Не авторизован");
+
+      const url = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/generate-audit-report`;
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ job_id: lastDoneJobId }),
+      });
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || `HTTP ${res.status}`);
+      }
+      const { report } = await res.json() as { report: string };
+      if (!report) throw new Error("Пустой ответ от AI");
+
+      const { marked } = await import("marked");
+      const html2pdf = (await import("html2pdf.js")).default;
+
+      const bodyHtml = await marked.parse(report);
+      const safeDomain = (domain && domain !== "—" ? domain : "site").replace(/[^a-z0-9.-]/gi, "_");
+
+      const container = document.createElement("div");
+      container.style.cssText = "padding:24px;font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#111;line-height:1.55;font-size:13px;max-width:800px;";
+      container.innerHTML = `
+        <h1 style="font-size:22px;margin:0 0 4px;">Технический аудит сайта</h1>
+        <div style="color:#666;margin-bottom:18px;font-size:12px;">${safeDomain} · ${new Date().toLocaleDateString("ru-RU")}</div>
+        <style>
+          h1{font-size:20px;margin:18px 0 8px;}
+          h2{font-size:17px;margin:16px 0 6px;color:#1a1a1a;border-bottom:1px solid #eee;padding-bottom:4px;}
+          h3{font-size:14px;margin:12px 0 4px;color:#333;}
+          p{margin:6px 0;}
+          ul,ol{margin:6px 0 6px 20px;padding:0;}
+          li{margin:3px 0;}
+          code{background:#f4f4f5;padding:1px 5px;border-radius:3px;font-size:12px;}
+          strong{color:#0a0a0a;}
+          hr{border:none;border-top:1px solid #e5e5e5;margin:14px 0;}
+        </style>
+        ${bodyHtml}
+      `;
+
+      await html2pdf()
+        .set({
+          margin: [10, 10, 12, 10],
+          filename: `audit-report-tz-${safeDomain}.pdf`,
+          image: { type: "jpeg", quality: 0.95 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+          pagebreak: { mode: ["css", "legacy"] },
+        })
+        .from(container)
+        .save();
+
+      toast.success("Отчёт с ТЗ скачан", { id: toastId });
+    } catch (e: any) {
+      toast.error("Не удалось сгенерировать отчёт: " + (e?.message ?? ""), { id: toastId });
+    } finally {
+      setDownloadingTzReport(false);
     }
   };
 
