@@ -138,6 +138,9 @@ type PeriodTask = {
   completed: boolean;
   sort_order: number;
   crm_task_id: string | null; // id записи в subtasks
+  week_number: number | null;
+  week_start: string | null;
+  week_end: string | null;
 };
 
 type Member = { id: string; full_name: string };
