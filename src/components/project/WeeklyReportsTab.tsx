@@ -14,7 +14,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { DeleteButton } from "@/components/common/DeleteButton";
 import { logDeletion } from "@/lib/deletion-log";
 
-interface PlannedItem { id?: string; title: string; source: "crm_task" | "manual"; hidden: boolean; }
+interface PlannedItem { id?: string; title: string; source: "crm_task" | "manual" | "period"; hidden: boolean; }
 interface DoneItem { title: string; status: "done" | "moved" | "in_progress"; source: string; }
 interface Metrics { positions_text?: string; traffic_text?: string; }
 
@@ -60,6 +60,55 @@ export function WeeklyReportsTab({ projectId }: { projectId: string }) {
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [projectId]);
 
   const active = useMemo(() => reports.find((r) => r.id === activeId) || null, [reports, activeId]);
+
+  // Авто-подтягивание задач из активного периода в «Планируем на этой неделе».
+  // Срабатывает один раз для draft-отчёта, у которого ещё нет планируемых задач из периода.
+  useEffect(() => {
+    if (!active || active.status !== "draft") return;
+    const hasPeriodItems = active.planned_items.some((it) => it.source === "period" || it.source === "crm_task");
+    if (hasPeriodItems) return;
+
+    let cancelled = false;
+    (async () => {
+      // Сначала пробуем найти задачи прямо привязанные к этой неделе…
+      let weekTasks: Array<{ id: string; title: string }> = [];
+      const exact = await supabase
+        .from("period_tasks")
+        .select("id, title, project_periods!inner(project_id)")
+        .eq("project_periods.project_id", projectId)
+        .eq("week_start", active.week_start)
+        .eq("week_end", active.week_end);
+      weekTasks = (exact.data as any) || [];
+
+      // …либо по дедлайну, попадающему в неделю
+      if (weekTasks.length === 0) {
+        const byDeadline = await supabase
+          .from("period_tasks")
+          .select("id, title, project_periods!inner(project_id)")
+          .eq("project_periods.project_id", projectId)
+          .gte("deadline", active.week_start)
+          .lte("deadline", active.week_end);
+        weekTasks = (byDeadline.data as any) || [];
+      }
+
+
+      if (cancelled || !weekTasks || weekTasks.length === 0) return;
+
+      const periodItems: PlannedItem[] = weekTasks.map((t: any) => ({
+        id: t.id,
+        title: t.title,
+        source: "period",
+        hidden: false,
+      }));
+      const merged = [...periodItems, ...active.planned_items.filter((it) => it.source === "manual")];
+
+      setReports((cur) => cur.map((r) => (r.id === active.id ? { ...r, planned_items: merged } : r)));
+      await supabase.from("weekly_reports").update({ planned_items: merged as any }).eq("id", active.id);
+    })();
+
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active?.id, active?.status, active?.week_start, active?.week_end, projectId]);
 
   const generateNow = async () => {
     setGenerating(true);
@@ -241,7 +290,12 @@ export function WeeklyReportsTab({ projectId }: { projectId: string }) {
                     onBlur={savePlanned}
                     className="h-7 text-[12px] border-0 bg-transparent focus-visible:bg-background flex-1"
                   />
-                  <Badge variant="outline" className="text-[10px] h-5">{it.source === "manual" ? "Вручную" : "Из задач"}</Badge>
+                  <Badge
+                    variant={it.source === "period" ? "secondary" : "outline"}
+                    className={cn("text-[10px] h-5", it.source === "manual" && "text-muted-foreground")}
+                  >
+                    {it.source === "manual" ? "Вручную" : it.source === "period" ? "Из периода" : "Из задач"}
+                  </Badge>
                   <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => togglePlannedHidden(idx)} title={it.hidden ? "Показать клиенту" : "Скрыть от клиента"}>
                     {it.hidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                   </Button>

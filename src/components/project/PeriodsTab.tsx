@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   Plus, Calendar, FileText, ListPlus, Copy, FileStack, GripVertical,
-  Trash2, MoreVertical, CalendarDays, User, AlertCircle, Loader2,
+  Trash2, MoreVertical, CalendarDays, User, AlertCircle, Loader2, CalendarRange,
 } from "lucide-react";
 import { toast } from "sonner";
 import { DeleteButton } from "@/components/common/DeleteButton";
@@ -41,6 +41,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
+import { generateWeeksInRange, findWeekForDate, type WeekOption } from "@/lib/iso-week";
 
 const MONTH_NAMES = [
   "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
@@ -138,6 +139,9 @@ type PeriodTask = {
   completed: boolean;
   sort_order: number;
   crm_task_id: string | null; // id записи в subtasks
+  week_number: number | null;
+  week_start: string | null;
+  week_end: string | null;
 };
 
 type Member = { id: string; full_name: string };
@@ -342,6 +346,9 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
             required: t.required || false,
             sort_order: i,
             crm_task_id: childId,
+            week_number: (t as any).week_number ?? null,
+            week_start: (t as any).week_start ?? null,
+            week_end: (t as any).week_end ?? null,
           });
         }
         const { error: te } = await supabase.from("period_tasks").insert(rows);
@@ -433,6 +440,9 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
         required: vars.required || false,
         sort_order,
         crm_task_id: childId,
+        week_number: vars.week_number ?? null,
+        week_start: vars.week_start ?? null,
+        week_end: vars.week_end ?? null,
       });
       if (error) throw error;
       await syncMainTaskStage(parentId);
@@ -592,12 +602,102 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
     reorder.mutate(next);
   };
 
+  // Авто-создание черновиков недельных отчётов из задач периода.
+  // Группируем задачи по неделям (week_start/week_end или по deadline) и создаём по одному
+  // weekly_reports на каждую неделю, у которой есть задачи. Существующие отчёты не пересоздаём.
+  const generatePlans = useMutation({
+    mutationFn: async () => {
+      if (!activePeriod?.start_date || !activePeriod?.end_date) {
+        throw new Error("У периода не указаны даты");
+      }
+      const weeks = generateWeeksInRange(activePeriod.start_date, activePeriod.end_date);
+      if (weeks.length === 0) throw new Error("Не удалось рассчитать недели периода");
+
+      // Раскладываем задачи периода по неделям
+      const buckets = new Map<string, { week: WeekOption; items: PeriodTask[] }>();
+      for (const t of tasks) {
+        let week: WeekOption | null = null;
+        if (t.week_start && t.week_end) {
+          week = weeks.find((w) => w.start === t.week_start.slice(0, 10)) || null;
+        }
+        if (!week && t.deadline) week = findWeekForDate(weeks, t.deadline);
+        if (!week) continue;
+        const key = `${week.week_year}-${week.week_number}`;
+        if (!buckets.has(key)) buckets.set(key, { week, items: [] });
+        buckets.get(key)!.items.push(t);
+      }
+
+      if (buckets.size === 0) {
+        throw new Error("Ни у одной задачи нет недели или дедлайна — нечего распределять");
+      }
+
+      // Тянем уже существующие отчёты, чтобы не создавать дубликаты
+      const { data: existing } = await supabase
+        .from("weekly_reports")
+        .select("id, week_number, week_year")
+        .eq("project_id", projectId);
+      const existingKeys = new Set((existing || []).map((r) => `${r.week_year}-${r.week_number}`));
+
+      let created = 0;
+      for (const [key, bucket] of buckets) {
+        if (existingKeys.has(key)) continue;
+        const planned_items = bucket.items.map((t) => ({
+          id: t.id,
+          title: t.title,
+          source: "crm_task" as const,
+          hidden: false,
+        }));
+        const { error } = await supabase.from("weekly_reports").insert({
+          project_id: projectId,
+          period_id: activePeriod.id,
+          week_number: bucket.week.week_number,
+          week_year: bucket.week.week_year,
+          week_start: bucket.week.start,
+          week_end: bucket.week.end,
+          status: "draft",
+          planned_items,
+          done_items: [],
+          metrics: { positions_text: "", traffic_text: "" },
+          manager_comment: "",
+          created_by: user!.id,
+        });
+        if (!error) created++;
+      }
+      return { created, totalWeeks: buckets.size };
+    },
+    onSuccess: ({ created, totalWeeks }) => {
+      qc.invalidateQueries({ queryKey: ["weekly-reports", projectId] });
+      if (created === 0) {
+        toast.info(`Все ${totalWeeks} недельных плана уже созданы`);
+      } else {
+        toast.success(`Создано ${created} недельн${created === 1 ? "ый план" : created < 5 ? "ых плана" : "ых планов"}`);
+      }
+    },
+    onError: (e: any) => toast.error(e.message || "Не удалось создать недельные планы"),
+  });
+
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
       {/* Sidebar: periods list */}
       <div className="space-y-2">
         <Button onClick={() => setCreateOpen(true)} className="w-full" size="sm">
           <Plus className="h-4 w-4 mr-1.5" /> Новый период
+        </Button>
+        <Button
+          onClick={() => generatePlans.mutate()}
+          variant="outline"
+          className="w-full"
+          size="sm"
+          disabled={!activePeriod || generatePlans.isPending || tasks.length === 0}
+          title={!activePeriod ? "Выберите период" : tasks.length === 0 ? "В периоде нет задач" : "Распределить задачи периода по неделям"}
+        >
+          {generatePlans.isPending ? (
+            <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+          ) : (
+            <CalendarRange className="h-4 w-4 mr-1.5" />
+          )}
+          Создать недельные планы
         </Button>
         <div className="space-y-1.5 mt-3">
           {periods.length === 0 && (
@@ -736,7 +836,21 @@ function PeriodTasksPanel(props: {
   const [newDeadline, setNewDeadline] = useState<string>("");
   const [newCategory, setNewCategory] = useState<string>("general");
   const [newRequired, setNewRequired] = useState(false);
+  const [newWeekKey, setNewWeekKey] = useState<string>("none");
   const completed = tasks.filter((t) => t.completed).length;
+
+  // Список недель внутри периода (для селекта «Неделя выполнения»)
+  const weekOptions = useMemo<WeekOption[]>(() => {
+    if (!period.start_date || !period.end_date) return [];
+    return generateWeeksInRange(period.start_date, period.end_date);
+  }, [period.start_date, period.end_date]);
+
+  // Если пользователь выбрал срок — автоматически подставляем неделю, в которую он попадает
+  useEffect(() => {
+    if (!newDeadline || weekOptions.length === 0) return;
+    const w = findWeekForDate(weekOptions, newDeadline);
+    if (w) setNewWeekKey(`${w.week_year}-${w.week_number}`);
+  }, [newDeadline, weekOptions]);
 
   const handleQuickAdd = () => {
     const title = newTitle.trim();
@@ -751,12 +865,18 @@ function PeriodTasksPanel(props: {
       toast.error(taskDatesError);
       return;
     }
+    const week = newWeekKey === "none"
+      ? null
+      : weekOptions.find((w) => `${w.week_year}-${w.week_number}` === newWeekKey) || null;
     props.onAddTask({
       title,
       assignee_id: newAssignee === "none" ? null : newAssignee,
       deadline: newDeadline || null,
       category: newCategory,
       required: newRequired,
+      week_number: week?.week_number ?? null,
+      week_start: week?.start ?? null,
+      week_end: week?.end ?? null,
       // extras для пробрасывания в CRM-задачу
       ...( { start_date: newStartDate || null, watcher_id: newWatcher === "none" ? null : newWatcher } as any ),
     });
@@ -767,6 +887,7 @@ function PeriodTasksPanel(props: {
     setNewDeadline("");
     setNewCategory("general");
     setNewRequired(false);
+    setNewWeekKey("none");
   };
 
   return (
@@ -896,6 +1017,24 @@ function PeriodTasksPanel(props: {
             />
           </div>
         </div>
+        {weekOptions.length > 0 && (
+          <div className="space-y-1">
+            <Label className="text-[10px] text-muted-foreground">Неделя выполнения</Label>
+            <Select value={newWeekKey} onValueChange={setNewWeekKey}>
+              <SelectTrigger className="h-9 text-xs">
+                <SelectValue placeholder="Без привязки к неделе" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Без привязки к неделе</SelectItem>
+                {weekOptions.map((w) => (
+                  <SelectItem key={`${w.week_year}-${w.week_number}`} value={`${w.week_year}-${w.week_number}`}>
+                    {w.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
         <div className="flex items-center justify-between">
           <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
             <Checkbox checked={newRequired} onCheckedChange={(v) => setNewRequired(!!v)} />
