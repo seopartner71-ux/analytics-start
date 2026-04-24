@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   Plus, Calendar, FileText, ListPlus, Copy, FileStack, GripVertical,
-  Trash2, MoreVertical, CalendarDays, User, AlertCircle, Loader2,
+  Trash2, MoreVertical, CalendarDays, User, AlertCircle, Loader2, CalendarRange,
 } from "lucide-react";
 import { toast } from "sonner";
 import { DeleteButton } from "@/components/common/DeleteButton";
@@ -41,6 +41,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
+import { generateWeeksInRange, findWeekForDate, type WeekOption } from "@/lib/iso-week";
 
 const MONTH_NAMES = [
   "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
