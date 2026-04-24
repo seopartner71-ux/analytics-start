@@ -662,10 +662,12 @@ ${issueRows}
               } catch { /* partial */ }
             }
           }
+          const { markdown: validated, warnings } = validateAndNormalizeReport(assistantText);
           const payload = JSON.stringify({
             job_id: jobId,
             url: job.url,
-            report: assistantText,
+            report: validated,
+            validation_warnings: warnings,
             issues_count: (issues || []).length,
             generated_at: new Date().toISOString(),
           });
