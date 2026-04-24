@@ -90,11 +90,7 @@ export function WeeklyReportsTab({ projectId }: { projectId: string }) {
           .lte("deadline", active.week_end);
         weekTasks = (byDeadline.data as any) || [];
       }
-          .eq("project_periods.project_id", projectId)
-          .gte("deadline", active.week_start)
-          .lte("deadline", active.week_end);
-        weekTasks = byDeadline || [];
-      }
+
 
       if (cancelled || !weekTasks || weekTasks.length === 0) return;
 
