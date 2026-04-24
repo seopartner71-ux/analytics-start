@@ -602,6 +602,81 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
     reorder.mutate(next);
   };
 
+  // Авто-создание черновиков недельных отчётов из задач периода.
+  // Группируем задачи по неделям (week_start/week_end или по deadline) и создаём по одному
+  // weekly_reports на каждую неделю, у которой есть задачи. Существующие отчёты не пересоздаём.
+  const generatePlans = useMutation({
+    mutationFn: async () => {
+      if (!activePeriod?.start_date || !activePeriod?.end_date) {
+        throw new Error("У периода не указаны даты");
+      }
+      const weeks = generateWeeksInRange(activePeriod.start_date, activePeriod.end_date);
+      if (weeks.length === 0) throw new Error("Не удалось рассчитать недели периода");
+
+      // Раскладываем задачи периода по неделям
+      const buckets = new Map<string, { week: WeekOption; items: PeriodTask[] }>();
+      for (const t of tasks) {
+        let week: WeekOption | null = null;
+        if (t.week_start && t.week_end) {
+          week = weeks.find((w) => w.start === t.week_start.slice(0, 10)) || null;
+        }
+        if (!week && t.deadline) week = findWeekForDate(weeks, t.deadline);
+        if (!week) continue;
+        const key = `${week.week_year}-${week.week_number}`;
+        if (!buckets.has(key)) buckets.set(key, { week, items: [] });
+        buckets.get(key)!.items.push(t);
+      }
+
+      if (buckets.size === 0) {
+        throw new Error("Ни у одной задачи нет недели или дедлайна — нечего распределять");
+      }
+
+      // Тянем уже существующие отчёты, чтобы не создавать дубликаты
+      const { data: existing } = await supabase
+        .from("weekly_reports")
+        .select("id, week_number, week_year")
+        .eq("project_id", projectId);
+      const existingKeys = new Set((existing || []).map((r) => `${r.week_year}-${r.week_number}`));
+
+      let created = 0;
+      for (const [key, bucket] of buckets) {
+        if (existingKeys.has(key)) continue;
+        const planned_items = bucket.items.map((t) => ({
+          id: t.id,
+          title: t.title,
+          source: "crm_task" as const,
+          hidden: false,
+        }));
+        const { error } = await supabase.from("weekly_reports").insert({
+          project_id: projectId,
+          period_id: activePeriod.id,
+          week_number: bucket.week.week_number,
+          week_year: bucket.week.week_year,
+          week_start: bucket.week.start,
+          week_end: bucket.week.end,
+          status: "draft",
+          planned_items,
+          done_items: [],
+          metrics: { positions_text: "", traffic_text: "" },
+          manager_comment: "",
+          created_by: user!.id,
+        });
+        if (!error) created++;
+      }
+      return { created, totalWeeks: buckets.size };
+    },
+    onSuccess: ({ created, totalWeeks }) => {
+      qc.invalidateQueries({ queryKey: ["weekly-reports", projectId] });
+      if (created === 0) {
+        toast.info(`Все ${totalWeeks} недельных плана уже созданы`);
+      } else {
+        toast.success(`Создано ${created} недельн${created === 1 ? "ый план" : created < 5 ? "ых плана" : "ых планов"}`);
+      }
+    },
+    onError: (e: any) => toast.error(e.message || "Не удалось создать недельные планы"),
+  });
+
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
       {/* Sidebar: periods list */}
