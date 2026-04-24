@@ -108,7 +108,8 @@ export default function CrmProjectDetailPage() {
         .from("crm_tasks")
         .select("*, assignee:team_members!crm_tasks_assignee_id_fkey(*)")
         .eq("project_id", id!)
-        .order("created_at", { ascending: false });
+        .order("deadline", { ascending: true, nullsFirst: false })
+        .order("created_at", { ascending: true });
       if (error) throw error;
       return data as CrmTask[];
     },
