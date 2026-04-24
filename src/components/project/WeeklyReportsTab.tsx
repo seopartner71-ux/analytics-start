@@ -242,12 +242,8 @@ export function WeeklyReportsTab({ projectId }: { projectId: string }) {
                     className="h-7 text-[12px] border-0 bg-transparent focus-visible:bg-background flex-1"
                   />
                   <Badge
-                    variant="outline"
-                    className={cn(
-                      "text-[10px] h-5",
-                      it.source === "period" && "border-amber-500/50 bg-amber-500/10 text-amber-700 dark:text-amber-400",
-                      it.source === "manual" && "text-muted-foreground",
-                    )}
+                    variant={it.source === "period" ? "secondary" : "outline"}
+                    className={cn("text-[10px] h-5", it.source === "manual" && "text-muted-foreground")}
                   >
                     {it.source === "manual" ? "Вручную" : it.source === "period" ? "Из периода" : "Из задач"}
                   </Badge>
