@@ -28,6 +28,7 @@ import { TaskTimeManual } from "@/components/project/TaskTimeManual";
 import { CompleteTaskDialog } from "@/components/project/CompleteTaskDialog";
 import { CreateSubtaskDialog, type SubtaskFormValues } from "@/components/project/CreateSubtaskDialog";
 import { TaskBlockerSection, FrozenDeadlineBadge, useTaskBlocker } from "@/components/project/TaskBlocker";
+import { linkify } from "@/lib/linkify";
 import { TaskMembersBlock } from "@/components/project/TaskMembersBlock";
 
 export type CrmTask = Tables<"crm_tasks"> & {
@@ -599,7 +600,7 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                   ) : (
                     <div className={cn("flex items-start gap-2 cursor-pointer hover:text-foreground transition-colors", canEditFields ? "" : "cursor-default")} onClick={() => canEditFields && setEditingField("description")}>
                       <Edit3 className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                      {editDesc ? <p className="text-sm text-foreground whitespace-pre-wrap">{editDesc}</p> : <span className="text-sm text-muted-foreground/60 italic">Описание</span>}
+                      {editDesc ? <p className="text-sm text-foreground whitespace-pre-wrap break-words">{linkify(editDesc)}</p> : <span className="text-sm text-muted-foreground/60 italic">Описание</span>}
                     </div>
                   )}
                 </CardContent>
@@ -947,7 +948,7 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                             </span>
                           </div>
                           <div className="bg-card rounded-2xl rounded-tl-md p-3.5 border border-border/40 shadow-sm max-w-[85%]">
-                            <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">{m.body}</p>
+                            <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap break-words">{linkify(m.body)}</p>
                           </div>
                           <span className="text-[10px] text-muted-foreground/50 ml-1 mt-1 block">
                             {new Date(m.created_at).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
