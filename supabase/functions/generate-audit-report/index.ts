@@ -464,6 +464,166 @@ Description — краткое описание страницы, использ
 - Пиши ТОЛЬКО на русском языке.
 - Будь конкретным и техническим в ТЗ (указывай файлы, теги, директивы, примеры кода).`;
 
+// ============================================================================
+// Валидация и нормализация выходного Markdown.
+// Гарантирует, что каждый блок проверки имеет:
+//   1) заголовок ### N.N. Название
+//   2) две курсивные строки: *Важность – ...* и *Сложность внесения – ...*
+//   3) корректный блок результата:
+//      «#### Результат проверки: …Ошибки не найдены…» ИЛИ
+//      «#### Результат проверки: …Ошибка обнаружена…» + маркированный список URL
+// Возвращает исправленный Markdown и список предупреждений.
+// ============================================================================
+const URL_RE = /^https?:\/\/\S+$/i;
+
+function validateAndNormalizeReport(md: string): { markdown: string; warnings: string[] } {
+  const warnings: string[] = [];
+  if (!md || typeof md !== "string") {
+    return { markdown: md || "", warnings: ["Пустой ответ от модели"] };
+  }
+
+  const lines = md.split("\n");
+  const out: string[] = [];
+  // Регулярка заголовка проверки: ### 1.1. Название  /  ### 3.2.4. Название
+  const checkHeader = /^###\s+(\d+(?:\.\d+){1,2})\.\s+(.+?)\s*$/;
+  // Возможные варианты строк с важностью/сложностью (нормализуем к единому виду)
+  const importanceLine = /^\s*[*_]{1,2}\s*Важность\s*[–\-—:]\s*([^*_|\n]+?)\s*[*_]{0,2}\s*$/i;
+  const complexityLine = /^\s*[*_]{1,2}\s*Сложность(?:\s+внесения)?\s*[–\-—:]\s*([^*_|\n]+?)\s*[*_]{0,2}\s*$/i;
+  // Однострочный «слитный» вариант: **Важность** — высокая | **Сложность внесения** — низкая
+  const inlineBoth =
+    /[*_]{0,2}Важность[*_]{0,2}\s*[–\-—:]\s*([^|*_]+?)\s*\|\s*[*_]{0,2}Сложность(?:\s+внесения)?[*_]{0,2}\s*[–\-—:]\s*([^|*_]+?)\s*$/i;
+  const resultHeader = /^#{1,6}\s*Результат проверки\s*:?\s*(.*)$/i;
+
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    const m = line.match(checkHeader);
+
+    if (!m) {
+      out.push(line);
+      i++;
+      continue;
+    }
+
+    // ─── Найден блок проверки ──────────────────────────────────────────
+    const num = m[1];
+    const title = m[2].trim();
+    out.push(`### ${num}. ${title}`);
+    i++;
+
+    // Собираем содержимое блока до следующего заголовка ### N.N. ... или ## ...
+    const blockLines: string[] = [];
+    while (i < lines.length) {
+      const l = lines[i];
+      if (checkHeader.test(l) || /^##\s/.test(l) || /^---\s*$/.test(l)) break;
+      blockLines.push(l);
+      i++;
+    }
+
+    // Извлекаем важность и сложность
+    let importance: string | null = null;
+    let complexity: string | null = null;
+    const remaining: string[] = [];
+
+    for (const l of blockLines) {
+      const im = l.match(importanceLine);
+      const cm = l.match(complexityLine);
+      const both = l.match(inlineBoth);
+      if (both) {
+        importance = importance || both[1].trim();
+        complexity = complexity || both[2].trim();
+        continue;
+      }
+      if (im && !importance) {
+        importance = im[1].trim();
+        continue;
+      }
+      if (cm && !complexity) {
+        complexity = cm[1].trim();
+        continue;
+      }
+      remaining.push(l);
+    }
+
+    if (!importance) {
+      warnings.push(`Блок ${num}: отсутствует «Важность» — подставлено «средняя»`);
+      importance = "средняя";
+    }
+    if (!complexity) {
+      warnings.push(`Блок ${num}: отсутствует «Сложность внесения» — подставлено «средняя»`);
+      complexity = "средняя";
+    }
+
+    // Выводим две курсивные строки в каноническом виде
+    out.push("");
+    out.push(`*Важность – ${importance}*`);
+    out.push(`*Сложность внесения – ${complexity}*`);
+    out.push("");
+
+    // Разделяем оставшийся контент на: описание (до результата) и блок результата
+    let resultIdx = -1;
+    for (let k = 0; k < remaining.length; k++) {
+      if (resultHeader.test(remaining[k])) { resultIdx = k; break; }
+    }
+
+    const description = (resultIdx === -1 ? remaining : remaining.slice(0, resultIdx))
+      .join("\n").trim();
+    const resultPart = resultIdx === -1 ? [] : remaining.slice(resultIdx);
+
+    if (description) {
+      out.push(description);
+      out.push("");
+    }
+
+    // Нормализуем блок результата
+    if (resultPart.length === 0) {
+      warnings.push(`Блок ${num}: отсутствует «Результат проверки» — подставлено «Ошибки не найдены»`);
+      out.push(`#### Результат проверки: <span style="color:#16a34a">**Ошибки не найдены**</span>`);
+      out.push("");
+      continue;
+    }
+
+    const headerLine = resultPart[0];
+    const headerRest = (headerLine.match(resultHeader)?.[1] || "").toLowerCase();
+    const isError = /ошибк[аи]?\s*обнаружен|обнаружен[аы]|найден[аы]/i.test(headerRest)
+      && !/не\s*найден/i.test(headerRest);
+
+    if (isError) {
+      // Собираем URL из последующих строк
+      const urls: string[] = [];
+      for (let k = 1; k < resultPart.length; k++) {
+        const raw = resultPart[k].trim();
+        if (!raw) continue;
+        // строка маркера списка: -, *, • + URL
+        const cleaned = raw.replace(/^[-*•]\s+/, "").trim();
+        if (URL_RE.test(cleaned)) {
+          urls.push(cleaned);
+        }
+      }
+
+      if (urls.length === 0) {
+        warnings.push(`Блок ${num}: «Ошибка обнаружена», но не найдено ни одного URL`);
+      }
+
+      out.push(`#### Результат проверки: <span style="color:#dc2626">**Ошибка обнаружена**</span>`);
+      out.push("");
+      for (const u of urls.slice(0, 10)) {
+        out.push(`- ${u}`);
+      }
+      if (urls.length > 0) out.push("");
+      out.push(`Задание по устранению ошибки описано в [блоке рекомендаций](#4-рекомендации-по-устранению-ошибок).`);
+      out.push("");
+    } else {
+      out.push(`#### Результат проверки: <span style="color:#16a34a">**Ошибки не найдены**</span>`);
+      out.push("");
+    }
+  }
+
+  // Схлопываем тройные пустые строки
+  const normalized = out.join("\n").replace(/\n{3,}/g, "\n\n");
+  return { markdown: normalized, warnings };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -662,10 +822,12 @@ ${issueRows}
               } catch { /* partial */ }
             }
           }
+          const { markdown: validated, warnings } = validateAndNormalizeReport(assistantText);
           const payload = JSON.stringify({
             job_id: jobId,
             url: job.url,
-            report: assistantText,
+            report: validated,
+            validation_warnings: warnings,
             issues_count: (issues || []).length,
             generated_at: new Date().toISOString(),
           });
