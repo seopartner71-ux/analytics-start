@@ -2631,6 +2631,9 @@ export type Database = {
           sort_order: number
           title: string
           updated_at: string
+          week_end: string | null
+          week_number: number | null
+          week_start: string | null
         }
         Insert: {
           assignee_id?: string | null
@@ -2647,6 +2650,9 @@ export type Database = {
           sort_order?: number
           title: string
           updated_at?: string
+          week_end?: string | null
+          week_number?: number | null
+          week_start?: string | null
         }
         Update: {
           assignee_id?: string | null
@@ -2663,6 +2669,9 @@ export type Database = {
           sort_order?: number
           title?: string
           updated_at?: string
+          week_end?: string | null
+          week_number?: number | null
+          week_start?: string | null
         }
         Relationships: [
           {
@@ -3869,6 +3878,7 @@ export type Database = {
           id: string
           manager_comment: string
           metrics: Json
+          period_id: string | null
           planned_items: Json
           project_id: string
           sent_at: string | null
@@ -3887,6 +3897,7 @@ export type Database = {
           id?: string
           manager_comment?: string
           metrics?: Json
+          period_id?: string | null
           planned_items?: Json
           project_id: string
           sent_at?: string | null
@@ -3905,6 +3916,7 @@ export type Database = {
           id?: string
           manager_comment?: string
           metrics?: Json
+          period_id?: string | null
           planned_items?: Json
           project_id?: string
           sent_at?: string | null
@@ -3917,6 +3929,13 @@ export type Database = {
           week_year?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "weekly_reports_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "project_periods"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "weekly_reports_project_id_fkey"
             columns: ["project_id"]
