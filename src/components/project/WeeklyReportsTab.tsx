@@ -71,18 +71,25 @@ export function WeeklyReportsTab({ projectId }: { projectId: string }) {
     let cancelled = false;
     (async () => {
       // Сначала пробуем найти задачи прямо привязанные к этой неделе…
-      let { data: weekTasks } = await supabase
+      let weekTasks: Array<{ id: string; title: string }> = [];
+      const exact = await supabase
         .from("period_tasks")
-        .select("id, title, period_id, week_start, week_end, deadline, project_periods!inner(project_id)")
+        .select("id, title, project_periods!inner(project_id)")
         .eq("project_periods.project_id", projectId)
         .eq("week_start", active.week_start)
         .eq("week_end", active.week_end);
+      weekTasks = (exact.data as any) || [];
 
       // …либо по дедлайну, попадающему в неделю
-      if (!weekTasks || weekTasks.length === 0) {
-        const { data: byDeadline } = await supabase
+      if (weekTasks.length === 0) {
+        const byDeadline = await supabase
           .from("period_tasks")
-          .select("id, title, period_id, deadline, project_periods!inner(project_id)")
+          .select("id, title, project_periods!inner(project_id)")
+          .eq("project_periods.project_id", projectId)
+          .gte("deadline", active.week_start)
+          .lte("deadline", active.week_end);
+        weekTasks = (byDeadline.data as any) || [];
+      }
           .eq("project_periods.project_id", projectId)
           .gte("deadline", active.week_start)
           .lte("deadline", active.week_end);
