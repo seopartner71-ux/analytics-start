@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { ChevronDown, ChevronRight, Download, ExternalLink, ShieldAlert, Link2, FileSearch, CheckCircle2, AlertTriangle, Info, AlertCircle, HelpCircle, Trash2, Lock, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { AuditInsightsBlock } from "./AuditInsightsBlock";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -1106,6 +1107,11 @@ export function TechnicalAuditTab({ projectId }: Props) {
 
   return (
     <div className="space-y-5">
+      {/* AI выводы и рекомендации — показываем только когда аудит завершён */}
+      {scanStatus === "done" && lastDoneJobId && (
+        <AuditInsightsBlock jobId={lastDoneJobId} projectId={projectId} />
+      )}
+
       {/* Шапка */}
       <Card className="bg-card border-border p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
