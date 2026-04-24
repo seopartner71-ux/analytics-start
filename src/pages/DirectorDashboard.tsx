@@ -49,7 +49,8 @@ const DirectorDashboard = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
-        .select("id, name, url, logo_url, privacy, deadline, efficiency, seo_specialist_id, account_manager_id, created_at, planned_hours, hourly_rate, monthly_budget")
+        .select("id, name, url, logo_url, privacy, deadline, efficiency, seo_specialist_id, account_manager_id, created_at, planned_hours, hourly_rate, monthly_budget, archived_at")
+        .is("archived_at", null)
         .order("deadline", { ascending: true, nullsFirst: false });
       if (error) throw error;
       return data;
