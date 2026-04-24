@@ -898,14 +898,49 @@ export function TechnicalAuditTab({ projectId }: Props) {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
+          Accept: "text/event-stream",
         },
         body: JSON.stringify({ job_id: lastDoneJobId }),
       });
-      if (!res.ok) {
+      if (!res.ok || !res.body) {
         const errJson = await res.json().catch(() => ({}));
         throw new Error(errJson.error || `HTTP ${res.status}`);
       }
-      const { report } = await res.json() as { report: string };
+
+      // Parse SSE: keep-alive `: ping`, final `event: result` with JSON payload
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      let report = "";
+      let pendingEvent = "";
+      outer: while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        let nl;
+        while ((nl = buf.indexOf("\n")) !== -1) {
+          let line = buf.slice(0, nl);
+          buf = buf.slice(nl + 1);
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (line.startsWith(":")) continue; // keep-alive comment
+          if (line.startsWith("event: ")) { pendingEvent = line.slice(7).trim(); continue; }
+          if (line.startsWith("data: ")) {
+            const data = line.slice(6).trim();
+            if (data === "[DONE]") break outer;
+            if (pendingEvent === "result") {
+              try {
+                const parsed = JSON.parse(data);
+                report = parsed.report || "";
+              } catch { /* ignore */ }
+              pendingEvent = "";
+            } else if (pendingEvent === "error") {
+              try { throw new Error(JSON.parse(data).error || "stream error"); }
+              catch (e: any) { throw new Error(e?.message || "stream error"); }
+            }
+          }
+          if (line === "") pendingEvent = "";
+        }
+      }
       if (!report) throw new Error("Пустой ответ от AI");
 
       const { marked } = await import("marked");
