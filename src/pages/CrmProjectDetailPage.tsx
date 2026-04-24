@@ -243,9 +243,21 @@ export default function CrmProjectDetailPage() {
   // Send project comment
   const sendComment = useMutation({
     mutationFn: async () => {
+      // Найти team_member текущего пользователя по email, чтобы подписать комментарий
+      let authorId: string | null = null;
+      if (user?.email) {
+        const { data: tm } = await supabase
+          .from("team_members")
+          .select("id")
+          .ilike("email", user.email)
+          .limit(1)
+          .maybeSingle();
+        authorId = tm?.id ?? null;
+      }
       const { error } = await supabase.from("project_comments").insert({
         project_id: id!,
         body: commentText,
+        author_id: authorId,
       });
       if (error) throw error;
     },
