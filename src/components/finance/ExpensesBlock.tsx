@@ -264,7 +264,7 @@ export function ExpensesBlock() {
                         variant="ghost"
                         className="h-7 w-7"
                         onClick={() => {
-                          if (confirm("Удалить расход? Сумма вернётся на счёт Кассы.")) deleteMut.mutate(e.id);
+                          if (confirm("Удалить расход? Сумма вернётся на счёт.")) deleteMut.mutate(e.id);
                         }}
                       >
                         <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
