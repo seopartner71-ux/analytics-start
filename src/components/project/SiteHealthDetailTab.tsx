@@ -11,6 +11,8 @@ import {
 import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { CreateTaskFromSourceButton } from "./CreateTaskFromSourceButton";
+import { useSourceTasks } from "@/hooks/useSourceTasks";
 
 const ERROR_NAMES_RU: Record<string, string> = {
   INSIGNIFICANT_CGI_PARAMETER: "Незначимые CGI-параметры",
@@ -272,6 +274,8 @@ export default function SiteHealthDetailTab({ projectId }: Props) {
       toast.success("Статус обновлён");
     },
   });
+
+  const { data: sourceTasks } = useSourceTasks(projectId, "crawl_issue");
 
   const isLoading = healthLoading || errorsLoading;
 
@@ -575,6 +579,15 @@ export default function SiteHealthDetailTab({ projectId }: Props) {
                         {err.source === "yandex" ? "Яндекс" : "Google"}
                       </Badge>
                       <span className="text-[10px] text-muted-foreground">{format(parseISO(err.detected_at), "dd.MM.yy")}</span>
+                      <CreateTaskFromSourceButton
+                        projectId={projectId}
+                        sourceType="crawl_issue"
+                        sourceId={err.id}
+                        defaultTitle={`Исправить: ${translatedName}`}
+                        defaultDescription={`URL: ${err.url || "—"}\nТип ошибки: ${err.error_type}\nИсточник: ${err.source === "yandex" ? "Яндекс" : "Google"}\nСтатус: ${err.status}`}
+                        defaultPriority={isNew ? "high" : "medium"}
+                        existingTask={sourceTasks?.get(err.id)}
+                      />
                       {isNew ? (
                         <Button
                           variant="ghost"

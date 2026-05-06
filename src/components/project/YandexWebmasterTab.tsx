@@ -16,6 +16,8 @@ import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
 import { generateWebmasterPdf } from "@/lib/webmaster-pdf";
 import { DataStatusBadge } from "./DataStatusBadge";
+import { CreateTaskFromSourceButton } from "./CreateTaskFromSourceButton";
+import { useSourceTasks, type SourceTaskRef } from "@/hooks/useSourceTasks";
 
 /* ─── types ─── */
 type CheckStatus = "ok" | "error" | "not_checked";
@@ -136,10 +138,19 @@ function StatusBadge({ status }: { status: CheckStatus }) {
   return <span className="text-[11px] text-muted-foreground">Не проверено</span>;
 }
 
-function CheckRowWm({ check, sectionType }: { check: WmCheck; sectionType: SectionType }) {
+function CheckRowWm({
+  check, sectionType, projectId, existingTask,
+}: {
+  check: WmCheck;
+  sectionType: SectionType;
+  projectId: string;
+  existingTask?: SourceTaskRef;
+}) {
   const [expanded, setExpanded] = useState(false);
   const meta = SECTION_META[sectionType];
   const borderCls = check.status === "error" ? meta.border : check.status === "ok" ? "border-l-emerald-500" : "border-l-zinc-600";
+  const priority: "high" | "medium" | "low" =
+    sectionType === "fatal" || sectionType === "critical" ? "high" : "medium";
 
   return (
     <div className={cn("border-l-[3px] rounded-r-lg", borderCls)}>
@@ -150,7 +161,18 @@ function CheckRowWm({ check, sectionType }: { check: WmCheck; sectionType: Secti
         {check.errorCount !== undefined && check.errorCount > 0 && (
           <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-[10px]">{check.errorCount} стр.</Badge>
         )}
-        <div className="w-[140px] shrink-0 flex justify-end" onClick={e => e.stopPropagation()}>
+        <div className="w-[140px] shrink-0 flex justify-end items-center gap-1" onClick={e => e.stopPropagation()}>
+          {check.status === "error" && (
+            <CreateTaskFromSourceButton
+              projectId={projectId}
+              sourceType="webmaster"
+              sourceId={check.apiField}
+              defaultTitle={`Вебмастер: ${check.name}`}
+              defaultDescription={`Проверка: ${check.number} ${check.name}\nРаздел: ${meta.label}\nСтраниц с проблемой: ${check.errorCount ?? 0}\n${check.errorUrls && check.errorUrls.length ? `\nПримеры URL:\n${check.errorUrls.slice(0, 5).join("\n")}` : ""}`}
+              defaultPriority={priority}
+              existingTask={existingTask}
+            />
+          )}
           {check.actionUrl && (
             <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1 border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10" onClick={() => window.open(check.actionUrl, "_blank")}>
               {check.actionLabel || "Открыть"} <ExternalLink className="h-3 w-3" />
@@ -171,7 +193,14 @@ function CheckRowWm({ check, sectionType }: { check: WmCheck; sectionType: Secti
   );
 }
 
-function SectionWm({ section, checks }: { section: SectionType; checks: WmCheck[] }) {
+function SectionWm({
+  section, checks, projectId, sourceTasks,
+}: {
+  section: SectionType;
+  checks: WmCheck[];
+  projectId: string;
+  sourceTasks?: Map<string, SourceTaskRef>;
+}) {
   const [open, setOpen] = useState(false);
   const meta = SECTION_META[section];
   const errCount = checks.filter(c => c.status === "error").length;
@@ -199,7 +228,15 @@ function SectionWm({ section, checks }: { section: SectionType; checks: WmCheck[
           <div className="w-[20px]"></div>
         </div>
         <div className="space-y-0.5 mt-1">
-          {checks.map(c => <CheckRowWm key={c.number} check={c} sectionType={section} />)}
+          {checks.map(c => (
+            <CheckRowWm
+              key={c.number}
+              check={c}
+              sectionType={section}
+              projectId={projectId}
+              existingTask={sourceTasks?.get(c.apiField)}
+            />
+          ))}
         </div>
       </CollapsibleContent>
     </Collapsible>
@@ -267,6 +304,8 @@ export function YandexWebmasterTab({ projectId }: Props) {
       return data || [];
     },
   });
+
+  const { data: sourceTasks } = useSourceTasks(projectId, "webmaster");
 
   const domain = getDomain(project?.url);
 
@@ -462,10 +501,10 @@ export function YandexWebmasterTab({ projectId }: Props) {
       {/* SECTIONS */}
       {healthMetrics.length > 0 && (
         <div className="space-y-4">
-          <SectionWm section="fatal" checks={bySection("fatal")} />
-          <SectionWm section="critical" checks={bySection("critical")} />
-          <SectionWm section="possible" checks={bySection("possible")} />
-          <SectionWm section="recommendation" checks={bySection("recommendation")} />
+          <SectionWm section="fatal" checks={bySection("fatal")} projectId={projectId} sourceTasks={sourceTasks} />
+          <SectionWm section="critical" checks={bySection("critical")} projectId={projectId} sourceTasks={sourceTasks} />
+          <SectionWm section="possible" checks={bySection("possible")} projectId={projectId} sourceTasks={sourceTasks} />
+          <SectionWm section="recommendation" checks={bySection("recommendation")} projectId={projectId} sourceTasks={sourceTasks} />
         </div>
       )}
 

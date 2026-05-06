@@ -9,6 +9,8 @@ import { ChevronDown, ChevronRight, Download, ExternalLink, ShieldAlert, Link2, 
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AuditInsightsBlock } from "./AuditInsightsBlock";
+import { CreateTaskFromSourceButton } from "./CreateTaskFromSourceButton";
+import { useSourceTasks } from "@/hooks/useSourceTasks";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -386,11 +388,15 @@ function AuditSection({
   issues,
   baseUrl,
   defaultOpen,
+  projectId,
+  sourceTasks,
 }: {
   section: SectionDef;
   issues: any[];
   baseUrl?: string | null;
   defaultOpen?: boolean;
+  projectId: string;
+  sourceTasks?: Map<string, import("@/hooks/useSourceTasks").SourceTaskRef>;
 }) {
   const [sectionOpen, setSectionOpen] = useState<boolean>(!!defaultOpen);
   const [rowOpen, setRowOpen] = useState<Record<string, boolean>>({});
@@ -574,6 +580,17 @@ function AuditSection({
                       <span className={cn("inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium shrink-0", SEV_CLS[r.severity] ?? SEV_CLS.info)}>
                         {SEV_LABEL[r.severity] ?? r.severity}
                       </span>
+                      <span onClick={(e) => e.stopPropagation()} className="shrink-0">
+                        <CreateTaskFromSourceButton
+                          projectId={projectId}
+                          sourceType="audit_check"
+                          sourceId={r.code}
+                          defaultTitle={r.label}
+                          defaultDescription={`Раздел: ${section.title}\nПроверка: ${r.label}\nСерьёзность: ${SEV_LABEL[r.severity] ?? r.severity}\nСтраниц с проблемой: ${pages}${uniqueUrls.length ? `\n\nПримеры URL:\n${uniqueUrls.slice(0, 5).join("\n")}` : ""}`}
+                          defaultPriority={r.severity === "critical" ? "high" : r.severity === "warning" ? "medium" : "low"}
+                          existingTask={sourceTasks?.get(r.code)}
+                        />
+                      </span>
                       {isOpen
                         ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                         : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
@@ -690,11 +707,14 @@ function BentoSections({
   sections,
   issues,
   baseUrl,
+  projectId,
 }: {
   sections: SectionDef[];
   issues: any[];
   baseUrl?: string | null;
+  projectId: string;
 }) {
+  const { data: sourceTasks } = useSourceTasks(projectId, "audit_check");
   // Скрываем секцию "speed" из сетки — для скорости есть отдельный блок PageSpeed Insights ниже
   const visibleSections = sections.filter((s) => s.id !== "speed");
   const [activeId, setActiveId] = useState<string>(visibleSections[0]?.id ?? "");
@@ -823,6 +843,8 @@ function BentoSections({
           issues={issues}
           baseUrl={baseUrl}
           defaultOpen={true}
+          projectId={projectId}
+          sourceTasks={sourceTasks}
         />
       )}
     </div>
@@ -1382,7 +1404,7 @@ export function TechnicalAuditTab({ projectId }: Props) {
 
       {/* Bento-плитки разделов + раскрываемые детали */}
       {scanStatus === "done" && (
-        <BentoSections sections={SECTIONS} issues={jobIssues} baseUrl={project?.url} />
+        <BentoSections sections={SECTIONS} issues={jobIssues} baseUrl={project?.url} projectId={projectId} />
       )}
 
       {scanStatus !== "done" && !showSfPanel && (
