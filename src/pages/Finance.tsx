@@ -75,9 +75,8 @@ export default function Finance() {
         .filter((t) => t.category !== "tax" && t.category !== "cash_reserve" && t.category !== "owner_withdrawal")
         .reduce((sum, t) => sum + Number(t.amount), 0);
       const tax = revenue * TAX_RATE;
-      const cash = revenue * CASH_RATE;
-      const net = revenue - tax - cash - expenses;
-      return { revenue, tax, cash, expenses, net };
+      const net = revenue - tax - expenses;
+      return { revenue, tax, expenses, net };
     };
     const cur = calc(monthStart, monthEnd);
     const prev = calc(prevStart, prevEnd);
