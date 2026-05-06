@@ -388,11 +388,15 @@ function AuditSection({
   issues,
   baseUrl,
   defaultOpen,
+  projectId,
+  sourceTasks,
 }: {
   section: SectionDef;
   issues: any[];
   baseUrl?: string | null;
   defaultOpen?: boolean;
+  projectId: string;
+  sourceTasks?: Map<string, import("@/hooks/useSourceTasks").SourceTaskRef>;
 }) {
   const [sectionOpen, setSectionOpen] = useState<boolean>(!!defaultOpen);
   const [rowOpen, setRowOpen] = useState<Record<string, boolean>>({});
