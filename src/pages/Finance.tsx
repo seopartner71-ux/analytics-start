@@ -151,7 +151,7 @@ export default function Finance() {
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
           Отчёт о прибылях за {format(today, "LLLL", { locale: ru })}
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <PnlCard
             label="Валовая выручка"
             value={pnl.revenue}
@@ -167,13 +167,6 @@ export default function Finance() {
             hint="Зарезервировано на налог"
           />
           <PnlCard
-            label="Касса (резерв 7%)"
-            value={pnl.cash}
-            icon={<PiggyBank className="h-4 w-4" />}
-            tone="violet"
-            hint="Отчисления в Кассу"
-          />
-          <PnlCard
             label="Чистая прибыль"
             value={pnl.net}
             delta={pnl.netDelta}
@@ -183,7 +176,7 @@ export default function Finance() {
           />
         </div>
         <p className="text-xs text-muted-foreground mt-2">
-          Чистая прибыль = Выручка − Налог 7% − Касса 7% − Расходы (без налогов и отчислений в Кассу).
+          Чистая прибыль = Выручка − Налог 7% − Расходы. Касса не участвует в P&amp;L: это отдельный счёт, пополняется вручную.
           Расходы за месяц: <span className="font-semibold text-foreground">{RUB(pnl.expenses)}</span>
         </p>
       </div>
