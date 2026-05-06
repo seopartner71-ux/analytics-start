@@ -605,7 +605,7 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
               { icon: ListChecks, label: "Подзадачи", anchor: "subtasks", count: subtasks.length || undefined },
               { icon: Users, label: "Участники", anchor: "members" },
               { icon: FileText, label: "Результат", anchor: "result" },
-              { icon: Paperclip, label: "Файлы", anchor: "result" },
+              { icon: Paperclip, label: "Файлы", anchor: "attachments" },
               { icon: Timer, label: "Учёт времени", anchor: "time" },
               { icon: Layers, label: task.parent_id ? "Родительская" : "Подзадачи", anchor: "subtasks" },
               { icon: Target, label: "Проект", anchor: "props" },
