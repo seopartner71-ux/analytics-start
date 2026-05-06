@@ -99,7 +99,7 @@ export default function ReportsPage() {
   const { data: projects = [] } = useQuery({
     queryKey: ["reports-projects"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("projects").select("id, name, url, logo_url, client_email").order("name");
+      const { data, error } = await supabase.from("projects").select("id, name, url, logo_url, client_email").is("archived_at", null).order("name");
       if (error) throw error;
       return data;
     },
