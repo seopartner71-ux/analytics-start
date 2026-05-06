@@ -851,6 +851,12 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                 <TaskTimeManual taskId={task.id} projectId={editProjectId || task.project_id || null} />
               </div>
 
+              {/* Attachments */}
+              <TaskAttachmentsBlock taskId={task.id} />
+
+              {/* Activity log */}
+              <TaskActivityBlock taskId={task.id} />
+
             </div>
 
             {/* Sticky bottom action bar — primary CTA */}
