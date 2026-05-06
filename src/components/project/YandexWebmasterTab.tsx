@@ -501,10 +501,10 @@ export function YandexWebmasterTab({ projectId }: Props) {
       {/* SECTIONS */}
       {healthMetrics.length > 0 && (
         <div className="space-y-4">
-          <SectionWm section="fatal" checks={bySection("fatal")} />
-          <SectionWm section="critical" checks={bySection("critical")} />
-          <SectionWm section="possible" checks={bySection("possible")} />
-          <SectionWm section="recommendation" checks={bySection("recommendation")} />
+          <SectionWm section="fatal" checks={bySection("fatal")} projectId={projectId} sourceTasks={sourceTasks} />
+          <SectionWm section="critical" checks={bySection("critical")} projectId={projectId} sourceTasks={sourceTasks} />
+          <SectionWm section="possible" checks={bySection("possible")} projectId={projectId} sourceTasks={sourceTasks} />
+          <SectionWm section="recommendation" checks={bySection("recommendation")} projectId={projectId} sourceTasks={sourceTasks} />
         </div>
       )}
 
