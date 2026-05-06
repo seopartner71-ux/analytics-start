@@ -275,6 +275,8 @@ export default function SiteHealthDetailTab({ projectId }: Props) {
     },
   });
 
+  const { data: sourceTasks } = useSourceTasks(projectId, "crawl_issue");
+
   const isLoading = healthLoading || errorsLoading;
 
   if (isLoading) {
