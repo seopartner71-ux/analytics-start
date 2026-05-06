@@ -579,6 +579,15 @@ export default function SiteHealthDetailTab({ projectId }: Props) {
                         {err.source === "yandex" ? "Яндекс" : "Google"}
                       </Badge>
                       <span className="text-[10px] text-muted-foreground">{format(parseISO(err.detected_at), "dd.MM.yy")}</span>
+                      <CreateTaskFromSourceButton
+                        projectId={projectId}
+                        sourceType="crawl_issue"
+                        sourceId={err.id}
+                        defaultTitle={`Исправить: ${translatedName}`}
+                        defaultDescription={`URL: ${err.url || "—"}\nТип ошибки: ${err.error_type}\nИсточник: ${err.source === "yandex" ? "Яндекс" : "Google"}\nСтатус: ${err.status}`}
+                        defaultPriority={isNew ? "high" : "medium"}
+                        existingTask={sourceTasks?.get(err.id)}
+                      />
                       {isNew ? (
                         <Button
                           variant="ghost"
