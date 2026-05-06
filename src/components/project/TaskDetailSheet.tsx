@@ -657,7 +657,7 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
         <div className="flex flex-col md:flex-row flex-1 min-h-0">
           {/* LEFT COLUMN */}
           <div className="w-full md:w-[78%] flex flex-col border-r border-border/50 bg-[hsl(var(--muted)/0.2)] min-h-0">
-            <div className="flex-1 overflow-y-auto p-7 space-y-4">
+            <div className="flex-1 overflow-y-auto p-8 space-y-5">
 
               {/* Description */}
               <Card className="bg-card shadow-sm border-border/60 rounded-xl">
