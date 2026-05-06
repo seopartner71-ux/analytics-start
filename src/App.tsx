@@ -48,6 +48,7 @@ const KnowledgeBasePage = lazy(() => import("./pages/KnowledgeBasePage"));
 const KnowledgeBooksPage = lazy(() => import("./pages/KnowledgeBooksPage"));
 const DeletionLogPage = lazy(() => import("./pages/DeletionLogPage"));
 const CredentialsPage = lazy(() => import("./pages/CredentialsPage"));
+const NotificationSettingsPage = lazy(() => import("./pages/NotificationSettingsPage"));
 
 // Tuned QueryClient: cache for 60s, no refetch on window focus,
 // retry once. Greatly reduces redundant network traffic.
@@ -113,6 +114,7 @@ const App = () => (
                   <Route path="/admin/time-stats" element={<ProtectedRoute><CrmLayout><EmployeesPage /></CrmLayout></ProtectedRoute>} />
                   <Route path="/admin/deletion-log" element={<ProtectedRoute><CrmLayout><DeletionLogPage /></CrmLayout></ProtectedRoute>} />
                   <Route path="/credentials" element={<ProtectedRoute><CrmLayout><CredentialsPage /></CrmLayout></ProtectedRoute>} />
+                  <Route path="/notifications/settings" element={<ProtectedRoute><CrmLayout><NotificationSettingsPage /></CrmLayout></ProtectedRoute>} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
