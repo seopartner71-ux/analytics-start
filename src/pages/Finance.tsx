@@ -16,6 +16,7 @@ import { InvoicesBlock } from "@/components/finance/InvoicesBlock";
 import { CashTransferBlock } from "@/components/finance/CashTransferBlock";
 import { ReconciliationBlock } from "@/components/finance/ReconciliationBlock";
 import { BankImportBlock } from "@/components/finance/BankImportBlock";
+import { PartnerDistributionBlock } from "@/components/finance/PartnerDistributionBlock";
 
 const RUB = (n: number) =>
   new Intl.NumberFormat("ru-RU", { style: "currency", currency: "RUB", maximumFractionDigits: 0 }).format(n || 0);
@@ -210,6 +211,9 @@ export default function Finance() {
           </ResponsiveContainer>
         </CardContent>
       </Card>
+
+      {/* Раздел прибыли между партнёрами */}
+      <PartnerDistributionBlock />
 
       {/* Блок 4: Касса и переводы */}
       <CashTransferBlock />

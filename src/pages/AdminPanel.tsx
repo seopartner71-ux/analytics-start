@@ -21,6 +21,7 @@ import {
 import { OnboardingTaskTemplateEditor } from "@/components/admin/OnboardingTaskTemplateEditor";
 import { AiAssistantSettings } from "@/components/admin/AiAssistantSettings";
 import { CompanyRequisitesEditor } from "@/components/admin/CompanyRequisitesEditor";
+import { PartnersSettingsEditor } from "@/components/admin/PartnersSettingsEditor";
 import { DepartmentsEditor } from "@/components/admin/DepartmentsEditor";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Bot } from "lucide-react";
@@ -176,6 +177,10 @@ export default function AdminPanel() {
                 <TabsTrigger value="ai-assistant" className="gap-1.5">
                   <Bot className="h-3.5 w-3.5" />
                   AI-ассистент
+                </TabsTrigger>
+                <TabsTrigger value="partners" className="gap-1.5">
+                  <Users className="h-3.5 w-3.5" />
+                  Партнёры
                 </TabsTrigger>
               </TabsList>
 
@@ -374,6 +379,10 @@ export default function AdminPanel() {
 
               <TabsContent value="ai-assistant">
                 <AiAssistantSettings />
+              </TabsContent>
+
+              <TabsContent value="partners">
+                <PartnersSettingsEditor />
               </TabsContent>
           </Tabs>
         </div>
