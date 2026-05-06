@@ -212,6 +212,9 @@ export default function Finance() {
         </CardContent>
       </Card>
 
+      {/* Раздел прибыли между партнёрами */}
+      <PartnerDistributionBlock />
+
       {/* Блок 4: Касса и переводы */}
       <CashTransferBlock />
 
