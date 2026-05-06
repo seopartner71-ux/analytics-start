@@ -21,6 +21,7 @@ import {
 import { OnboardingTaskTemplateEditor } from "@/components/admin/OnboardingTaskTemplateEditor";
 import { AiAssistantSettings } from "@/components/admin/AiAssistantSettings";
 import { CompanyRequisitesEditor } from "@/components/admin/CompanyRequisitesEditor";
+import { PartnersSettingsEditor } from "@/components/admin/PartnersSettingsEditor";
 import { DepartmentsEditor } from "@/components/admin/DepartmentsEditor";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Bot } from "lucide-react";
