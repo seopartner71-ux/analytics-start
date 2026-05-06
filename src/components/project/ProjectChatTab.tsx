@@ -136,19 +136,22 @@ export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) 
   });
 
   // --- Messages ---
+  const [messageLimit, setMessageLimit] = useState(500);
   const { data: messages = [] } = useQuery<ChatMessage[]>({
-    queryKey: ["project-messages", projectId],
+    queryKey: ["project-messages", projectId, messageLimit],
     queryFn: async () => {
+      // Берём последние N сообщений (по убыванию), затем разворачиваем для отображения
       const { data, error } = await supabase
         .from("project_messages")
         .select("*")
         .eq("project_id", projectId)
-        .order("created_at", { ascending: true })
-        .limit(500);
+        .order("created_at", { ascending: false })
+        .limit(messageLimit);
       if (error) throw error;
-      return data as ChatMessage[];
+      return ((data ?? []) as ChatMessage[]).reverse();
     },
   });
+  const canLoadMore = messages.length === messageLimit;
 
   // --- Reactions ---
   const messageIds = useMemo(() => messages.map(m => m.id), [messages]);
@@ -373,6 +376,13 @@ export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) 
       {/* Messages */}
       <ScrollArea className="flex-1">
         <div ref={scrollRef} className="p-4 space-y-3 overflow-y-auto h-full">
+          {canLoadMore && (
+            <div className="flex justify-center pb-2">
+              <Button size="sm" variant="outline" onClick={() => setMessageLimit(l => l + 500)}>
+                Загрузить ещё
+              </Button>
+            </div>
+          )}
           {filtered.length === 0 ? (
             <div className="text-center text-sm text-muted-foreground py-12">
               {search ? "Ничего не найдено" : "Пока нет сообщений. Начните диалог."}

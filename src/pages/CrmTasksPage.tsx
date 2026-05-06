@@ -305,18 +305,27 @@ export default function CrmTasksPage() {
   const [filterAssignee, setFilterAssignee] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
 
-  const { data: tasks = [], isLoading } = useQuery({
-    queryKey: ["crm-tasks"],
+  const PAGE_SIZE = 50;
+  const [page, setPage] = useState(0);
+
+  const { data: tasksData, isLoading } = useQuery({
+    queryKey: ["crm-tasks", page],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const from = page * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+      const { data, error, count } = await supabase
         .from("crm_tasks")
-        .select("*, creator:team_members!crm_tasks_creator_id_fkey(*), assignee:team_members!crm_tasks_assignee_id_fkey(*), project:projects(*)")
+        .select("*, creator:team_members!crm_tasks_creator_id_fkey(*), assignee:team_members!crm_tasks_assignee_id_fkey(*), project:projects(*)", { count: "exact" })
         .is("archived_at", null)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .range(from, to);
       if (error) throw error;
-      return data as CrmTask[];
+      return { rows: (data ?? []) as CrmTask[], total: count ?? 0 };
     },
   });
+  const tasks = tasksData?.rows ?? [];
+  const totalTasks = tasksData?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalTasks / PAGE_SIZE));
 
   const canDeleteTask = (_t: CrmTask) => !!user;
 
@@ -611,7 +620,18 @@ export default function CrmTasksPage() {
           </div>
 
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-muted-foreground">
-            <span>Отмечено: <span className="font-medium text-foreground">{selected.size}</span> / {tasks.length}</span>
+            <span>Отмечено: <span className="font-medium text-foreground">{selected.size}</span> / {tasks.length} (всего {totalTasks})</span>
+            {totalPages > 1 && (
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="outline" disabled={page === 0} onClick={() => setPage(p => Math.max(0, p - 1))}>
+                  ← Предыдущая
+                </Button>
+                <span>Страница {page + 1} из {totalPages}</span>
+                <Button size="sm" variant="outline" disabled={page + 1 >= totalPages} onClick={() => setPage(p => p + 1)}>
+                  Следующая →
+                </Button>
+              </div>
+            )}
           </div>
         </>
       )}
