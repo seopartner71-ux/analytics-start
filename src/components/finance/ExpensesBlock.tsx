@@ -86,6 +86,21 @@ export function ExpensesBlock() {
     },
   });
 
+  const { data: tochkaAccount } = useQuery({
+    queryKey: ["fin-account-tochka"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("financial_accounts")
+        .select("id, name, balance")
+        .eq("kind", "bank")
+        .ilike("name", "%Точка%")
+        .eq("is_active", true)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const { data: expenses = [] } = useQuery({
     queryKey: ["fin-expenses-recent"],
     queryFn: async () => {
