@@ -380,6 +380,10 @@ export default function AdminPanel() {
               <TabsContent value="ai-assistant">
                 <AiAssistantSettings />
               </TabsContent>
+
+              <TabsContent value="partners">
+                <PartnersSettingsEditor />
+              </TabsContent>
           </Tabs>
         </div>
   );
