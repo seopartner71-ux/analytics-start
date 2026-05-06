@@ -22,7 +22,6 @@ const RUB = (n: number) =>
   new Intl.NumberFormat("ru-RU", { style: "currency", currency: "RUB", maximumFractionDigits: 0 }).format(n || 0);
 
 const TAX_RATE = 0.07; // 7% налог
-const CASH_RATE = 0.07; // 7% в Кассу
 
 type Account = { id: string; name: string; kind: string; balance: number; currency: string };
 type Tx = { id: string; account_id: string; type: "income" | "expense" | "transfer"; amount: number; date: string; category: string };
@@ -75,9 +74,8 @@ export default function Finance() {
         .filter((t) => t.category !== "tax" && t.category !== "cash_reserve" && t.category !== "owner_withdrawal")
         .reduce((sum, t) => sum + Number(t.amount), 0);
       const tax = revenue * TAX_RATE;
-      const cash = revenue * CASH_RATE;
-      const net = revenue - tax - cash - expenses;
-      return { revenue, tax, cash, expenses, net };
+      const net = revenue - tax - expenses;
+      return { revenue, tax, expenses, net };
     };
     const cur = calc(monthStart, monthEnd);
     const prev = calc(prevStart, prevEnd);
@@ -107,7 +105,7 @@ export default function Finance() {
       const expenses = txYear
         .filter((t) => t.type === "expense" && inRange(t) && t.category !== "tax" && t.category !== "cash_reserve" && t.category !== "owner_withdrawal")
         .reduce((a, t) => a + Number(t.amount), 0);
-      const net = revenue - revenue * TAX_RATE - revenue * CASH_RATE - expenses;
+      const net = revenue - revenue * TAX_RATE - expenses;
       return { month: label, "Выручка": Math.round(revenue), "Чистая прибыль": Math.round(net) };
     });
   }, [txYear, today]);
@@ -152,7 +150,7 @@ export default function Finance() {
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
           Отчёт о прибылях за {format(today, "LLLL", { locale: ru })}
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <PnlCard
             label="Валовая выручка"
             value={pnl.revenue}
@@ -168,13 +166,6 @@ export default function Finance() {
             hint="Зарезервировано на налог"
           />
           <PnlCard
-            label="Касса (резерв 7%)"
-            value={pnl.cash}
-            icon={<PiggyBank className="h-4 w-4" />}
-            tone="violet"
-            hint="Отчисления в Кассу"
-          />
-          <PnlCard
             label="Чистая прибыль"
             value={pnl.net}
             delta={pnl.netDelta}
@@ -184,7 +175,7 @@ export default function Finance() {
           />
         </div>
         <p className="text-xs text-muted-foreground mt-2">
-          Чистая прибыль = Выручка − Налог 7% − Касса 7% − Расходы (без налогов и отчислений в Кассу).
+          Чистая прибыль = Выручка − Налог 7% − Расходы. Касса не участвует в P&amp;L: это отдельный счёт, пополняется вручную.
           Расходы за месяц: <span className="font-semibold text-foreground">{RUB(pnl.expenses)}</span>
         </p>
       </div>

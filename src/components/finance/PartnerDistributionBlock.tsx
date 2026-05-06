@@ -14,7 +14,6 @@ const RUB = (n: number) =>
   new Intl.NumberFormat("ru-RU", { style: "currency", currency: "RUB", maximumFractionDigits: 0 }).format(n || 0);
 
 const TAX_RATE = 0.07;
-const CASH_RATE = 0.07;
 
 type Tx = { id: string; type: "income" | "expense" | "transfer"; amount: number; date: string; category: string };
 type Profile = { user_id: string; full_name: string | null; email: string };
@@ -74,8 +73,7 @@ export function PartnerDistributionBlock() {
       !["tax", "cash_reserve", "owner_withdrawal", "transfer_out"].includes(t.category))
       .reduce((s, t) => s + Number(t.amount), 0);
     const tax = revenue * TAX_RATE;
-    const cash = revenue * CASH_RATE;
-    return Math.round(revenue - tax - cash - expenses);
+    return Math.round(revenue - tax - expenses);
   }, [txs]);
 
   const { data: dist } = useQuery({
