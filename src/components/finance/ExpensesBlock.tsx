@@ -181,7 +181,7 @@ export function ExpensesBlock() {
             <Receipt className="h-4 w-4" /> Расходы
           </CardTitle>
           <p className="text-xs text-muted-foreground mt-1">
-            Списываются с Кассы · текущий баланс: <span className="font-semibold text-foreground">{RUB(Number(cashAccount?.balance || 0))}</span>
+            Сначала с Кассы (<span className="font-semibold text-foreground">{RUB(Number(cashAccount?.balance || 0))}</span>), если не хватает — с банка «Точка» (<span className="font-semibold text-foreground">{RUB(Number(tochkaAccount?.balance || 0))}</span>)
           </p>
         </div>
         <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>
