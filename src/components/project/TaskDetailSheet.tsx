@@ -210,7 +210,7 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
               title: `Вас упомянули в задаче «${task!.title}»`,
               body: msg.slice(0, 200),
               kind: "task_mention",
-              task_id: task!.id,
+
             }));
           if (notifs.length > 0) await supabase.from("notifications").insert(notifs);
         }
@@ -229,7 +229,7 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
               title: `Новый комментарий в задаче «${task!.title}»`,
               body: msg.slice(0, 200),
               kind: "task_comment",
-              task_id: task!.id,
+
             }))
           );
         }
