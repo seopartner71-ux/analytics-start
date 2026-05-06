@@ -163,30 +163,32 @@ function PropertyRow({ label, children }: { label: string; children: React.React
 }
 
 /* ─── Kanban (with drag-and-drop) ─── */
-type KanbanStage = "Новые" | "В работе" | "На проверке" | "Возвращена" | "Принята";
-const KANBAN_STAGES: KanbanStage[] = ["Новые", "В работе", "На проверке", "Возвращена", "Принята"];
+type KanbanStage = "Новые" | "В работе" | "На проверке" | "Возвращена" | "Принята" | "Завершена";
+const KANBAN_STAGES: KanbanStage[] = ["Новые", "В работе", "На проверке", "Возвращена", "Принята", "Завершена"];
+
+const PRIORITY_BAR: Record<string, string> = {
+  high: "bg-red-500",
+  medium: "bg-amber-500",
+  low: "bg-muted-foreground/40",
+};
 
 function KanbanCard({ t, onSelect, onDelete, canDelete }: { t: CrmTask; onSelect: (t: CrmTask) => void; onDelete: (t: CrmTask) => Promise<void>; canDelete: (t: CrmTask) => boolean }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: t.id });
   const dlStatus = getDeadlineStatus(t.deadline, t.stage);
   const dlStyle = DEADLINE_STYLES[dlStatus];
-  const color = STAGE_COLORS[t.stage as KanbanStage] || t.stage_color || "#3b82f6";
+  const priorityClass = PRIORITY_BAR[t.priority || "medium"] || PRIORITY_BAR.medium;
 
   return (
-    <div ref={setNodeRef} {...attributes} style={{ opacity: isDragging ? 0.4 : 1 }}>
-      <Card className="cursor-pointer card-glow group relative" onClick={() => onSelect(t)}>
-        <CardContent className="p-3.5 space-y-2.5">
+    <div ref={setNodeRef} {...attributes} {...listeners} style={{ opacity: isDragging ? 0.5 : 1 }}>
+      <Card
+        className="cursor-grab active:cursor-grabbing card-glow group relative overflow-hidden hover:shadow-md transition-shadow"
+        onClick={() => onSelect(t)}
+      >
+        <div className={cn("absolute top-0 left-0 right-0 h-1", priorityClass)} />
+        <CardContent className="p-3.5 pt-4 space-y-2.5">
           <div className="flex items-start justify-between gap-2">
-            <div
-              {...listeners}
-              className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground/80 mt-0.5"
-              onClick={(e) => e.stopPropagation()}
-              aria-label="Перетащить"
-            >
-              <GripVertical className="h-3.5 w-3.5" />
-            </div>
-            <p className="text-sm font-medium text-foreground line-clamp-2 leading-snug flex-1">{t.title}</p>
-            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+            <p className="text-sm font-semibold text-foreground line-clamp-2 leading-snug flex-1">{t.title}</p>
+            <div className="opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
               <DeleteButton
                 visible={canDelete(t)}
                 entityName={t.title}
@@ -195,16 +197,26 @@ function KanbanCard({ t, onSelect, onDelete, canDelete }: { t: CrmTask; onSelect
               />
             </div>
           </div>
-          <div className="flex items-center justify-between">
-            <span className={cn("text-[11px] font-medium flex items-center gap-1", dlStyle.text)}>
-              {dlStatus === "overdue" && <AlertTriangle className="h-3 w-3" />}
-              {dlStatus === "soon" && <Clock className="h-3 w-3" />}
-              {t.deadline ? new Date(t.deadline).toLocaleDateString("ru-RU", { day: "numeric", month: "short" }) : "—"}
-            </span>
-            {t.assignee && <AvatarCircle initials={getInitials(t.assignee.full_name)} className="h-6 w-6 text-[10px]" />}
-          </div>
-          <div className="w-full h-1.5 rounded-full overflow-hidden bg-muted">
-            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${t.stage_progress || 0}%`, backgroundColor: color }} />
+          {t.project && (
+            <p className="text-xs text-muted-foreground truncate">{t.project.name}</p>
+          )}
+          <div className="flex items-center justify-between gap-2 pt-1">
+            <div className="flex items-center gap-1.5 min-w-0">
+              {t.assignee && (
+                <>
+                  <AvatarCircle initials={getInitials(t.assignee.full_name)} className="h-5 w-5 text-[9px]" />
+                  <span className="text-[11px] text-muted-foreground truncate">{t.assignee.full_name.split(" ")[0]}</span>
+                </>
+              )}
+            </div>
+            {t.deadline && (
+              <span className={cn("text-[11px] font-medium flex items-center gap-1 shrink-0", dlStyle.text)}>
+                {dlStatus === "overdue" && <AlertTriangle className="h-3 w-3" />}
+                {dlStatus === "soon" && <Clock className="h-3 w-3" />}
+                <CalendarDays className="h-3 w-3" />
+                {new Date(t.deadline).toLocaleDateString("ru-RU", { day: "numeric", month: "short" })}
+              </span>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -216,15 +228,29 @@ function KanbanColumn({ stage, tasks, onSelect, onDelete, canDelete }: { stage: 
   const { setNodeRef, isOver } = useDroppable({ id: `col-${stage}` });
   const color = STAGE_COLORS[stage];
   return (
-    <div ref={setNodeRef} className={cn("space-y-2.5 rounded-lg p-1 transition-colors", isOver && "bg-primary/5 ring-2 ring-primary/30")}>
-      <div className="flex items-center gap-2 pb-2.5 border-b-2" style={{ borderColor: color }}>
-        <span className="text-sm font-semibold text-foreground">{stage}</span>
+    <div className="flex flex-col min-w-[240px]">
+      <div className="flex items-center gap-2 pb-2.5 border-b-2 mb-2.5" style={{ borderColor: color }}>
+        <span className="h-2 w-2 rounded-full" style={{ background: color }} />
+        <span className="text-sm font-semibold text-foreground flex-1 truncate">{stage}</span>
         <Badge variant="secondary" className="text-[10px] h-5 min-w-5 flex items-center justify-center rounded-full">{tasks.length}</Badge>
       </div>
-      <div className="space-y-2.5 min-h-[80px]">
-        {tasks.map((t) => (
-          <KanbanCard key={t.id} t={t} onSelect={onSelect} onDelete={onDelete} canDelete={canDelete} />
-        ))}
+      <div
+        ref={setNodeRef}
+        className={cn(
+          "space-y-2.5 rounded-lg p-1.5 min-h-[160px] transition-colors",
+          isOver && "bg-primary/5 ring-2 ring-primary/40 ring-dashed"
+        )}
+      >
+        {tasks.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground/60 border-2 border-dashed border-border/40 rounded-lg">
+            <p className="text-xs">Нет задач</p>
+            <p className="text-[10px] mt-0.5">Перетащите сюда</p>
+          </div>
+        ) : (
+          tasks.map((t) => (
+            <KanbanCard key={t.id} t={t} onSelect={onSelect} onDelete={onDelete} canDelete={canDelete} />
+          ))
+        )}
       </div>
     </div>
   );
@@ -267,23 +293,29 @@ function KanbanView({ tasks, onSelect, onDelete, canDelete }: { tasks: CrmTask[]
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        {KANBAN_STAGES.map(stage => (
-          <KanbanColumn
-            key={stage}
-            stage={stage}
-            tasks={tasks.filter(t => t.stage === stage)}
-            onSelect={onSelect}
-            onDelete={onDelete}
-            canDelete={canDelete}
-          />
-        ))}
+      <div className="overflow-x-auto pb-2">
+        <div className="grid grid-flow-col auto-cols-[minmax(240px,1fr)] gap-4 min-w-full">
+          {KANBAN_STAGES.map(stage => (
+            <KanbanColumn
+              key={stage}
+              stage={stage}
+              tasks={tasks.filter(t => t.stage === stage)}
+              onSelect={onSelect}
+              onDelete={onDelete}
+              canDelete={canDelete}
+            />
+          ))}
+        </div>
       </div>
       <DragOverlay>
         {activeTask ? (
-          <Card className="shadow-2xl ring-2 ring-primary cursor-grabbing">
+          <Card className="shadow-2xl ring-2 ring-primary cursor-grabbing rotate-2">
+            <div className={cn("h-1", PRIORITY_BAR[activeTask.priority || "medium"])} />
             <CardContent className="p-3.5">
-              <p className="text-sm font-medium text-foreground line-clamp-2">{activeTask.title}</p>
+              <p className="text-sm font-semibold text-foreground line-clamp-2">{activeTask.title}</p>
+              {activeTask.project && (
+                <p className="text-xs text-muted-foreground mt-1">{activeTask.project.name}</p>
+              )}
             </CardContent>
           </Card>
         ) : null}
