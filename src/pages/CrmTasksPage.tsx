@@ -620,7 +620,18 @@ export default function CrmTasksPage() {
           </div>
 
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-muted-foreground">
-            <span>Отмечено: <span className="font-medium text-foreground">{selected.size}</span> / {tasks.length}</span>
+            <span>Отмечено: <span className="font-medium text-foreground">{selected.size}</span> / {tasks.length} (всего {totalTasks})</span>
+            {totalPages > 1 && (
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="outline" disabled={page === 0} onClick={() => setPage(p => Math.max(0, p - 1))}>
+                  ← Предыдущая
+                </Button>
+                <span>Страница {page + 1} из {totalPages}</span>
+                <Button size="sm" variant="outline" disabled={page + 1 >= totalPages} onClick={() => setPage(p => p + 1)}>
+                  Следующая →
+                </Button>
+              </div>
+            )}
           </div>
         </>
       )}
