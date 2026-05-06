@@ -1404,7 +1404,7 @@ export function TechnicalAuditTab({ projectId }: Props) {
 
       {/* Bento-плитки разделов + раскрываемые детали */}
       {scanStatus === "done" && (
-        <BentoSections sections={SECTIONS} issues={jobIssues} baseUrl={project?.url} />
+        <BentoSections sections={SECTIONS} issues={jobIssues} baseUrl={project?.url} projectId={projectId} />
       )}
 
       {scanStatus !== "done" && !showSfPanel && (
