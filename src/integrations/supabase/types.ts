@@ -2645,6 +2645,66 @@ export type Database = {
           },
         ]
       }
+      partner_distributions: {
+        Row: {
+          created_at: string
+          id: string
+          partner1_amount: number
+          partner1_id: string | null
+          partner1_paid: boolean
+          partner1_paid_at: string | null
+          partner1_share: number
+          partner1_tx_id: string | null
+          partner2_amount: number
+          partner2_id: string | null
+          partner2_paid: boolean
+          partner2_paid_at: string | null
+          partner2_share: number
+          partner2_tx_id: string | null
+          period: string
+          total_profit: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          partner1_amount?: number
+          partner1_id?: string | null
+          partner1_paid?: boolean
+          partner1_paid_at?: string | null
+          partner1_share?: number
+          partner1_tx_id?: string | null
+          partner2_amount?: number
+          partner2_id?: string | null
+          partner2_paid?: boolean
+          partner2_paid_at?: string | null
+          partner2_share?: number
+          partner2_tx_id?: string | null
+          period: string
+          total_profit?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          partner1_amount?: number
+          partner1_id?: string | null
+          partner1_paid?: boolean
+          partner1_paid_at?: string | null
+          partner1_share?: number
+          partner1_tx_id?: string | null
+          partner2_amount?: number
+          partner2_id?: string | null
+          partner2_paid?: boolean
+          partner2_paid_at?: string | null
+          partner2_share?: number
+          partner2_tx_id?: string | null
+          period?: string
+          total_profit?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       period_tasks: {
         Row: {
           assignee_id: string | null
