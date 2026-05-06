@@ -86,6 +86,21 @@ export function ExpensesBlock() {
     },
   });
 
+  const { data: tochkaAccount } = useQuery({
+    queryKey: ["fin-account-tochka"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("financial_accounts")
+        .select("id, name, balance")
+        .eq("kind", "bank")
+        .ilike("name", "%Точка%")
+        .eq("is_active", true)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const { data: expenses = [] } = useQuery({
     queryKey: ["fin-expenses-recent"],
     queryFn: async () => {
@@ -112,10 +127,15 @@ export function ExpensesBlock() {
     mutationFn: async () => {
       const amt = Number(amount);
       if (!amt || amt <= 0) throw new Error("Укажите сумму больше 0");
-      if (!cashAccount) throw new Error("Не найден счёт «Касса»");
+      if (!cashAccount && !tochkaAccount) throw new Error("Не найдены счета (Касса/Точка)");
+
+      const kassaBalance = Number(cashAccount?.balance || 0);
+      const useKassa = cashAccount && kassaBalance >= amt;
+      const targetAccountId = useKassa ? cashAccount!.id : tochkaAccount?.id;
+      if (!targetAccountId) throw new Error("Не найден банк «Точка» для списания");
 
       const { error } = await supabase.from("transactions" as any).insert({
-        account_id: cashAccount.id,
+        account_id: targetAccountId,
         type: "expense",
         amount: amt,
         date,
@@ -123,13 +143,15 @@ export function ExpensesBlock() {
         description: description || null,
       });
       if (error) throw error;
+      return { useKassa };
     },
-    onSuccess: () => {
-      toast.success("Расход добавлен и списан с Кассы");
+    onSuccess: ({ useKassa }) => {
+      toast.success(useKassa ? "Расход списан с Кассы" : "Касса пуста — расход списан с банка «Точка»");
       qc.invalidateQueries({ queryKey: ["fin-expenses-recent"] });
       qc.invalidateQueries({ queryKey: ["fin-accounts"] });
       qc.invalidateQueries({ queryKey: ["fin-tx-year"] });
       qc.invalidateQueries({ queryKey: ["fin-account-cash"] });
+      qc.invalidateQueries({ queryKey: ["fin-account-tochka"] });
       setOpen(false);
       reset();
     },
@@ -159,7 +181,7 @@ export function ExpensesBlock() {
             <Receipt className="h-4 w-4" /> Расходы
           </CardTitle>
           <p className="text-xs text-muted-foreground mt-1">
-            Списываются с Кассы · текущий баланс: <span className="font-semibold text-foreground">{RUB(Number(cashAccount?.balance || 0))}</span>
+            Сначала с Кассы (<span className="font-semibold text-foreground">{RUB(Number(cashAccount?.balance || 0))}</span>), если не хватает — с банка «Точка» (<span className="font-semibold text-foreground">{RUB(Number(tochkaAccount?.balance || 0))}</span>)
           </p>
         </div>
         <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>
@@ -169,7 +191,7 @@ export function ExpensesBlock() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Новый расход</DialogTitle>
-              <DialogDescription>Сумма будет списана со счёта «Касса».</DialogDescription>
+              <DialogDescription>Если в Кассе достаточно средств — спишется с неё, иначе с банка «Точка». Касса не уходит в минус.</DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-2">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -242,7 +264,7 @@ export function ExpensesBlock() {
                         variant="ghost"
                         className="h-7 w-7"
                         onClick={() => {
-                          if (confirm("Удалить расход? Сумма вернётся на счёт Кассы.")) deleteMut.mutate(e.id);
+                          if (confirm("Удалить расход? Сумма вернётся на счёт.")) deleteMut.mutate(e.id);
                         }}
                       >
                         <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
