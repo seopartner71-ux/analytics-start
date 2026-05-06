@@ -78,11 +78,14 @@ export default function AdminTimeStatsPage({ embedded = false }: { embedded?: bo
         return;
       }
 
-      // 3. Последняя активность по каждому пользователю (последний log_date)
+      // 3. Последняя активность по каждому пользователю — за последние 90 дней, лимит 2000
+      const since = format(new Date(Date.now() - 90 * 24 * 60 * 60 * 1000), "yyyy-MM-dd");
       const { data: allLogs } = await supabase
         .from("user_time_logs")
         .select("user_id, log_date")
-        .order("log_date", { ascending: false });
+        .gte("log_date", since)
+        .order("log_date", { ascending: false })
+        .limit(2000);
 
       const lastActiveMap = new Map<string, string>();
       (allLogs ?? []).forEach((l) => {
