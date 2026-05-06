@@ -30,6 +30,9 @@ import { CreateSubtaskDialog, type SubtaskFormValues } from "@/components/projec
 import { TaskBlockerSection, FrozenDeadlineBadge, useTaskBlocker } from "@/components/project/TaskBlocker";
 import { linkify } from "@/lib/linkify";
 import { TaskMembersBlock } from "@/components/project/TaskMembersBlock";
+import { TaskAttachmentsBlock } from "@/components/project/TaskAttachmentsBlock";
+import { TaskActivityBlock } from "@/components/project/TaskActivityBlock";
+import { renderWithMentions, extractMentionedMembers } from "@/lib/mentions";
 
 export type CrmTask = Tables<"crm_tasks"> & {
   creator?: Tables<"team_members"> | null;
@@ -181,10 +184,56 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
 
   const sendComment = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("task_comments").insert({
-        task_id: task!.id, body: msg, is_system: false,
-      });
+      const { data: inserted, error } = await supabase
+        .from("task_comments")
+        .insert({ task_id: task!.id, body: msg, is_system: false })
+        .select("id")
+        .single();
       if (error) throw error;
+      // @упоминания
+      if (user && inserted?.id) {
+        const mentioned = extractMentionedMembers(msg, members as any);
+        if (mentioned.length > 0) {
+          const rows = mentioned.map((m) => ({
+            task_id: task!.id,
+            comment_id: inserted.id,
+            mentioned_user_id: m.owner_id || m.id,
+            mentioner_id: user.id,
+          }));
+          await supabase.from("task_mentions").insert(rows);
+          // Уведомления упомянутым (с owner_id)
+          const notifs = mentioned
+            .filter((m) => m.owner_id)
+            .map((m) => ({
+              user_id: m.owner_id!,
+              project_id: task!.project_id,
+              title: `Вас упомянули в задаче «${task!.title}»`,
+              body: msg.slice(0, 200),
+              kind: "task_mention",
+
+            }));
+          if (notifs.length > 0) await supabase.from("notifications").insert(notifs);
+        }
+        // Уведомление assignee и creator
+        const notifyTargets = new Set<string>();
+        if (task!.assignee?.owner_id && task!.assignee.owner_id !== user.id)
+          notifyTargets.add(task!.assignee.owner_id);
+        if (task!.creator?.owner_id && task!.creator.owner_id !== user.id)
+          notifyTargets.add(task!.creator.owner_id);
+        if (task!.owner_id && task!.owner_id !== user.id) notifyTargets.add(task!.owner_id);
+        if (notifyTargets.size > 0) {
+          await supabase.from("notifications").insert(
+            Array.from(notifyTargets).map((uid) => ({
+              user_id: uid,
+              project_id: task!.project_id,
+              title: `Новый комментарий в задаче «${task!.title}»`,
+              body: msg.slice(0, 200),
+              kind: "task_comment",
+
+            }))
+          );
+        }
+      }
     },
     onSuccess: () => {
       setMsg("");
@@ -556,7 +605,7 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
               { icon: ListChecks, label: "Подзадачи", anchor: "subtasks", count: subtasks.length || undefined },
               { icon: Users, label: "Участники", anchor: "members" },
               { icon: FileText, label: "Результат", anchor: "result" },
-              { icon: Paperclip, label: "Файлы", anchor: "result" },
+              { icon: Paperclip, label: "Файлы", anchor: "attachments" },
               { icon: Timer, label: "Учёт времени", anchor: "time" },
               { icon: Layers, label: task.parent_id ? "Родительская" : "Подзадачи", anchor: "subtasks" },
               { icon: Target, label: "Проект", anchor: "props" },
@@ -802,6 +851,12 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                 <TaskTimeManual taskId={task.id} projectId={editProjectId || task.project_id || null} />
               </div>
 
+              {/* Attachments */}
+              <TaskAttachmentsBlock taskId={task.id} />
+
+              {/* Activity log */}
+              <TaskActivityBlock taskId={task.id} />
+
             </div>
 
             {/* Sticky bottom action bar — primary CTA */}
@@ -948,7 +1003,7 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                             </span>
                           </div>
                           <div className="bg-card rounded-2xl rounded-tl-md p-3.5 border border-border/40 shadow-sm max-w-[85%]">
-                            <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap break-words">{linkify(m.body)}</p>
+                            <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap break-words">{renderWithMentions(m.body)}</p>
                           </div>
                           <span className="text-[10px] text-muted-foreground/50 ml-1 mt-1 block">
                             {new Date(m.created_at).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
