@@ -21,7 +21,7 @@ import { PartnerDistributionBlock } from "@/components/finance/PartnerDistributi
 const RUB = (n: number) =>
   new Intl.NumberFormat("ru-RU", { style: "currency", currency: "RUB", maximumFractionDigits: 0 }).format(n || 0);
 
-const TAX_RATE = 0.07; // 7% налог
+const TAX_RATE = 0.06; // 6% налог
 
 type Account = { id: string; name: string; kind: string; balance: number; currency: string };
 type Tx = { id: string; account_id: string; type: "income" | "expense" | "transfer"; amount: number; date: string; category: string };
