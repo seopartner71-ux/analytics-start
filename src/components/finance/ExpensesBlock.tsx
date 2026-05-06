@@ -191,7 +191,7 @@ export function ExpensesBlock() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Новый расход</DialogTitle>
-              <DialogDescription>Сумма будет списана со счёта «Касса».</DialogDescription>
+              <DialogDescription>Если в Кассе достаточно средств — спишется с неё, иначе с банка «Точка». Касса не уходит в минус.</DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-2">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
