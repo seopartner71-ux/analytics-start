@@ -305,18 +305,27 @@ export default function CrmTasksPage() {
   const [filterAssignee, setFilterAssignee] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
 
-  const { data: tasks = [], isLoading } = useQuery({
-    queryKey: ["crm-tasks"],
+  const PAGE_SIZE = 50;
+  const [page, setPage] = useState(0);
+
+  const { data: tasksData, isLoading } = useQuery({
+    queryKey: ["crm-tasks", page],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const from = page * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+      const { data, error, count } = await supabase
         .from("crm_tasks")
-        .select("*, creator:team_members!crm_tasks_creator_id_fkey(*), assignee:team_members!crm_tasks_assignee_id_fkey(*), project:projects(*)")
+        .select("*, creator:team_members!crm_tasks_creator_id_fkey(*), assignee:team_members!crm_tasks_assignee_id_fkey(*), project:projects(*)", { count: "exact" })
         .is("archived_at", null)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .range(from, to);
       if (error) throw error;
-      return data as CrmTask[];
+      return { rows: (data ?? []) as CrmTask[], total: count ?? 0 };
     },
   });
+  const tasks = tasksData?.rows ?? [];
+  const totalTasks = tasksData?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalTasks / PAGE_SIZE));
 
   const canDeleteTask = (_t: CrmTask) => !!user;
 
