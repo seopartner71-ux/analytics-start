@@ -707,11 +707,14 @@ function BentoSections({
   sections,
   issues,
   baseUrl,
+  projectId,
 }: {
   sections: SectionDef[];
   issues: any[];
   baseUrl?: string | null;
+  projectId: string;
 }) {
+  const { data: sourceTasks } = useSourceTasks(projectId, "audit_check");
   // Скрываем секцию "speed" из сетки — для скорости есть отдельный блок PageSpeed Insights ниже
   const visibleSections = sections.filter((s) => s.id !== "speed");
   const [activeId, setActiveId] = useState<string>(visibleSections[0]?.id ?? "");
