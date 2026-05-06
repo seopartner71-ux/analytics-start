@@ -159,7 +159,7 @@ export default function Finance() {
             tone="blue"
           />
           <PnlCard
-            label="Налоги (резерв 7%)"
+            label="Налоги (резерв 6%)"
             value={pnl.tax}
             icon={<Receipt className="h-4 w-4" />}
             tone="amber"
