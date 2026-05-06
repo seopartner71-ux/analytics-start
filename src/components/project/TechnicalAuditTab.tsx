@@ -9,6 +9,8 @@ import { ChevronDown, ChevronRight, Download, ExternalLink, ShieldAlert, Link2, 
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AuditInsightsBlock } from "./AuditInsightsBlock";
+import { CreateTaskFromSourceButton } from "./CreateTaskFromSourceButton";
+import { useSourceTasks } from "@/hooks/useSourceTasks";
 import {
   AlertDialog,
   AlertDialogAction,
