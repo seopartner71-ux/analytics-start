@@ -843,6 +843,8 @@ function BentoSections({
           issues={issues}
           baseUrl={baseUrl}
           defaultOpen={true}
+          projectId={projectId}
+          sourceTasks={sourceTasks}
         />
       )}
     </div>
