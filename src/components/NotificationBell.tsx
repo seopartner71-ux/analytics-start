@@ -286,6 +286,20 @@ export function NotificationBell() {
             </div>
           )}
         </div>
+        <div className="border-t border-border p-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full justify-start gap-2 text-[12px] text-muted-foreground hover:text-foreground"
+            onClick={() => {
+              setOpen(false);
+              navigate("/notifications/settings");
+            }}
+          >
+            <SettingsIcon className="h-3.5 w-3.5" />
+            Настройки уведомлений
+          </Button>
+        </div>
       </PopoverContent>
     </Popover>
   );
