@@ -305,6 +305,8 @@ export function YandexWebmasterTab({ projectId }: Props) {
     },
   });
 
+  const { data: sourceTasks } = useSourceTasks(projectId, "webmaster");
+
   const domain = getDomain(project?.url);
 
   const lastUpdate = useMemo(() => {
