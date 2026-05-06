@@ -73,8 +73,7 @@ export function PartnerDistributionBlock() {
       !["tax", "cash_reserve", "owner_withdrawal", "transfer_out"].includes(t.category))
       .reduce((s, t) => s + Number(t.amount), 0);
     const tax = revenue * TAX_RATE;
-    const cash = revenue * CASH_RATE;
-    return Math.round(revenue - tax - cash - expenses);
+    return Math.round(revenue - tax - expenses);
   }, [txs]);
 
   const { data: dist } = useQuery({
