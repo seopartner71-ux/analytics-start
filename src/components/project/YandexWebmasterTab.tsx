@@ -193,7 +193,14 @@ function CheckRowWm({
   );
 }
 
-function SectionWm({ section, checks }: { section: SectionType; checks: WmCheck[] }) {
+function SectionWm({
+  section, checks, projectId, sourceTasks,
+}: {
+  section: SectionType;
+  checks: WmCheck[];
+  projectId: string;
+  sourceTasks?: Map<string, SourceTaskRef>;
+}) {
   const [open, setOpen] = useState(false);
   const meta = SECTION_META[section];
   const errCount = checks.filter(c => c.status === "error").length;
@@ -221,7 +228,15 @@ function SectionWm({ section, checks }: { section: SectionType; checks: WmCheck[
           <div className="w-[20px]"></div>
         </div>
         <div className="space-y-0.5 mt-1">
-          {checks.map(c => <CheckRowWm key={c.number} check={c} sectionType={section} />)}
+          {checks.map(c => (
+            <CheckRowWm
+              key={c.number}
+              check={c}
+              sectionType={section}
+              projectId={projectId}
+              existingTask={sourceTasks?.get(c.apiField)}
+            />
+          ))}
         </div>
       </CollapsibleContent>
     </Collapsible>
