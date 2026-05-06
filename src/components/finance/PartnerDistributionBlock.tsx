@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 const RUB = (n: number) =>
   new Intl.NumberFormat("ru-RU", { style: "currency", currency: "RUB", maximumFractionDigits: 0 }).format(n || 0);
 
-const TAX_RATE = 0.07;
+const TAX_RATE = 0.06;
 
 type Tx = { id: string; type: "income" | "expense" | "transfer"; amount: number; date: string; category: string };
 type Profile = { user_id: string; full_name: string | null; email: string };
