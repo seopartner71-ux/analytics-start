@@ -178,6 +178,10 @@ export default function AdminPanel() {
                   <Bot className="h-3.5 w-3.5" />
                   AI-ассистент
                 </TabsTrigger>
+                <TabsTrigger value="partners" className="gap-1.5">
+                  <Users className="h-3.5 w-3.5" />
+                  Партнёры
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="departments">
