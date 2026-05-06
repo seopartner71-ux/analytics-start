@@ -89,7 +89,7 @@ export default function CredentialsPage() {
   const { data: projects = [] } = useQuery({
     queryKey: ["projects-for-credentials"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("projects").select("id, name").order("name");
+      const { data, error } = await supabase.from("projects").select("id, name").is("archived_at", null).order("name");
       if (error) throw error;
       return data;
     },

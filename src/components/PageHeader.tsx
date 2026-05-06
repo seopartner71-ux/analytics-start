@@ -74,7 +74,7 @@ export function PageHeader({
   const { data: projects = [] } = useQuery({
     queryKey: ["projects-list"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("projects").select("id, name, logo_url").order("name");
+      const { data, error } = await supabase.from("projects").select("id, name, logo_url").is("archived_at", null).order("name");
       if (error) throw error;
       return data;
     },

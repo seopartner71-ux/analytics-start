@@ -144,7 +144,7 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
   const { data: projects = [] } = useQuery({
     queryKey: ["projects-list-detail"],
     queryFn: async () => {
-      const { data } = await supabase.from("projects").select("id, name, privacy, account_manager_id").order("name");
+      const { data } = await supabase.from("projects").select("id, name, privacy, account_manager_id").is("archived_at", null).order("name");
       return data || [];
     },
   });

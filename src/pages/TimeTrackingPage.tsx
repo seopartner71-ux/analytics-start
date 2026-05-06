@@ -74,7 +74,7 @@ export default function TimeTrackingPage() {
     queryKey: ["tt-projects", projectIds],
     queryFn: async () => {
       if (!projectIds.length) return [];
-      const { data } = await supabase.from("projects").select("id, name").in("id", projectIds);
+      const { data } = await supabase.from("projects").select("id, name").in("id", projectIds).is("archived_at", null);
       return data ?? [];
     },
     enabled: projectIds.length > 0,

@@ -60,7 +60,7 @@ const Team = () => {
   const { data: projects = [] } = useQuery({
     queryKey: ["projects"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("projects").select("id, name, seo_specialist_id, account_manager_id");
+      const { data, error } = await supabase.from("projects").select("id, name, seo_specialist_id, account_manager_id").is("archived_at", null);
       if (error) throw error;
       return data;
     },
