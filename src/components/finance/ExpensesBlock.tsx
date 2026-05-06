@@ -127,10 +127,15 @@ export function ExpensesBlock() {
     mutationFn: async () => {
       const amt = Number(amount);
       if (!amt || amt <= 0) throw new Error("Укажите сумму больше 0");
-      if (!cashAccount) throw new Error("Не найден счёт «Касса»");
+      if (!cashAccount && !tochkaAccount) throw new Error("Не найдены счета (Касса/Точка)");
+
+      const kassaBalance = Number(cashAccount?.balance || 0);
+      const useKassa = cashAccount && kassaBalance >= amt;
+      const targetAccountId = useKassa ? cashAccount!.id : tochkaAccount?.id;
+      if (!targetAccountId) throw new Error("Не найден банк «Точка» для списания");
 
       const { error } = await supabase.from("transactions" as any).insert({
-        account_id: cashAccount.id,
+        account_id: targetAccountId,
         type: "expense",
         amount: amt,
         date,
@@ -138,13 +143,15 @@ export function ExpensesBlock() {
         description: description || null,
       });
       if (error) throw error;
+      return { useKassa };
     },
-    onSuccess: () => {
-      toast.success("Расход добавлен и списан с Кассы");
+    onSuccess: ({ useKassa }) => {
+      toast.success(useKassa ? "Расход списан с Кассы" : "Касса пуста — расход списан с банка «Точка»");
       qc.invalidateQueries({ queryKey: ["fin-expenses-recent"] });
       qc.invalidateQueries({ queryKey: ["fin-accounts"] });
       qc.invalidateQueries({ queryKey: ["fin-tx-year"] });
       qc.invalidateQueries({ queryKey: ["fin-account-cash"] });
+      qc.invalidateQueries({ queryKey: ["fin-account-tochka"] });
       setOpen(false);
       reset();
     },
