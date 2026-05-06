@@ -30,6 +30,9 @@ import { CreateSubtaskDialog, type SubtaskFormValues } from "@/components/projec
 import { TaskBlockerSection, FrozenDeadlineBadge, useTaskBlocker } from "@/components/project/TaskBlocker";
 import { linkify } from "@/lib/linkify";
 import { TaskMembersBlock } from "@/components/project/TaskMembersBlock";
+import { TaskAttachmentsBlock } from "@/components/project/TaskAttachmentsBlock";
+import { TaskActivityBlock } from "@/components/project/TaskActivityBlock";
+import { renderWithMentions, extractMentionedMembers } from "@/lib/mentions";
 
 export type CrmTask = Tables<"crm_tasks"> & {
   creator?: Tables<"team_members"> | null;
@@ -181,10 +184,56 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
 
   const sendComment = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("task_comments").insert({
-        task_id: task!.id, body: msg, is_system: false,
-      });
+      const { data: inserted, error } = await supabase
+        .from("task_comments")
+        .insert({ task_id: task!.id, body: msg, is_system: false })
+        .select("id")
+        .single();
       if (error) throw error;
+      // @упоминания
+      if (user && inserted?.id) {
+        const mentioned = extractMentionedMembers(msg, members as any);
+        if (mentioned.length > 0) {
+          const rows = mentioned.map((m) => ({
+            task_id: task!.id,
+            comment_id: inserted.id,
+            mentioned_user_id: m.owner_id || m.id,
+            mentioner_id: user.id,
+          }));
+          await supabase.from("task_mentions").insert(rows);
+          // Уведомления упомянутым (с owner_id)
+          const notifs = mentioned
+            .filter((m) => m.owner_id)
+            .map((m) => ({
+              user_id: m.owner_id!,
+              project_id: task!.project_id,
+              title: `Вас упомянули в задаче «${task!.title}»`,
+              body: msg.slice(0, 200),
+              kind: "task_mention",
+              task_id: task!.id,
+            }));
+          if (notifs.length > 0) await supabase.from("notifications").insert(notifs);
+        }
+        // Уведомление assignee и creator
+        const notifyTargets = new Set<string>();
+        if (task!.assignee?.owner_id && task!.assignee.owner_id !== user.id)
+          notifyTargets.add(task!.assignee.owner_id);
+        if (task!.creator?.owner_id && task!.creator.owner_id !== user.id)
+          notifyTargets.add(task!.creator.owner_id);
+        if (task!.owner_id && task!.owner_id !== user.id) notifyTargets.add(task!.owner_id);
+        if (notifyTargets.size > 0) {
+          await supabase.from("notifications").insert(
+            Array.from(notifyTargets).map((uid) => ({
+              user_id: uid,
+              project_id: task!.project_id,
+              title: `Новый комментарий в задаче «${task!.title}»`,
+              body: msg.slice(0, 200),
+              kind: "task_comment",
+              task_id: task!.id,
+            }))
+          );
+        }
+      }
     },
     onSuccess: () => {
       setMsg("");
