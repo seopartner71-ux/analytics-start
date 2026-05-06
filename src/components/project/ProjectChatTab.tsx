@@ -376,6 +376,13 @@ export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) 
       {/* Messages */}
       <ScrollArea className="flex-1">
         <div ref={scrollRef} className="p-4 space-y-3 overflow-y-auto h-full">
+          {canLoadMore && (
+            <div className="flex justify-center pb-2">
+              <Button size="sm" variant="outline" onClick={() => setMessageLimit(l => l + 500)}>
+                Загрузить ещё
+              </Button>
+            </div>
+          )}
           {filtered.length === 0 ? (
             <div className="text-center text-sm text-muted-foreground py-12">
               {search ? "Ничего не найдено" : "Пока нет сообщений. Начните диалог."}
