@@ -13,8 +13,9 @@ import {
   Paperclip, Copy, Video, UserPlus, Search as SearchIcon, Edit3, Play,
   CheckCircle2, RotateCcw, Link, FileText, Upload, Loader2, Plus,
   Clock, AlertTriangle, Eye, ThumbsUp, ThumbsDown,
-  ListChecks, Users, Timer, Layers, Target, AtSign, Sparkles,
+  ListChecks, Users, Timer, Layers, Target, AtSign, Sparkles, History as HistoryIcon, MoreHorizontal, Lock,
 } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -563,10 +564,10 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
     <Sheet open={open} onOpenChange={onClose}>
       <SheetContent className="w-full md:w-[92vw] md:max-w-[92vw] p-0 overflow-hidden border-l-0 shadow-2xl flex flex-col h-screen max-h-screen bg-background" side="right">
         {/* HEADER: title + status + quick actions grid */}
-        <div className="px-7 py-5 border-b border-border/60 bg-card space-y-4 shrink-0">
+        <div className="px-8 py-6 border-b border-border/60 bg-card space-y-5 shrink-0">
           <div className="flex items-start gap-4">
-            <div className="flex-1 min-w-0 space-y-2">
-              <SheetTitle className="text-2xl font-bold text-foreground leading-tight tracking-tight">
+            <div className="flex-1 min-w-0 space-y-2.5">
+              <SheetTitle className="text-[20px] font-bold text-foreground leading-tight tracking-tight">
                 {task.title}
               </SheetTitle>
               <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
@@ -589,34 +590,57 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                 )}
               </div>
             </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground">
+                  <MoreHorizontal className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                {!blocker.isBlocked ? (
+                  <DropdownMenuItem
+                    onClick={() => blocker.block({ reason: window.prompt("Причина блокировки:") || "", problemType: "Жду клиента" as any })}
+                    className="text-purple-500 focus:text-purple-500 gap-2"
+                  >
+                    <Lock className="h-4 w-4" /> Заблокировать задачу
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem onClick={blocker.unblock} className="text-purple-500 focus:text-purple-500 gap-2">
+                    <Lock className="h-4 w-4" /> Разблокировать
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onClick={copyId} className="gap-2">
+                  <Copy className="h-4 w-4" /> Скопировать ID
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
-          <TaskBlockerSection
-            isBlocked={blocker.isBlocked}
-            blockReason={blocker.blockReason}
-            problemType={blocker.problemType}
-            onBlock={blocker.block}
-            onUnblock={blocker.unblock}
-          />
+          {blocker.isBlocked && (
+            <TaskBlockerSection
+              isBlocked={blocker.isBlocked}
+              blockReason={blocker.blockReason}
+              problemType={blocker.problemType}
+              onBlock={blocker.block}
+              onUnblock={blocker.unblock}
+            />
+          )}
 
-          {/* Quick actions grid (Bitrix-style) */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-1.5">
+          {/* Quick actions grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
             {[
               { icon: ListChecks, label: "Подзадачи", anchor: "subtasks", count: subtasks.length || undefined },
               { icon: Users, label: "Участники", anchor: "members" },
               { icon: FileText, label: "Результат", anchor: "result" },
               { icon: Paperclip, label: "Файлы", anchor: "attachments" },
               { icon: Timer, label: "Учёт времени", anchor: "time" },
-              { icon: Layers, label: task.parent_id ? "Родительская" : "Подзадачи", anchor: "subtasks" },
-              { icon: Target, label: "Проект", anchor: "props" },
-              { icon: MessageSquare, label: "Чат", anchor: "chat", count: comments.filter(c => !c.is_system).length || undefined },
             ].map((b) => (
               <button
                 key={b.label}
                 onClick={() => {
                   document.getElementById(`task-section-${b.anchor}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
                 }}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border/50 bg-background/40 hover:bg-muted/50 hover:border-border transition-all text-xs font-medium text-foreground/80 hover:text-foreground group"
+                className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-border/50 bg-background/40 hover:bg-muted/50 hover:border-border transition-all text-xs font-medium text-foreground/80 hover:text-foreground group"
               >
                 <b.icon className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
                 <span className="truncate flex-1 text-left">{b.label}</span>
@@ -633,7 +657,7 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
         <div className="flex flex-col md:flex-row flex-1 min-h-0">
           {/* LEFT COLUMN */}
           <div className="w-full md:w-[78%] flex flex-col border-r border-border/50 bg-[hsl(var(--muted)/0.2)] min-h-0">
-            <div className="flex-1 overflow-y-auto p-7 space-y-4">
+            <div className="flex-1 overflow-y-auto p-8 space-y-5">
 
               {/* Description */}
               <Card className="bg-card shadow-sm border-border/60 rounded-xl">
