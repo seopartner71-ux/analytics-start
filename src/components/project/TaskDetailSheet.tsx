@@ -1003,7 +1003,7 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                             </span>
                           </div>
                           <div className="bg-card rounded-2xl rounded-tl-md p-3.5 border border-border/40 shadow-sm max-w-[85%]">
-                            <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap break-words">{linkify(m.body)}</p>
+                            <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap break-words">{renderWithMentions(m.body)}</p>
                           </div>
                           <span className="text-[10px] text-muted-foreground/50 ml-1 mt-1 block">
                             {new Date(m.created_at).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
