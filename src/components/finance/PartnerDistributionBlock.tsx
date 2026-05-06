@@ -14,7 +14,6 @@ const RUB = (n: number) =>
   new Intl.NumberFormat("ru-RU", { style: "currency", currency: "RUB", maximumFractionDigits: 0 }).format(n || 0);
 
 const TAX_RATE = 0.07;
-const CASH_RATE = 0.07;
 
 type Tx = { id: string; type: "income" | "expense" | "transfer"; amount: number; date: string; category: string };
 type Profile = { user_id: string; full_name: string | null; email: string };
