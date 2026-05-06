@@ -580,6 +580,17 @@ function AuditSection({
                       <span className={cn("inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium shrink-0", SEV_CLS[r.severity] ?? SEV_CLS.info)}>
                         {SEV_LABEL[r.severity] ?? r.severity}
                       </span>
+                      <span onClick={(e) => e.stopPropagation()} className="shrink-0">
+                        <CreateTaskFromSourceButton
+                          projectId={projectId}
+                          sourceType="audit_check"
+                          sourceId={r.code}
+                          defaultTitle={r.label}
+                          defaultDescription={`Раздел: ${section.title}\nПроверка: ${r.label}\nСерьёзность: ${SEV_LABEL[r.severity] ?? r.severity}\nСтраниц с проблемой: ${pages}${uniqueUrls.length ? `\n\nПримеры URL:\n${uniqueUrls.slice(0, 5).join("\n")}` : ""}`}
+                          defaultPriority={r.severity === "critical" ? "high" : r.severity === "warning" ? "medium" : "low"}
+                          existingTask={sourceTasks?.get(r.code)}
+                        />
+                      </span>
                       {isOpen
                         ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                         : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
