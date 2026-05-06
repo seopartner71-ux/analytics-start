@@ -136,19 +136,22 @@ export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) 
   });
 
   // --- Messages ---
+  const [messageLimit, setMessageLimit] = useState(500);
   const { data: messages = [] } = useQuery<ChatMessage[]>({
-    queryKey: ["project-messages", projectId],
+    queryKey: ["project-messages", projectId, messageLimit],
     queryFn: async () => {
+      // Берём последние N сообщений (по убыванию), затем разворачиваем для отображения
       const { data, error } = await supabase
         .from("project_messages")
         .select("*")
         .eq("project_id", projectId)
-        .order("created_at", { ascending: true })
-        .limit(500);
+        .order("created_at", { ascending: false })
+        .limit(messageLimit);
       if (error) throw error;
-      return data as ChatMessage[];
+      return ((data ?? []) as ChatMessage[]).reverse();
     },
   });
+  const canLoadMore = messages.length === messageLimit;
 
   // --- Reactions ---
   const messageIds = useMemo(() => messages.map(m => m.id), [messages]);
