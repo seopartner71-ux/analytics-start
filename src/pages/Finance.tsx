@@ -21,7 +21,7 @@ import { PartnerDistributionBlock } from "@/components/finance/PartnerDistributi
 const RUB = (n: number) =>
   new Intl.NumberFormat("ru-RU", { style: "currency", currency: "RUB", maximumFractionDigits: 0 }).format(n || 0);
 
-const TAX_RATE = 0.07; // 7% налог
+const TAX_RATE = 0.06; // 6% налог
 
 type Account = { id: string; name: string; kind: string; balance: number; currency: string };
 type Tx = { id: string; account_id: string; type: "income" | "expense" | "transfer"; amount: number; date: string; category: string };
@@ -159,7 +159,7 @@ export default function Finance() {
             tone="blue"
           />
           <PnlCard
-            label="Налоги (резерв 7%)"
+            label="Налоги (резерв 6%)"
             value={pnl.tax}
             icon={<Receipt className="h-4 w-4" />}
             tone="amber"
@@ -175,7 +175,7 @@ export default function Finance() {
           />
         </div>
         <p className="text-xs text-muted-foreground mt-2">
-          Чистая прибыль = Выручка − Налог 7% − Расходы. Касса не участвует в P&amp;L: это отдельный счёт, пополняется вручную.
+          Чистая прибыль = Выручка − Налог 6% − Расходы. Касса не участвует в P&amp;L: это отдельный счёт, пополняется вручную.
           Расходы за месяц: <span className="font-semibold text-foreground">{RUB(pnl.expenses)}</span>
         </p>
       </div>
