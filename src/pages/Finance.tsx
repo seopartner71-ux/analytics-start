@@ -175,7 +175,7 @@ export default function Finance() {
           />
         </div>
         <p className="text-xs text-muted-foreground mt-2">
-          Чистая прибыль = Выручка − Налог 7% − Расходы. Касса не участвует в P&amp;L: это отдельный счёт, пополняется вручную.
+          Чистая прибыль = Выручка − Налог 6% − Расходы. Касса не участвует в P&amp;L: это отдельный счёт, пополняется вручную.
           Расходы за месяц: <span className="font-semibold text-foreground">{RUB(pnl.expenses)}</span>
         </p>
       </div>
