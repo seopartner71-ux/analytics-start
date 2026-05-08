@@ -1365,13 +1365,14 @@ function CreatePeriodDialog(props: {
     }
     if (mode === "template") {
       // Список редактируется админом в Админ-панели → «Шаблон задач периодов».
-      setTemplateTasks(
-        props.templates.map((t) => ({
-          title: t.title,
-          category: "general",
-          required: false,
-        })),
-      );
+      // Распределяем сроки по рабочим дням периода: тексты — в начале, аналитика — в конце.
+      const base = props.templates.map((t) => ({
+        title: t.title,
+        category: "general",
+        required: false,
+        assignee_id: null as string | null,
+      }));
+      setTemplateTasks(distributeTemplateTasks(base, startDate, endDate));
     } else if (mode === "copy" && copyFromId) {
       const past = await props.loadPastTasks(copyFromId);
       const filtered = copyOptions.onlyOpen ? past.filter((t) => !t.completed) : past;
