@@ -228,7 +228,8 @@ export function MobileFriendlyTab({ projectId }: Props) {
         setError(error.message);
         return;
       }
-      const url = (data?.url ?? "").trim() || null;
+      let url = (data?.url ?? "").trim() || null;
+      if (url && !/^https?:\/\//i.test(url)) url = `https://${url}`;
       setSiteUrl(url);
       if (url) {
         const cached = loadCache(url);
