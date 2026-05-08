@@ -1284,6 +1284,7 @@ function CreatePeriodDialog(props: {
   onOpenChange: (v: boolean) => void;
   existingPeriods: Period[];
   templates: any[];
+  members: Member[];
   projectDeadline: string | null;
   onCreate: (payload: {
     year: number;
