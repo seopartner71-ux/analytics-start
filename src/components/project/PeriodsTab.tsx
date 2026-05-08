@@ -1595,8 +1595,8 @@ function ModeOption({ value, icon, label, hint, disabled }: {
 }
 
 function TemplatePreview({ tasks, setTasks, members, startDate, endDate }: {
-  tasks: Partial<PeriodTask>[];
-  setTasks: (t: Partial<PeriodTask>[]) => void;
+  tasks: DraftPeriodTask[];
+  setTasks: (t: DraftPeriodTask[]) => void;
   members: Member[];
   startDate: string;
   endDate: string;
@@ -1604,21 +1604,31 @@ function TemplatePreview({ tasks, setTasks, members, startDate, endDate }: {
   if (tasks.length === 0) {
     return <p className="text-sm text-muted-foreground text-center py-6">В шаблоне нет задач. Заполните в админке.</p>;
   }
-  const updateAt = (idx: number, patch: Partial<PeriodTask>) => {
-    setTasks(tasks.map((t, i) => (i === idx ? { ...t, ...patch } : t)));
+  const updateAt = (idx: number, patch: DraftPeriodTask, updatedField: "start_date" | "deadline" | null = null) => {
+    setTasks(tasks.map((t, i) => (i === idx ? normalizeTaskDates({ ...t, ...patch }, startDate, endDate, updatedField) : t)));
   };
   const removeAt = (idx: number) => setTasks(tasks.filter((_, i) => i !== idx));
   const redistribute = () => setTasks(distributeTemplateTasks(tasks, startDate, endDate));
   const assignAll = (id: string) => setTasks(tasks.map((t) => ({ ...t, assignee_id: id === "none" ? null : id })));
+  const setWatcherForAll = (id: string) => setTasks(tasks.map((t) => ({ ...t, watcher_id: id === "none" ? null : id })));
   return (
     <div className="space-y-2 max-h-[460px] overflow-y-auto pr-1">
       <div className="flex items-center justify-between gap-2 sticky top-0 bg-background py-1 z-10">
         <p className="text-xs text-muted-foreground">
-          Сроки расставлены по рабочим дням. Тексты — в начале, аналитика — в конце.
+          Даты задач держатся внутри периода. Тексты — в начале, аналитика — в конце.
         </p>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap justify-end">
           <Select onValueChange={assignAll}>
             <SelectTrigger className="h-7 w-44 text-[11px]"><SelectValue placeholder="Назначить всем..." /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none" className="text-xs">Не назначен</SelectItem>
+              {members.map((m) => (
+                <SelectItem key={m.id} value={m.id} className="text-xs">{m.full_name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select onValueChange={setWatcherForAll}>
+            <SelectTrigger className="h-7 w-44 text-[11px]"><SelectValue placeholder="Наблюдатель всем..." /></SelectTrigger>
             <SelectContent>
               <SelectItem value="none" className="text-xs">Не назначен</SelectItem>
               {members.map((m) => (
@@ -1632,13 +1642,25 @@ function TemplatePreview({ tasks, setTasks, members, startDate, endDate }: {
         </div>
       </div>
       {tasks.map((t, i) => (
-        <div key={i} className="flex items-center gap-2 p-2 rounded-md border border-border/60">
-          <span className="flex-1 text-[13px] truncate" title={t.title}>{t.title}</span>
+        <div key={i} className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_144px_144px_132px_132px_32px] gap-2 p-2 rounded-md border border-border/60 items-center">
+          <span className="text-[13px] truncate" title={t.title}>{t.title}</span>
           <Select
             value={t.assignee_id || "none"}
             onValueChange={(v) => updateAt(i, { assignee_id: v === "none" ? null : v })}
           >
-            <SelectTrigger className="h-7 w-36 text-[11px]"><SelectValue placeholder="Исполнитель" /></SelectTrigger>
+            <SelectTrigger className="h-7 w-full text-[11px]"><SelectValue placeholder="Исполнитель" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none" className="text-xs">Не назначен</SelectItem>
+              {members.map((m) => (
+                <SelectItem key={m.id} value={m.id} className="text-xs">{m.full_name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={t.watcher_id || "none"}
+            onValueChange={(v) => updateAt(i, { watcher_id: v === "none" ? null : v })}
+          >
+            <SelectTrigger className="h-7 w-full text-[11px]"><SelectValue placeholder="Наблюдатель" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="none" className="text-xs">Не назначен</SelectItem>
               {members.map((m) => (
@@ -1648,11 +1670,19 @@ function TemplatePreview({ tasks, setTasks, members, startDate, endDate }: {
           </Select>
           <Input
             type="date"
+            value={t.start_date?.slice(0, 10) || ""}
+            min={startDate}
+            max={endDate}
+            onChange={(e) => updateAt(i, { start_date: e.target.value || null }, "start_date")}
+            className="h-7 w-full text-[11px]"
+          />
+          <Input
+            type="date"
             value={t.deadline?.slice(0, 10) || ""}
             min={startDate}
             max={endDate}
-            onChange={(e) => updateAt(i, { deadline: e.target.value || null })}
-            className="h-7 w-36 text-[11px]"
+            onChange={(e) => updateAt(i, { deadline: e.target.value || null }, "deadline")}
+            className="h-7 w-full text-[11px]"
           />
           <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => removeAt(i)}>
             <Trash2 className="h-3.5 w-3.5" />
