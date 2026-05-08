@@ -1377,7 +1377,7 @@ function CreatePeriodDialog(props: {
   const effectiveTitle = title.trim() || autoTitle;
 
   // Build state per mode
-  const [templateTasks, setTemplateTasks] = useState<Partial<PeriodTask>[]>([]);
+  const [templateTasks, setTemplateTasks] = useState<DraftPeriodTask[]>([]);
   const [listText, setListText] = useState("");
   const [manualTasks, setManualTasks] = useState<Partial<PeriodTask>[]>([]);
   const [copyFromId, setCopyFromId] = useState<string>("");
