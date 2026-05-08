@@ -161,7 +161,7 @@ export function AppSidebar({ activeTab, onTabChange, projectName, projectLogo }:
           </div>
           {!collapsed && (
             <span className="text-[15px] font-semibold tracking-tight text-sidebar-accent-foreground">
-              СЕО - Модуль 2
+              SEO-CRM
             </span>
           )}
         </div>
