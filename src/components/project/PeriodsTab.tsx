@@ -1482,7 +1482,13 @@ function CreatePeriodDialog(props: {
         ) : (
           <div className="space-y-4">
             {mode === "template" && (
-              <TemplatePreview tasks={templateTasks} setTasks={setTemplateTasks} />
+              <TemplatePreview
+                tasks={templateTasks}
+                setTasks={setTemplateTasks}
+                members={props.members}
+                startDate={startDate}
+                endDate={endDate}
+              />
             )}
             {mode === "list" && (
               <Textarea
