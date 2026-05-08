@@ -1549,24 +1549,69 @@ function ModeOption({ value, icon, label, hint, disabled }: {
   );
 }
 
-function TemplatePreview({ tasks, setTasks }: {
-  tasks: Partial<PeriodTask>[]; setTasks: (t: Partial<PeriodTask>[]) => void;
+function TemplatePreview({ tasks, setTasks, members, startDate, endDate }: {
+  tasks: Partial<PeriodTask>[];
+  setTasks: (t: Partial<PeriodTask>[]) => void;
+  members: Member[];
+  startDate: string;
+  endDate: string;
 }) {
   if (tasks.length === 0) {
     return <p className="text-sm text-muted-foreground text-center py-6">В шаблоне нет задач. Заполните в админке.</p>;
   }
+  const updateAt = (idx: number, patch: Partial<PeriodTask>) => {
+    setTasks(tasks.map((t, i) => (i === idx ? { ...t, ...patch } : t)));
+  };
+  const removeAt = (idx: number) => setTasks(tasks.filter((_, i) => i !== idx));
+  const redistribute = () => setTasks(distributeTemplateTasks(tasks, startDate, endDate));
+  const assignAll = (id: string) => setTasks(tasks.map((t) => ({ ...t, assignee_id: id === "none" ? null : id })));
   return (
-    <div className="space-y-1.5 max-h-[400px] overflow-y-auto">
-      <p className="text-xs text-muted-foreground mb-2">Снимите галочки с ненужных задач:</p>
+    <div className="space-y-2 max-h-[460px] overflow-y-auto pr-1">
+      <div className="flex items-center justify-between gap-2 sticky top-0 bg-background py-1 z-10">
+        <p className="text-xs text-muted-foreground">
+          Сроки расставлены по рабочим дням. Тексты — в начале, аналитика — в конце.
+        </p>
+        <div className="flex items-center gap-2">
+          <Select onValueChange={assignAll}>
+            <SelectTrigger className="h-7 w-44 text-[11px]"><SelectValue placeholder="Назначить всем..." /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none" className="text-xs">Не назначен</SelectItem>
+              {members.map((m) => (
+                <SelectItem key={m.id} value={m.id} className="text-xs">{m.full_name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={redistribute}>
+            Пересчитать сроки
+          </Button>
+        </div>
+      </div>
       {tasks.map((t, i) => (
         <div key={i} className="flex items-center gap-2 p-2 rounded-md border border-border/60">
-          <Checkbox
-            defaultChecked
-            onCheckedChange={(v) => {
-              if (!v) setTasks(tasks.filter((_, idx) => idx !== i));
-            }}
+          <span className="flex-1 text-[13px] truncate" title={t.title}>{t.title}</span>
+          <Select
+            value={t.assignee_id || "none"}
+            onValueChange={(v) => updateAt(i, { assignee_id: v === "none" ? null : v })}
+          >
+            <SelectTrigger className="h-7 w-36 text-[11px]"><SelectValue placeholder="Исполнитель" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none" className="text-xs">Не назначен</SelectItem>
+              {members.map((m) => (
+                <SelectItem key={m.id} value={m.id} className="text-xs">{m.full_name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Input
+            type="date"
+            value={t.deadline?.slice(0, 10) || ""}
+            min={startDate}
+            max={endDate}
+            onChange={(e) => updateAt(i, { deadline: e.target.value || null })}
+            className="h-7 w-36 text-[11px]"
           />
-          <span className="text-sm">{t.title}</span>
+          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => removeAt(i)}>
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
         </div>
       ))}
     </div>
