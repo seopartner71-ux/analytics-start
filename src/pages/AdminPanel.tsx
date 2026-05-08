@@ -168,7 +168,7 @@ export default function AdminPanel() {
                 </TabsTrigger>
                 <TabsTrigger value="onboarding-template" className="gap-1.5">
                   <Rocket className="h-3.5 w-3.5" />
-                  Шаблон онбординга
+                  Шаблон задач периодов
                 </TabsTrigger>
                 <TabsTrigger value="departments" className="gap-1.5">
                   <Building className="h-3.5 w-3.5" />
