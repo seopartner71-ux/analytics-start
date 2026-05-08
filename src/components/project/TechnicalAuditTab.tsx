@@ -1151,8 +1151,9 @@ export function TechnicalAuditTab({ projectId }: Props) {
     setStats(null);
     const { data: userData } = await supabase.auth.getUser();
     if (!userData.user) { toast.error("Войдите в систему"); return; }
-    const targetUrl = project?.url || (domain !== "—" ? `https://${domain}` : "");
+    let targetUrl = project?.url || (domain !== "—" ? `https://${domain}` : "");
     if (!targetUrl) { toast.error("У проекта не указан URL"); return; }
+    if (!/^https?:\/\//i.test(targetUrl)) targetUrl = `https://${targetUrl}`;
 
     const { data: job, error } = await supabase
       .from("crawl_jobs")
