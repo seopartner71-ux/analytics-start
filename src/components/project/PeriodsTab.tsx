@@ -1289,17 +1289,14 @@ function CreatePeriodDialog(props: {
       return;
     }
     if (mode === "template") {
-      // Дедупликация по нормализованному названию: убираем повторы задач,
-      // которые встречаются в шаблоне в разных месяцах (например, «On-Page оптимизация страниц»).
-      const seen = new Set<string>();
-      const uniq: Partial<PeriodTask>[] = [];
-      for (const t of props.templates) {
-        const key = String(t.title || "").trim().toLowerCase().replace(/\s+/g, " ");
-        if (!key || seen.has(key)) continue;
-        seen.add(key);
-        uniq.push({ title: t.title, category: "general", required: false });
-      }
-      setTemplateTasks(uniq);
+      // Список редактируется админом в Админ-панели → «Шаблон задач периодов».
+      setTemplateTasks(
+        props.templates.map((t) => ({
+          title: t.title,
+          category: "general",
+          required: false,
+        })),
+      );
     } else if (mode === "copy" && copyFromId) {
       const past = await props.loadPastTasks(copyFromId);
       const filtered = copyOptions.onlyOpen ? past.filter((t) => !t.completed) : past;
