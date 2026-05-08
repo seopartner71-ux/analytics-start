@@ -59,6 +59,79 @@ const CATEGORIES = [
 
 const toDateOnly = (value?: string | null) => value?.slice(0, 10) || null;
 
+// Возвращает массив рабочих дней (без сб/вс) в диапазоне [start; end] в формате YYYY-MM-DD
+function businessDaysInRange(start: string, end: string): string[] {
+  const days: string[] = [];
+  const d = new Date(`${start.slice(0, 10)}T00:00:00`);
+  const e = new Date(`${end.slice(0, 10)}T00:00:00`);
+  while (d <= e) {
+    const w = d.getDay();
+    if (w !== 0 && w !== 6) days.push(d.toISOString().slice(0, 10));
+    d.setDate(d.getDate() + 1);
+  }
+  return days;
+}
+
+const TEXT_TASK_RX = /текст|контент|копирайт|статьи|тз\s*на\s*текст/i;
+const ANALYTICS_TASK_RX = /аналитик[аи]\s*результат|итог[иовая]+\s*аналитик|анализ\s*результат/i;
+
+// Распределяет задачи шаблона по рабочим дням периода:
+// - «Аналитика результатов» → последний рабочий день (или конец периода)
+// - Тексты/контент → первые рабочие дни
+// - Остальное — равномерно по середине
+function distributeTemplateTasks(
+  tasks: Partial<PeriodTask>[],
+  start: string,
+  end: string,
+): Partial<PeriodTask>[] {
+  if (tasks.length === 0) return tasks;
+  const days = businessDaysInRange(start, end);
+  if (days.length === 0) {
+    return tasks.map((t) => ({ ...t, deadline: end.slice(0, 10) }));
+  }
+
+  const analytics: Partial<PeriodTask>[] = [];
+  const texts: Partial<PeriodTask>[] = [];
+  const others: Partial<PeriodTask>[] = [];
+  for (const t of tasks) {
+    const title = t.title || "";
+    if (ANALYTICS_TASK_RX.test(title)) analytics.push(t);
+    else if (TEXT_TASK_RX.test(title)) texts.push(t);
+    else others.push(t);
+  }
+
+  const reservedEnd = analytics.length > 0 ? days[days.length - 1] : null;
+  const usable = reservedEnd ? days.slice(0, -1) : [...days];
+  const result: Partial<PeriodTask>[] = [];
+
+  // Тексты — в первые дни (по одной задаче на день, дальше — на последний доступный текстовый день)
+  texts.forEach((t, i) => {
+    const day = usable[Math.min(i, Math.max(usable.length - 1, 0))] || days[0];
+    result.push({ ...t, deadline: day });
+  });
+
+  // Остальные — равномерно после текстов
+  const offset = Math.min(texts.length, Math.max(usable.length - 1, 0));
+  const remaining = usable.slice(offset);
+  if (others.length > 0) {
+    const span = Math.max(remaining.length - 1, 0);
+    others.forEach((t, i) => {
+      const idx =
+        others.length === 1
+          ? Math.floor(span / 2)
+          : Math.round((i / (others.length - 1)) * span);
+      const day = remaining[idx] || remaining[remaining.length - 1] || usable[usable.length - 1] || days[0];
+      result.push({ ...t, deadline: day });
+    });
+  }
+
+  // Аналитика — в самый конец
+  analytics.forEach((t) => result.push({ ...t, deadline: reservedEnd || days[days.length - 1] }));
+
+  return result;
+}
+
+
 const toDeadlineIso = (value?: string | null) => {
   const dateOnly = toDateOnly(value);
   return dateOnly ? `${dateOnly}T00:00:00.000Z` : null;
