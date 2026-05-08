@@ -872,6 +872,7 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
         onOpenChange={setCreateOpen}
         existingPeriods={periods}
         templates={templates as any[]}
+        members={members}
         projectDeadline={project?.deadline || null}
         onCreate={(payload) => createPeriod.mutate(payload)}
         creating={createPeriod.isPending}
