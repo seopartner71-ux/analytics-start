@@ -582,12 +582,21 @@ export default function CrmProjectDetailPage() {
                 const done = task.stage === "Завершена";
                 const pri = PRIORITY_MAP[task.priority] || PRIORITY_MAP.medium;
                 const overdue = task.deadline && isPast(parseISO(task.deadline)) && !done;
+                const isChild = !!(task as any).parent_id;
                 return (
                   <div
                     key={task.id}
-                    className={cn("flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors cursor-pointer", i % 2 === 1 && "bg-muted/10")}
+                    className={cn(
+                      "flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors cursor-pointer",
+                      i % 2 === 1 && "bg-muted/10",
+                      isChild && "pl-10 bg-muted/5",
+                      !isChild && "bg-muted/20",
+                    )}
                     onClick={() => setSelectedTask(task)}
                   >
+                    {isChild && (
+                      <span className="text-muted-foreground/50 -ml-5 select-none text-[12px]">└</span>
+                    )}
                     <Checkbox
                       checked={done}
                       onCheckedChange={(v) => {
@@ -595,7 +604,11 @@ export default function CrmProjectDetailPage() {
                       }}
                       onClick={(e) => e.stopPropagation()}
                     />
-                    <span className={cn("flex-1 text-[13px] text-foreground", done && "line-through text-muted-foreground")}>
+                    <span className={cn(
+                      "flex-1 text-[13px] text-foreground",
+                      done && "line-through text-muted-foreground",
+                      !isChild && "font-semibold",
+                    )}>
                       {task.title}
                     </span>
                     {task.assignee && <AvatarCircle name={task.assignee.full_name} />}
