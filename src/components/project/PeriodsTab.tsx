@@ -75,24 +75,66 @@ function businessDaysInRange(start: string, end: string): string[] {
 const TEXT_TASK_RX = /текст|контент|копирайт|статьи|тз\s*на\s*текст/i;
 const ANALYTICS_TASK_RX = /аналитик[аи]\s*результат|итог[иовая]+\s*аналитик|анализ\s*результат/i;
 
+type DraftPeriodTask = Partial<PeriodTask> & {
+  start_date?: string | null;
+  watcher_id?: string | null;
+};
+
+const clampDateToRange = (value: string, start: string, end: string) => {
+  const date = value.slice(0, 10);
+  if (date < start) return start;
+  if (date > end) return end;
+  return date;
+};
+
+function normalizeTaskDates(
+  task: DraftPeriodTask,
+  start: string,
+  end: string,
+  updatedField: "start_date" | "deadline" | null = null,
+): DraftPeriodTask {
+  let safeStart = task.start_date ? clampDateToRange(task.start_date, start, end) : null;
+  let safeDeadline = task.deadline ? clampDateToRange(task.deadline, start, end) : null;
+
+  if (!safeStart && !safeDeadline) {
+    safeStart = start;
+    safeDeadline = start;
+  } else if (!safeStart) {
+    safeStart = safeDeadline;
+  } else if (!safeDeadline) {
+    safeDeadline = safeStart;
+  }
+
+  if (safeStart && safeDeadline && safeStart > safeDeadline) {
+    if (updatedField === "deadline") safeStart = safeDeadline;
+    else safeDeadline = safeStart;
+  }
+
+  return {
+    ...task,
+    start_date: safeStart,
+    deadline: safeDeadline,
+  };
+}
+
 // Распределяет задачи шаблона по рабочим дням периода:
 // - «Аналитика результатов» → последний рабочий день (или конец периода)
 // - Тексты/контент → первые рабочие дни
 // - Остальное — равномерно по середине
 function distributeTemplateTasks(
-  tasks: Partial<PeriodTask>[],
+  tasks: DraftPeriodTask[],
   start: string,
   end: string,
-): Partial<PeriodTask>[] {
+): DraftPeriodTask[] {
   if (tasks.length === 0) return tasks;
   const days = businessDaysInRange(start, end);
   if (days.length === 0) {
-    return tasks.map((t) => ({ ...t, deadline: end.slice(0, 10) }));
+    return tasks.map((t) => normalizeTaskDates({ ...t, start_date: end.slice(0, 10), deadline: end.slice(0, 10) }, start, end));
   }
 
-  const analytics: Partial<PeriodTask>[] = [];
-  const texts: Partial<PeriodTask>[] = [];
-  const others: Partial<PeriodTask>[] = [];
+  const analytics: DraftPeriodTask[] = [];
+  const texts: DraftPeriodTask[] = [];
+  const others: DraftPeriodTask[] = [];
   for (const t of tasks) {
     const title = t.title || "";
     if (ANALYTICS_TASK_RX.test(title)) analytics.push(t);
@@ -102,12 +144,12 @@ function distributeTemplateTasks(
 
   const reservedEnd = analytics.length > 0 ? days[days.length - 1] : null;
   const usable = reservedEnd ? days.slice(0, -1) : [...days];
-  const result: Partial<PeriodTask>[] = [];
+  const result: DraftPeriodTask[] = [];
 
   // Тексты — в первые дни (по одной задаче на день, дальше — на последний доступный текстовый день)
   texts.forEach((t, i) => {
     const day = usable[Math.min(i, Math.max(usable.length - 1, 0))] || days[0];
-    result.push({ ...t, deadline: day });
+    result.push(normalizeTaskDates({ ...t, start_date: day, deadline: day }, start, end));
   });
 
   // Остальные — равномерно после текстов
@@ -121,12 +163,15 @@ function distributeTemplateTasks(
           ? Math.floor(span / 2)
           : Math.round((i / (others.length - 1)) * span);
       const day = remaining[idx] || remaining[remaining.length - 1] || usable[usable.length - 1] || days[0];
-      result.push({ ...t, deadline: day });
+      result.push(normalizeTaskDates({ ...t, start_date: day, deadline: day }, start, end));
     });
   }
 
   // Аналитика — в самый конец
-  analytics.forEach((t) => result.push({ ...t, deadline: reservedEnd || days[days.length - 1] }));
+  analytics.forEach((t) => {
+    const day = reservedEnd || days[days.length - 1];
+    result.push(normalizeTaskDates({ ...t, start_date: day, deadline: day }, start, end));
+  });
 
   return result;
 }
