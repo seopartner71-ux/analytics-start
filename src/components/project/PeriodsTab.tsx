@@ -59,6 +59,79 @@ const CATEGORIES = [
 
 const toDateOnly = (value?: string | null) => value?.slice(0, 10) || null;
 
+// Возвращает массив рабочих дней (без сб/вс) в диапазоне [start; end] в формате YYYY-MM-DD
+function businessDaysInRange(start: string, end: string): string[] {
+  const days: string[] = [];
+  const d = new Date(`${start.slice(0, 10)}T00:00:00`);
+  const e = new Date(`${end.slice(0, 10)}T00:00:00`);
+  while (d <= e) {
+    const w = d.getDay();
+    if (w !== 0 && w !== 6) days.push(d.toISOString().slice(0, 10));
+    d.setDate(d.getDate() + 1);
+  }
+  return days;
+}
+
+const TEXT_TASK_RX = /текст|контент|копирайт|статьи|тз\s*на\s*текст/i;
+const ANALYTICS_TASK_RX = /аналитик[аи]\s*результат|итог[иовая]+\s*аналитик|анализ\s*результат/i;
+
+// Распределяет задачи шаблона по рабочим дням периода:
+// - «Аналитика результатов» → последний рабочий день (или конец периода)
+// - Тексты/контент → первые рабочие дни
+// - Остальное — равномерно по середине
+function distributeTemplateTasks(
+  tasks: Partial<PeriodTask>[],
+  start: string,
+  end: string,
+): Partial<PeriodTask>[] {
+  if (tasks.length === 0) return tasks;
+  const days = businessDaysInRange(start, end);
+  if (days.length === 0) {
+    return tasks.map((t) => ({ ...t, deadline: end.slice(0, 10) }));
+  }
+
+  const analytics: Partial<PeriodTask>[] = [];
+  const texts: Partial<PeriodTask>[] = [];
+  const others: Partial<PeriodTask>[] = [];
+  for (const t of tasks) {
+    const title = t.title || "";
+    if (ANALYTICS_TASK_RX.test(title)) analytics.push(t);
+    else if (TEXT_TASK_RX.test(title)) texts.push(t);
+    else others.push(t);
+  }
+
+  const reservedEnd = analytics.length > 0 ? days[days.length - 1] : null;
+  const usable = reservedEnd ? days.slice(0, -1) : [...days];
+  const result: Partial<PeriodTask>[] = [];
+
+  // Тексты — в первые дни (по одной задаче на день, дальше — на последний доступный текстовый день)
+  texts.forEach((t, i) => {
+    const day = usable[Math.min(i, Math.max(usable.length - 1, 0))] || days[0];
+    result.push({ ...t, deadline: day });
+  });
+
+  // Остальные — равномерно после текстов
+  const offset = Math.min(texts.length, Math.max(usable.length - 1, 0));
+  const remaining = usable.slice(offset);
+  if (others.length > 0) {
+    const span = Math.max(remaining.length - 1, 0);
+    others.forEach((t, i) => {
+      const idx =
+        others.length === 1
+          ? Math.floor(span / 2)
+          : Math.round((i / (others.length - 1)) * span);
+      const day = remaining[idx] || remaining[remaining.length - 1] || usable[usable.length - 1] || days[0];
+      result.push({ ...t, deadline: day });
+    });
+  }
+
+  // Аналитика — в самый конец
+  analytics.forEach((t) => result.push({ ...t, deadline: reservedEnd || days[days.length - 1] }));
+
+  return result;
+}
+
+
 const toDeadlineIso = (value?: string | null) => {
   const dateOnly = toDateOnly(value);
   return dateOnly ? `${dateOnly}T00:00:00.000Z` : null;
@@ -799,6 +872,7 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
         onOpenChange={setCreateOpen}
         existingPeriods={periods}
         templates={templates as any[]}
+        members={members}
         projectDeadline={project?.deadline || null}
         onCreate={(payload) => createPeriod.mutate(payload)}
         creating={createPeriod.isPending}
@@ -1210,6 +1284,7 @@ function CreatePeriodDialog(props: {
   onOpenChange: (v: boolean) => void;
   existingPeriods: Period[];
   templates: any[];
+  members: Member[];
   projectDeadline: string | null;
   onCreate: (payload: {
     year: number;
@@ -1290,13 +1365,14 @@ function CreatePeriodDialog(props: {
     }
     if (mode === "template") {
       // Список редактируется админом в Админ-панели → «Шаблон задач периодов».
-      setTemplateTasks(
-        props.templates.map((t) => ({
-          title: t.title,
-          category: "general",
-          required: false,
-        })),
-      );
+      // Распределяем сроки по рабочим дням периода: тексты — в начале, аналитика — в конце.
+      const base = props.templates.map((t) => ({
+        title: t.title,
+        category: "general",
+        required: false,
+        assignee_id: null as string | null,
+      }));
+      setTemplateTasks(distributeTemplateTasks(base, startDate, endDate));
     } else if (mode === "copy" && copyFromId) {
       const past = await props.loadPastTasks(copyFromId);
       const filtered = copyOptions.onlyOpen ? past.filter((t) => !t.completed) : past;
@@ -1406,7 +1482,13 @@ function CreatePeriodDialog(props: {
         ) : (
           <div className="space-y-4">
             {mode === "template" && (
-              <TemplatePreview tasks={templateTasks} setTasks={setTemplateTasks} />
+              <TemplatePreview
+                tasks={templateTasks}
+                setTasks={setTemplateTasks}
+                members={props.members}
+                startDate={startDate}
+                endDate={endDate}
+              />
             )}
             {mode === "list" && (
               <Textarea
@@ -1467,24 +1549,69 @@ function ModeOption({ value, icon, label, hint, disabled }: {
   );
 }
 
-function TemplatePreview({ tasks, setTasks }: {
-  tasks: Partial<PeriodTask>[]; setTasks: (t: Partial<PeriodTask>[]) => void;
+function TemplatePreview({ tasks, setTasks, members, startDate, endDate }: {
+  tasks: Partial<PeriodTask>[];
+  setTasks: (t: Partial<PeriodTask>[]) => void;
+  members: Member[];
+  startDate: string;
+  endDate: string;
 }) {
   if (tasks.length === 0) {
     return <p className="text-sm text-muted-foreground text-center py-6">В шаблоне нет задач. Заполните в админке.</p>;
   }
+  const updateAt = (idx: number, patch: Partial<PeriodTask>) => {
+    setTasks(tasks.map((t, i) => (i === idx ? { ...t, ...patch } : t)));
+  };
+  const removeAt = (idx: number) => setTasks(tasks.filter((_, i) => i !== idx));
+  const redistribute = () => setTasks(distributeTemplateTasks(tasks, startDate, endDate));
+  const assignAll = (id: string) => setTasks(tasks.map((t) => ({ ...t, assignee_id: id === "none" ? null : id })));
   return (
-    <div className="space-y-1.5 max-h-[400px] overflow-y-auto">
-      <p className="text-xs text-muted-foreground mb-2">Снимите галочки с ненужных задач:</p>
+    <div className="space-y-2 max-h-[460px] overflow-y-auto pr-1">
+      <div className="flex items-center justify-between gap-2 sticky top-0 bg-background py-1 z-10">
+        <p className="text-xs text-muted-foreground">
+          Сроки расставлены по рабочим дням. Тексты — в начале, аналитика — в конце.
+        </p>
+        <div className="flex items-center gap-2">
+          <Select onValueChange={assignAll}>
+            <SelectTrigger className="h-7 w-44 text-[11px]"><SelectValue placeholder="Назначить всем..." /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none" className="text-xs">Не назначен</SelectItem>
+              {members.map((m) => (
+                <SelectItem key={m.id} value={m.id} className="text-xs">{m.full_name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={redistribute}>
+            Пересчитать сроки
+          </Button>
+        </div>
+      </div>
       {tasks.map((t, i) => (
         <div key={i} className="flex items-center gap-2 p-2 rounded-md border border-border/60">
-          <Checkbox
-            defaultChecked
-            onCheckedChange={(v) => {
-              if (!v) setTasks(tasks.filter((_, idx) => idx !== i));
-            }}
+          <span className="flex-1 text-[13px] truncate" title={t.title}>{t.title}</span>
+          <Select
+            value={t.assignee_id || "none"}
+            onValueChange={(v) => updateAt(i, { assignee_id: v === "none" ? null : v })}
+          >
+            <SelectTrigger className="h-7 w-36 text-[11px]"><SelectValue placeholder="Исполнитель" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none" className="text-xs">Не назначен</SelectItem>
+              {members.map((m) => (
+                <SelectItem key={m.id} value={m.id} className="text-xs">{m.full_name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Input
+            type="date"
+            value={t.deadline?.slice(0, 10) || ""}
+            min={startDate}
+            max={endDate}
+            onChange={(e) => updateAt(i, { deadline: e.target.value || null })}
+            className="h-7 w-36 text-[11px]"
           />
-          <span className="text-sm">{t.title}</span>
+          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => removeAt(i)}>
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
         </div>
       ))}
     </div>
