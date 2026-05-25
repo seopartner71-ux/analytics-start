@@ -320,6 +320,19 @@ export default function CrmProjectDetailPage() {
     },
   });
 
+  const updateDeadline = useMutation({
+    mutationFn: async (deadline: string | null) => {
+      const { error } = await supabase.from("projects").update({ deadline } as any).eq("id", id!);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["project-detail", id] });
+      toast.success("Дедлайн обновлён");
+    },
+    onError: (e: any) => toast.error(e?.message || "Не удалось сохранить дедлайн"),
+  });
+
+
   const completedCount = tasks.filter(t => t.stage === "Завершена").length;
   const totalCount = tasks.length;
   const progressPct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
