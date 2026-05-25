@@ -719,7 +719,7 @@ export default function CrmProjectDetailPage() {
                         "text-[13px] font-medium text-left hover:underline focus:outline-none",
                         (project as any).deadline && isPast(parseISO((project as any).deadline)) ? "text-destructive" : "text-foreground"
                       )}
-                      disabled={!isAdmin}
+                      disabled={!canEdit}
                     >
                       {(project as any).deadline ? format(parseISO((project as any).deadline), "dd.MM.yyyy") : "Не установлен"}
                     </button>
