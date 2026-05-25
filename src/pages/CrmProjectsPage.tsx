@@ -32,7 +32,7 @@ const STAGES = KANBAN_COLUMNS.map(c => c.key);
 
 // Roles allowed to create projects
 function canAddProject(role: string | null): boolean {
-  return role === "admin" || role === "manager";
+  return role === "admin" || role === "manager" || role === "seo";
 }
 
 function getDeadlineColor(deadline: string | null) {
