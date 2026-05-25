@@ -710,13 +710,37 @@ export default function CrmProjectDetailPage() {
             {/* Deadline */}
             <div className="flex items-start gap-3">
               <CalendarDays className="h-4 w-4 text-muted-foreground mt-0.5" />
-              <div>
+              <div className="flex-1">
                 <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Дедлайн</p>
-                <p className={cn("text-[13px] font-medium", (project as any).deadline && isPast(parseISO((project as any).deadline)) ? "text-destructive" : "text-foreground")}>
-                  {(project as any).deadline ? format(parseISO((project as any).deadline), "dd.MM.yyyy") : "Не установлен"}
-                </p>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      className={cn(
+                        "text-[13px] font-medium text-left hover:underline focus:outline-none",
+                        (project as any).deadline && isPast(parseISO((project as any).deadline)) ? "text-destructive" : "text-foreground"
+                      )}
+                      disabled={!isAdmin}
+                    >
+                      {(project as any).deadline ? format(parseISO((project as any).deadline), "dd.MM.yyyy") : "Не установлен"}
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-3 space-y-2" align="start">
+                    <Input
+                      type="date"
+                      defaultValue={(project as any).deadline ? format(parseISO((project as any).deadline), "yyyy-MM-dd") : ""}
+                      onChange={(e) => updateDeadline.mutate(e.target.value || null)}
+                      className="h-9 text-[13px]"
+                    />
+                    {(project as any).deadline && (
+                      <Button size="sm" variant="ghost" className="w-full h-7 text-[12px]" onClick={() => updateDeadline.mutate(null)}>
+                        Очистить
+                      </Button>
+                    )}
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
+
 
             {/* Manager */}
             <div className="flex items-start gap-3">
