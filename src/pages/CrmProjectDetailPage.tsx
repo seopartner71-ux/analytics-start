@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -318,6 +319,19 @@ export default function CrmProjectDetailPage() {
       toast.success("Этап обновлён");
     },
   });
+
+  const updateDeadline = useMutation({
+    mutationFn: async (deadline: string | null) => {
+      const { error } = await supabase.from("projects").update({ deadline } as any).eq("id", id!);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["project-detail", id] });
+      toast.success("Дедлайн обновлён");
+    },
+    onError: (e: any) => toast.error(e?.message || "Не удалось сохранить дедлайн"),
+  });
+
 
   const completedCount = tasks.filter(t => t.stage === "Завершена").length;
   const totalCount = tasks.length;
@@ -696,13 +710,37 @@ export default function CrmProjectDetailPage() {
             {/* Deadline */}
             <div className="flex items-start gap-3">
               <CalendarDays className="h-4 w-4 text-muted-foreground mt-0.5" />
-              <div>
+              <div className="flex-1">
                 <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Дедлайн</p>
-                <p className={cn("text-[13px] font-medium", (project as any).deadline && isPast(parseISO((project as any).deadline)) ? "text-destructive" : "text-foreground")}>
-                  {(project as any).deadline ? format(parseISO((project as any).deadline), "dd.MM.yyyy") : "Не установлен"}
-                </p>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      className={cn(
+                        "text-[13px] font-medium text-left hover:underline focus:outline-none",
+                        (project as any).deadline && isPast(parseISO((project as any).deadline)) ? "text-destructive" : "text-foreground"
+                      )}
+                      disabled={!canEdit}
+                    >
+                      {(project as any).deadline ? format(parseISO((project as any).deadline), "dd.MM.yyyy") : "Не установлен"}
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-3 space-y-2" align="start">
+                    <Input
+                      type="date"
+                      defaultValue={(project as any).deadline ? format(parseISO((project as any).deadline), "yyyy-MM-dd") : ""}
+                      onChange={(e) => updateDeadline.mutate(e.target.value || null)}
+                      className="h-9 text-[13px]"
+                    />
+                    {(project as any).deadline && (
+                      <Button size="sm" variant="ghost" className="w-full h-7 text-[12px]" onClick={() => updateDeadline.mutate(null)}>
+                        Очистить
+                      </Button>
+                    )}
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
+
 
             {/* Manager */}
             <div className="flex items-start gap-3">
