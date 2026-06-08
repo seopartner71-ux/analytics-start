@@ -227,9 +227,10 @@ export default function ProjectReportsPage() {
             ) : filtered.map(r => {
               const days = Math.round((new Date(r.due_date).getTime() - Date.now()) / 86400000);
               const dueColor = days < 0 ? "text-red-400" : days <= 1 ? "text-orange-400" : days <= 2 ? "text-amber-400" : "text-foreground";
+              const done = r.status === "sent" || r.status === "cancelled";
               return (
-                <TableRow key={r.id}>
-                  <TableCell className={dueColor}>
+                <TableRow key={r.id} className={done ? "opacity-60" : ""}>
+                  <TableCell className={`${done ? "line-through decoration-foreground/40" : ""} ${dueColor}`}>
                     <div className="flex items-center gap-1.5">
                       <CalendarDays className="h-3.5 w-3.5" />
                       <div>
@@ -238,12 +239,12 @@ export default function ProjectReportsPage() {
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className={done ? "line-through decoration-foreground/40" : ""}>
                     <div className="text-sm">{r.client_name || "—"}</div>
                     {r.project_id && <div className="text-xs text-muted-foreground">{projectMap.get(r.project_id) || "проект"}</div>}
                   </TableCell>
-                  <TableCell className="text-sm">{r.title || "—"}</TableCell>
-                  <TableCell className="text-sm">
+                  <TableCell className={`text-sm ${done ? "line-through decoration-foreground/40" : ""}`}>{r.title || "—"}</TableCell>
+                  <TableCell className={`text-sm ${done ? "line-through decoration-foreground/40" : ""}`}>
                     <div>{r.assignee_id ? teamMap.get(r.assignee_id) : "—"}</div>
                     {r.co_assignee_ids?.length > 0 && (
                       <div className="text-[11px] text-muted-foreground mt-0.5">
@@ -263,7 +264,7 @@ export default function ProjectReportsPage() {
                       </SelectContent>
                     </Select>
                   </TableCell>
-                  <TableCell className="text-xs text-muted-foreground max-w-[280px] truncate">{r.comment}</TableCell>
+                  <TableCell className={`text-xs text-muted-foreground max-w-[280px] truncate ${done ? "line-through decoration-foreground/40" : ""}`}>{r.comment}</TableCell>
                   <TableCell>
                     <div className="flex gap-1 justify-end">
                       <Button size="icon" variant="ghost" onClick={() => { setEditing(r); setOpen(true); }}>
