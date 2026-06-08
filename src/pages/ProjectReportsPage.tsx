@@ -42,6 +42,7 @@ interface ReportRow {
   status: Status;
   comment: string;
   assignee_id: string | null;
+  co_assignee_ids: string[];
   reminder_2d_sent: boolean;
   reminder_1d_sent: boolean;
 }
@@ -54,6 +55,7 @@ const empty = (): Partial<ReportRow> => ({
   comment: "",
   project_id: null,
   assignee_id: null,
+  co_assignee_ids: [],
 });
 
 export default function ProjectReportsPage() {
@@ -134,6 +136,7 @@ export default function ProjectReportsPage() {
       comment: editing.comment || "",
       project_id: editing.project_id || null,
       assignee_id: editing.assignee_id || null,
+      co_assignee_ids: editing.co_assignee_ids || [],
     };
     if (editing.id) {
       const { error } = await supabase.from("project_reports").update(payload).eq("id", editing.id);
@@ -240,7 +243,14 @@ export default function ProjectReportsPage() {
                     {r.project_id && <div className="text-xs text-muted-foreground">{projectMap.get(r.project_id) || "проект"}</div>}
                   </TableCell>
                   <TableCell className="text-sm">{r.title || "—"}</TableCell>
-                  <TableCell className="text-sm">{r.assignee_id ? teamMap.get(r.assignee_id) : "—"}</TableCell>
+                  <TableCell className="text-sm">
+                    <div>{r.assignee_id ? teamMap.get(r.assignee_id) : "—"}</div>
+                    {r.co_assignee_ids?.length > 0 && (
+                      <div className="text-[11px] text-muted-foreground mt-0.5">
+                        + {r.co_assignee_ids.map(id => teamMap.get(id)).filter(Boolean).join(", ")}
+                      </div>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <Select value={r.status} onValueChange={(v) => quickStatus(r.id, v as Status)}>
                       <SelectTrigger className={`h-7 text-xs w-32 border ${STATUS_COLOR[r.status]}`}>
@@ -314,6 +324,34 @@ export default function ProjectReportsPage() {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+              <div>
+                <Label>Соисполнители</Label>
+                <div className="border border-border rounded-md p-2 max-h-40 overflow-y-auto space-y-1">
+                  {team.filter((t: any) => t.id !== editing.assignee_id).map((t: any) => {
+                    const checked = (editing.co_assignee_ids || []).includes(t.id);
+                    return (
+                      <label key={t.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-muted/30 px-2 py-1 rounded">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(e) => {
+                            const cur = editing.co_assignee_ids || [];
+                            setEditing({
+                              ...editing,
+                              co_assignee_ids: e.target.checked ? [...cur, t.id] : cur.filter(id => id !== t.id),
+                            });
+                          }}
+                        />
+                        <span>{t.full_name}</span>
+                      </label>
+                    );
+                  })}
+                  {team.length === 0 && <div className="text-xs text-muted-foreground px-2">Нет сотрудников</div>}
+                </div>
+                {(editing.co_assignee_ids?.length || 0) > 0 && (
+                  <div className="text-[11px] text-muted-foreground mt-1">Выбрано: {editing.co_assignee_ids!.length}</div>
+                )}
               </div>
               <div>
                 <Label>Ответственный</Label>

@@ -3302,6 +3302,7 @@ export type Database = {
           assignee_id: string | null
           assignee_user_id: string | null
           client_name: string
+          co_assignee_ids: string[]
           comment: string
           created_at: string
           due_date: string
@@ -3318,6 +3319,7 @@ export type Database = {
           assignee_id?: string | null
           assignee_user_id?: string | null
           client_name?: string
+          co_assignee_ids?: string[]
           comment?: string
           created_at?: string
           due_date: string
@@ -3334,6 +3336,7 @@ export type Database = {
           assignee_id?: string | null
           assignee_user_id?: string | null
           client_name?: string
+          co_assignee_ids?: string[]
           comment?: string
           created_at?: string
           due_date?: string

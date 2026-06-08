@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
 
     const { data: reports } = await supabase
       .from("project_reports")
-      .select("id, title, client_name, due_date, status, owner_id, assignee_id, assignee_user_id, reminder_1d_sent, reminder_2d_sent, project_id, projects(name)")
+      .select("id, title, client_name, due_date, status, owner_id, assignee_id, assignee_user_id, co_assignee_ids, reminder_1d_sent, reminder_2d_sent, project_id, projects(name)")
       .in("status", ["planned", "in_progress"])
       .in("due_date", [fmt(in1), fmt(in2)]);
 
@@ -47,67 +47,82 @@ Deno.serve(async (req) => {
       const title = `📝 Отчёт ${label}: ${r.client_name || projectName}`;
       const body = `${r.title || "Отчёт"} — срок ${r.due_date}${projectName ? ` · ${projectName}` : ""}`;
 
-      // Resolve recipient user_id
-      let recipientUserId: string | null = r.assignee_user_id || null;
-      let recipientEmail: string | null = null;
-      if (r.assignee_id) {
-        const { data: tm } = await supabase
+      // Collect all recipient team_member ids (assignee + co-assignees)
+      const teamIds: string[] = [];
+      if (r.assignee_id) teamIds.push(r.assignee_id);
+      for (const id of (r.co_assignee_ids || [])) if (!teamIds.includes(id)) teamIds.push(id);
+
+      type Recipient = { userId: string | null; email: string | null };
+      const recipients: Recipient[] = [];
+
+      if (teamIds.length) {
+        const { data: tms } = await supabase
           .from("team_members")
-          .select("email")
-          .eq("id", r.assignee_id)
-          .maybeSingle();
-        recipientEmail = tm?.email || null;
-        if (!recipientUserId && tm?.email) {
-          const { data: prof } = await supabase
+          .select("id, email")
+          .in("id", teamIds);
+        const emails = (tms || []).map((t: any) => t.email).filter(Boolean);
+        const emailToUser = new Map<string, string>();
+        if (emails.length) {
+          const { data: profs } = await supabase
             .from("profiles")
-            .select("user_id")
-            .eq("email", tm.email)
-            .maybeSingle();
-          recipientUserId = prof?.user_id || null;
+            .select("user_id, email")
+            .in("email", emails);
+          (profs || []).forEach((p: any) => { if (p.email) emailToUser.set(p.email, p.user_id); });
+        }
+        for (const t of (tms || []) as any[]) {
+          recipients.push({ userId: t.email ? emailToUser.get(t.email) || null : null, email: t.email || null });
         }
       }
-      if (!recipientUserId) recipientUserId = r.owner_id;
 
-      // In-app notification
-      if (recipientUserId) {
-        await supabase.from("notifications").insert({
-          user_id: recipientUserId,
-          title,
-          body,
-          project_id: r.project_id,
-          kind: "report",
-        });
-        notifCount++;
-      }
+      // Fallback to owner if nobody resolved
+      if (recipients.length === 0) recipients.push({ userId: r.owner_id, email: null });
 
-      // Email (best-effort)
-      if (!recipientEmail && recipientUserId) {
-        const { data: prof } = await supabase
-          .from("profiles")
-          .select("email")
-          .eq("user_id", recipientUserId)
-          .maybeSingle();
-        recipientEmail = prof?.email || null;
-      }
-      if (recipientEmail) {
-        try {
-          await supabase.functions.invoke("send-transactional-email", {
-            body: {
-              templateName: "report-reminder",
-              recipientEmail,
-              idempotencyKey: `report-${r.id}-${isTwo ? "2d" : "1d"}`,
-              templateData: {
-                title: r.title || "Отчёт",
-                clientName: r.client_name || "",
-                projectName,
-                dueDate: r.due_date,
-                daysLeft: diff,
-              },
-            },
+      const seenUsers = new Set<string>();
+      const seenEmails = new Set<string>();
+      for (const rec of recipients) {
+        // In-app notification
+        if (rec.userId && !seenUsers.has(rec.userId)) {
+          seenUsers.add(rec.userId);
+          await supabase.from("notifications").insert({
+            user_id: rec.userId,
+            title,
+            body,
+            project_id: r.project_id,
+            kind: "report",
           });
-          emailCount++;
-        } catch (e) {
-          console.warn("email send failed", e);
+          notifCount++;
+        }
+        // Email
+        let email = rec.email;
+        if (!email && rec.userId) {
+          const { data: prof } = await supabase
+            .from("profiles")
+            .select("email")
+            .eq("user_id", rec.userId)
+            .maybeSingle();
+          email = prof?.email || null;
+        }
+        if (email && !seenEmails.has(email)) {
+          seenEmails.add(email);
+          try {
+            await supabase.functions.invoke("send-transactional-email", {
+              body: {
+                templateName: "report-reminder",
+                recipientEmail: email,
+                idempotencyKey: `report-${r.id}-${isTwo ? "2d" : "1d"}-${email}`,
+                templateData: {
+                  title: r.title || "Отчёт",
+                  clientName: r.client_name || "",
+                  projectName,
+                  dueDate: r.due_date,
+                  daysLeft: diff,
+                },
+              },
+            });
+            emailCount++;
+          } catch (e) {
+            console.warn("email send failed", e);
+          }
         }
       }
 
