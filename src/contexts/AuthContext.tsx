@@ -156,7 +156,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isAdmin = role === "admin";
   const isManager = role === "manager";
   const isViewer = role === "viewer";
-  const canEdit = isAdmin || isManager;
+  const isSeo = role === "seo";
+  const isDirector = role === "director";
+  const canEdit = isAdmin || isManager || isSeo || isDirector;
   const hasFinanceAccess = isAdmin || (profile as any)?.finance_access === true;
 
   return (
