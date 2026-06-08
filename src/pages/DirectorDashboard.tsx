@@ -273,7 +273,7 @@ const DirectorDashboard = () => {
               <Trophy className="h-4 w-4 text-warning" />
               ТОП-3 сотрудников за месяц
             </h3>
-            <button onClick={() => navigate("/kpi")} className="text-[11px] text-primary hover:underline">Все KPI →</button>
+            
           </div>
           {topEmployees.length === 0 ? (
             <p className="text-[13px] text-muted-foreground text-center py-8">Нет завершённых задач за месяц</p>
