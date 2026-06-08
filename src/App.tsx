@@ -37,7 +37,7 @@ const ContentPage = lazy(() => import("./pages/ContentPage"));
 const LinksPage = lazy(() => import("./pages/LinksPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const ChatPage = lazy(() => import("./pages/ChatPage"));
-const ReportsPage = lazy(() => import("./pages/ReportsPage"));
+
 const Finance = lazy(() => import("./pages/Finance"));
 const KnowledgeBasePage = lazy(() => import("./pages/KnowledgeBasePage"));
 const KnowledgeBooksPage = lazy(() => import("./pages/KnowledgeBooksPage"));
