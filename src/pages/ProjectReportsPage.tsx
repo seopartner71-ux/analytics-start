@@ -42,6 +42,7 @@ interface ReportRow {
   status: Status;
   comment: string;
   assignee_id: string | null;
+  co_assignee_ids: string[];
   reminder_2d_sent: boolean;
   reminder_1d_sent: boolean;
 }
@@ -54,6 +55,7 @@ const empty = (): Partial<ReportRow> => ({
   comment: "",
   project_id: null,
   assignee_id: null,
+  co_assignee_ids: [],
 });
 
 export default function ProjectReportsPage() {
