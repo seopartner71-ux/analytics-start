@@ -243,7 +243,14 @@ export default function ProjectReportsPage() {
                     {r.project_id && <div className="text-xs text-muted-foreground">{projectMap.get(r.project_id) || "проект"}</div>}
                   </TableCell>
                   <TableCell className="text-sm">{r.title || "—"}</TableCell>
-                  <TableCell className="text-sm">{r.assignee_id ? teamMap.get(r.assignee_id) : "—"}</TableCell>
+                  <TableCell className="text-sm">
+                    <div>{r.assignee_id ? teamMap.get(r.assignee_id) : "—"}</div>
+                    {r.co_assignee_ids?.length > 0 && (
+                      <div className="text-[11px] text-muted-foreground mt-0.5">
+                        + {r.co_assignee_ids.map(id => teamMap.get(id)).filter(Boolean).join(", ")}
+                      </div>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <Select value={r.status} onValueChange={(v) => quickStatus(r.id, v as Status)}>
                       <SelectTrigger className={`h-7 text-xs w-32 border ${STATUS_COLOR[r.status]}`}>
