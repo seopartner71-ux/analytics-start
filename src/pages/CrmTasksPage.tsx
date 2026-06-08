@@ -177,17 +177,21 @@ function KanbanCard({ t, onSelect, onDelete, canDelete }: { t: CrmTask; onSelect
   const dlStatus = getDeadlineStatus(t.deadline, t.stage);
   const dlStyle = DEADLINE_STYLES[dlStatus];
   const priorityClass = PRIORITY_BAR[t.priority || "medium"] || PRIORITY_BAR.medium;
+  const done = t.stage === "Принята" || t.stage === "Завершена";
 
   return (
-    <div ref={setNodeRef} {...attributes} {...listeners} style={{ opacity: isDragging ? 0.5 : 1 }}>
+    <div ref={setNodeRef} {...attributes} {...listeners} style={{ opacity: isDragging ? 0.5 : done ? 0.6 : 1 }}>
       <Card
-        className="cursor-grab active:cursor-grabbing card-glow group relative overflow-hidden hover:shadow-md transition-shadow"
+        className={cn(
+          "cursor-grab active:cursor-grabbing card-glow group relative overflow-hidden hover:shadow-md transition-shadow",
+          done && "opacity-60"
+        )}
         onClick={() => onSelect(t)}
       >
         <div className={cn("absolute top-0 left-0 right-0 h-1", priorityClass)} />
         <CardContent className="p-3.5 pt-4 space-y-2.5">
           <div className="flex items-start justify-between gap-2">
-            <p className="text-sm font-semibold text-foreground line-clamp-2 leading-snug flex-1">{t.title}</p>
+            <p className={cn("text-sm font-semibold text-foreground line-clamp-2 leading-snug flex-1", done && "line-through decoration-foreground/40")}>{t.title}</p>
             <div className="opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
               <DeleteButton
                 visible={canDelete(t)}
@@ -198,19 +202,19 @@ function KanbanCard({ t, onSelect, onDelete, canDelete }: { t: CrmTask; onSelect
             </div>
           </div>
           {t.project && (
-            <p className="text-xs text-muted-foreground truncate">{t.project.name}</p>
+            <p className={cn("text-xs text-muted-foreground truncate", done && "line-through decoration-foreground/40")}>{t.project.name}</p>
           )}
           <div className="flex items-center justify-between gap-2 pt-1">
             <div className="flex items-center gap-1.5 min-w-0">
               {t.assignee && (
                 <>
                   <AvatarCircle initials={getInitials(t.assignee.full_name)} className="h-5 w-5 text-[9px]" />
-                  <span className="text-[11px] text-muted-foreground truncate">{t.assignee.full_name.split(" ")[0]}</span>
+                  <span className={cn("text-[11px] text-muted-foreground truncate", done && "line-through decoration-foreground/40")}>{t.assignee.full_name.split(" ")[0]}</span>
                 </>
               )}
             </div>
             {t.deadline && (
-              <span className={cn("text-[11px] font-medium flex items-center gap-1 shrink-0", dlStyle.text)}>
+              <span className={cn("text-[11px] font-medium flex items-center gap-1 shrink-0", dlStyle.text, done && "line-through decoration-foreground/40")}>
                 {dlStatus === "overdue" && <AlertTriangle className="h-3 w-3" />}
                 {dlStatus === "soon" && <Clock className="h-3 w-3" />}
                 <CalendarDays className="h-3 w-3" />
@@ -562,6 +566,7 @@ export default function CrmTasksPage() {
                     const dlStatus = getDeadlineStatus(t.deadline, t.stage);
                     const dlStyle = DEADLINE_STYLES[dlStatus];
                     const diffD = t.deadline ? Math.abs(Math.ceil((new Date(t.deadline).getTime() - Date.now()) / 86400000)) : 0;
+                    const done = t.stage === "Принята" || t.stage === "Завершена";
 
                     return (
                       <motion.tr
@@ -570,20 +575,21 @@ export default function CrmTasksPage() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: idx * 0.03, duration: 0.2 }}
                         onClick={() => setSelectedTask(t)}
+                        className={done ? "opacity-60" : ""}
                       >
                         <td onClick={e => e.stopPropagation()}>
                           <Checkbox checked={selected.has(t.id)} onCheckedChange={() => toggle(t.id)} />
                         </td>
                         <td className="text-muted-foreground/20"><GripVertical className="h-4 w-4" /></td>
                         <td className="max-w-[280px]">
-                          <p className="text-sm font-medium text-foreground leading-snug">{t.title}</p>
+                          <p className={cn("text-sm font-medium text-foreground leading-snug", done && "line-through decoration-foreground/40")}>{t.title}</p>
                         </td>
                         <td>
                           <div className="space-y-1">
                             <div className="w-24 h-2 rounded-full overflow-hidden bg-muted">
                               <div className="h-full rounded-full transition-all duration-500" style={{ width: `${t.stage_progress || 0}%`, backgroundColor: t.stage_color || "#3b82f6" }} />
                             </div>
-                            <span className="text-[11px] text-muted-foreground">{t.stage}</span>
+                            <span className={cn("text-[11px] text-muted-foreground", done && "line-through decoration-foreground/40")}>{t.stage}</span>
                           </div>
                         </td>
                         <td>
@@ -591,7 +597,7 @@ export default function CrmTasksPage() {
                             <div className="flex items-center gap-1.5">
                               {dlStatus === "overdue" && <AlertCircle className={cn("h-4 w-4 shrink-0", dlStyle.text)} />}
                               {dlStatus === "soon" && <Clock className={cn("h-4 w-4 shrink-0", dlStyle.text)} />}
-                              <span className={cn("text-sm font-medium", dlStyle.text)}>
+                              <span className={cn("text-sm font-medium", dlStyle.text, done && "line-through decoration-foreground/40")}>
                                 {new Date(t.deadline).toLocaleDateString("ru-RU", { day: "numeric", month: "long" })}
                               </span>
                             </div>
@@ -613,7 +619,7 @@ export default function CrmTasksPage() {
                           {t.creator ? (
                             <div className="flex items-center gap-2">
                               <AvatarCircle initials={getInitials(t.creator.full_name)} className="h-7 w-7 text-[10px]" />
-                              <span className="text-sm text-foreground">{t.creator.full_name}</span>
+                              <span className={cn("text-sm text-foreground", done && "line-through decoration-foreground/40")}>{t.creator.full_name}</span>
                             </div>
                           ) : <span className="text-sm text-muted-foreground">—</span>}
                         </td>
@@ -621,7 +627,7 @@ export default function CrmTasksPage() {
                           {t.assignee ? (
                             <div className="flex items-center gap-2">
                               <AvatarCircle initials={getInitials(t.assignee.full_name)} className="h-7 w-7 text-[10px]" />
-                              <span className="text-sm text-foreground">{t.assignee.full_name}</span>
+                              <span className={cn("text-sm text-foreground", done && "line-through decoration-foreground/40")}>{t.assignee.full_name}</span>
                             </div>
                           ) : <span className="text-sm text-muted-foreground">—</span>}
                         </td>
@@ -631,7 +637,7 @@ export default function CrmTasksPage() {
                               <div className="h-5 w-5 rounded-md bg-primary/10 flex items-center justify-center ring-1 ring-primary/10">
                                 <span className="text-[7px] font-bold text-primary">{t.project.name.slice(0, 2).toUpperCase()}</span>
                               </div>
-                              <span className="text-sm text-muted-foreground">{t.project.name}</span>
+                              <span className={cn("text-sm text-muted-foreground", done && "line-through decoration-foreground/40")}>{t.project.name}</span>
                             </div>
                           ) : <span className="text-sm text-muted-foreground">—</span>}
                         </td>
