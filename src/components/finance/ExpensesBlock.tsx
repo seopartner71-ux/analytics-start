@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { format } from "date-fns";
+import { format, startOfMonth, endOfMonth } from "date-fns";
 import { ru } from "date-fns/locale";
 import { Plus, Trash2, Receipt } from "lucide-react";
 
@@ -101,6 +101,30 @@ export function ExpensesBlock() {
     },
   });
 
+  const today = new Date();
+  const monthStart = startOfMonth(today);
+  const monthEnd = endOfMonth(today);
+
+  const { data: monthExpenses = [] } = useQuery({
+    queryKey: ["fin-expenses-month", format(monthStart, "yyyy-MM")],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("transactions" as any)
+        .select("id, account_id, type, amount, date, category, description")
+        .eq("type", "expense")
+        .gte("date", format(monthStart, "yyyy-MM-dd"))
+        .lte("date", format(monthEnd, "yyyy-MM-dd"))
+        .order("date", { ascending: false });
+      if (error) throw error;
+      return (data || []) as unknown as Tx[];
+    },
+  });
+
+  const monthTotal = useMemo(
+    () => monthExpenses.reduce((sum, t) => sum + Number(t.amount), 0),
+    [monthExpenses]
+  );
+
   const { data: expenses = [] } = useQuery({
     queryKey: ["fin-expenses-recent"],
     queryFn: async () => {
@@ -148,6 +172,7 @@ export function ExpensesBlock() {
     onSuccess: ({ useKassa }) => {
       toast.success(useKassa ? "Расход списан с Кассы" : "Касса пуста — расход списан с банка «Точка»");
       qc.invalidateQueries({ queryKey: ["fin-expenses-recent"] });
+      qc.invalidateQueries({ queryKey: ["fin-expenses-month"] });
       qc.invalidateQueries({ queryKey: ["fin-accounts"] });
       qc.invalidateQueries({ queryKey: ["fin-tx-year"] });
       qc.invalidateQueries({ queryKey: ["fin-account-cash"] });
@@ -166,6 +191,7 @@ export function ExpensesBlock() {
     onSuccess: () => {
       toast.success("Расход удалён, баланс восстановлен");
       qc.invalidateQueries({ queryKey: ["fin-expenses-recent"] });
+      qc.invalidateQueries({ queryKey: ["fin-expenses-month"] });
       qc.invalidateQueries({ queryKey: ["fin-accounts"] });
       qc.invalidateQueries({ queryKey: ["fin-tx-year"] });
       qc.invalidateQueries({ queryKey: ["fin-account-cash"] });
@@ -182,6 +208,9 @@ export function ExpensesBlock() {
           </CardTitle>
           <p className="text-xs text-muted-foreground mt-1">
             Сначала с Кассы (<span className="font-semibold text-foreground">{RUB(Number(cashAccount?.balance || 0))}</span>), если не хватает — с банка «Точка» (<span className="font-semibold text-foreground">{RUB(Number(tochkaAccount?.balance || 0))}</span>)
+          </p>
+          <p className="text-xs mt-1">
+            Расходы за {format(today, "LLLL", { locale: ru })}: <span className="font-semibold text-red-500">{RUB(monthTotal)}</span>
           </p>
         </div>
         <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>
