@@ -207,6 +207,9 @@ export function ExpensesBlock() {
           <p className="text-xs text-muted-foreground mt-1">
             Сначала с Кассы (<span className="font-semibold text-foreground">{RUB(Number(cashAccount?.balance || 0))}</span>), если не хватает — с банка «Точка» (<span className="font-semibold text-foreground">{RUB(Number(tochkaAccount?.balance || 0))}</span>)
           </p>
+          <p className="text-xs mt-1">
+            Расходы за {format(today, "LLLL", { locale: ru })}: <span className="font-semibold text-red-500">{RUB(monthTotal)}</span>
+          </p>
         </div>
         <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>
           <DialogTrigger asChild>
