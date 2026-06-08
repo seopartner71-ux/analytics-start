@@ -37,13 +37,8 @@ const ContentPage = lazy(() => import("./pages/ContentPage"));
 const LinksPage = lazy(() => import("./pages/LinksPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const ChatPage = lazy(() => import("./pages/ChatPage"));
-const ReportsPage = lazy(() => import("./pages/ReportsPage"));
+
 const Finance = lazy(() => import("./pages/Finance"));
-const TimeTrackingPage = lazy(() => import("./pages/TimeTrackingPage"));
-const WorkloadPage = lazy(() => import("./pages/WorkloadPage"));
-const EmployeeKpiPage = lazy(() => import("./pages/EmployeeKpiPage"));
-const PlanFactPage = lazy(() => import("./pages/PlanFactPage"));
-const OnboardingPage = lazy(() => import("./pages/OnboardingPage"));
 const KnowledgeBasePage = lazy(() => import("./pages/KnowledgeBasePage"));
 const KnowledgeBooksPage = lazy(() => import("./pages/KnowledgeBooksPage"));
 const DeletionLogPage = lazy(() => import("./pages/DeletionLogPage"));
@@ -101,13 +96,7 @@ const App = () => (
                   <Route path="/admin" element={<ProtectedRoute><CrmLayout><AdminPanel /></CrmLayout></ProtectedRoute>} />
                   <Route path="/profile" element={<ProtectedRoute><CrmLayout><ProfilePage /></CrmLayout></ProtectedRoute>} />
                   <Route path="/chat" element={<ProtectedRoute><CrmLayout><ChatPage /></CrmLayout></ProtectedRoute>} />
-                  <Route path="/reports" element={<ProtectedRoute><CrmLayout><ReportsPage /></CrmLayout></ProtectedRoute>} />
                   <Route path="/finance" element={<ProtectedRoute><CrmLayout><FinanceGuard><Finance /></FinanceGuard></CrmLayout></ProtectedRoute>} />
-                  <Route path="/time-tracking" element={<ProtectedRoute><CrmLayout><TimeTrackingPage /></CrmLayout></ProtectedRoute>} />
-                  <Route path="/workload" element={<ProtectedRoute><CrmLayout><WorkloadPage /></CrmLayout></ProtectedRoute>} />
-                  <Route path="/kpi" element={<ProtectedRoute><CrmLayout><EmployeeKpiPage /></CrmLayout></ProtectedRoute>} />
-                  <Route path="/plan-fact" element={<ProtectedRoute><CrmLayout><PlanFactPage /></CrmLayout></ProtectedRoute>} />
-                  <Route path="/onboarding" element={<ProtectedRoute><CrmLayout><OnboardingPage /></CrmLayout></ProtectedRoute>} />
                   <Route path="/knowledge" element={<ProtectedRoute><CrmLayout><KnowledgeBasePage /></CrmLayout></ProtectedRoute>} />
                   <Route path="/knowledge-books" element={<ProtectedRoute><CrmLayout><KnowledgeBooksPage /></CrmLayout></ProtectedRoute>} />
                   <Route path="/users" element={<ProtectedRoute><CrmLayout><EmployeesPage /></CrmLayout></ProtectedRoute>} />

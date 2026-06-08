@@ -273,7 +273,7 @@ const DirectorDashboard = () => {
               <Trophy className="h-4 w-4 text-warning" />
               ТОП-3 сотрудников за месяц
             </h3>
-            <button onClick={() => navigate("/kpi")} className="text-[11px] text-primary hover:underline">Все KPI →</button>
+            
           </div>
           {topEmployees.length === 0 ? (
             <p className="text-[13px] text-muted-foreground text-center py-8">Нет завершённых задач за месяц</p>
@@ -309,7 +309,7 @@ const DirectorDashboard = () => {
               <Scale className="h-4 w-4 text-primary" />
               Рентабельность проектов
             </h3>
-            <button onClick={() => navigate("/plan-fact")} className="text-[11px] text-primary hover:underline">План-факт →</button>
+            
           </div>
           {projectProfitability.length === 0 ? (
             <p className="text-[13px] text-muted-foreground text-center py-8">Нет проектов с финансовыми данными</p>
@@ -406,7 +406,7 @@ const DirectorDashboard = () => {
               <Users className="h-4 w-4 text-primary" />
               Загрузка команды
             </h3>
-            <button onClick={() => navigate("/workload")} className="text-[11px] text-primary hover:underline">Подробно →</button>
+            
           </div>
           {teamLoad.length === 0 ? (
             <p className="text-[13px] text-muted-foreground text-center py-8">Нет активных задач</p>
