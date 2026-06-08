@@ -101,6 +101,30 @@ export function ExpensesBlock() {
     },
   });
 
+  const today = new Date();
+  const monthStart = startOfMonth(today);
+  const monthEnd = endOfMonth(today);
+
+  const { data: monthExpenses = [] } = useQuery({
+    queryKey: ["fin-expenses-month", format(monthStart, "yyyy-MM")],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("transactions" as any)
+        .select("id, account_id, type, amount, date, category, description")
+        .eq("type", "expense")
+        .gte("date", format(monthStart, "yyyy-MM-dd"))
+        .lte("date", format(monthEnd, "yyyy-MM-dd"))
+        .order("date", { ascending: false });
+      if (error) throw error;
+      return (data || []) as unknown as Tx[];
+    },
+  });
+
+  const monthTotal = useMemo(
+    () => monthExpenses.reduce((sum, t) => sum + Number(t.amount), 0),
+    [monthExpenses]
+  );
+
   const { data: expenses = [] } = useQuery({
     queryKey: ["fin-expenses-recent"],
     queryFn: async () => {
