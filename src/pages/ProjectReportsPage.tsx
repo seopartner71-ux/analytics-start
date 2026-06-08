@@ -136,6 +136,7 @@ export default function ProjectReportsPage() {
       comment: editing.comment || "",
       project_id: editing.project_id || null,
       assignee_id: editing.assignee_id || null,
+      co_assignee_ids: editing.co_assignee_ids || [],
     };
     if (editing.id) {
       const { error } = await supabase.from("project_reports").update(payload).eq("id", editing.id);
