@@ -227,9 +227,24 @@ export function ExpensesBlock() {
           <p className="text-xs text-muted-foreground mt-1">
             Сначала с Кассы (<span className="font-semibold text-foreground">{RUB(Number(cashAccount?.balance || 0))}</span>), если не хватает — с банка «Точка» (<span className="font-semibold text-foreground">{RUB(Number(tochkaAccount?.balance || 0))}</span>)
           </p>
-          <p className="text-xs mt-1">
-            Расходы за {format(today, "LLLL", { locale: ru })}: <span className="font-semibold text-red-500">{RUB(monthTotal)}</span>
-          </p>
+          <div className="flex items-center gap-2 mt-2">
+            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+              <SelectTrigger className="h-8 w-[180px] text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {monthlyTotals.map((m) => (
+                  <SelectItem key={m.key} value={m.key} className="text-xs">
+                    <span className="capitalize">{m.label}</span> — {RUB(m.total)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <span className="text-xs">
+              Итого за <span className="capitalize">{selectedMonthLabel}</span>:{" "}
+              <span className="font-semibold text-red-500">{RUB(monthTotal)}</span>
+            </span>
+          </div>
         </div>
         <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>
           <DialogTrigger asChild>
