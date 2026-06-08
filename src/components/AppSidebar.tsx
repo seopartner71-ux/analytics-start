@@ -23,6 +23,7 @@ const allNav = [
   { title: "Проекты", url: "/crm-projects", icon: FolderKanban, minRole: "viewer" as const },
   { title: "Задачи", url: "/tasks", icon: ClipboardList, minRole: "manager" as const },
   { title: "Мои задачи", url: "/my-tasks", icon: UserCheck, minRole: "viewer" as const },
+  { title: "Отчётность", url: "/project-reports", icon: FileText, minRole: "manager" as const },
   { title: "Клиенты", url: "/companies", icon: Building2, minRole: "admin" as const, managerPlus: true },
   { title: "Календарь", url: "/content", icon: CalendarDays, minRole: "manager" as const },
   { title: "Сотрудники", url: "/employees", icon: Users, minRole: "manager" as const },

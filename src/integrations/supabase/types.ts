@@ -3297,6 +3297,72 @@ export type Database = {
           },
         ]
       }
+      project_reports: {
+        Row: {
+          assignee_id: string | null
+          assignee_user_id: string | null
+          client_name: string
+          comment: string
+          created_at: string
+          due_date: string
+          id: string
+          owner_id: string
+          project_id: string | null
+          reminder_1d_sent: boolean
+          reminder_2d_sent: boolean
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assignee_id?: string | null
+          assignee_user_id?: string | null
+          client_name?: string
+          comment?: string
+          created_at?: string
+          due_date: string
+          id?: string
+          owner_id: string
+          project_id?: string | null
+          reminder_1d_sent?: boolean
+          reminder_2d_sent?: boolean
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          assignee_id?: string | null
+          assignee_user_id?: string | null
+          client_name?: string
+          comment?: string
+          created_at?: string
+          due_date?: string
+          id?: string
+          owner_id?: string
+          project_id?: string | null
+          reminder_1d_sent?: boolean
+          reminder_2d_sent?: boolean
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_reports_assignee_id_fkey"
+            columns: ["assignee_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_reports_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           account_manager: string | null
