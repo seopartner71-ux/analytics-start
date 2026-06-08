@@ -406,7 +406,7 @@ const DirectorDashboard = () => {
               <Users className="h-4 w-4 text-primary" />
               Загрузка команды
             </h3>
-            <button onClick={() => navigate("/workload")} className="text-[11px] text-primary hover:underline">Подробно →</button>
+            
           </div>
           {teamLoad.length === 0 ? (
             <p className="text-[13px] text-muted-foreground text-center py-8">Нет активных задач</p>
