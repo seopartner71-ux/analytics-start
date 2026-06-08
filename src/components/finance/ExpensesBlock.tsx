@@ -102,43 +102,61 @@ export function ExpensesBlock() {
   });
 
   const today = new Date();
-  const monthStart = startOfMonth(today);
-  const monthEnd = endOfMonth(today);
+  const [selectedMonth, setSelectedMonth] = useState<string>(format(today, "yyyy-MM"));
 
-  const { data: monthExpenses = [] } = useQuery({
-    queryKey: ["fin-expenses-month", format(monthStart, "yyyy-MM")],
+  // Все расходы за последние 12 месяцев — для группировки и таблицы по выбранному месяцу
+  const yearAgo = startOfMonth(new Date(today.getFullYear(), today.getMonth() - 11, 1));
+  const { data: allExpenses = [] } = useQuery({
+    queryKey: ["fin-expenses-all", format(yearAgo, "yyyy-MM")],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("transactions" as any)
         .select("id, account_id, type, amount, date, category, description")
         .eq("type", "expense")
-        .gte("date", format(monthStart, "yyyy-MM-dd"))
-        .lte("date", format(monthEnd, "yyyy-MM-dd"))
-        .order("date", { ascending: false });
+        .gte("date", format(yearAgo, "yyyy-MM-dd"))
+        .order("date", { ascending: false })
+        .order("created_at", { ascending: false });
       if (error) throw error;
       return (data || []) as unknown as Tx[];
     },
   });
 
-  const monthTotal = useMemo(
-    () => monthExpenses.reduce((sum, t) => sum + Number(t.amount), 0),
-    [monthExpenses]
+  // Итоги по месяцам
+  const monthlyTotals = useMemo(() => {
+    const map = new Map<string, number>();
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      map.set(format(d, "yyyy-MM"), 0);
+    }
+    allExpenses.forEach((t) => {
+      const key = t.date.slice(0, 7);
+      if (map.has(key)) map.set(key, (map.get(key) || 0) + Number(t.amount));
+    });
+    return Array.from(map.entries())
+      .map(([key, total]) => ({
+        key,
+        total,
+        label: format(new Date(key + "-01"), "LLLL yyyy", { locale: ru }),
+      }))
+      .sort((a, b) => (a.key < b.key ? 1 : -1));
+  }, [allExpenses, today]);
+
+  // Операции выбранного месяца
+  const expenses = useMemo(
+    () => allExpenses.filter((t) => t.date.startsWith(selectedMonth)),
+    [allExpenses, selectedMonth]
   );
 
-  const { data: expenses = [] } = useQuery({
-    queryKey: ["fin-expenses-recent"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("transactions" as any)
-        .select("id, account_id, type, amount, date, category, description")
-        .eq("type", "expense")
-        .order("date", { ascending: false })
-        .order("created_at", { ascending: false })
-        .limit(10);
-      if (error) throw error;
-      return (data || []) as unknown as Tx[];
-    },
-  });
+  const monthTotal = useMemo(
+    () => expenses.reduce((sum, t) => sum + Number(t.amount), 0),
+    [expenses]
+  );
+
+  const selectedMonthLabel = useMemo(
+    () => format(new Date(selectedMonth + "-01"), "LLLL yyyy", { locale: ru }),
+    [selectedMonth]
+  );
+
 
   const reset = () => {
     setAmount("");
@@ -171,8 +189,8 @@ export function ExpensesBlock() {
     },
     onSuccess: ({ useKassa }) => {
       toast.success(useKassa ? "Расход списан с Кассы" : "Касса пуста — расход списан с банка «Точка»");
-      qc.invalidateQueries({ queryKey: ["fin-expenses-recent"] });
-      qc.invalidateQueries({ queryKey: ["fin-expenses-month"] });
+      qc.invalidateQueries({ queryKey: ["fin-expenses-all"] });
+      qc.invalidateQueries({ queryKey: ["fin-expenses-all"] });
       qc.invalidateQueries({ queryKey: ["fin-accounts"] });
       qc.invalidateQueries({ queryKey: ["fin-tx-year"] });
       qc.invalidateQueries({ queryKey: ["fin-account-cash"] });
@@ -190,8 +208,8 @@ export function ExpensesBlock() {
     },
     onSuccess: () => {
       toast.success("Расход удалён, баланс восстановлен");
-      qc.invalidateQueries({ queryKey: ["fin-expenses-recent"] });
-      qc.invalidateQueries({ queryKey: ["fin-expenses-month"] });
+      qc.invalidateQueries({ queryKey: ["fin-expenses-all"] });
+      qc.invalidateQueries({ queryKey: ["fin-expenses-all"] });
       qc.invalidateQueries({ queryKey: ["fin-accounts"] });
       qc.invalidateQueries({ queryKey: ["fin-tx-year"] });
       qc.invalidateQueries({ queryKey: ["fin-account-cash"] });
@@ -209,9 +227,24 @@ export function ExpensesBlock() {
           <p className="text-xs text-muted-foreground mt-1">
             Сначала с Кассы (<span className="font-semibold text-foreground">{RUB(Number(cashAccount?.balance || 0))}</span>), если не хватает — с банка «Точка» (<span className="font-semibold text-foreground">{RUB(Number(tochkaAccount?.balance || 0))}</span>)
           </p>
-          <p className="text-xs mt-1">
-            Расходы за {format(today, "LLLL", { locale: ru })}: <span className="font-semibold text-red-500">{RUB(monthTotal)}</span>
-          </p>
+          <div className="flex items-center gap-2 mt-2">
+            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+              <SelectTrigger className="h-8 w-[180px] text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {monthlyTotals.map((m) => (
+                  <SelectItem key={m.key} value={m.key} className="text-xs">
+                    <span className="capitalize">{m.label}</span> — {RUB(m.total)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <span className="text-xs">
+              Итого за <span className="capitalize">{selectedMonthLabel}</span>:{" "}
+              <span className="font-semibold text-red-500">{RUB(monthTotal)}</span>
+            </span>
+          </div>
         </div>
         <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>
           <DialogTrigger asChild>
