@@ -309,7 +309,7 @@ const DirectorDashboard = () => {
               <Scale className="h-4 w-4 text-primary" />
               Рентабельность проектов
             </h3>
-            <button onClick={() => navigate("/plan-fact")} className="text-[11px] text-primary hover:underline">План-факт →</button>
+            
           </div>
           {projectProfitability.length === 0 ? (
             <p className="text-[13px] text-muted-foreground text-center py-8">Нет проектов с финансовыми данными</p>
