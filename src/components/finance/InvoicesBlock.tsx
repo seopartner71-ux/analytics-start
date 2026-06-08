@@ -272,9 +272,16 @@ export function InvoicesBlock() {
                       <td className="py-2.5 text-muted-foreground max-w-[260px] truncate">{inv.service}</td>
                       <td className="py-2.5 text-right font-semibold">{RUB(Number(inv.amount))}</td>
                       <td className="py-2.5 pl-3">
-                        <Badge variant="outline" className={`text-[10px] ${STATUS_COLOR[inv.status]}`}>
-                          {STATUS_LABEL[inv.status]}
-                        </Badge>
+                        <div className="flex flex-col items-start gap-1">
+                          <Badge variant="outline" className={`text-[10px] ${STATUS_COLOR[inv.status]}`}>
+                            {STATUS_LABEL[inv.status]}
+                          </Badge>
+                          {inv.status === "paid" && inv.date_paid && (
+                            <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                              {format(new Date(inv.date_paid), "dd MMM yyyy", { locale: ru })}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="py-2.5 text-right">
                         <DropdownMenu>
