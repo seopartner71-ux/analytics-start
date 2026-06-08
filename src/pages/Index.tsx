@@ -627,7 +627,7 @@ const Index = () => {
                     </span>
                   </td>
                   <td>
-                    <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1" onClick={() => navigate(`/reports?project=${row.id}`)}>
+                    <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1" onClick={() => navigate(`/crm-projects/${row.id}?tab=builder`)}>
                       <Calendar className="h-3 w-3" />
                       Отчёт
                     </Button>
