@@ -172,6 +172,7 @@ export function ExpensesBlock() {
     onSuccess: ({ useKassa }) => {
       toast.success(useKassa ? "Расход списан с Кассы" : "Касса пуста — расход списан с банка «Точка»");
       qc.invalidateQueries({ queryKey: ["fin-expenses-recent"] });
+      qc.invalidateQueries({ queryKey: ["fin-expenses-month"] });
       qc.invalidateQueries({ queryKey: ["fin-accounts"] });
       qc.invalidateQueries({ queryKey: ["fin-tx-year"] });
       qc.invalidateQueries({ queryKey: ["fin-account-cash"] });
