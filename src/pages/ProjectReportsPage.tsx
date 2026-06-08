@@ -326,6 +326,34 @@ export default function ProjectReportsPage() {
                 </div>
               </div>
               <div>
+                <Label>Соисполнители</Label>
+                <div className="border border-border rounded-md p-2 max-h-40 overflow-y-auto space-y-1">
+                  {team.filter((t: any) => t.id !== editing.assignee_id).map((t: any) => {
+                    const checked = (editing.co_assignee_ids || []).includes(t.id);
+                    return (
+                      <label key={t.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-muted/30 px-2 py-1 rounded">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(e) => {
+                            const cur = editing.co_assignee_ids || [];
+                            setEditing({
+                              ...editing,
+                              co_assignee_ids: e.target.checked ? [...cur, t.id] : cur.filter(id => id !== t.id),
+                            });
+                          }}
+                        />
+                        <span>{t.full_name}</span>
+                      </label>
+                    );
+                  })}
+                  {team.length === 0 && <div className="text-xs text-muted-foreground px-2">Нет сотрудников</div>}
+                </div>
+                {(editing.co_assignee_ids?.length || 0) > 0 && (
+                  <div className="text-[11px] text-muted-foreground mt-1">Выбрано: {editing.co_assignee_ids!.length}</div>
+                )}
+              </div>
+              <div>
                 <Label>Ответственный</Label>
                 <Select value={editing.assignee_id || "none"} onValueChange={(v) => setEditing({ ...editing, assignee_id: v === "none" ? null : v })}>
                   <SelectTrigger><SelectValue placeholder="Не назначен" /></SelectTrigger>
