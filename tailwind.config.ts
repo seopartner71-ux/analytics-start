@@ -75,9 +75,35 @@ export default {
         },
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        sm: "var(--radius-sm)",
+        DEFAULT: "var(--radius)",
+        md: "var(--radius-md)",
+        lg: "var(--radius-lg)",
+        xl: "var(--radius-xl)",
+      },
+      fontFamily: {
+        sans: ["var(--font-sans)"],
+        mono: ["var(--font-mono)"],
+      },
+      fontSize: {
+        xs: ["var(--text-xs)", { lineHeight: "1.4" }],
+        sm: ["var(--text-sm)", { lineHeight: "1.45" }],
+        base: ["var(--text-base)", { lineHeight: "1.5" }],
+        md: ["var(--text-md)", { lineHeight: "1.5" }],
+        lg: ["var(--text-lg)", { lineHeight: "1.5" }],
+        xl: ["var(--text-xl)", { lineHeight: "1.4" }],
+        "2xl": ["var(--text-2xl)", { lineHeight: "1.3", letterSpacing: "-0.015em" }],
+        "3xl": ["var(--text-3xl)", { lineHeight: "1.2", letterSpacing: "-0.02em" }],
+      },
+      letterSpacing: {
+        tight: "var(--tracking-tight)",
+        tighter: "var(--tracking-tighter)",
+      },
+      boxShadow: {
+        xs: "var(--shadow-xs)",
+        sm: "var(--shadow-sm)",
+        md: "var(--shadow-md)",
+        lg: "var(--shadow-lg)",
       },
       keyframes: {
         "accordion-down": {
