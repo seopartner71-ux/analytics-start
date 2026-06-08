@@ -102,43 +102,61 @@ export function ExpensesBlock() {
   });
 
   const today = new Date();
-  const monthStart = startOfMonth(today);
-  const monthEnd = endOfMonth(today);
+  const [selectedMonth, setSelectedMonth] = useState<string>(format(today, "yyyy-MM"));
 
-  const { data: monthExpenses = [] } = useQuery({
-    queryKey: ["fin-expenses-month", format(monthStart, "yyyy-MM")],
+  // Все расходы за последние 12 месяцев — для группировки и таблицы по выбранному месяцу
+  const yearAgo = startOfMonth(new Date(today.getFullYear(), today.getMonth() - 11, 1));
+  const { data: allExpenses = [] } = useQuery({
+    queryKey: ["fin-expenses-all", format(yearAgo, "yyyy-MM")],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("transactions" as any)
         .select("id, account_id, type, amount, date, category, description")
         .eq("type", "expense")
-        .gte("date", format(monthStart, "yyyy-MM-dd"))
-        .lte("date", format(monthEnd, "yyyy-MM-dd"))
-        .order("date", { ascending: false });
+        .gte("date", format(yearAgo, "yyyy-MM-dd"))
+        .order("date", { ascending: false })
+        .order("created_at", { ascending: false });
       if (error) throw error;
       return (data || []) as unknown as Tx[];
     },
   });
 
-  const monthTotal = useMemo(
-    () => monthExpenses.reduce((sum, t) => sum + Number(t.amount), 0),
-    [monthExpenses]
+  // Итоги по месяцам
+  const monthlyTotals = useMemo(() => {
+    const map = new Map<string, number>();
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      map.set(format(d, "yyyy-MM"), 0);
+    }
+    allExpenses.forEach((t) => {
+      const key = t.date.slice(0, 7);
+      if (map.has(key)) map.set(key, (map.get(key) || 0) + Number(t.amount));
+    });
+    return Array.from(map.entries())
+      .map(([key, total]) => ({
+        key,
+        total,
+        label: format(new Date(key + "-01"), "LLLL yyyy", { locale: ru }),
+      }))
+      .sort((a, b) => (a.key < b.key ? 1 : -1));
+  }, [allExpenses, today]);
+
+  // Операции выбранного месяца
+  const expenses = useMemo(
+    () => allExpenses.filter((t) => t.date.startsWith(selectedMonth)),
+    [allExpenses, selectedMonth]
   );
 
-  const { data: expenses = [] } = useQuery({
-    queryKey: ["fin-expenses-recent"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("transactions" as any)
-        .select("id, account_id, type, amount, date, category, description")
-        .eq("type", "expense")
-        .order("date", { ascending: false })
-        .order("created_at", { ascending: false })
-        .limit(10);
-      if (error) throw error;
-      return (data || []) as unknown as Tx[];
-    },
-  });
+  const monthTotal = useMemo(
+    () => expenses.reduce((sum, t) => sum + Number(t.amount), 0),
+    [expenses]
+  );
+
+  const selectedMonthLabel = useMemo(
+    () => format(new Date(selectedMonth + "-01"), "LLLL yyyy", { locale: ru }),
+    [selectedMonth]
+  );
+
 
   const reset = () => {
     setAmount("");
