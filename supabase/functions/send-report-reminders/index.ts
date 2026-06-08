@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
 
     const { data: reports } = await supabase
       .from("project_reports")
-      .select("id, title, client_name, due_date, status, owner_id, assignee_id, assignee_user_id, reminder_1d_sent, reminder_2d_sent, project_id, projects(name)")
+      .select("id, title, client_name, due_date, status, owner_id, assignee_id, assignee_user_id, co_assignee_ids, reminder_1d_sent, reminder_2d_sent, project_id, projects(name)")
       .in("status", ["planned", "in_progress"])
       .in("due_date", [fmt(in1), fmt(in2)]);
 
