@@ -198,7 +198,7 @@ export function ComparisonTab({ projectId, projectName }: ComparisonTabProps) {
                   <TableCell className="text-right text-sm text-muted-foreground">{fmtVal(m.previous, m.format)}</TableCell>
                   <TableCell className="text-right text-sm font-medium">{fmtVal(m.current, m.format)}</TableCell>
                   <TableCell className="text-right">
-                    <Badge variant="outline" className={cn("text-[11px] px-2 py-0.5",
+                    <Badge variant="outline" className={cn("text-xs px-2 py-0.5",
                       isNeutral ? "bg-muted text-muted-foreground border-border"
                         : isGood ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
                           : "bg-red-500/10 text-red-600 border-red-500/20"

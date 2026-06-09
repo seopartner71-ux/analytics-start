@@ -91,7 +91,7 @@ export function TaskActivityBlock({ taskId }: { taskId: string }) {
                   <span className="text-muted-foreground line-through">{formatValue(l.field_name, l.old_value, members)}</span>
                   <span className="text-muted-foreground">→</span>
                   <span className="text-foreground font-medium">{formatValue(l.field_name, l.new_value, members)}</span>
-                  <span className="ml-auto text-muted-foreground/60 text-[10px]">{formatRelative(l.created_at)}</span>
+                  <span className="ml-auto text-muted-foreground/60 text-2xs">{formatRelative(l.created_at)}</span>
                 </div>
               );
             })}

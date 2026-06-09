@@ -39,11 +39,11 @@ function SortableRow({ tpl, onChange, onDelete, persisted }: { tpl: Tpl; onChang
     <div ref={setNodeRef} style={style} className="border rounded-md bg-card p-2 space-y-2">
       <div className="flex items-center gap-2">
         <button {...attributes} {...listeners} className="text-muted-foreground hover:text-foreground cursor-grab"><GripVertical className="h-4 w-4" /></button>
-        <Input value={tpl.title} onChange={(e) => onChange({ title: e.target.value })} className="h-8 text-[13px] flex-1" />
-        <Input type="number" min={1} max={12} value={tpl.week} onChange={(e) => onChange({ week: Number(e.target.value) })} className="h-8 w-16 text-[12px]" placeholder="Нед." />
+        <Input value={tpl.title} onChange={(e) => onChange({ title: e.target.value })} className="h-8 text-base flex-1" />
+        <Input type="number" min={1} max={12} value={tpl.week} onChange={(e) => onChange({ week: Number(e.target.value) })} className="h-8 w-16 text-sm" placeholder="Нед." />
         <Select value={tpl.assignee_role} onValueChange={(v) => onChange({ assignee_role: v })}>
-          <SelectTrigger className="h-8 w-32 text-[12px]"><SelectValue /></SelectTrigger>
-          <SelectContent>{ROLES.map((r) => <SelectItem key={r.value} value={r.value} className="text-[12px]">{r.label}</SelectItem>)}</SelectContent>
+          <SelectTrigger className="h-8 w-32 text-sm"><SelectValue /></SelectTrigger>
+          <SelectContent>{ROLES.map((r) => <SelectItem key={r.value} value={r.value} className="text-sm">{r.label}</SelectItem>)}</SelectContent>
         </Select>
         <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-red-500 hover:text-red-600" onClick={onDelete}><Trash2 className="h-3.5 w-3.5" /></Button>
       </div>
@@ -142,8 +142,8 @@ export function OnboardingTaskTemplateEditor() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-[15px] font-semibold">Шаблон задач онбординга</h3>
-          <p className="text-[12px] text-muted-foreground">Изменения применяются только к новым проектам. Существующие не затрагиваются.</p>
+          <h3 className="text-lg font-semibold">Шаблон задач онбординга</h3>
+          <p className="text-sm text-muted-foreground">Изменения применяются только к новым проектам. Существующие не затрагиваются.</p>
         </div>
         <Button size="sm" onClick={saveAll} disabled={saving}>
           {saving && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
@@ -154,8 +154,8 @@ export function OnboardingTaskTemplateEditor() {
       <Tabs value={period} onValueChange={setPeriod}>
         <TabsList>
           {[1, 2, 3].map((p) => (
-            <TabsTrigger key={p} value={String(p)} className="text-[13px]">
-              Период {p} <span className="ml-1.5 text-[11px] text-muted-foreground tabular-nums">{(grouped[p] || []).length}</span>
+            <TabsTrigger key={p} value={String(p)} className="text-base">
+              Период {p} <span className="ml-1.5 text-xs text-muted-foreground tabular-nums">{(grouped[p] || []).length}</span>
             </TabsTrigger>
           ))}
         </TabsList>
@@ -175,7 +175,7 @@ export function OnboardingTaskTemplateEditor() {
                   ))}
                 </SortableContext>
               </DndContext>
-              <Button size="sm" variant="outline" className="w-full h-8 text-[12px]" onClick={addTask}>
+              <Button size="sm" variant="outline" className="w-full h-8 text-sm" onClick={addTask}>
                 <Plus className="h-3.5 w-3.5 mr-1" /> Добавить задачу в Период {p}
               </Button>
             </Card>

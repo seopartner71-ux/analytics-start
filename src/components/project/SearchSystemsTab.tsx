@@ -259,7 +259,7 @@ const DeltaBadge = ({ current, prev }: { current: number; prev?: number }) => {
   if (d === undefined) return null;
   const positive = d >= 0;
   return (
-    <span className={cn("inline-flex items-center gap-0.5 text-[10px] font-medium ml-1", positive ? "text-emerald-500" : "text-destructive")}>
+    <span className={cn("inline-flex items-center gap-0.5 text-2xs font-medium ml-1", positive ? "text-emerald-500" : "text-destructive")}>
       {positive ? <TrendingUp className="h-2.5 w-2.5" /> : <TrendingDown className="h-2.5 w-2.5" />}
       {positive ? "+" : ""}{d}%
     </span>
@@ -268,7 +268,7 @@ const DeltaBadge = ({ current, prev }: { current: number; prev?: number }) => {
 
 const PrevLabel = ({ value, comparison }: { value?: number; comparison: boolean }) => {
   if (!comparison || value === undefined) return null;
-  return <span className="block text-[10px] text-muted-foreground">было: {value.toLocaleString()}</span>;
+  return <span className="block text-2xs text-muted-foreground">было: {value.toLocaleString()}</span>;
 };
 
 type SortKey = "visits" | "visitors" | "bounce" | "depth" | "duration";
@@ -488,7 +488,7 @@ export function SearchSystemsTab({ projectId, projectName }: SearchSystemsTabPro
               if (!prevEntry) return null;
               const d = calcDelta(p.value, prevEntry.value);
               return (
-                <span className={cn("text-[10px]", d !== undefined && d >= 0 ? "text-emerald-500" : "text-destructive")}>
+                <span className={cn("text-2xs", d !== undefined && d >= 0 ? "text-emerald-500" : "text-destructive")}>
                   ({prevEntry.value.toLocaleString()}{d !== undefined ? `, ${d >= 0 ? "+" : ""}${d}%` : ""})
                 </span>
               );

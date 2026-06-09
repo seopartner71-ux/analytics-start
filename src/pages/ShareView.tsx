@@ -189,7 +189,7 @@ const ShareView = () => {
                   </div>
                   <div>
                     <h3 className="text-sm font-semibold text-foreground">{t("aiInsights.title")}</h3>
-                    <p className="text-[11px] text-muted-foreground">{t("aiInsights.subtitle")}</p>
+                    <p className="text-xs text-muted-foreground">{t("aiInsights.subtitle")}</p>
                   </div>
                 </div>
                 <div className="space-y-3">

@@ -108,7 +108,7 @@ const Auth = () => {
             <div>
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 mb-6">
                 <Sparkles className="h-3 w-3 text-accent" />
-                <span className="text-[11px] font-medium text-accent uppercase tracking-wider">SEO Analytics Platform</span>
+                <span className="text-xs font-medium text-accent uppercase tracking-wider">SEO Analytics Platform</span>
               </div>
               <h1 className="text-5xl xl:text-6xl font-bold tracking-tight leading-[1.05] text-foreground">
                 Управляйте SEO<br />
@@ -194,7 +194,7 @@ const Auth = () => {
                       </Button>
                       <div className="relative py-1">
                         <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border/60" /></div>
-                        <div className="relative flex justify-center text-[10px] uppercase tracking-wider"><span className="bg-card px-3 text-muted-foreground">{t("auth.or")}</span></div>
+                        <div className="relative flex justify-center text-2xs uppercase tracking-wider"><span className="bg-card px-3 text-muted-foreground">{t("auth.or")}</span></div>
                       </div>
                       <Button type="button" variant="outline" className="w-full h-11 gap-2 border-border/60 bg-background/40 hover:bg-background/80" onClick={handleMagicLink} disabled={loading}>
                         <Mail className="h-4 w-4" />
@@ -225,7 +225,7 @@ const Auth = () => {
                           <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-accent transition-colors" />
                           <Input id="signup-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="pl-9 h-11 bg-background/60 border-border/60 focus-visible:ring-accent/30 focus-visible:border-accent" required minLength={6} />
                         </div>
-                        <p className="text-[11px] text-muted-foreground pt-0.5">Минимум 6 символов</p>
+                        <p className="text-xs text-muted-foreground pt-0.5">Минимум 6 символов</p>
                       </div>
                       <Button type="submit" className="w-full h-11 bg-gradient-to-r from-accent to-accent/85 hover:from-accent/90 hover:to-accent/75 text-accent-foreground font-semibold shadow-lg shadow-accent/20" disabled={loading}>
                         {loading ? t("common.loading") : t("auth.signUp")}
@@ -234,7 +234,7 @@ const Auth = () => {
                   </TabsContent>
                 </Tabs>
 
-                <p className="text-[11px] text-center text-muted-foreground mt-6 leading-relaxed">
+                <p className="text-xs text-center text-muted-foreground mt-6 leading-relaxed">
                   Регистрируясь, вы соглашаетесь с условиями использования<br />и политикой конфиденциальности
                 </p>
               </div>

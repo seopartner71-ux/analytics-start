@@ -197,9 +197,9 @@ const VIEWPORTS: { id: string; label: string; w: number; h: number; icon: string
 function ScoreTile({ label, value }: { label: string; value: number }) {
   return (
     <div className="rounded-lg border border-border bg-card p-3">
-      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className="text-2xs uppercase tracking-wider text-muted-foreground">{label}</div>
       <div className={cn("mt-1 text-2xl font-bold tabular-nums", scoreColor(value))}>{value}</div>
-      <div className="text-[10px] text-muted-foreground">из 100</div>
+      <div className="text-2xs text-muted-foreground">из 100</div>
     </div>
   );
 }
@@ -278,11 +278,11 @@ export function MobileFriendlyTab({ projectId }: Props) {
             </div>
             <div>
               <h3 className="text-base font-semibold text-foreground">Адаптивность сайта</h3>
-              <p className="text-[12px] text-muted-foreground mt-0.5">
+              <p className="text-sm text-muted-foreground mt-0.5">
                 Проверка mobile-friendly критериев Google и предпросмотр на разных устройствах
               </p>
               {result?.fetchedAt && (
-                <p className="text-[11px] text-muted-foreground mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Последняя проверка: <span className="text-foreground">{formatDate(result.fetchedAt)}</span>
                 </p>
               )}
@@ -294,7 +294,7 @@ export function MobileFriendlyTab({ projectId }: Props) {
                 href={siteUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1 text-[12px] text-muted-foreground hover:text-foreground"
+                className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
               >
                 {siteUrl} <ExternalLink className="h-3 w-3" />
               </a>
@@ -312,7 +312,7 @@ export function MobileFriendlyTab({ projectId }: Props) {
           <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
           <div>
             <div className="font-medium">Ошибка при проверке</div>
-            <div className="text-[12px] opacity-80 mt-0.5">{error}</div>
+            <div className="text-sm opacity-80 mt-0.5">{error}</div>
           </div>
         </div>
       )}
@@ -321,7 +321,7 @@ export function MobileFriendlyTab({ projectId }: Props) {
         <Card className="p-6 bg-card border-border text-center">
           <Smartphone className="h-10 w-10 text-muted-foreground/40 mx-auto mb-2" />
           <div className="text-sm text-foreground font-medium">Данные ещё не получены</div>
-          <div className="text-[12px] text-muted-foreground mt-1">
+          <div className="text-sm text-muted-foreground mt-1">
             Нажмите «Проверить адаптивность», чтобы получить mobile-friendly отчёт от Google.
           </div>
         </Card>
@@ -335,15 +335,15 @@ export function MobileFriendlyTab({ projectId }: Props) {
             <ScoreTile label="Accessibility" value={result.accessibilityScore} />
             <ScoreTile label="Best Practices" value={result.bestPracticesScore} />
             <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3">
-              <div className="text-[10px] uppercase tracking-wider text-emerald-300/80">Пройдено</div>
+              <div className="text-2xs uppercase tracking-wider text-emerald-300/80">Пройдено</div>
               <div className="mt-1 text-2xl font-bold tabular-nums text-emerald-400">{passCount}</div>
             </div>
             <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-3">
-              <div className="text-[10px] uppercase tracking-wider text-yellow-300/80">Внимание</div>
+              <div className="text-2xs uppercase tracking-wider text-yellow-300/80">Внимание</div>
               <div className="mt-1 text-2xl font-bold tabular-nums text-yellow-400">{warnCount}</div>
             </div>
             <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3">
-              <div className="text-[10px] uppercase tracking-wider text-red-300/80">Проблем</div>
+              <div className="text-2xs uppercase tracking-wider text-red-300/80">Проблем</div>
               <div className="mt-1 text-2xl font-bold tabular-nums text-red-400">{failCount}</div>
             </div>
           </div>
@@ -353,7 +353,7 @@ export function MobileFriendlyTab({ projectId }: Props) {
             <div className="flex items-center gap-2 mb-3">
               <Smartphone className="h-4 w-4 text-primary" />
               <h4 className="text-sm font-semibold text-foreground">Mobile-friendly проверки</h4>
-              <Badge variant="outline" className="text-[10px] ml-auto">Google Lighthouse</Badge>
+              <Badge variant="outline" className="text-2xs ml-auto">Google Lighthouse</Badge>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {result.audits.map((a) => {
@@ -367,14 +367,14 @@ export function MobileFriendlyTab({ projectId }: Props) {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <div className="text-sm font-medium text-foreground">{a.title}</div>
-                        <span className={cn("text-[10px] px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider", meta.text, "bg-background/40")}>
+                        <span className={cn("text-2xs px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider", meta.text, "bg-background/40")}>
                           {meta.label}
                         </span>
                         {a.displayValue && (
-                          <span className="text-[10px] text-muted-foreground tabular-nums">{a.displayValue}</span>
+                          <span className="text-2xs text-muted-foreground tabular-nums">{a.displayValue}</span>
                         )}
                       </div>
-                      <div className="text-[12px] text-muted-foreground mt-1 leading-snug">{a.hint}</div>
+                      <div className="text-sm text-muted-foreground mt-1 leading-snug">{a.hint}</div>
                     </div>
                   </div>
                 );
@@ -401,7 +401,7 @@ export function MobileFriendlyTab({ projectId }: Props) {
                     setIframeBlocked(false);
                   }}
                   className={cn(
-                    "px-3 py-1.5 rounded-md text-[12px] font-medium transition-colors",
+                    "px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
                     previewVp === v.id
                       ? "bg-background text-foreground shadow-sm"
                       : "text-muted-foreground hover:text-foreground",
@@ -409,7 +409,7 @@ export function MobileFriendlyTab({ projectId }: Props) {
                 >
                   <span className="mr-1">{v.icon}</span>
                   {v.label}
-                  <span className="ml-1.5 text-[10px] text-muted-foreground tabular-nums">{v.w}px</span>
+                  <span className="ml-1.5 text-2xs text-muted-foreground tabular-nums">{v.w}px</span>
                 </button>
               ))}
             </div>
@@ -426,14 +426,14 @@ export function MobileFriendlyTab({ projectId }: Props) {
                   <div className="text-sm font-medium text-foreground">
                     Сайт запретил предпросмотр в iframe
                   </div>
-                  <div className="text-[12px] text-muted-foreground mt-1 max-w-xs">
+                  <div className="text-sm text-muted-foreground mt-1 max-w-xs">
                     Это типичная защита через X-Frame-Options. Откройте сайт в новой вкладке для проверки вручную.
                   </div>
                   <a
                     href={siteUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="mt-3 inline-flex items-center gap-1 text-[12px] text-primary hover:underline"
+                    className="mt-3 inline-flex items-center gap-1 text-sm text-primary hover:underline"
                   >
                     Открыть сайт <ExternalLink className="h-3 w-3" />
                   </a>
@@ -454,7 +454,7 @@ export function MobileFriendlyTab({ projectId }: Props) {
             </div>
           </div>
 
-          <div className="text-[11px] text-muted-foreground text-center mt-3">
+          <div className="text-xs text-muted-foreground text-center mt-3">
             Некоторые сайты блокируют отображение в iframe (X-Frame-Options / CSP). В таком случае используйте оценку Mobile-friendly выше.
           </div>
         </Card>

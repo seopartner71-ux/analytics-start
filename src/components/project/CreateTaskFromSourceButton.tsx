@@ -78,7 +78,7 @@ export function CreateTaskFromSourceButton({
               href={`/tasks?taskId=${existingTask.id}`}
               onClick={(e) => e.stopPropagation()}
               className={cn(
-                "inline-flex items-center gap-1 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-500 hover:bg-emerald-500/20 transition-colors",
+                "inline-flex items-center gap-1 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-2xs font-medium text-emerald-500 hover:bg-emerald-500/20 transition-colors",
                 className
               )}
             >
@@ -86,7 +86,7 @@ export function CreateTaskFromSourceButton({
               #{existingTask.shortId}
             </a>
           </TooltipTrigger>
-          <TooltipContent side="top" className="text-[12px]">
+          <TooltipContent side="top" className="text-sm">
             Задача уже создана: {existingTask.title}
           </TooltipContent>
         </Tooltip>
@@ -115,35 +115,35 @@ export function CreateTaskFromSourceButton({
               <Wrench className="h-3.5 w-3.5" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="top" className="text-[12px]">Создать задачу</TooltipContent>
+          <TooltipContent side="top" className="text-sm">Создать задачу</TooltipContent>
         </Tooltip>
       </TooltipProvider>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-[560px]">
           <DialogHeader>
-            <DialogTitle className="text-[16px]">Создать задачу из ошибки</DialogTitle>
-            <DialogDescription className="text-[12px]">
+            <DialogTitle className="text-lg">Создать задачу из ошибки</DialogTitle>
+            <DialogDescription className="text-sm">
               Задача будет привязана к проекту и связана с источником.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1.5">
-              <Label className="text-[12px]">Название</Label>
-              <Input value={title} onChange={(e) => setTitle(e.target.value)} className="h-9 text-[13px]" />
+              <Label className="text-sm">Название</Label>
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} className="h-9 text-base" />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-[12px]">Описание</Label>
+              <Label className="text-sm">Описание</Label>
               <Textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="min-h-[120px] text-[13px] resize-none font-mono"
+                className="min-h-[120px] text-base resize-none font-mono"
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-[12px]">Приоритет</Label>
+              <Label className="text-sm">Приоритет</Label>
               <Select value={priority} onValueChange={(v) => setPriority(v as any)}>
-                <SelectTrigger className="h-9 text-[13px] w-[180px]"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-9 text-base w-[180px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="high">Высокий</SelectItem>
                   <SelectItem value="medium">Средний</SelectItem>

@@ -235,7 +235,7 @@ export default function ProjectReportsPage() {
                       <CalendarDays className="h-3.5 w-3.5" />
                       <div>
                         <div className="text-sm font-medium">{format(new Date(r.due_date), "d MMM yyyy", { locale: ru })}</div>
-                        <div className="text-[11px] opacity-70">{days < 0 ? `просрочка ${Math.abs(days)} дн` : days === 0 ? "сегодня" : `через ${days} дн`}</div>
+                        <div className="text-xs opacity-70">{days < 0 ? `просрочка ${Math.abs(days)} дн` : days === 0 ? "сегодня" : `через ${days} дн`}</div>
                       </div>
                     </div>
                   </TableCell>
@@ -247,7 +247,7 @@ export default function ProjectReportsPage() {
                   <TableCell className={`text-sm ${done ? "line-through decoration-foreground/40" : ""}`}>
                     <div>{r.assignee_id ? teamMap.get(r.assignee_id) : "—"}</div>
                     {r.co_assignee_ids?.length > 0 && (
-                      <div className="text-[11px] text-muted-foreground mt-0.5">
+                      <div className="text-xs text-muted-foreground mt-0.5">
                         + {r.co_assignee_ids.map(id => teamMap.get(id)).filter(Boolean).join(", ")}
                       </div>
                     )}
@@ -351,7 +351,7 @@ export default function ProjectReportsPage() {
                   {team.length === 0 && <div className="text-xs text-muted-foreground px-2">Нет сотрудников</div>}
                 </div>
                 {(editing.co_assignee_ids?.length || 0) > 0 && (
-                  <div className="text-[11px] text-muted-foreground mt-1">Выбрано: {editing.co_assignee_ids!.length}</div>
+                  <div className="text-xs text-muted-foreground mt-1">Выбрано: {editing.co_assignee_ids!.length}</div>
                 )}
               </div>
               <div>

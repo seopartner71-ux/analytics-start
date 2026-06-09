@@ -839,7 +839,7 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
                 className="flex-1 text-left px-3 py-2.5"
               >
                 <div className="text-sm font-medium">{p.title}</div>
-                <div className="text-[11px] text-muted-foreground mt-0.5">
+                <div className="text-xs text-muted-foreground mt-0.5">
                   {p.status === "active" ? "Активный" : "Завершён"}
                 </div>
               </button>
@@ -1042,7 +1042,7 @@ function PeriodTasksPanel(props: {
             checked={selectedIds.size === tasks.length}
             onCheckedChange={(v) => props.onSelectAll(!!v)}
           />
-          <span className="text-[11px] text-muted-foreground">Выбрать все</span>
+          <span className="text-xs text-muted-foreground">Выбрать все</span>
         </div>
       )}
 
@@ -1075,7 +1075,7 @@ function PeriodTasksPanel(props: {
         />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground">Исполнитель</Label>
+            <Label className="text-2xs text-muted-foreground">Исполнитель</Label>
             <Select value={newAssignee} onValueChange={setNewAssignee}>
               <SelectTrigger className="h-9 text-xs">
                 <SelectValue placeholder="Не назначен" />
@@ -1089,7 +1089,7 @@ function PeriodTasksPanel(props: {
             </Select>
           </div>
           <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground">Наблюдатель</Label>
+            <Label className="text-2xs text-muted-foreground">Наблюдатель</Label>
             <Select value={newWatcher} onValueChange={setNewWatcher}>
               <SelectTrigger className="h-9 text-xs">
                 <SelectValue placeholder="Не назначен" />
@@ -1105,7 +1105,7 @@ function PeriodTasksPanel(props: {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground">Категория</Label>
+            <Label className="text-2xs text-muted-foreground">Категория</Label>
             <Select value={newCategory} onValueChange={setNewCategory}>
               <SelectTrigger className="h-9 text-xs">
                 <SelectValue />
@@ -1118,7 +1118,7 @@ function PeriodTasksPanel(props: {
             </Select>
           </div>
           <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground">Дата начала</Label>
+            <Label className="text-2xs text-muted-foreground">Дата начала</Label>
             <Input
               type="date"
               value={newStartDate}
@@ -1127,7 +1127,7 @@ function PeriodTasksPanel(props: {
             />
           </div>
           <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground">Срок выполнения</Label>
+            <Label className="text-2xs text-muted-foreground">Срок выполнения</Label>
             <Input
               type="date"
               value={newDeadline}
@@ -1138,7 +1138,7 @@ function PeriodTasksPanel(props: {
         </div>
         {weekOptions.length > 0 && (
           <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground">Неделя выполнения</Label>
+            <Label className="text-2xs text-muted-foreground">Неделя выполнения</Label>
             <Select value={newWeekKey} onValueChange={setNewWeekKey}>
               <SelectTrigger className="h-9 text-xs">
                 <SelectValue placeholder="Без привязки к неделе" />
@@ -1208,17 +1208,17 @@ function SortableTaskRow(props: {
         </div>
         <div className="flex items-center gap-2 mt-0.5">
           {task.required && (
-            <Badge variant="outline" className="h-4 text-[9px] px-1">
+            <Badge variant="outline" className="h-4 text-2xs px-1">
               Обязат.
             </Badge>
           )}
           {assignee && (
-            <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
               <User className="h-3 w-3" /> {assignee.full_name}
             </span>
           )}
           {task.deadline && (
-            <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
               <CalendarDays className="h-3 w-3" />
               {format(new Date(task.deadline), "d MMM", { locale: ru })}
             </span>
@@ -1234,7 +1234,7 @@ function SortableTaskRow(props: {
         <DropdownMenuContent align="end" className="w-56">
           <div className="px-2 py-1.5 space-y-2">
             <div>
-              <Label className="text-[10px]">Ответственный</Label>
+              <Label className="text-2xs">Ответственный</Label>
               <Select
                 value={task.assignee_id || "none"}
                 onValueChange={(v) => props.onUpdate({ assignee_id: v === "none" ? null : v })}
@@ -1249,7 +1249,7 @@ function SortableTaskRow(props: {
               </Select>
             </div>
             <div>
-              <Label className="text-[10px]">Дедлайн</Label>
+              <Label className="text-2xs">Дедлайн</Label>
               <Input
                 type="date"
                 value={task.deadline || ""}
@@ -1488,7 +1488,7 @@ function CreatePeriodDialog(props: {
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder={autoTitle}
               />
-              <p className="text-[11px] text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 По умолчанию — месяц и год начала периода.
               </p>
             </div>
@@ -1588,7 +1588,7 @@ function ModeOption({ value, icon, label, hint, disabled }: {
       <div className="text-muted-foreground [&>svg]:h-4 [&>svg]:w-4">{icon}</div>
       <div className="flex-1">
         <div className="text-sm font-medium">{label}</div>
-        <div className="text-[11px] text-muted-foreground">{hint}</div>
+        <div className="text-xs text-muted-foreground">{hint}</div>
       </div>
     </Label>
   );
@@ -1619,7 +1619,7 @@ function TemplatePreview({ tasks, setTasks, members, startDate, endDate }: {
         </p>
         <div className="flex items-center gap-2 flex-wrap justify-end">
           <Select onValueChange={assignAll}>
-            <SelectTrigger className="h-7 w-44 text-[11px]"><SelectValue placeholder="Назначить всем..." /></SelectTrigger>
+            <SelectTrigger className="h-7 w-44 text-xs"><SelectValue placeholder="Назначить всем..." /></SelectTrigger>
             <SelectContent>
               <SelectItem value="none" className="text-xs">Не назначен</SelectItem>
               {members.map((m) => (
@@ -1628,7 +1628,7 @@ function TemplatePreview({ tasks, setTasks, members, startDate, endDate }: {
             </SelectContent>
           </Select>
           <Select onValueChange={setWatcherForAll}>
-            <SelectTrigger className="h-7 w-44 text-[11px]"><SelectValue placeholder="Наблюдатель всем..." /></SelectTrigger>
+            <SelectTrigger className="h-7 w-44 text-xs"><SelectValue placeholder="Наблюдатель всем..." /></SelectTrigger>
             <SelectContent>
               <SelectItem value="none" className="text-xs">Не назначен</SelectItem>
               {members.map((m) => (
@@ -1636,19 +1636,19 @@ function TemplatePreview({ tasks, setTasks, members, startDate, endDate }: {
               ))}
             </SelectContent>
           </Select>
-          <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={redistribute}>
+          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={redistribute}>
             Пересчитать сроки
           </Button>
         </div>
       </div>
       {tasks.map((t, i) => (
         <div key={i} className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_144px_144px_132px_132px_32px] gap-2 p-2 rounded-md border border-border/60 items-center">
-          <span className="text-[13px] truncate" title={t.title}>{t.title}</span>
+          <span className="text-base truncate" title={t.title}>{t.title}</span>
           <Select
             value={t.assignee_id || "none"}
             onValueChange={(v) => updateAt(i, { assignee_id: v === "none" ? null : v })}
           >
-            <SelectTrigger className="h-7 w-full text-[11px]"><SelectValue placeholder="Исполнитель" /></SelectTrigger>
+            <SelectTrigger className="h-7 w-full text-xs"><SelectValue placeholder="Исполнитель" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="none" className="text-xs">Не назначен</SelectItem>
               {members.map((m) => (
@@ -1660,7 +1660,7 @@ function TemplatePreview({ tasks, setTasks, members, startDate, endDate }: {
             value={t.watcher_id || "none"}
             onValueChange={(v) => updateAt(i, { watcher_id: v === "none" ? null : v })}
           >
-            <SelectTrigger className="h-7 w-full text-[11px]"><SelectValue placeholder="Наблюдатель" /></SelectTrigger>
+            <SelectTrigger className="h-7 w-full text-xs"><SelectValue placeholder="Наблюдатель" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="none" className="text-xs">Не назначен</SelectItem>
               {members.map((m) => (
@@ -1674,7 +1674,7 @@ function TemplatePreview({ tasks, setTasks, members, startDate, endDate }: {
             min={startDate}
             max={endDate}
             onChange={(e) => updateAt(i, { start_date: e.target.value || null }, "start_date")}
-            className="h-7 w-full text-[11px]"
+            className="h-7 w-full text-xs"
           />
           <Input
             type="date"
@@ -1682,7 +1682,7 @@ function TemplatePreview({ tasks, setTasks, members, startDate, endDate }: {
             min={startDate}
             max={endDate}
             onChange={(e) => updateAt(i, { deadline: e.target.value || null }, "deadline")}
-            className="h-7 w-full text-[11px]"
+            className="h-7 w-full text-xs"
           />
           <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => removeAt(i)}>
             <Trash2 className="h-3.5 w-3.5" />

@@ -191,11 +191,11 @@ export function AiAnalyticsTab({
               </div>
               <div>
                 <h3 className="text-sm font-semibold text-foreground">{t("aiAnalytics.recommendations")}</h3>
-                <p className="text-[11px] text-muted-foreground">{t("aiAnalytics.recommendationsSubtitle")}</p>
+                <p className="text-xs text-muted-foreground">{t("aiAnalytics.recommendationsSubtitle")}</p>
               </div>
             </div>
             {recommendations.length > 0 && (
-              <Badge variant="outline" className="text-[10px] bg-primary/5 text-primary border-primary/20">
+              <Badge variant="outline" className="text-2xs bg-primary/5 text-primary border-primary/20">
                 {recommendations.length} {t("aiAnalytics.steps")}
               </Badge>
             )}
@@ -229,10 +229,10 @@ export function AiAnalyticsTab({
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-foreground">{rec.text}</p>
                     <div className="flex items-center gap-2 mt-1.5">
-                      <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${priorityColors[rec.priority]}`}>
+                      <Badge variant="outline" className={`text-2xs px-1.5 py-0 ${priorityColors[rec.priority]}`}>
                         {t(`aiAnalytics.priority.${rec.priority}`)}
                       </Badge>
-                      <span className="text-[10px] text-muted-foreground">{rec.category}</span>
+                      <span className="text-2xs text-muted-foreground">{rec.category}</span>
                     </div>
                   </div>
                   <ArrowRight className="h-4 w-4 text-muted-foreground/30 shrink-0 mt-1" />

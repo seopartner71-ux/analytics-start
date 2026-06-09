@@ -211,7 +211,7 @@ export function AiInsightsBlock({ projectId, summary: rawSummary, isAdmin, onSav
             </div>
             <div>
               <h3 className="text-sm font-semibold text-foreground">{t("aiInsights.title")}</h3>
-              <p className="text-[11px] text-muted-foreground">{t("aiInsights.subtitle")}</p>
+              <p className="text-xs text-muted-foreground">{t("aiInsights.subtitle")}</p>
             </div>
           </div>
           <div className="flex items-center gap-1.5">
@@ -357,7 +357,7 @@ export function AiInsightsBlock({ projectId, summary: rawSummary, isAdmin, onSav
                                 {t(`aiInsights.channels.${activeChannel}`)}
                               </p>
                               <span className={cn(
-                                "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold",
+                                "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-2xs font-semibold",
                                 activeChannelData.trend === "up" && "bg-emerald-500/15 text-emerald-500",
                                 activeChannelData.trend === "down" && "bg-red-500/15 text-red-500",
                                 activeChannelData.trend === "stable" && "bg-muted text-muted-foreground",

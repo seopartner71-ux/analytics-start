@@ -230,7 +230,7 @@ function PartnerCard({
     <div className="rounded-lg border bg-card p-4 space-y-3">
       <div className="flex items-center justify-between">
         <div className="text-xs uppercase tracking-wide text-muted-foreground">Партнёр {index}</div>
-        <Badge variant="outline" className="text-[10px]">{share}%</Badge>
+        <Badge variant="outline" className="text-2xs">{share}%</Badge>
       </div>
       <div className="font-semibold">{name}</div>
       <div className="text-2xl font-bold">{RUB(amount)}</div>

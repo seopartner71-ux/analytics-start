@@ -255,7 +255,7 @@ export function MessengerPanel() {
         >
           <MessageSquare className="h-5 w-5" />
           {totalUnread > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-semibold flex items-center justify-center">
+            <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-2xs font-semibold flex items-center justify-center">
               {totalUnread > 99 ? "99+" : totalUnread}
             </span>
           )}
@@ -307,7 +307,7 @@ export function MessengerPanel() {
       >
         <MessageSquare className="h-5 w-5" />
         {totalUnread > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-red-500 text-white text-[10px] font-semibold flex items-center justify-center border-2 border-background">
+          <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-red-500 text-white text-2xs font-semibold flex items-center justify-center border-2 border-background">
             {totalUnread > 99 ? "99+" : totalUnread}
           </span>
         )}
@@ -429,11 +429,11 @@ export function MessengerPanel() {
                         <Hash className="h-4 w-4" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[13px] font-medium truncate">Общий чат</p>
-                        <p className="text-[11px] text-muted-foreground">Все сотрудники компании</p>
+                        <p className="text-base font-medium truncate">Общий чат</p>
+                        <p className="text-xs text-muted-foreground">Все сотрудники компании</p>
                       </div>
                       {companyConv && unreadMap[companyConv.id] > 0 && (
-                        <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-semibold flex items-center justify-center">
+                        <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-2xs font-semibold flex items-center justify-center">
                           {unreadMap[companyConv.id]}
                         </span>
                       )}
@@ -441,7 +441,7 @@ export function MessengerPanel() {
 
                     {projectConvs.length > 0 && (
                       <>
-                        <p className="px-3 pt-3 pb-1 text-[10px] uppercase tracking-wider text-muted-foreground">Проекты</p>
+                        <p className="px-3 pt-3 pb-1 text-2xs uppercase tracking-wider text-muted-foreground">Проекты</p>
                         {projectConvs.map((c) => (
                           <button
                             key={c.id}
@@ -452,10 +452,10 @@ export function MessengerPanel() {
                               <Hash className="h-4 w-4" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="text-[13px] font-medium truncate">{c.title || "Проект"}</p>
+                              <p className="text-base font-medium truncate">{c.title || "Проект"}</p>
                             </div>
                             {unreadMap[c.id] > 0 && (
-                              <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-semibold flex items-center justify-center">
+                              <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-2xs font-semibold flex items-center justify-center">
                                 {unreadMap[c.id]}
                               </span>
                             )}
@@ -466,7 +466,7 @@ export function MessengerPanel() {
 
                     {directConvs.length > 0 && (
                       <>
-                        <p className="px-3 pt-3 pb-1 text-[10px] uppercase tracking-wider text-muted-foreground">Личные</p>
+                        <p className="px-3 pt-3 pb-1 text-2xs uppercase tracking-wider text-muted-foreground">Личные</p>
                         {directConvs.map((c) => {
                           const otherId = directOther[c.id];
                           const other = otherId ? employeeById[otherId] : undefined;
@@ -492,13 +492,13 @@ export function MessengerPanel() {
                                 />
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-[13px] font-medium truncate">
+                                <p className="text-base font-medium truncate">
                                   {other?.full_name || other?.email || "Пользователь"}
                                 </p>
-                                <p className="text-[11px] text-muted-foreground truncate">{other?.position || ""}</p>
+                                <p className="text-xs text-muted-foreground truncate">{other?.position || ""}</p>
                               </div>
                               {unreadMap[c.id] > 0 && (
-                                <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-semibold flex items-center justify-center">
+                                <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-2xs font-semibold flex items-center justify-center">
                                   {unreadMap[c.id]}
                                 </span>
                               )}
@@ -540,8 +540,8 @@ export function MessengerPanel() {
                             />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-[13px] font-medium truncate">{e.full_name || e.email}</p>
-                            <p className="text-[11px] text-muted-foreground truncate">
+                            <p className="text-base font-medium truncate">{e.full_name || e.email}</p>
+                            <p className="text-xs text-muted-foreground truncate">
                               {e.position || (online ? "В сети" : "Не в сети")}
                             </p>
                           </div>

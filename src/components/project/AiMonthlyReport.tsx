@@ -218,7 +218,7 @@ export default function AiMonthlyReport({ projectId, metrikaStats, keywords, goa
           <label
             key={key}
             className={cn(
-              "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 cursor-pointer transition-all text-[12px] font-medium select-none",
+              "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 cursor-pointer transition-all text-sm font-medium select-none",
               checked
                 ? "border-primary bg-primary/10 text-foreground shadow-sm"
                 : "border-border bg-card text-muted-foreground hover:border-primary/30 hover:bg-muted/50"
@@ -239,7 +239,7 @@ export default function AiMonthlyReport({ projectId, metrikaStats, keywords, goa
         <>
           <div className="w-px h-5 bg-border mx-0.5" />
           <label className={cn(
-            "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 cursor-pointer transition-all text-[12px] font-medium select-none",
+            "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 cursor-pointer transition-all text-sm font-medium select-none",
             includeGoals
               ? "border-primary bg-primary/10 text-foreground shadow-sm"
               : "border-border bg-card text-muted-foreground hover:border-primary/30 hover:bg-muted/50"
@@ -268,7 +268,7 @@ export default function AiMonthlyReport({ projectId, metrikaStats, keywords, goa
               </div>
               <div>
                 <h3 className="text-sm font-semibold text-foreground">AI-аналитика за месяц</h3>
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   Профессиональный SEO-отчёт на основе данных Метрики
                   {keywords.length > 0 ? ` и ${keywords.length} ключевых слов` : ""}
                   {goals.length > 0 ? ` • ${goals.length} целей` : ""}
@@ -301,7 +301,7 @@ export default function AiMonthlyReport({ projectId, metrikaStats, keywords, goa
           </div>
           <div className="text-center">
             <p className="text-sm font-medium text-foreground">Анализирую данные...</p>
-            <p className="text-[11px] text-muted-foreground mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Каналы: {selectedChannels.map(ch => CHANNEL_LABELS[ch]).join(", ")}
               {includeGoals && goals.length > 0 ? " + конверсии" : ""}
             </p>
@@ -327,7 +327,7 @@ export default function AiMonthlyReport({ projectId, metrikaStats, keywords, goa
           </div>
           <div>
             <h3 className="text-sm font-semibold text-foreground">AI-отчёт за месяц</h3>
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-2xs text-muted-foreground">
               {metrikaStats?.date_from} — {metrikaStats?.date_to}
               {" • "}
               {selectedChannels.map(ch => CHANNEL_LABELS[ch]).join(", ")}
@@ -337,14 +337,14 @@ export default function AiMonthlyReport({ projectId, metrikaStats, keywords, goa
         <div className="flex items-center gap-2">
           <Button
             variant="ghost" size="sm"
-            className="h-7 text-[11px] gap-1.5 text-muted-foreground hover:text-primary"
+            className="h-7 text-xs gap-1.5 text-muted-foreground hover:text-primary"
             onClick={() => { setReport(null); }}
           >
             Настроить
           </Button>
           <Button
             variant="ghost" size="sm"
-            className="h-7 text-[11px] gap-1.5 text-muted-foreground hover:text-primary"
+            className="h-7 text-xs gap-1.5 text-muted-foreground hover:text-primary"
             onClick={handleGenerate}
             disabled={generating}
           >
@@ -383,9 +383,9 @@ export default function AiMonthlyReport({ projectId, metrikaStats, keywords, goa
                   >
                     <div className={cn("flex items-center gap-2 mb-2", color)}>
                       <Icon className="h-4 w-4" />
-                      <span className="text-[11px] font-semibold uppercase tracking-wide">{label}</span>
+                      <span className="text-xs font-semibold uppercase tracking-wide">{label}</span>
                     </div>
-                    <p className="text-[13px] text-foreground leading-relaxed">
+                    <p className="text-base text-foreground leading-relaxed">
                       {report.general[key as keyof typeof report.general] || "—"}
                     </p>
                   </motion.div>
@@ -395,7 +395,7 @@ export default function AiMonthlyReport({ projectId, metrikaStats, keywords, goa
               {/* Channel breakdown — only selected */}
               {displayChannels.length > 0 && (
                 <div>
-                  <h4 className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+                  <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
                     Анализ по выбранным каналам
                   </h4>
                   <div className={cn(
@@ -417,13 +417,13 @@ export default function AiMonthlyReport({ projectId, metrikaStats, keywords, goa
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-1.5">
                               <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-                              <span className="text-[11px] font-semibold text-foreground">
+                              <span className="text-xs font-semibold text-foreground">
                                 {CHANNEL_LABELS[key] || key}
                               </span>
                             </div>
                             <TrendIcon trend={data.trend} />
                           </div>
-                          <p className="text-[12px] text-muted-foreground leading-relaxed">
+                          <p className="text-sm text-muted-foreground leading-relaxed">
                             {data.insight}
                           </p>
                         </motion.div>
@@ -443,11 +443,11 @@ export default function AiMonthlyReport({ projectId, metrikaStats, keywords, goa
                 >
                   <div className="flex items-center gap-2 mb-2">
                     <Target className="h-4 w-4 text-emerald-500" />
-                    <span className="text-[12px] font-semibold text-emerald-500 uppercase tracking-wide">
+                    <span className="text-sm font-semibold text-emerald-500 uppercase tracking-wide">
                       Цели и конверсии
                     </span>
                   </div>
-                  <p className="text-[13px] text-foreground leading-relaxed">{report.goals_insight}</p>
+                  <p className="text-base text-foreground leading-relaxed">{report.goals_insight}</p>
                 </motion.div>
               )}
 
@@ -461,9 +461,9 @@ export default function AiMonthlyReport({ projectId, metrikaStats, keywords, goa
                 >
                   <div className="flex items-center gap-2 mb-2">
                     <Target className="h-4 w-4 text-primary" />
-                    <span className="text-[12px] font-semibold text-primary uppercase tracking-wide">Бизнес-выводы</span>
+                    <span className="text-sm font-semibold text-primary uppercase tracking-wide">Бизнес-выводы</span>
                   </div>
-                  <p className="text-[13px] text-foreground leading-relaxed">{report.business_insight}</p>
+                  <p className="text-base text-foreground leading-relaxed">{report.business_insight}</p>
                 </motion.div>
               )}
 
@@ -474,7 +474,7 @@ export default function AiMonthlyReport({ projectId, metrikaStats, keywords, goa
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.6 }}
                 >
-                  <h4 className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
+                  <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
                     <CheckCircle2 className="h-3.5 w-3.5" />
                     План действий
                   </h4>
@@ -491,13 +491,13 @@ export default function AiMonthlyReport({ projectId, metrikaStats, keywords, goa
                           {CATEGORY_ICONS[rec.category] || "📋"}
                         </span>
                         <div className="flex-1 min-w-0">
-                          <p className="text-[13px] text-foreground leading-relaxed">{rec.text}</p>
+                          <p className="text-base text-foreground leading-relaxed">{rec.text}</p>
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0">
-                          <Badge variant="outline" className={cn("text-[9px] px-1.5 h-5", PRIORITY_STYLES[rec.priority])}>
+                          <Badge variant="outline" className={cn("text-2xs px-1.5 h-5", PRIORITY_STYLES[rec.priority])}>
                             {rec.priority === "high" ? "Высокий" : rec.priority === "medium" ? "Средний" : "Низкий"}
                           </Badge>
-                          <Badge variant="secondary" className="text-[9px] px-1.5 h-5">
+                          <Badge variant="secondary" className="text-2xs px-1.5 h-5">
                             {rec.category}
                           </Badge>
                         </div>

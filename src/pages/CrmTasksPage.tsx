@@ -156,7 +156,7 @@ function AddTaskDialog() {
 function PropertyRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-start gap-6 py-3 border-b border-border/30 last:border-0 group">
-      <span className="text-[11px] text-muted-foreground w-28 shrink-0 pt-1 uppercase tracking-wider">{label}</span>
+      <span className="text-xs text-muted-foreground w-28 shrink-0 pt-1 uppercase tracking-wider">{label}</span>
       <div className="flex-1">{children}</div>
     </div>
   );
@@ -208,13 +208,13 @@ function KanbanCard({ t, onSelect, onDelete, canDelete }: { t: CrmTask; onSelect
             <div className="flex items-center gap-1.5 min-w-0">
               {t.assignee && (
                 <>
-                  <AvatarCircle initials={getInitials(t.assignee.full_name)} className="h-5 w-5 text-[9px]" />
-                  <span className={cn("text-[11px] text-muted-foreground truncate", done && "line-through decoration-foreground/40")}>{t.assignee.full_name.split(" ")[0]}</span>
+                  <AvatarCircle initials={getInitials(t.assignee.full_name)} className="h-5 w-5 text-2xs" />
+                  <span className={cn("text-xs text-muted-foreground truncate", done && "line-through decoration-foreground/40")}>{t.assignee.full_name.split(" ")[0]}</span>
                 </>
               )}
             </div>
             {t.deadline && (
-              <span className={cn("text-[11px] font-medium flex items-center gap-1 shrink-0", dlStyle.text, done && "line-through decoration-foreground/40")}>
+              <span className={cn("text-xs font-medium flex items-center gap-1 shrink-0", dlStyle.text, done && "line-through decoration-foreground/40")}>
                 {dlStatus === "overdue" && <AlertTriangle className="h-3 w-3" />}
                 {dlStatus === "soon" && <Clock className="h-3 w-3" />}
                 <CalendarDays className="h-3 w-3" />
@@ -236,7 +236,7 @@ function KanbanColumn({ stage, tasks, onSelect, onDelete, canDelete }: { stage: 
       <div className="flex items-center gap-2 pb-2.5 border-b-2 mb-2.5" style={{ borderColor: color }}>
         <span className="h-2 w-2 rounded-full" style={{ background: color }} />
         <span className="text-sm font-semibold text-foreground flex-1 truncate">{stage}</span>
-        <Badge variant="secondary" className="text-[10px] h-5 min-w-5 flex items-center justify-center rounded-full">{tasks.length}</Badge>
+        <Badge variant="secondary" className="text-2xs h-5 min-w-5 flex items-center justify-center rounded-full">{tasks.length}</Badge>
       </div>
       <div
         ref={setNodeRef}
@@ -248,7 +248,7 @@ function KanbanColumn({ stage, tasks, onSelect, onDelete, canDelete }: { stage: 
         {tasks.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground/60 border-2 border-dashed border-border/40 rounded-lg">
             <p className="text-xs">Нет задач</p>
-            <p className="text-[10px] mt-0.5">Перетащите сюда</p>
+            <p className="text-2xs mt-0.5">Перетащите сюда</p>
           </div>
         ) : (
           tasks.map((t) => (
@@ -451,21 +451,21 @@ export default function CrmTasksPage() {
         </Button>
         <div className="w-px h-5 bg-border mx-2" />
         {overdueCount > 0 && (
-          <Badge variant="destructive" className="text-[10px] h-5 gap-1">
+          <Badge variant="destructive" className="text-2xs h-5 gap-1">
             <AlertCircle className="h-3 w-3" />{overdueCount} Просрочены
           </Badge>
         )}
         {reviewCount > 0 && (
-          <Badge className="text-[10px] h-5 gap-1 bg-purple-500/10 text-purple-600 dark:text-purple-400 border-0 hover:bg-purple-500/10">
+          <Badge className="text-2xs h-5 gap-1 bg-purple-500/10 text-purple-600 dark:text-purple-400 border-0 hover:bg-purple-500/10">
             <Eye className="h-3 w-3" />{reviewCount} На проверке
           </Badge>
         )}
         {returnedCount > 0 && (
-          <Badge className="text-[10px] h-5 gap-1 bg-destructive/10 text-destructive border-0 hover:bg-destructive/10">
+          <Badge className="text-2xs h-5 gap-1 bg-destructive/10 text-destructive border-0 hover:bg-destructive/10">
             <RotateCcw className="h-3 w-3" />{returnedCount} Возвращены
           </Badge>
         )}
-        <Badge variant="secondary" className="text-[10px] h-5 ml-1">Все: {tasks.length}</Badge>
+        <Badge variant="secondary" className="text-2xs h-5 ml-1">Все: {tasks.length}</Badge>
       </div>
 
       {/* Filters row */}
@@ -525,7 +525,7 @@ export default function CrmTasksPage() {
         )}
 
         {hasActiveFilters && (
-          <Badge variant="secondary" className="text-[10px] h-5">
+          <Badge variant="secondary" className="text-2xs h-5">
             Найдено: {filtered.length}
           </Badge>
         )}
@@ -589,7 +589,7 @@ export default function CrmTasksPage() {
                             <div className="w-24 h-2 rounded-full overflow-hidden bg-muted">
                               <div className="h-full rounded-full transition-all duration-500" style={{ width: `${t.stage_progress || 0}%`, backgroundColor: t.stage_color || "#3b82f6" }} />
                             </div>
-                            <span className={cn("text-[11px] text-muted-foreground", done && "line-through decoration-foreground/40")}>{t.stage}</span>
+                            <span className={cn("text-xs text-muted-foreground", done && "line-through decoration-foreground/40")}>{t.stage}</span>
                           </div>
                         </td>
                         <td>
@@ -605,12 +605,12 @@ export default function CrmTasksPage() {
                         </td>
                         <td>
                           {dlStatus === "overdue" && (
-                            <Badge className={cn("text-[10px] border-0 font-medium", dlStyle.bg, dlStyle.text)}>
+                            <Badge className={cn("text-2xs border-0 font-medium", dlStyle.bg, dlStyle.text)}>
                               – {diffD >= 30 ? `${Math.ceil(diffD / 30)} мес.` : `${diffD} дн.`}
                             </Badge>
                           )}
                           {dlStatus === "soon" && (
-                            <Badge className={cn("text-[10px] border-0 font-medium", dlStyle.bg, dlStyle.text)}>
+                            <Badge className={cn("text-2xs border-0 font-medium", dlStyle.bg, dlStyle.text)}>
                               {diffD} дн.
                             </Badge>
                           )}
@@ -618,7 +618,7 @@ export default function CrmTasksPage() {
                         <td>
                           {t.creator ? (
                             <div className="flex items-center gap-2">
-                              <AvatarCircle initials={getInitials(t.creator.full_name)} className="h-7 w-7 text-[10px]" />
+                              <AvatarCircle initials={getInitials(t.creator.full_name)} className="h-7 w-7 text-2xs" />
                               <span className={cn("text-sm text-foreground", done && "line-through decoration-foreground/40")}>{t.creator.full_name}</span>
                             </div>
                           ) : <span className="text-sm text-muted-foreground">—</span>}
@@ -626,7 +626,7 @@ export default function CrmTasksPage() {
                         <td>
                           {t.assignee ? (
                             <div className="flex items-center gap-2">
-                              <AvatarCircle initials={getInitials(t.assignee.full_name)} className="h-7 w-7 text-[10px]" />
+                              <AvatarCircle initials={getInitials(t.assignee.full_name)} className="h-7 w-7 text-2xs" />
                               <span className={cn("text-sm text-foreground", done && "line-through decoration-foreground/40")}>{t.assignee.full_name}</span>
                             </div>
                           ) : <span className="text-sm text-muted-foreground">—</span>}
@@ -635,7 +635,7 @@ export default function CrmTasksPage() {
                           {t.project ? (
                             <div className="flex items-center gap-2">
                               <div className="h-5 w-5 rounded-md bg-primary/10 flex items-center justify-center ring-1 ring-primary/10">
-                                <span className="text-[7px] font-bold text-primary">{t.project.name.slice(0, 2).toUpperCase()}</span>
+                                <span className="text-2xs font-bold text-primary">{t.project.name.slice(0, 2).toUpperCase()}</span>
                               </div>
                               <span className={cn("text-sm text-muted-foreground", done && "line-through decoration-foreground/40")}>{t.project.name}</span>
                             </div>

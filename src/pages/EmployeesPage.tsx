@@ -235,7 +235,7 @@ function AddEmployeeDialog() {
             <div><Label className="text-xs">E-Mail</Label><Input value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} /></div>
             <div><Label className="text-xs">Телефон</Label><Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} /></div>
           </div>
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             Совет: если у сотрудника есть аккаунт в системе, укажите его email — связь установится автоматически.
           </p>
           <Button onClick={() => mutation.mutate()} disabled={!form.full_name.trim() || mutation.isPending} className="w-full">
@@ -341,7 +341,7 @@ function SystemUsersTab() {
                       </SelectContent>
                     </Select>
                   ) : (
-                    <Badge className={`${roleInfo.color} text-[10px] font-medium border-0`}>
+                    <Badge className={`${roleInfo.color} text-2xs font-medium border-0`}>
                       {roleInfo.label}
                     </Badge>
                   )}
@@ -551,7 +551,7 @@ export default function EmployeesPage() {
                               <AvatarCircle initials={getInitials(e.full_name)} status={presence.status} avatarUrl={presence.avatarUrl} />
                               <div>
                                 <p className="text-sm font-semibold text-foreground">{e.full_name}</p>
-                                <p className="text-[11px] text-muted-foreground">
+                                <p className="text-xs text-muted-foreground">
                                   {presence.appRole && APP_ROLE_LABELS[presence.appRole]
                                     ? APP_ROLE_LABELS[presence.appRole].label
                                     : ROLE_LABELS[e.role] || e.role}
@@ -560,21 +560,21 @@ export default function EmployeesPage() {
                             </div>
                           </td>
                           <td>
-                            <Badge variant="secondary" className="text-[10px] font-medium">{e.department || "Общий"}</Badge>
+                            <Badge variant="secondary" className="text-2xs font-medium">{e.department || "Общий"}</Badge>
                           </td>
                           <td className="text-sm text-muted-foreground">{e.email || "—"}</td>
                           <td className="text-sm text-muted-foreground">{e.phone || "—"}</td>
                           <td>
                             {!e.email ? (
-                              <Badge variant="outline" className="text-[10px] border-muted text-muted-foreground">Нет email</Badge>
+                              <Badge variant="outline" className="text-2xs border-muted text-muted-foreground">Нет email</Badge>
                             ) : !presence.hasProfile ? (
-                              <Badge variant="outline" className="text-[10px] border-amber-500/40 text-amber-600">Не в системе</Badge>
+                              <Badge variant="outline" className="text-2xs border-amber-500/40 text-amber-600">Не в системе</Badge>
                             ) : presence.profileStatus === "pending" ? (
-                              <Badge variant="outline" className="text-[10px] border-amber-500/40 text-amber-600">Ожидает</Badge>
+                              <Badge variant="outline" className="text-2xs border-amber-500/40 text-amber-600">Ожидает</Badge>
                             ) : presence.profileStatus === "blocked" ? (
-                              <Badge variant="outline" className="text-[10px] border-destructive/40 text-destructive">Заблокирован</Badge>
+                              <Badge variant="outline" className="text-2xs border-destructive/40 text-destructive">Заблокирован</Badge>
                             ) : (
-                              <Badge variant="outline" className="text-[10px] border-emerald-500/40 text-emerald-600">Синхронизирован</Badge>
+                              <Badge variant="outline" className="text-2xs border-emerald-500/40 text-emerald-600">Синхронизирован</Badge>
                             )}
                           </td>
                           <td className={`text-sm ${statusClass}`}>{lastSeenLabel}</td>

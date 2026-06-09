@@ -178,18 +178,18 @@ export default function CompanyNewsWidget() {
           <Megaphone className="h-4 w-4 text-accent" />
           <h3 className="text-sm font-semibold text-foreground">Новости компании</h3>
           {unreadCount > 0 && (
-            <Badge variant="destructive" className="h-5 px-1.5 text-[10px]">{unreadCount}</Badge>
+            <Badge variant="destructive" className="h-5 px-1.5 text-2xs">{unreadCount}</Badge>
           )}
         </div>
         {isAdmin && (
-          <Button size="sm" variant="outline" className="h-7 gap-1 text-[12px]" onClick={openCreate}>
+          <Button size="sm" variant="outline" className="h-7 gap-1 text-sm" onClick={openCreate}>
             <Plus className="h-3.5 w-3.5" /> Написать
           </Button>
         )}
       </div>
 
       {visible.length === 0 ? (
-        <div className="text-center py-8 text-[12px] text-muted-foreground">
+        <div className="text-center py-8 text-sm text-muted-foreground">
           Новостей пока нет
         </div>
       ) : (
@@ -208,15 +208,15 @@ export default function CompanyNewsWidget() {
               >
                 <div className="flex items-start justify-between gap-2 mb-1.5">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <Badge variant="outline" className={cn("h-5 px-1.5 gap-1 text-[10px]", meta.cls)}>
+                    <Badge variant="outline" className={cn("h-5 px-1.5 gap-1 text-2xs", meta.cls)}>
                       <Icon className="h-3 w-3" /> {meta.label}
                     </Badge>
                     {n.pinned && n.type !== "pinned" && (
-                      <Badge variant="outline" className="h-5 px-1.5 gap-1 text-[10px] bg-warning/10 text-warning border-warning/20">
+                      <Badge variant="outline" className="h-5 px-1.5 gap-1 text-2xs bg-warning/10 text-warning border-warning/20">
                         <Pin className="h-3 w-3" />
                       </Badge>
                     )}
-                    <span className="text-[11px] text-muted-foreground">
+                    <span className="text-xs text-muted-foreground">
                       {format(parseISO(n.created_at), "d MMM", { locale: ruLocale })}
                     </span>
                   </div>
@@ -245,8 +245,8 @@ export default function CompanyNewsWidget() {
                     </div>
                   )}
                 </div>
-                <h4 className="text-[13px] font-semibold text-foreground mb-1">{n.title}</h4>
-                {n.body && <p className="text-[12px] text-muted-foreground whitespace-pre-wrap">{n.body}</p>}
+                <h4 className="text-base font-semibold text-foreground mb-1">{n.title}</h4>
+                {n.body && <p className="text-sm text-muted-foreground whitespace-pre-wrap">{n.body}</p>}
               </div>
             );
           })}
@@ -257,7 +257,7 @@ export default function CompanyNewsWidget() {
         <Button
           variant="ghost"
           size="sm"
-          className="w-full mt-3 text-[12px] text-accent"
+          className="w-full mt-3 text-sm text-accent"
           onClick={() => setShowAll(s => !s)}
         >
           {showAll ? "Свернуть" : `Показать все (${sorted.length}) →`}
@@ -272,7 +272,7 @@ export default function CompanyNewsWidget() {
           </DialogHeader>
           <div className="space-y-3">
             <div>
-              <Label className="text-[12px]">Заголовок</Label>
+              <Label className="text-sm">Заголовок</Label>
               <Input
                 value={form.title}
                 onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
@@ -280,7 +280,7 @@ export default function CompanyNewsWidget() {
               />
             </div>
             <div>
-              <Label className="text-[12px]">Текст</Label>
+              <Label className="text-sm">Текст</Label>
               <Textarea
                 rows={4}
                 value={form.body}
@@ -290,7 +290,7 @@ export default function CompanyNewsWidget() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <Label className="text-[12px]">Тип</Label>
+                <Label className="text-sm">Тип</Label>
                 <Select value={form.type} onValueChange={(v: NewsType) => setForm(f => ({ ...f, type: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -301,7 +301,7 @@ export default function CompanyNewsWidget() {
                 </Select>
               </div>
               <div className="flex items-end">
-                <label className="flex items-center gap-2 text-[12px] cursor-pointer">
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
                   <input
                     type="checkbox"
                     checked={form.pinned}

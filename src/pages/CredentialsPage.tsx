@@ -266,10 +266,10 @@ export default function CredentialsPage() {
                     <div className="min-w-0 flex-1">
                       <h3 className="font-medium truncate">{c.title}</h3>
                       <div className="flex flex-wrap gap-1 mt-1">
-                        <Badge variant="secondary" className="text-[10px]">{categoryLabel(c.category)}</Badge>
-                        <Badge variant="outline" className="text-[10px]">{projectName(c.project_id)}</Badge>
+                        <Badge variant="secondary" className="text-2xs">{categoryLabel(c.category)}</Badge>
+                        <Badge variant="outline" className="text-2xs">{projectName(c.project_id)}</Badge>
                         {c.tags.map((t) => (
-                          <Badge key={t} variant="outline" className="text-[10px]">#{t}</Badge>
+                          <Badge key={t} variant="outline" className="text-2xs">#{t}</Badge>
                         ))}
                       </div>
                     </div>

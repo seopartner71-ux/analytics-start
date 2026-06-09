@@ -390,7 +390,7 @@ export function ReportBuilderTab({ projectId, shareToken, projectLogo }: ReportB
                 {clientLogo ? (
                   <div className="relative">
                     <img src={clientLogo} alt="Logo" className="h-10 w-10 rounded-lg object-cover border border-border" />
-                    <button onClick={() => setClientLogo(null)} className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center text-[10px]">
+                    <button onClick={() => setClientLogo(null)} className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center text-2xs">
                       <X className="h-2.5 w-2.5" />
                     </button>
                   </div>

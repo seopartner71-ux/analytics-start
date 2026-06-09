@@ -59,16 +59,16 @@ function validateTvProjectId(raw: string): TvFieldValidation {
 }
 
 function TvFieldHint({ v }: { v: TvFieldValidation }) {
-  if (v.state === "empty") return <p className="text-[11px] text-muted-foreground">{v.message}</p>;
+  if (v.state === "empty") return <p className="text-xs text-muted-foreground">{v.message}</p>;
   if (v.state === "valid") {
     return (
-      <p className="text-[11px] text-emerald-500 flex items-center gap-1">
+      <p className="text-xs text-emerald-500 flex items-center gap-1">
         <CheckCircle2 className="h-3 w-3" />{v.message}
       </p>
     );
   }
   return (
-    <p className="text-[11px] text-destructive flex items-center gap-1">
+    <p className="text-xs text-destructive flex items-center gap-1">
       <AlertCircle className="h-3 w-3" />{v.message}
     </p>
   );
@@ -569,7 +569,7 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
                 onChange={(e) => setWmSiteUrl(e.target.value)}
                 placeholder="https://example.com:443"
               />
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Формат: https://example.com:443 (как в Яндекс Вебмастере)
               </p>
             </div>
@@ -614,7 +614,7 @@ export function IntegrationsTab({ projectId, integrations }: IntegrationsTabProp
                 onChange={(e) => setGscPropertyUrl(e.target.value)}
                 placeholder="https://example.com/ или sc-domain:example.com"
               />
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 URL ресурса из Google Search Console
               </p>
             </div>

@@ -241,7 +241,7 @@ export default function MyTasksPage() {
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-medium text-sm truncate">{t.title}</span>
                             {t.priority === "high" && (
-                              <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
+                              <Badge variant="destructive" className="text-2xs px-1.5 py-0">
                                 Высокий
                               </Badge>
                             )}

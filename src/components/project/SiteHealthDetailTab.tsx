@@ -294,14 +294,14 @@ export default function SiteHealthDetailTab({ projectId }: Props) {
         <h3 className="text-sm font-semibold text-foreground">Состояние сайта</h3>
         <div className="flex items-center gap-3">
           {lastUpdate && (
-            <span className="text-[11px] text-muted-foreground">
+            <span className="text-xs text-muted-foreground">
               Обновлено: {format(lastUpdate, "dd.MM.yyyy HH:mm")}
             </span>
           )}
           <Button
             variant="outline"
             size="sm"
-            className="h-8 text-[12px] gap-1.5"
+            className="h-8 text-sm gap-1.5"
             disabled={refreshing}
             onClick={async () => {
               setRefreshing(true);
@@ -350,11 +350,11 @@ export default function SiteHealthDetailTab({ projectId }: Props) {
               <FileSearch className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Индексация</p>
+              <p className="text-2xs text-muted-foreground uppercase tracking-wide">Индексация</p>
               <p className="text-xl font-bold text-foreground">
                 {indexedPages > 0 ? indexedPages.toLocaleString("ru-RU") : "—"}
                 {totalPages > 0 && (
-                  <span className="text-[12px] text-muted-foreground font-normal"> / {totalPages.toLocaleString("ru-RU")}</span>
+                  <span className="text-sm text-muted-foreground font-normal"> / {totalPages.toLocaleString("ru-RU")}</span>
                 )}
               </p>
             </div>
@@ -367,7 +367,7 @@ export default function SiteHealthDetailTab({ projectId }: Props) {
               <AlertCircle className={cn("h-4 w-4", crawlErrors > 0 ? "text-destructive" : "text-muted-foreground")} />
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Ошибки</p>
+              <p className="text-2xs text-muted-foreground uppercase tracking-wide">Ошибки</p>
               <p className={cn("text-xl font-bold", crawlErrors > 0 ? "text-destructive" : "text-foreground")}>{crawlErrors}</p>
             </div>
           </div>
@@ -379,7 +379,7 @@ export default function SiteHealthDetailTab({ projectId }: Props) {
               <AlertTriangle className={cn("h-4 w-4", warnings > 0 ? "text-[hsl(var(--chart-4))]" : "text-muted-foreground")} />
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Предупреждения</p>
+              <p className="text-2xs text-muted-foreground uppercase tracking-wide">Предупреждения</p>
               <p className={cn("text-xl font-bold", warnings > 0 ? "text-[hsl(var(--chart-4))]" : "text-foreground")}>{warnings}</p>
             </div>
           </div>
@@ -391,7 +391,7 @@ export default function SiteHealthDetailTab({ projectId }: Props) {
               <Clock className="h-4 w-4 text-muted-foreground" />
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Последнее обновление</p>
+              <p className="text-2xs text-muted-foreground uppercase tracking-wide">Последнее обновление</p>
               <p className="text-sm font-bold text-foreground">
                 {lastUpdate ? format(lastUpdate, "dd.MM.yy HH:mm") : "—"}
               </p>
@@ -406,18 +406,18 @@ export default function SiteHealthDetailTab({ projectId }: Props) {
         <Card className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
           <div className="flex items-center gap-2 p-4 border-b border-border">
             <div className="h-6 w-6 rounded bg-primary/10 flex items-center justify-center">
-              <span className="text-[10px] font-bold text-primary">Я</span>
+              <span className="text-2xs font-bold text-primary">Я</span>
             </div>
             <h3 className="text-sm font-semibold text-foreground">Яндекс Вебмастер</h3>
           </div>
           <div className="p-4 space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="rounded-lg bg-muted/40 p-3">
-                <p className="text-[10px] text-muted-foreground uppercase mb-1">Индексация</p>
+                <p className="text-2xs text-muted-foreground uppercase mb-1">Индексация</p>
                 <p className="text-lg font-bold text-foreground">{Number(yIndexed).toLocaleString("ru-RU")} стр.</p>
               </div>
               <div className="rounded-lg bg-muted/40 p-3">
-                <p className="text-[10px] text-muted-foreground uppercase mb-1">Sitemap</p>
+                <p className="text-2xs text-muted-foreground uppercase mb-1">Sitemap</p>
                 <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
                   {ySitemapStatus === "ok" ? (
                     <><CheckCircle2 className="h-4 w-4 text-[hsl(142,71%,45%)]" /> Подключен</>
@@ -429,7 +429,7 @@ export default function SiteHealthDetailTab({ projectId }: Props) {
             </div>
 
             <div className="rounded-lg bg-muted/40 p-3">
-              <p className="text-[10px] text-muted-foreground uppercase mb-1">Последний обход</p>
+              <p className="text-2xs text-muted-foreground uppercase mb-1">Последний обход</p>
               <p className="text-sm font-medium text-foreground">
                 {yLastCrawl ? format(parseISO(yLastCrawl), "dd.MM.yyyy HH:mm") : "—"}
               </p>
@@ -437,10 +437,10 @@ export default function SiteHealthDetailTab({ projectId }: Props) {
 
             {yandexErrors.length > 0 && (
               <div>
-                <p className="text-[11px] font-medium text-muted-foreground uppercase mb-2">Ошибки сканирования</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase mb-2">Ошибки сканирования</p>
                 <div className="space-y-1.5 max-h-[200px] overflow-y-auto">
                   {yandexErrors.slice(0, 10).map(e => (
-                    <div key={e.id} className="flex items-start gap-2 p-2 rounded bg-destructive/5 text-[12px]">
+                    <div key={e.id} className="flex items-start gap-2 p-2 rounded bg-destructive/5 text-sm">
                       <AlertCircle className="h-3.5 w-3.5 text-destructive mt-0.5 shrink-0" />
                       <div className="min-w-0 flex-1">
                         <p className="text-foreground truncate">{e.url || "—"}</p>
@@ -455,7 +455,7 @@ export default function SiteHealthDetailTab({ projectId }: Props) {
             {yandexErrors.length === 0 && Number(yIndexed) === 0 && (
               <div className="py-6 text-center">
                 <Globe className="h-8 w-8 mx-auto mb-2 text-muted-foreground/20" />
-                <p className="text-[12px] text-muted-foreground">
+                <p className="text-sm text-muted-foreground">
                   Подключите Яндекс Вебмастер на вкладке «Интеграции»
                 </p>
               </div>
@@ -474,21 +474,21 @@ export default function SiteHealthDetailTab({ projectId }: Props) {
           <div className="p-4 space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="rounded-lg bg-muted/40 p-3">
-                <p className="text-[10px] text-muted-foreground uppercase mb-1">Клики (28 дн.)</p>
+                <p className="text-2xs text-muted-foreground uppercase mb-1">Клики (28 дн.)</p>
                 <p className="text-lg font-bold text-foreground">{Number(gClicks).toLocaleString("ru-RU")}</p>
               </div>
               <div className="rounded-lg bg-muted/40 p-3">
-                <p className="text-[10px] text-muted-foreground uppercase mb-1">Показы</p>
+                <p className="text-2xs text-muted-foreground uppercase mb-1">Показы</p>
                 <p className="text-lg font-bold text-foreground">{Number(gImpressions).toLocaleString("ru-RU")}</p>
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="rounded-lg bg-muted/40 p-3">
-                <p className="text-[10px] text-muted-foreground uppercase mb-1">Средний CTR</p>
+                <p className="text-2xs text-muted-foreground uppercase mb-1">Средний CTR</p>
                 <p className="text-lg font-bold text-foreground">{Number(gCtr).toFixed(1)}%</p>
               </div>
               <div className="rounded-lg bg-muted/40 p-3">
-                <p className="text-[10px] text-muted-foreground uppercase mb-1">Ср. позиция</p>
+                <p className="text-2xs text-muted-foreground uppercase mb-1">Ср. позиция</p>
                 <p className="text-lg font-bold text-foreground">{Number(gPosition).toFixed(1)}</p>
               </div>
             </div>
@@ -496,9 +496,9 @@ export default function SiteHealthDetailTab({ projectId }: Props) {
             {/* Top queries table */}
             {gTopQueries.length > 0 ? (
               <div>
-                <p className="text-[11px] font-medium text-muted-foreground uppercase mb-2">Топ запросов</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase mb-2">Топ запросов</p>
                 <div className="overflow-x-auto">
-                  <table className="w-full text-[12px]">
+                  <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-border">
                         <th className="text-left py-1.5 font-medium text-muted-foreground">Запрос</th>
@@ -524,7 +524,7 @@ export default function SiteHealthDetailTab({ projectId }: Props) {
               Number(gClicks) === 0 && Number(gImpressions) === 0 && (
                 <div className="py-6 text-center">
                   <Search className="h-8 w-8 mx-auto mb-2 text-muted-foreground/20" />
-                  <p className="text-[12px] text-muted-foreground">
+                  <p className="text-sm text-muted-foreground">
                     Добавьте данные Google Search Console
                   </p>
                 </div>
@@ -539,12 +539,12 @@ export default function SiteHealthDetailTab({ projectId }: Props) {
         <div className="flex items-center gap-2 p-4 border-b border-border">
           <AlertCircle className="h-4 w-4 text-muted-foreground" />
           <h3 className="text-sm font-semibold text-foreground">Замечания по сайту</h3>
-          <Badge variant="secondary" className="text-[10px] h-5">{siteErrors.length}</Badge>
+          <Badge variant="secondary" className="text-2xs h-5">{siteErrors.length}</Badge>
         </div>
         {siteErrors.length === 0 ? (
           <div className="py-16 text-center">
             <CheckCircle2 className="h-10 w-10 mx-auto mb-2 text-[hsl(142,71%,45%)]/30" />
-            <p className="text-[13px] text-muted-foreground">Ошибок не обнаружено</p>
+            <p className="text-base text-muted-foreground">Ошибок не обнаружено</p>
           </div>
         ) : (
           <div className="p-4 space-y-3 max-h-[600px] overflow-y-auto">
@@ -565,20 +565,20 @@ export default function SiteHealthDetailTab({ projectId }: Props) {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-foreground">{translatedName}</p>
                       {err.url && err.url !== "—" && (
-                        <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{err.url}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5 truncate">{err.url}</p>
                       )}
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <Badge
                         variant="secondary"
                         className={cn(
-                          "text-[10px]",
+                          "text-2xs",
                           err.source === "yandex" ? "bg-primary/10 text-primary" : "bg-[hsl(var(--chart-2))]/10 text-[hsl(var(--chart-2))]"
                         )}
                       >
                         {err.source === "yandex" ? "Яндекс" : "Google"}
                       </Badge>
-                      <span className="text-[10px] text-muted-foreground">{format(parseISO(err.detected_at), "dd.MM.yy")}</span>
+                      <span className="text-2xs text-muted-foreground">{format(parseISO(err.detected_at), "dd.MM.yy")}</span>
                       <CreateTaskFromSourceButton
                         projectId={projectId}
                         sourceType="crawl_issue"
@@ -592,13 +592,13 @@ export default function SiteHealthDetailTab({ projectId }: Props) {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-6 text-[10px] text-destructive hover:text-foreground px-2"
+                          className="h-6 text-2xs text-destructive hover:text-foreground px-2"
                           onClick={() => markReviewed.mutate(err.id)}
                         >
                           Новая
                         </Button>
                       ) : (
-                        <span className="text-[10px] text-muted-foreground">✓</span>
+                        <span className="text-2xs text-muted-foreground">✓</span>
                       )}
                     </div>
                   </div>

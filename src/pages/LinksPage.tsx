@@ -65,7 +65,7 @@ export default function LinksPage() {
                   <td>
                     <Badge
                       variant={l.status === "Активна" ? "default" : l.status === "Удалена" ? "destructive" : "secondary"}
-                      className="text-[10px] font-medium"
+                      className="text-2xs font-medium"
                     >
                       {l.status}
                     </Badge>

@@ -133,7 +133,7 @@ export default function Finance() {
                     {acc.kind === "cash" ? <PiggyBank className="h-3.5 w-3.5" /> : <Landmark className="h-3.5 w-3.5" />}
                     {acc.kind === "cash" ? "Касса" : "Банк"}
                   </div>
-                  <Badge variant="outline" className="text-[10px]">{acc.currency}</Badge>
+                  <Badge variant="outline" className="text-2xs">{acc.currency}</Badge>
                 </div>
                 <div className="text-xl font-bold">{acc.name}</div>
                 <div className={`text-2xl font-bold ${Number(acc.balance) < 0 ? "text-red-500" : ""}`}>
@@ -252,7 +252,7 @@ function PnlCard({
             {icon} {label}
           </span>
           {showDelta && (
-            <Badge variant="outline" className={`text-[10px] gap-0.5 ${positive ? "text-emerald-500 border-emerald-500/30" : "text-red-500 border-red-500/30"}`}>
+            <Badge variant="outline" className={`text-2xs gap-0.5 ${positive ? "text-emerald-500 border-emerald-500/30" : "text-red-500 border-red-500/30"}`}>
               {positive ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
               {Math.abs(delta!).toFixed(0)}%
             </Badge>

@@ -348,7 +348,7 @@ export function AnalyticsTab({ projectId, onSwitchToGoals, onSwitchToSeo, onSwit
           <div className="flex items-center gap-2 flex-wrap">
             {/* Period A */}
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-primary bg-primary/10 px-1.5 py-0.5 rounded">
+              <span className="text-2xs font-bold uppercase tracking-widest text-primary bg-primary/10 px-1.5 py-0.5 rounded">
                 {t("comparison.a", "А")}
               </span>
               <Popover>
@@ -378,7 +378,7 @@ export function AnalyticsTab({ projectId, onSwitchToGoals, onSwitchToSeo, onSwit
 
             {/* Period B */}
             <div className={cn("flex items-center gap-1.5 transition-opacity", !showComparison && "opacity-40 pointer-events-none")}>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+              <span className="text-2xs font-bold uppercase tracking-widest text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
                 {t("comparison.b", "Б")}
               </span>
               <Popover>
@@ -422,10 +422,10 @@ export function AnalyticsTab({ projectId, onSwitchToGoals, onSwitchToSeo, onSwit
           {showComparison && (
             <div className="flex items-center gap-2 mt-2 pt-2 border-t border-border">
               <span className="text-xs text-muted-foreground">{t("comparison.presets", "Пресеты")}:</span>
-              <Button variant="outline" size="sm" className="h-6 text-[11px] px-2" onClick={() => handleCompPreset("previous")}>
+              <Button variant="outline" size="sm" className="h-6 text-xs px-2" onClick={() => handleCompPreset("previous")}>
                 {t("project.analytics.prevPeriod", "Предыдущий период")}
               </Button>
-              <Button variant="outline" size="sm" className="h-6 text-[11px] px-2" onClick={() => handleCompPreset("lastYear")}>
+              <Button variant="outline" size="sm" className="h-6 text-xs px-2" onClick={() => handleCompPreset("lastYear")}>
                 {t("project.analytics.lastYear", "Год назад")}
               </Button>
             </div>
@@ -585,7 +585,7 @@ export function AnalyticsTab({ projectId, onSwitchToGoals, onSwitchToSeo, onSwit
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Card className="border-border bg-card p-4">
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-primary bg-primary/10 px-1.5 py-0.5 rounded">
+              <span className="text-2xs font-bold uppercase tracking-widest text-primary bg-primary/10 px-1.5 py-0.5 rounded">
                 {t("comparison.a", "А")}
               </span>
               <p className="text-xs text-muted-foreground">{periodALabel}</p>
@@ -600,7 +600,7 @@ export function AnalyticsTab({ projectId, onSwitchToGoals, onSwitchToSeo, onSwit
           </Card>
           <Card className="border-border bg-card p-4">
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+              <span className="text-2xs font-bold uppercase tracking-widest text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
                 {t("comparison.b", "Б")}
               </span>
               <p className="text-xs text-muted-foreground">{periodBLabel}</p>

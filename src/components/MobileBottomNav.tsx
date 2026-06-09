@@ -32,12 +32,12 @@ export function MobileBottomNav({ activeTab, onTabChange, notificationCount = 0 
               <div className="relative">
                 <item.icon className="h-5 w-5" />
                 {item.id === "overview" && notificationCount > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 h-4 min-w-4 px-0.5 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center">
+                  <span className="absolute -top-1.5 -right-1.5 h-4 min-w-4 px-0.5 rounded-full bg-destructive text-destructive-foreground text-2xs font-bold flex items-center justify-center">
                     {notificationCount}
                   </span>
                 )}
               </div>
-              <span className="text-[10px] font-medium">{item.label}</span>
+              <span className="text-2xs font-medium">{item.label}</span>
               {active && (
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 h-0.5 w-8 rounded-full bg-primary" />
               )}

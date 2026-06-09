@@ -21,7 +21,7 @@ type ProblemType = (typeof PROBLEM_TYPES)[number];
 export function FrozenDeadlineBadge() {
   return (
     <Badge
-      className="text-[10px] h-5 gap-1 border-0 bg-purple-500/15 text-purple-300 hover:bg-purple-500/15"
+      className="text-2xs h-5 gap-1 border-0 bg-purple-500/15 text-purple-300 hover:bg-purple-500/15"
     >
       <Snowflake className="h-3 w-3" /> Дедлайн заморожен
     </Badge>
@@ -67,7 +67,7 @@ export function TaskBlockerSection({
                   <div className="flex items-center gap-2 mb-1">
                     <h4 className="text-sm font-semibold text-purple-100">Задача заблокирована</h4>
                     {problemType && (
-                      <Badge className="text-[10px] h-5 border-0 bg-purple-500/20 text-purple-200 hover:bg-purple-500/20">
+                      <Badge className="text-2xs h-5 border-0 bg-purple-500/20 text-purple-200 hover:bg-purple-500/20">
                         {problemType}
                       </Badge>
                     )}

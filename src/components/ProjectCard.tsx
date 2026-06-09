@@ -36,7 +36,7 @@ const SPARKLINE_DATA = [
   [4, 3, 5, 6, 8, 7, 9, 10, 12, 11, 13, 15],
 ];
 
-const TOOLTIP_STYLE = "z-[100] bg-white text-gray-900 border border-gray-200 shadow-lg text-[11px] max-w-[220px] leading-snug";
+const TOOLTIP_STYLE = "z-[100] bg-white text-gray-900 border border-gray-200 shadow-lg text-xs max-w-[220px] leading-snug";
 
 function Sparkline({ data }: { data: number[] }) {
   const max = Math.max(...data);
@@ -73,7 +73,7 @@ function DeltaBadge({ value, invert }: { value: number; invert?: boolean }) {
   return (
     <Badge
       variant="secondary"
-      className={`text-[9px] px-1 py-0 h-3.5 font-medium border-0 ${isPositive ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"}`}
+      className={`text-2xs px-1 py-0 h-3.5 font-medium border-0 ${isPositive ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"}`}
     >
       {display}
     </Badge>
@@ -105,7 +105,7 @@ export function ProjectCard({
                   {faviconUrl && !faviconError ? (
                     <img src={faviconUrl} alt="" className="h-8 w-8 rounded-lg object-cover bg-muted/50" onError={() => setFaviconError(true)} />
                   ) : (
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg text-[11px] font-bold text-primary-foreground" style={{ backgroundColor: color }}>
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold text-primary-foreground" style={{ backgroundColor: color }}>
                       {initials}
                     </div>
                   )}
@@ -115,7 +115,7 @@ export function ProjectCard({
             </Tooltip>
 
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-[13px] leading-tight text-foreground truncate group-hover:text-primary transition-colors">{name}</h3>
+              <h3 className="font-semibold text-base leading-tight text-foreground truncate group-hover:text-primary transition-colors">{name}</h3>
               {domain && (
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -123,7 +123,7 @@ export function ProjectCard({
                       href={`https://${domain}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-1 mt-0.5 text-[11px] text-muted-foreground/70 hover:text-primary transition-colors"
+                      className="flex items-center gap-1 mt-0.5 text-xs text-muted-foreground/70 hover:text-primary transition-colors"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <span className="truncate">{domain}</span>
@@ -156,7 +156,7 @@ export function ProjectCard({
           </div>
 
           {description && (
-            <p className="text-[11px] text-muted-foreground/60 line-clamp-1 leading-relaxed">{description}</p>
+            <p className="text-xs text-muted-foreground/60 line-clamp-1 leading-relaxed">{description}</p>
           )}
 
           {/* Stats Row */}
@@ -164,7 +164,7 @@ export function ProjectCard({
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="flex-1 text-center cursor-help">
-                  <p className="text-[9px] uppercase tracking-wider text-muted-foreground/50 font-medium">ТОП-10</p>
+                  <p className="text-2xs uppercase tracking-wider text-muted-foreground/50 font-medium">ТОП-10</p>
                   <p className="text-sm font-bold text-foreground tabular-nums">{hasStats ? stats.top10 : "—"}</p>
                   {hasStats && <DeltaBadge value={stats.top10Delta} />}
                 </div>
@@ -179,7 +179,7 @@ export function ProjectCard({
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="flex-1 text-center cursor-help">
-                  <p className="text-[9px] uppercase tracking-wider text-muted-foreground/50 font-medium">Ср. поз.</p>
+                  <p className="text-2xs uppercase tracking-wider text-muted-foreground/50 font-medium">Ср. поз.</p>
                   <p className="text-sm font-bold text-foreground tabular-nums">{hasStats ? stats.avgPos : "—"}</p>
                   {hasStats && <DeltaBadge value={stats.avgPosDelta} invert />}
                 </div>
@@ -194,7 +194,7 @@ export function ProjectCard({
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="flex-1 text-center cursor-help">
-                  <p className="text-[9px] uppercase tracking-wider text-muted-foreground/50 font-medium">Видим.</p>
+                  <p className="text-2xs uppercase tracking-wider text-muted-foreground/50 font-medium">Видим.</p>
                   <p className="text-sm font-bold text-foreground tabular-nums">{hasStats ? `${stats.visibility}%` : "—"}</p>
                   {hasStats && <DeltaBadge value={stats.visibilityDelta} />}
                 </div>
@@ -209,13 +209,13 @@ export function ProjectCard({
 
           {/* Footer */}
           <div className="flex items-center justify-between">
-            <span className="text-[10px] text-muted-foreground/50 font-medium tracking-wide">
+            <span className="text-2xs text-muted-foreground/50 font-medium tracking-wide">
               {seoSpecialist ? `SEO: ${seoSpecialist}` : accountManager ? `AM: ${accountManager}` : ""}
             </span>
             <Button
               size="sm"
               variant="ghost"
-              className="h-5 px-1.5 text-[10px] text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity hover:text-primary"
+              className="h-5 px-1.5 text-2xs text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity hover:text-primary"
               onClick={(e) => { e.stopPropagation(); onClick(); }}
             >
               Отчёт

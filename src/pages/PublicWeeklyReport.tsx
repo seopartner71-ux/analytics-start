@@ -56,18 +56,18 @@ export default function PublicWeeklyReport() {
         </div>
 
         <Card className="p-6 space-y-1">
-          <div className="text-[20px] font-semibold">📋 План работ на неделю {report.week_number}</div>
-          <div className="text-[13px] text-muted-foreground">{formatWeekRange(report.week_start, report.week_end)}</div>
+          <div className="text-xl font-semibold">📋 План работ на неделю {report.week_number}</div>
+          <div className="text-base text-muted-foreground">{formatWeekRange(report.week_start, report.week_end)}</div>
         </Card>
 
         <Card className="p-6 space-y-3">
-          <div className="text-[14px] font-semibold">Планируем на этой неделе</div>
+          <div className="text-md font-semibold">Планируем на этой неделе</div>
           {visiblePlanned.length === 0 ? (
-            <p className="text-[13px] text-muted-foreground">Задачи уточняются</p>
+            <p className="text-base text-muted-foreground">Задачи уточняются</p>
           ) : (
             <ul className="space-y-1.5">
               {visiblePlanned.map((it, i) => (
-                <li key={i} className="text-[14px] flex gap-2"><span>🔄</span><span>{it.title}</span></li>
+                <li key={i} className="text-md flex gap-2"><span>🔄</span><span>{it.title}</span></li>
               ))}
             </ul>
           )}
@@ -75,10 +75,10 @@ export default function PublicWeeklyReport() {
 
         {report.done_items.length > 0 && (
           <Card className="p-6 space-y-3">
-            <div className="text-[14px] font-semibold">Выполнено на прошлой неделе</div>
+            <div className="text-md font-semibold">Выполнено на прошлой неделе</div>
             <ul className="space-y-1.5">
               {report.done_items.map((it, i) => (
-                <li key={i} className="text-[14px] flex gap-2">
+                <li key={i} className="text-md flex gap-2">
                   <span>{it.status === "done" ? "✅" : it.status === "moved" ? "⚠️" : "🔄"}</span>
                   <span>
                     {it.title}
@@ -92,16 +92,16 @@ export default function PublicWeeklyReport() {
 
         {(report.metrics?.positions_text || report.metrics?.traffic_text) && (
           <Card className="p-6 space-y-2">
-            <div className="text-[14px] font-semibold">Показатели</div>
-            {report.metrics.positions_text && <div className="text-[14px]">📈 Позиции: {report.metrics.positions_text}</div>}
-            {report.metrics.traffic_text && <div className="text-[14px]">📊 Трафик: {report.metrics.traffic_text}</div>}
+            <div className="text-md font-semibold">Показатели</div>
+            {report.metrics.positions_text && <div className="text-md">📈 Позиции: {report.metrics.positions_text}</div>}
+            {report.metrics.traffic_text && <div className="text-md">📊 Трафик: {report.metrics.traffic_text}</div>}
           </Card>
         )}
 
         {report.manager_comment && (
           <Card className="p-6 space-y-2">
-            <div className="text-[14px] font-semibold">Комментарий менеджера</div>
-            <p className="text-[14px] whitespace-pre-wrap">{report.manager_comment}</p>
+            <div className="text-md font-semibold">Комментарий менеджера</div>
+            <p className="text-md whitespace-pre-wrap">{report.manager_comment}</p>
           </Card>
         )}
       </div>

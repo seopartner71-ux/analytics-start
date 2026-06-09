@@ -223,7 +223,7 @@ export default function DeletionLogPage() {
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
           <div>
-            <label className="text-[11px] text-muted-foreground">Дата с</label>
+            <label className="text-xs text-muted-foreground">Дата с</label>
             <Input
               type="date"
               value={dateFrom}
@@ -232,7 +232,7 @@ export default function DeletionLogPage() {
             />
           </div>
           <div>
-            <label className="text-[11px] text-muted-foreground">Дата по</label>
+            <label className="text-xs text-muted-foreground">Дата по</label>
             <Input
               type="date"
               value={dateTo}
@@ -249,7 +249,7 @@ export default function DeletionLogPage() {
           {Object.entries(stats).map(([k, v]) => {
             const meta = ACTION_LABELS[k] || { label: k, cls: "" };
             return (
-              <Badge key={k} variant="outline" className={`text-[11px] ${meta.cls}`}>
+              <Badge key={k} variant="outline" className={`text-xs ${meta.cls}`}>
                 {meta.label}: {v}
               </Badge>
             );
@@ -288,23 +288,23 @@ export default function DeletionLogPage() {
                     .join(" · ");
                   return (
                     <TableRow key={r.id}>
-                      <TableCell className="text-[12px] text-muted-foreground tabular-nums whitespace-nowrap">
+                      <TableCell className="text-sm text-muted-foreground tabular-nums whitespace-nowrap">
                         {format(new Date(r.created_at), "dd.MM.yyyy HH:mm", { locale: ru })}
                       </TableCell>
                       <TableCell>
-                        <div className="text-[13px] font-medium">{r.actor_name || "—"}</div>
-                        <div className="text-[11px] text-muted-foreground">{r.actor_email}</div>
+                        <div className="text-base font-medium">{r.actor_name || "—"}</div>
+                        <div className="text-xs text-muted-foreground">{r.actor_email}</div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={`text-[11px] ${action.cls}`}>
+                        <Badge variant="outline" className={`text-xs ${action.cls}`}>
                           {action.label}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-[12px] text-muted-foreground">{entity}</TableCell>
-                      <TableCell className="text-[13px] font-medium max-w-[260px] truncate" title={r.entity_name}>
+                      <TableCell className="text-sm text-muted-foreground">{entity}</TableCell>
+                      <TableCell className="text-base font-medium max-w-[260px] truncate" title={r.entity_name}>
                         «{r.entity_name || "—"}»
                       </TableCell>
-                      <TableCell className="hidden lg:table-cell text-[11px] text-muted-foreground max-w-[280px] truncate" title={ctxStr}>
+                      <TableCell className="hidden lg:table-cell text-xs text-muted-foreground max-w-[280px] truncate" title={ctxStr}>
                         {ctxStr || "—"}
                       </TableCell>
                     </TableRow>
@@ -319,7 +319,7 @@ export default function DeletionLogPage() {
       {/* Pagination */}
       {total > PAGE_SIZE && (
         <div className="flex items-center justify-between gap-3">
-          <div className="text-[12px] text-muted-foreground">
+          <div className="text-sm text-muted-foreground">
             Страница {page + 1} из {totalPages} · показано {rows.length} из {total}
           </div>
           <div className="flex items-center gap-1.5">

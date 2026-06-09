@@ -491,7 +491,7 @@ export function DashboardTab({ projectId, projectName, onSwitchTab }: DashboardT
                         <span className="text-muted-foreground">{SOURCE_ICONS[s.key]}</span>
                         <span className="text-xs font-medium text-foreground flex-1">{s.name}</span>
                         <span className="text-xs tabular-nums font-semibold text-foreground">{s.value.toLocaleString()}</span>
-                        <span className="text-[11px] tabular-nums text-muted-foreground w-10 text-right">{s.pct}%</span>
+                        <span className="text-xs tabular-nums text-muted-foreground w-10 text-right">{s.pct}%</span>
                       </div>
                     ))}
                   </div>

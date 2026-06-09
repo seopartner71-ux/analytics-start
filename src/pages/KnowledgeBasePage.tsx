@@ -97,7 +97,7 @@ export default function KnowledgeBasePage() {
         <button
           onClick={() => setActiveCat("all")}
           className={cn(
-            "px-3 py-1.5 rounded-full text-[12px] border transition",
+            "px-3 py-1.5 rounded-full text-sm border transition",
             activeCat === "all" ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-muted"
           )}
         >
@@ -108,7 +108,7 @@ export default function KnowledgeBasePage() {
             key={c.value}
             onClick={() => setActiveCat(c.value)}
             className={cn(
-              "px-3 py-1.5 rounded-full text-[12px] border transition",
+              "px-3 py-1.5 rounded-full text-sm border transition",
               activeCat === c.value ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-muted"
             )}
           >
@@ -128,7 +128,7 @@ export default function KnowledgeBasePage() {
             return (
               <Card key={a.id} className="p-4 hover:border-primary/50 transition group">
                 <div className="flex items-start justify-between gap-2 mb-2">
-                  <Badge variant="secondary" className="text-[10px]">{meta.icon} {meta.label}</Badge>
+                  <Badge variant="secondary" className="text-2xs">{meta.icon} {meta.label}</Badge>
                   <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition">
                     {canEditArticle(a) && (
                       <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { setEditId(a.id); setEditorOpen(true); }}>
@@ -147,13 +147,13 @@ export default function KnowledgeBasePage() {
                   </div>
                 </div>
                 <button onClick={() => setOpenId(a.id)} className="text-left w-full">
-                  <h3 className="text-[14px] font-medium mb-1 hover:text-primary transition line-clamp-2">{a.title}</h3>
+                  <h3 className="text-md font-medium mb-1 hover:text-primary transition line-clamp-2">{a.title}</h3>
                   <div className="flex flex-wrap gap-1 mb-2">
                     {(a.tags || []).slice(0, 3).map((t: string) => (
-                      <span key={t} className="text-[10px] text-muted-foreground">#{t}</span>
+                      <span key={t} className="text-2xs text-muted-foreground">#{t}</span>
                     ))}
                   </div>
-                  <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span>{format(new Date(a.updated_at), "dd.MM.yyyy")}</span>
                     <span className="flex items-center gap-1"><Eye className="h-3 w-3" />{a.views_count}</span>
                   </div>

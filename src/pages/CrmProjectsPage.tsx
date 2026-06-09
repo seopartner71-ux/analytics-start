@@ -66,7 +66,7 @@ function AvatarCircle({ name }: { name: string }) {
   const initials = name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
   const c = AVATAR_COLORS[hashString(name) % AVATAR_COLORS.length];
   return (
-    <div className={cn("h-6 w-6 rounded-full text-[10px] font-bold flex items-center justify-center shrink-0", c.bg, c.text)}>
+    <div className={cn("h-6 w-6 rounded-full text-2xs font-bold flex items-center justify-center shrink-0", c.bg, c.text)}>
       {initials}
     </div>
   );
@@ -330,7 +330,7 @@ export default function CrmProjectsPage() {
                 key={f}
                 onClick={() => setFilter(f)}
                 className={cn(
-                  "px-3 py-1.5 text-[13px] rounded-md border transition-colors",
+                  "px-3 py-1.5 text-base rounded-md border transition-colors",
                   filter === f
                     ? "bg-card text-foreground border-border shadow-sm"
                     : "bg-transparent text-muted-foreground border-transparent hover:text-foreground hover:bg-card/50"
@@ -349,7 +349,7 @@ export default function CrmProjectsPage() {
               placeholder="Поиск..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="pl-8 h-8 w-full md:w-64 text-[13px] bg-card border-border"
+              className="pl-8 h-8 w-full md:w-64 text-base bg-card border-border"
             />
           </div>
 
@@ -376,7 +376,7 @@ export default function CrmProjectsPage() {
         {canAddProject(role) && (
           <Dialog open={addOpen} onOpenChange={setAddOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 h-9 text-[13px] shadow-sm w-full md:w-auto">
+              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 h-9 text-base shadow-sm w-full md:w-auto">
                 <Plus className="h-4 w-4" /> Добавить проект
               </Button>
             </DialogTrigger>
@@ -386,16 +386,16 @@ export default function CrmProjectsPage() {
               </DialogHeader>
               <div className="space-y-3 mt-2">
                 <div>
-                  <Label className="text-[13px]">Название *</Label>
+                  <Label className="text-base">Название *</Label>
                   <Input value={newName} onChange={e => setNewName(e.target.value)} placeholder="Название клиента / проекта" className="mt-1" />
                 </div>
                 <div>
-                  <Label className="text-[13px]">Домен</Label>
+                  <Label className="text-base">Домен</Label>
                   <Input value={newUrl} onChange={e => setNewUrl(e.target.value)} placeholder="example.ru" className="mt-1" />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <Label className="text-[13px]">Статус</Label>
+                    <Label className="text-base">Статус</Label>
                     <Select value={newStage} onValueChange={setNewStage}>
                       <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                       <SelectContent>
@@ -404,12 +404,12 @@ export default function CrmProjectsPage() {
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-[13px]">Дедлайн</Label>
+                    <Label className="text-base">Дедлайн</Label>
                     <Input type="date" value={newDeadline} onChange={e => setNewDeadline(e.target.value)} className="mt-1" />
                   </div>
                 </div>
                 <div>
-                  <Label className="text-[13px]">Ответственный</Label>
+                  <Label className="text-base">Ответственный</Label>
                   <Select value={newManager} onValueChange={setNewManager}>
                     <SelectTrigger className="mt-1"><SelectValue placeholder="Выберите сотрудника" /></SelectTrigger>
                     <SelectContent>
@@ -455,8 +455,8 @@ export default function CrmProjectsPage() {
                 {/* Row header */}
                 <div className="flex items-center gap-2 px-1 py-2 mb-2">
                   <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: col.color }} />
-                  <span className="text-[13px] font-semibold text-foreground">{col.key}</span>
-                  <span className="text-[11px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                  <span className="text-base font-semibold text-foreground">{col.key}</span>
+                  <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
                     {items.length}
                   </span>
                 </div>
@@ -487,7 +487,7 @@ export default function CrmProjectsPage() {
                         >
                           {/* Header: stage tag + select + grip */}
                           <div className="flex items-center justify-between">
-                            <span className={cn("text-[10px] px-1.5 py-0.5 rounded border font-medium", stageTag.color)}>
+                            <span className={cn("text-2xs px-1.5 py-0.5 rounded border font-medium", stageTag.color)}>
                               {stageTag.key}
                             </span>
                             <div className="flex items-center gap-1">
@@ -520,13 +520,13 @@ export default function CrmProjectsPage() {
 
                           {/* Title + URL */}
                           <div>
-                            <p className="text-[15px] font-semibold text-foreground leading-tight truncate tracking-tight">
+                            <p className="text-lg font-semibold text-foreground leading-tight truncate tracking-tight">
                               {p.company?.name || p.name}
                             </p>
                             {p.url && (
                               <div className="flex items-center gap-1 mt-0.5">
                                 <Globe className="h-2.5 w-2.5 text-muted-foreground/40 shrink-0" />
-                                <span className="text-[11px] text-muted-foreground/60 truncate">{p.url}</span>
+                                <span className="text-xs text-muted-foreground/60 truncate">{p.url}</span>
                               </div>
                             )}
                           </div>
@@ -539,19 +539,19 @@ export default function CrmProjectsPage() {
                               ) : (
                                 <TrendingDown className="h-3 w-3 text-rose-400 shrink-0" />
                               )}
-                              <span className={cn("text-[11px] font-semibold tabular-nums", trafficUp ? "text-emerald-400" : "text-rose-400")}>
+                              <span className={cn("text-xs font-semibold tabular-nums", trafficUp ? "text-emerald-400" : "text-rose-400")}>
                                 {trafficUp ? "+" : ""}{metrics.trafficDelta}%
                               </span>
                             </div>
                             <div className="w-px h-3 bg-border/50" />
                             <div className="flex flex-col items-center flex-1 min-w-0">
-                              <span className="text-[9px] uppercase tracking-wider text-muted-foreground/60 leading-none">ТОП-10</span>
-                              <span className="text-[11px] font-semibold text-foreground tabular-nums leading-tight">{metrics.top10}</span>
+                              <span className="text-2xs uppercase tracking-wider text-muted-foreground/60 leading-none">ТОП-10</span>
+                              <span className="text-xs font-semibold text-foreground tabular-nums leading-tight">{metrics.top10}</span>
                             </div>
                             <div className="w-px h-3 bg-border/50" />
                             <div className="flex flex-col items-center flex-1 min-w-0">
-                              <span className="text-[9px] uppercase tracking-wider text-muted-foreground/60 leading-none">ИКС</span>
-                              <span className="text-[11px] font-semibold text-foreground tabular-nums leading-tight">{metrics.iks}</span>
+                              <span className="text-2xs uppercase tracking-wider text-muted-foreground/60 leading-none">ИКС</span>
+                              <span className="text-xs font-semibold text-foreground tabular-nums leading-tight">{metrics.iks}</span>
                             </div>
                           </div>
 
@@ -561,8 +561,8 @@ export default function CrmProjectsPage() {
                           {/* Progress */}
                           <div>
                             <div className="flex items-center justify-between mb-1">
-                              <span className="text-[10px] text-muted-foreground/70">Прогресс задач</span>
-                              <span className="text-[10px] font-medium text-muted-foreground tabular-nums">{metrics.progress}%</span>
+                              <span className="text-2xs text-muted-foreground/70">Прогресс задач</span>
+                              <span className="text-2xs font-medium text-muted-foreground tabular-nums">{metrics.progress}%</span>
                             </div>
                             <div className="h-1 rounded-full bg-muted/50 overflow-hidden">
                               <div
@@ -580,12 +580,12 @@ export default function CrmProjectsPage() {
                             {manager ? (
                               <div className="flex items-center gap-1.5 min-w-0">
                                 <AvatarCircle name={manager} />
-                                <span className="text-[11px] text-muted-foreground/80 truncate">{manager}</span>
+                                <span className="text-xs text-muted-foreground/80 truncate">{manager}</span>
                               </div>
                             ) : <span />}
                             <div className="flex items-center gap-1 shrink-0">
                               <CalendarDays className="h-2.5 w-2.5 text-muted-foreground/40" />
-                              <span className={cn("text-[11px] tabular-nums", getDeadlineColor(p.updated_at))}>
+                              <span className={cn("text-xs tabular-nums", getDeadlineColor(p.updated_at))}>
                                 {format(parseISO(p.created_at), "dd.MM.yyyy")}
                               </span>
                             </div>
@@ -597,7 +597,7 @@ export default function CrmProjectsPage() {
                 ) : (
                   <div className="flex flex-col items-center justify-center h-32 gap-2 border-2 border-dashed border-border/50 rounded-lg bg-muted/10">
                     <Moon className="h-6 w-6 text-muted-foreground/30" />
-                    <p className="text-[12px] text-muted-foreground/50">Перетащите проект сюда</p>
+                    <p className="text-sm text-muted-foreground/50">Перетащите проект сюда</p>
                   </div>
                 )}
               </div>
@@ -624,12 +624,12 @@ export default function CrmProjectsPage() {
                 const manager = getManagerName(p.seo_specialist_id) || p.seo_specialist;
                 return (
                   <tr key={p.id} onClick={() => navigate(`/crm-projects/${p.id}`)} className="cursor-pointer">
-                    <td><span className="text-[13px] font-semibold text-foreground">{p.name}</span></td>
-                    <td className="text-[13px] text-muted-foreground">{p.company?.name || "—"}</td>
-                    <td className="text-[13px] text-accent">{p.url || "—"}</td>
+                    <td><span className="text-base font-semibold text-foreground">{p.name}</span></td>
+                    <td className="text-base text-muted-foreground">{p.company?.name || "—"}</td>
+                    <td className="text-base text-accent">{p.url || "—"}</td>
                     <td>
                       <span
-                        className="px-2 py-0.5 text-[11px] rounded-full font-medium"
+                        className="px-2 py-0.5 text-xs rounded-full font-medium"
                         style={{ background: `${col?.color || '#9E9E9E'}20`, color: col?.color || '#9E9E9E' }}
                       >
                         {p.privacy || "В работе"}
@@ -646,17 +646,17 @@ export default function CrmProjectsPage() {
                             }}
                           />
                         </div>
-                        <span className="text-[12px] font-medium text-foreground">{p.efficiency || 0}%</span>
+                        <span className="text-sm font-medium text-foreground">{p.efficiency || 0}%</span>
                       </div>
                     </td>
                     <td>
                       {manager ? (
                         <div className="flex items-center gap-2">
                           <AvatarCircle name={manager} />
-                          <span className="text-[13px] text-foreground">{manager}</span>
+                          <span className="text-base text-foreground">{manager}</span>
                         </div>
                       ) : (
-                        <span className="text-[13px] text-muted-foreground">—</span>
+                        <span className="text-base text-muted-foreground">—</span>
                       )}
                     </td>
                     <td onClick={e => e.stopPropagation()} className="text-right">

@@ -53,13 +53,13 @@ export function ArticlePicker({ open, onOpenChange, selected, onConfirm }: Props
               return (
                 <label key={a.id} className="flex items-center gap-2 p-2 rounded hover:bg-muted cursor-pointer">
                   <Checkbox checked={picked.has(a.id)} onCheckedChange={() => toggle(a.id)} />
-                  <span className="text-[12px]">{meta.icon}</span>
-                  <span className="text-[13px] flex-1">{a.title}</span>
+                  <span className="text-sm">{meta.icon}</span>
+                  <span className="text-base flex-1">{a.title}</span>
                 </label>
               );
             })}
             {filtered.length === 0 && (
-              <div className="text-center text-muted-foreground text-[12px] py-6">Ничего не найдено</div>
+              <div className="text-center text-muted-foreground text-sm py-6">Ничего не найдено</div>
             )}
           </div>
         </ScrollArea>

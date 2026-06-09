@@ -133,9 +133,9 @@ function buildChecks(domain: string): WmCheck[] {
 
 /* ─── sub-components ─── */
 function StatusBadge({ status }: { status: CheckStatus }) {
-  if (status === "ok") return <span className="inline-flex items-center gap-1 text-[11px] text-emerald-400">✅ Ошибок нет</span>;
-  if (status === "error") return <span className="inline-flex items-center gap-1 text-[11px] text-red-400">🔴 Ошибка обнаружена</span>;
-  return <span className="text-[11px] text-muted-foreground">Не проверено</span>;
+  if (status === "ok") return <span className="inline-flex items-center gap-1 text-xs text-emerald-400">✅ Ошибок нет</span>;
+  if (status === "error") return <span className="inline-flex items-center gap-1 text-xs text-red-400">🔴 Ошибка обнаружена</span>;
+  return <span className="text-xs text-muted-foreground">Не проверено</span>;
 }
 
 function CheckRowWm({
@@ -155,11 +155,11 @@ function CheckRowWm({
   return (
     <div className={cn("border-l-[3px] rounded-r-lg", borderCls)}>
       <div className="flex items-center gap-3 px-3 py-2.5 hover:bg-muted/50 cursor-pointer transition-colors" onClick={() => (check.errorUrls && check.errorUrls.length > 0) && setExpanded(!expanded)}>
-        <span className="w-[40px] text-[12px] text-muted-foreground font-mono shrink-0">{check.number}</span>
-        <span className={cn("flex-1 text-[13px] truncate", check.status === "ok" ? "text-muted-foreground" : "text-foreground")}>{check.name}</span>
+        <span className="w-[40px] text-sm text-muted-foreground font-mono shrink-0">{check.number}</span>
+        <span className={cn("flex-1 text-base truncate", check.status === "ok" ? "text-muted-foreground" : "text-foreground")}>{check.name}</span>
         <div className="w-[180px] shrink-0"><StatusBadge status={check.status} /></div>
         {check.errorCount !== undefined && check.errorCount > 0 && (
-          <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-[10px]">{check.errorCount} стр.</Badge>
+          <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-2xs">{check.errorCount} стр.</Badge>
         )}
         <div className="w-[140px] shrink-0 flex justify-end items-center gap-1" onClick={e => e.stopPropagation()}>
           {check.status === "error" && (
@@ -174,7 +174,7 @@ function CheckRowWm({
             />
           )}
           {check.actionUrl && (
-            <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1 border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10" onClick={() => window.open(check.actionUrl, "_blank")}>
+            <Button variant="outline" size="sm" className="h-7 text-xs gap-1 border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10" onClick={() => window.open(check.actionUrl, "_blank")}>
               {check.actionLabel || "Открыть"} <ExternalLink className="h-3 w-3" />
             </Button>
           )}
@@ -185,8 +185,8 @@ function CheckRowWm({
       </div>
       {expanded && check.errorUrls && (
         <div className="px-4 pb-3 pl-[60px] space-y-1">
-          {check.errorUrls.slice(0, 10).map((u, i) => <div key={i} className="text-[12px] text-muted-foreground font-mono">{u}</div>)}
-          {check.errorUrls.length > 10 && <div className="text-[11px] text-cyan-400 cursor-pointer">Показать все {check.errorUrls.length}</div>}
+          {check.errorUrls.slice(0, 10).map((u, i) => <div key={i} className="text-sm text-muted-foreground font-mono">{u}</div>)}
+          {check.errorUrls.length > 10 && <div className="text-xs text-cyan-400 cursor-pointer">Показать все {check.errorUrls.length}</div>}
         </div>
       )}
     </div>
@@ -210,16 +210,16 @@ function SectionWm({
       <CollapsibleTrigger className="w-full">
         <div className="flex items-center gap-3 px-4 py-3 bg-card rounded-lg hover:bg-muted/50 transition-colors">
           {open ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
-          <span className="text-[14px] font-semibold text-foreground">{meta.emoji} {meta.label}</span>
-          <Badge className="text-[11px]" style={{ backgroundColor: `${meta.color}20`, color: meta.color, borderColor: `${meta.color}50` }}>{checks.length} проверок</Badge>
-          {errCount > 0 && <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-[11px]">{errCount} ошибок</Badge>}
+          <span className="text-md font-semibold text-foreground">{meta.emoji} {meta.label}</span>
+          <Badge className="text-xs" style={{ backgroundColor: `${meta.color}20`, color: meta.color, borderColor: `${meta.color}50` }}>{checks.length} проверок</Badge>
+          {errCount > 0 && <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-xs">{errCount} ошибок</Badge>}
         </div>
       </CollapsibleTrigger>
       <CollapsibleContent>
-        <div className="mx-4 mt-2 mb-2 rounded-lg px-4 py-2 text-[12px] border" style={{ backgroundColor: `${meta.color}08`, borderColor: `${meta.color}20`, color: `${meta.color}cc` }}>
+        <div className="mx-4 mt-2 mb-2 rounded-lg px-4 py-2 text-sm border" style={{ backgroundColor: `${meta.color}08`, borderColor: `${meta.color}20`, color: `${meta.color}cc` }}>
           {meta.info}
         </div>
-        <div className="flex items-center gap-3 px-3 py-2 text-[11px] text-muted-foreground font-medium border-b border-border mx-1">
+        <div className="flex items-center gap-3 px-3 py-2 text-xs text-muted-foreground font-medium border-b border-border mx-1">
           <div className="w-[40px] shrink-0">№</div>
           <div className="flex-1">Проверка</div>
           <div className="w-[180px] shrink-0">Статус</div>
@@ -403,17 +403,17 @@ export function YandexWebmasterTab({ projectId }: Props) {
                 lastUpdatedAt={lastUpdate}
               />
             </div>
-            <div className="flex flex-wrap gap-x-6 gap-y-1 text-[13px] text-muted-foreground">
+            <div className="flex flex-wrap gap-x-6 gap-y-1 text-base text-muted-foreground">
               <span>Сайт: <span className="text-foreground font-medium">{domain}</span></span>
               <span>Дата анализа: <span className="text-foreground">{lastUpdate ? format(lastUpdate, "dd.MM.yyyy HH:mm") : "—"}</span></span>
               <span>Подготовил: <span className="text-foreground">{specialist?.full_name || project?.seo_specialist || "—"}</span></span>
             </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            {lastUpdate && <span className="text-[11px] text-muted-foreground">Последнее обновление: {format(lastUpdate, "dd.MM.yyyy 'в' HH:mm")}</span>}
+            {lastUpdate && <span className="text-xs text-muted-foreground">Последнее обновление: {format(lastUpdate, "dd.MM.yyyy 'в' HH:mm")}</span>}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-1.5 text-[12px] border-border text-foreground/90 hover:bg-muted/60">
+                <Button variant="outline" size="sm" className="gap-1.5 text-sm border-border text-foreground/90 hover:bg-muted/60">
                   {pdfLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileDown className="h-3.5 w-3.5" />}
                   Скачать отчёт
                 </Button>
@@ -426,7 +426,7 @@ export function YandexWebmasterTab({ projectId }: Props) {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button size="sm" className="gap-1.5 text-[12px]" onClick={handleRefresh} disabled={refreshing}>
+            <Button size="sm" className="gap-1.5 text-sm" onClick={handleRefresh} disabled={refreshing}>
               <RefreshCw className={cn("h-3.5 w-3.5", refreshing && "animate-spin")} /> {refreshing ? "Обновление..." : "Обновить данные"}
             </Button>
           </div>
@@ -452,7 +452,7 @@ export function YandexWebmasterTab({ projectId }: Props) {
                   <span>{card.emoji}</span>
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide truncate">{card.label}</p>
+                  <p className="text-2xs text-muted-foreground uppercase tracking-wide truncate">{card.label}</p>
                   <p className={`text-xl font-bold tabular-nums ${card.count > 0 ? textCls : "text-foreground"}`}>{card.count}</p>
                 </div>
               </div>
@@ -464,11 +464,11 @@ export function YandexWebmasterTab({ projectId }: Props) {
       {/* STATUS BANNER */}
       {healthMetrics.length > 0 && (
         fatalCount > 0 ? (
-          <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-[13px] text-destructive font-medium">🚨 Фатальные ошибки! Сайт может пропасть из поиска</div>
+          <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-base text-destructive font-medium">🚨 Фатальные ошибки! Сайт может пропасть из поиска</div>
         ) : criticalCount > 0 ? (
-          <div className="rounded-lg bg-[hsl(var(--chart-4))]/10 border border-[hsl(var(--chart-4))]/20 px-4 py-3 text-[13px] text-[hsl(var(--chart-4))] font-medium">⚠️ Обнаружены критичные ошибки — требуют срочного исправления</div>
+          <div className="rounded-lg bg-[hsl(var(--chart-4))]/10 border border-[hsl(var(--chart-4))]/20 px-4 py-3 text-base text-[hsl(var(--chart-4))] font-medium">⚠️ Обнаружены критичные ошибки — требуют срочного исправления</div>
         ) : (
-          <div className="rounded-lg bg-[hsl(var(--chart-3))]/10 border border-[hsl(var(--chart-3))]/20 px-4 py-3 text-[13px] text-[hsl(var(--chart-3))] font-medium">✅ Критических проблем не обнаружено</div>
+          <div className="rounded-lg bg-[hsl(var(--chart-3))]/10 border border-[hsl(var(--chart-3))]/20 px-4 py-3 text-base text-[hsl(var(--chart-3))] font-medium">✅ Критических проблем не обнаружено</div>
         )
       )}
 
@@ -476,14 +476,14 @@ export function YandexWebmasterTab({ projectId }: Props) {
       <div className="flex flex-wrap items-center gap-2">
         {([["all", "Все"], ["errors", "Только ошибки"], ["fatal", "Фатальные"], ["critical", "Критичные"]] as const).map(([val, label]) => (
           <Button key={val} variant={filter === val ? "default" : "outline"} size="sm"
-            className="text-[11px] h-7"
+            className="text-xs h-7"
             onClick={() => setFilter(val)}>
             {label}
           </Button>
         ))}
         <div className="relative ml-auto">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input placeholder="Поиск по проверке..." value={search} onChange={e => setSearch(e.target.value)} className="pl-8 bg-muted/40 border-border text-foreground/90 text-[12px] h-7 w-[240px]" />
+          <Input placeholder="Поиск по проверке..." value={search} onChange={e => setSearch(e.target.value)} className="pl-8 bg-muted/40 border-border text-foreground/90 text-sm h-7 w-[240px]" />
         </div>
       </div>
 
@@ -491,7 +491,7 @@ export function YandexWebmasterTab({ projectId }: Props) {
       {healthMetrics.length === 0 && (
         <Card className="bg-card border-border p-12 text-center">
           <RefreshCw className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-          <p className="text-muted-foreground text-[14px] mb-3">Нажмите «Обновить данные» для загрузки данных из Яндекс Вебмастер</p>
+          <p className="text-muted-foreground text-md mb-3">Нажмите «Обновить данные» для загрузки данных из Яндекс Вебмастер</p>
           <Button size="sm" className="bg-gradient-to-r from-purple-600 to-indigo-600 text-foreground border-0" onClick={handleRefresh} disabled={refreshing}>
             {refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : "🔄 Обновить данные"}
           </Button>
@@ -513,11 +513,11 @@ export function YandexWebmasterTab({ projectId }: Props) {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Indexation */}
           <Card className="bg-card border-border p-4">
-            <h4 className="text-[13px] font-semibold text-foreground mb-3">📊 Индексация</h4>
+            <h4 className="text-base font-semibold text-foreground mb-3">📊 Индексация</h4>
             <div className="space-y-2">
-              <div className="flex justify-between text-[12px]"><span className="text-muted-foreground">Страниц в индексе</span><span className="text-foreground font-bold">{Number(yIndexed).toLocaleString("ru-RU")}</span></div>
-              <div className="flex justify-between text-[12px]"><span className="text-muted-foreground">Всего страниц</span><span className="text-foreground font-bold">{Number(yTotal).toLocaleString("ru-RU")}</span></div>
-              <div className="flex justify-between text-[12px]"><span className="text-muted-foreground">Исключено</span><span className="text-red-400 font-bold">{Number(yExcluded).toLocaleString("ru-RU")}</span></div>
+              <div className="flex justify-between text-sm"><span className="text-muted-foreground">Страниц в индексе</span><span className="text-foreground font-bold">{Number(yIndexed).toLocaleString("ru-RU")}</span></div>
+              <div className="flex justify-between text-sm"><span className="text-muted-foreground">Всего страниц</span><span className="text-foreground font-bold">{Number(yTotal).toLocaleString("ru-RU")}</span></div>
+              <div className="flex justify-between text-sm"><span className="text-muted-foreground">Исключено</span><span className="text-red-400 font-bold">{Number(yExcluded).toLocaleString("ru-RU")}</span></div>
               {Number(yTotal) > 0 && (
                 <Progress value={(Number(yIndexed) / Number(yTotal)) * 100} className="h-2 bg-muted" />
               )}
@@ -526,34 +526,34 @@ export function YandexWebmasterTab({ projectId }: Props) {
 
           {/* Search queries */}
           <Card className="bg-card border-border p-4">
-            <h4 className="text-[13px] font-semibold text-foreground mb-3">🔍 Поисковые запросы</h4>
+            <h4 className="text-base font-semibold text-foreground mb-3">🔍 Поисковые запросы</h4>
             <div className="space-y-2">
-              <div className="flex justify-between text-[12px]"><span className="text-muted-foreground">Всего показов</span><span className="text-foreground font-bold">{Number(yQueries).toLocaleString("ru-RU")}</span></div>
-              <div className="flex justify-between text-[12px]"><span className="text-muted-foreground">Средний CTR</span><span className="text-cyan-400 font-bold">{Number(yAvgCtr).toFixed(2)}%</span></div>
-              <div className="flex justify-between text-[12px]"><span className="text-muted-foreground">Средняя позиция</span><span className="text-foreground font-bold">{Number(yAvgPos).toFixed(1)}</span></div>
+              <div className="flex justify-between text-sm"><span className="text-muted-foreground">Всего показов</span><span className="text-foreground font-bold">{Number(yQueries).toLocaleString("ru-RU")}</span></div>
+              <div className="flex justify-between text-sm"><span className="text-muted-foreground">Средний CTR</span><span className="text-cyan-400 font-bold">{Number(yAvgCtr).toFixed(2)}%</span></div>
+              <div className="flex justify-between text-sm"><span className="text-muted-foreground">Средняя позиция</span><span className="text-foreground font-bold">{Number(yAvgPos).toFixed(1)}</span></div>
             </div>
           </Card>
 
           {/* External links */}
           <Card className="bg-card border-border p-4">
-            <h4 className="text-[13px] font-semibold text-foreground mb-3">🔗 Внешние ссылки</h4>
+            <h4 className="text-base font-semibold text-foreground mb-3">🔗 Внешние ссылки</h4>
             <div className="space-y-2">
-              <div className="flex justify-between text-[12px]"><span className="text-muted-foreground">Внешних ссылок</span><span className="text-foreground font-bold">{Number(yExtLinks).toLocaleString("ru-RU")}</span></div>
-              <div className="flex justify-between text-[12px]"><span className="text-muted-foreground">Ссылающихся доменов</span><span className="text-foreground font-bold">{Number(yRefDomains).toLocaleString("ru-RU")}</span></div>
+              <div className="flex justify-between text-sm"><span className="text-muted-foreground">Внешних ссылок</span><span className="text-foreground font-bold">{Number(yExtLinks).toLocaleString("ru-RU")}</span></div>
+              <div className="flex justify-between text-sm"><span className="text-muted-foreground">Ссылающихся доменов</span><span className="text-foreground font-bold">{Number(yRefDomains).toLocaleString("ru-RU")}</span></div>
             </div>
           </Card>
 
           {/* Замечания + Sitemap */}
           <Card className="bg-card border-border p-4">
-            <h4 className="text-[13px] font-semibold text-foreground mb-3">⚠️ Замечания</h4>
+            <h4 className="text-base font-semibold text-foreground mb-3">⚠️ Замечания</h4>
             <div className="space-y-2">
-              <div className="flex justify-between text-[12px]"><span className="text-muted-foreground">Активных проблем</span><span className="text-red-400 font-bold">{siteErrors.filter(e => e.status === "Новая").length}</span></div>
-              <div className="flex justify-between text-[12px]"><span className="text-muted-foreground">Всего из Вебмастера</span><span className="text-foreground font-bold">{siteErrors.length}</span></div>
-              <div className="flex justify-between text-[12px]">
+              <div className="flex justify-between text-sm"><span className="text-muted-foreground">Активных проблем</span><span className="text-red-400 font-bold">{siteErrors.filter(e => e.status === "Новая").length}</span></div>
+              <div className="flex justify-between text-sm"><span className="text-muted-foreground">Всего из Вебмастера</span><span className="text-foreground font-bold">{siteErrors.length}</span></div>
+              <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Sitemap</span>
                 <span className={cn("font-bold", getMetric("sitemap_status") === "ok" ? "text-emerald-400" : "text-muted-foreground")}>{getMetric("sitemap_status") === "ok" ? "✅ Подключен" : "Не настроен"}</span>
               </div>
-              <div className="flex justify-between text-[12px]">
+              <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Последний обход</span>
                 <span className="text-foreground">{(() => { const v = getMetric("last_crawl"); try { return v && v !== "0" ? format(parseISO(v), "dd.MM.yyyy") : "—"; } catch { return "—"; } })()}</span>
               </div>
@@ -566,8 +566,8 @@ export function YandexWebmasterTab({ projectId }: Props) {
       {errorChecks.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <h3 className="text-[14px] font-semibold text-foreground">Рекомендации по исправлениям</h3>
-            <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-[11px]">{errorChecks.length}</Badge>
+            <h3 className="text-md font-semibold text-foreground">Рекомендации по исправлениям</h3>
+            <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-xs">{errorChecks.length}</Badge>
           </div>
           <div className="grid gap-3 md:grid-cols-2">
             {errorChecks.map(c => {
@@ -575,14 +575,14 @@ export function YandexWebmasterTab({ projectId }: Props) {
               return (
                 <Card key={c.number} className="bg-card border-border p-4 space-y-2">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium" style={{ backgroundColor: `${meta.color}20`, color: meta.color, borderColor: `${meta.color}40` }}>{meta.emoji} {meta.label}</span>
-                    <span className="text-[12px] font-mono text-muted-foreground">{c.number}</span>
-                    <span className="text-[13px] font-medium text-foreground">{c.name}</span>
+                    <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-2xs font-medium" style={{ backgroundColor: `${meta.color}20`, color: meta.color, borderColor: `${meta.color}40` }}>{meta.emoji} {meta.label}</span>
+                    <span className="text-sm font-mono text-muted-foreground">{c.number}</span>
+                    <span className="text-base font-medium text-foreground">{c.name}</span>
                   </div>
-                  <Textarea placeholder="Задание для специалиста / разработчика..." className="bg-muted/40 border-border text-foreground/90 text-[12px] min-h-[60px]" />
+                  <Textarea placeholder="Задание для специалиста / разработчика..." className="bg-muted/40 border-border text-foreground/90 text-sm min-h-[60px]" />
                   <div className="flex items-center gap-2">
                     <Select defaultValue="new">
-                      <SelectTrigger className="h-7 w-[130px] text-[11px] bg-muted/40 border-border text-foreground/90"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="h-7 w-[130px] text-xs bg-muted/40 border-border text-foreground/90"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="new">Новая</SelectItem>
                         <SelectItem value="inprogress">В работе</SelectItem>

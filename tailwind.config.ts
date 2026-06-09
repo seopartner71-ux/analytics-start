@@ -86,6 +86,7 @@ export default {
         mono: ["var(--font-mono)"],
       },
       fontSize: {
+        "2xs": ["var(--text-2xs)", { lineHeight: "1.35" }],
         xs: ["var(--text-xs)", { lineHeight: "1.4" }],
         sm: ["var(--text-sm)", { lineHeight: "1.45" }],
         base: ["var(--text-base)", { lineHeight: "1.5" }],

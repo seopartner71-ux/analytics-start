@@ -192,15 +192,15 @@ export default function ProfilePage() {
           <h1 className="text-xl font-bold text-foreground">{fullName || "Мой профиль"}</h1>
           <div className="flex items-center gap-2">
             {!editing ? (
-              <Button size="sm" variant="outline" className="h-8 text-[13px] gap-1.5" onClick={() => setEditing(true)}>
+              <Button size="sm" variant="outline" className="h-8 text-base gap-1.5" onClick={() => setEditing(true)}>
                 <Edit3 className="h-3.5 w-3.5" /> Редактировать
               </Button>
             ) : (
               <>
-                <Button size="sm" className="h-8 text-[13px] gap-1.5" onClick={() => saveProfile.mutate()} disabled={saveProfile.isPending}>
+                <Button size="sm" className="h-8 text-base gap-1.5" onClick={() => saveProfile.mutate()} disabled={saveProfile.isPending}>
                   {saveProfile.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />} Сохранить
                 </Button>
-                <Button size="sm" variant="ghost" className="h-8 text-[13px] gap-1.5" onClick={() => setEditing(false)}>
+                <Button size="sm" variant="ghost" className="h-8 text-base gap-1.5" onClick={() => setEditing(false)}>
                   <X className="h-3.5 w-3.5" /> Отмена
                 </Button>
               </>
@@ -218,14 +218,14 @@ export default function ProfilePage() {
                 key={tab.key}
                 value={tab.key}
                 className={cn(
-                  "rounded-none border-b-2 border-transparent px-4 py-3 text-[13px] font-medium transition-colors whitespace-nowrap",
+                  "rounded-none border-b-2 border-transparent px-4 py-3 text-base font-medium transition-colors whitespace-nowrap",
                   "data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none",
                   "text-muted-foreground hover:text-foreground"
                 )}
               >
                 {tab.label}
                 {tab.badge && (
-                  <Badge variant="secondary" className="ml-1.5 h-5 text-[10px] px-1.5 bg-primary/10 text-primary border-0">
+                  <Badge variant="secondary" className="ml-1.5 h-5 text-2xs px-1.5 bg-primary/10 text-primary border-0">
                     {tab.badge}
                   </Badge>
                 )}
@@ -256,7 +256,7 @@ export default function ProfilePage() {
                       {uploadingAvatar ? <Loader2 className="h-6 w-6 animate-spin" /> : (
                         <div className="flex flex-col items-center gap-1">
                           <Camera className="h-6 w-6" />
-                          <span className="text-[10px]">Изменить фото</span>
+                          <span className="text-2xs">Изменить фото</span>
                         </div>
                       )}
                     </button>
@@ -268,7 +268,7 @@ export default function ProfilePage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="mt-4 text-[12px] gap-1.5"
+                    className="mt-4 text-sm gap-1.5"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploadingAvatar}
                   >
@@ -280,11 +280,11 @@ export default function ProfilePage() {
                     <div className="flex items-center justify-center gap-6 text-muted-foreground">
                       <div className="flex flex-col items-center gap-1.5">
                         <Smartphone className="h-5 w-5" />
-                        <span className="text-[10px]">Для телефона</span>
+                        <span className="text-2xs">Для телефона</span>
                       </div>
                       <div className="flex flex-col items-center gap-1.5">
                         <Monitor className="h-5 w-5" />
-                        <span className="text-[10px]">Для компьютера</span>
+                        <span className="text-2xs">Для компьютера</span>
                       </div>
                     </div>
                   </div>
@@ -447,9 +447,9 @@ function TasksList({ tasks }: { tasks: Array<{ id: string; title: string; stage:
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground truncate">{t.title}</p>
                 <div className="flex items-center gap-3 mt-0.5">
-                  <Badge variant="secondary" className="text-[10px] h-4 px-1.5">{t.stage}</Badge>
+                  <Badge variant="secondary" className="text-2xs h-4 px-1.5">{t.stage}</Badge>
                   {t.deadline && (
-                    <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
                       <Clock className="h-3 w-3" />
                       {format(parseISO(t.deadline), "d MMM yyyy", { locale: ru })}
                     </span>
@@ -501,7 +501,7 @@ function TaskCalendar({ tasks }: { tasks: Array<{ id: string; title: string; dea
               {tasksOnDay.map(t => (
                 <div key={t.id} className="p-3 rounded-lg border border-border/40">
                   <p className="text-sm font-medium text-foreground">{t.title}</p>
-                  <Badge variant="secondary" className="mt-1 text-[10px] h-4 px-1.5">{t.stage}</Badge>
+                  <Badge variant="secondary" className="mt-1 text-2xs h-4 px-1.5">{t.stage}</Badge>
                 </div>
               ))}
             </div>
@@ -533,7 +533,7 @@ function FeedList({ items }: { items: Array<{ id: string; title: string; body: s
               {item.pinned && <Pin className="h-3.5 w-3.5 text-primary mt-1 shrink-0" />}
               <div className="flex-1">
                 <h3 className="text-base font-bold text-foreground">{item.title}</h3>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
+                <p className="text-xs text-muted-foreground mt-0.5">
                   {format(parseISO(item.created_at), "d MMMM yyyy 'в' HH:mm", { locale: ru })}
                 </p>
               </div>
