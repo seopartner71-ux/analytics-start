@@ -64,14 +64,15 @@
     --tracking-tighter: -0.02em;
 
     /* Type scale (Linear-like, compact) */
-    --text-xs: 11px;
-    --text-sm: 12px;
-    --text-base: 13px;
-    --text-md: 14px;
-    --text-lg: 16px;
-    --text-xl: 18px;
-    --text-2xl: 22px;
-    --text-3xl: 28px;
+    --text-2xs: 10px;  /* micro labels, badges */
+    --text-xs:  11px;  /* small captions, table column headers */
+    --text-sm:  12px;  /* secondary text, dense UI */
+    --text-base:13px;  /* body (default) */
+    --text-md:  14px;  /* emphasized body */
+    --text-lg:  16px;  /* section labels */
+    --text-xl:  18px;  /* subheading */
+    --text-2xl: 22px;  /* h2 */
+    --text-3xl: 28px;  /* h1, KPI */
 
     /* Elevation / shadow tokens */
     --shadow-xs: 0 1px 0 0 hsl(0 0% 100% / 0.04);
