@@ -445,24 +445,6 @@ export default function CrmProjectDetailPage() {
           <TabsTrigger value="analytics" className="gap-1.5 text-base">
             <BarChart3 className="h-3.5 w-3.5" /> Аналитика
           </TabsTrigger>
-          <TabsTrigger value="health" className="gap-1.5 text-base">
-            <ShieldCheck className="h-3.5 w-3.5" /> Яндекс Вебмастер
-          </TabsTrigger>
-          <TabsTrigger value="gsc" className="gap-1.5 text-base">
-            <Search className="h-3.5 w-3.5" /> Анализ GSC
-          </TabsTrigger>
-          <TabsTrigger value="audit" className="gap-1.5 text-base">
-            <ClipboardCheck className="h-3.5 w-3.5" /> Технический аудит
-          </TabsTrigger>
-          <TabsTrigger value="mobile" className="gap-1.5 text-base">
-            <Smartphone className="h-3.5 w-3.5" /> Адаптивность
-          </TabsTrigger>
-          <TabsTrigger value="pagespeed" className="gap-1.5 text-base">
-            <Zap className="h-3.5 w-3.5" /> PageSpeed
-          </TabsTrigger>
-          <TabsTrigger value="links" className="gap-1.5 text-base">
-            <Link2 className="h-3.5 w-3.5" /> Ссылочный профиль
-          </TabsTrigger>
           <TabsTrigger value="periods" className="gap-1.5 text-base">
             <CalendarDays className="h-3.5 w-3.5" /> Периоды
           </TabsTrigger>
@@ -489,10 +471,6 @@ export default function CrmProjectDetailPage() {
           <Suspense fallback={<TabFallback />}><WeeklyReportsTab projectId={id!} /></Suspense>
         </TabsContent>
 
-        <TabsContent value="links">
-          <Suspense fallback={<TabFallback />}><LinkProfileTab projectId={id!} /></Suspense>
-        </TabsContent>
-
         <TabsContent value="chat">
           <Suspense fallback={<TabFallback />}><ProjectChatTab projectId={id!} projectName={project?.name || ""} /></Suspense>
         </TabsContent>
@@ -501,25 +479,6 @@ export default function CrmProjectDetailPage() {
           <Suspense fallback={<TabFallback />}><ProjectAnalyticsTab projectId={id!} /></Suspense>
         </TabsContent>
 
-        <TabsContent value="health">
-          <Suspense fallback={<TabFallback />}><YandexWebmasterTab projectId={id!} /></Suspense>
-        </TabsContent>
-
-        <TabsContent value="gsc">
-          <Suspense fallback={<TabFallback />}><GscAnalysisTab projectId={id!} /></Suspense>
-        </TabsContent>
-
-        <TabsContent value="audit">
-          <Suspense fallback={<TabFallback />}><TechnicalAuditTab projectId={id!} /></Suspense>
-        </TabsContent>
-
-        <TabsContent value="mobile">
-          <Suspense fallback={<TabFallback />}><MobileFriendlyTab projectId={id!} /></Suspense>
-        </TabsContent>
-
-        <TabsContent value="pagespeed">
-          <Suspense fallback={<TabFallback />}><PageSpeedTab projectId={id!} /></Suspense>
-        </TabsContent>
 
         <TabsContent value="checklist">
       {/* Two-column layout */}
