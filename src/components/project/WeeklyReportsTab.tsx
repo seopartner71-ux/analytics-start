@@ -216,7 +216,7 @@ export function WeeklyReportsTab({ projectId }: { projectId: string }) {
           Создать на текущую неделю
         </Button>
         {reports.length === 0 && (
-          <p className="text-[12px] text-muted-foreground text-center py-4">Отчётов пока нет</p>
+          <p className="text-sm text-muted-foreground text-center py-4">Отчётов пока нет</p>
         )}
         {reports.map((r) => (
           <button
@@ -228,12 +228,12 @@ export function WeeklyReportsTab({ projectId }: { projectId: string }) {
             )}
           >
             <div className="flex items-center justify-between">
-              <span className="text-[12px] font-medium">Неделя {r.week_number}</span>
-              <Badge variant={r.status === "sent" ? "default" : "secondary"} className="text-[10px] h-5">
+              <span className="text-sm font-medium">Неделя {r.week_number}</span>
+              <Badge variant={r.status === "sent" ? "default" : "secondary"} className="text-2xs h-5">
                 {r.status === "sent" ? "Отправлен" : "Черновик"}
               </Badge>
             </div>
-            <div className="text-[11px] text-muted-foreground mt-0.5">{formatWeekRange(r.week_start, r.week_end)}</div>
+            <div className="text-xs text-muted-foreground mt-0.5">{formatWeekRange(r.week_start, r.week_end)}</div>
           </button>
         ))}
       </Card>
@@ -247,8 +247,8 @@ export function WeeklyReportsTab({ projectId }: { projectId: string }) {
             <Card className="p-4">
               <div className="flex items-start justify-between gap-3 flex-wrap">
                 <div>
-                  <div className="text-[16px] font-semibold">📋 План работ на неделю {active.week_number}</div>
-                  <div className="text-[12px] text-muted-foreground">{formatWeekRange(active.week_start, active.week_end)}</div>
+                  <div className="text-lg font-semibold">📋 План работ на неделю {active.week_number}</div>
+                  <div className="text-sm text-muted-foreground">{formatWeekRange(active.week_start, active.week_end)}</div>
                 </div>
                 <div className="flex items-center gap-1.5">
                   {active.status === "sent" && (
@@ -273,26 +273,26 @@ export function WeeklyReportsTab({ projectId }: { projectId: string }) {
             {/* Блок 1 — планируем */}
             <Card className="p-4 space-y-2">
               <div className="flex items-center justify-between">
-                <div className="text-[13px] font-semibold">Планируем на этой неделе</div>
-                <Button size="sm" variant="outline" className="h-7 gap-1.5 text-[11px]" onClick={addManualPlanned}>
+                <div className="text-base font-semibold">Планируем на этой неделе</div>
+                <Button size="sm" variant="outline" className="h-7 gap-1.5 text-xs" onClick={addManualPlanned}>
                   <Plus className="h-3 w-3" /> Добавить
                 </Button>
               </div>
               {active.planned_items.length === 0 && (
-                <p className="text-[12px] text-muted-foreground">Нет задач с дедлайном на эту неделю</p>
+                <p className="text-sm text-muted-foreground">Нет задач с дедлайном на эту неделю</p>
               )}
               {active.planned_items.map((it, idx) => (
                 <div key={idx} className={cn("flex items-center gap-2 p-2 rounded-md border", it.hidden && "opacity-50 bg-muted/40")}>
-                  <span className="text-[14px]">🔄</span>
+                  <span className="text-md">🔄</span>
                   <Input
                     value={it.title}
                     onChange={(e) => updatePlannedTitle(idx, e.target.value)}
                     onBlur={savePlanned}
-                    className="h-7 text-[12px] border-0 bg-transparent focus-visible:bg-background flex-1"
+                    className="h-7 text-sm border-0 bg-transparent focus-visible:bg-background flex-1"
                   />
                   <Badge
                     variant={it.source === "period" ? "secondary" : "outline"}
-                    className={cn("text-[10px] h-5", it.source === "manual" && "text-muted-foreground")}
+                    className={cn("text-2xs h-5", it.source === "manual" && "text-muted-foreground")}
                   >
                     {it.source === "manual" ? "Вручную" : it.source === "period" ? "Из периода" : "Из задач"}
                   </Badge>
@@ -308,15 +308,15 @@ export function WeeklyReportsTab({ projectId }: { projectId: string }) {
 
             {/* Блок 2 — выполнено */}
             <Card className="p-4 space-y-2">
-              <div className="text-[13px] font-semibold">Выполнено на прошлой неделе</div>
+              <div className="text-base font-semibold">Выполнено на прошлой неделе</div>
               {active.done_items.length === 0 && (
-                <p className="text-[12px] text-muted-foreground">Нет данных за прошлую неделю</p>
+                <p className="text-sm text-muted-foreground">Нет данных за прошлую неделю</p>
               )}
               {active.done_items.map((it, idx) => (
-                <div key={idx} className="flex items-center gap-2 text-[13px]">
+                <div key={idx} className="flex items-center gap-2 text-base">
                   <span>{it.status === "done" ? "✅" : it.status === "moved" ? "⚠️" : "🔄"}</span>
                   <span className="flex-1">{it.title}</span>
-                  <Badge variant="outline" className="text-[10px] h-5">
+                  <Badge variant="outline" className="text-2xs h-5">
                     {it.status === "done" ? "Выполнено" : it.status === "moved" ? "Перенесено" : "В работе"}
                   </Badge>
                 </div>
@@ -325,26 +325,26 @@ export function WeeklyReportsTab({ projectId }: { projectId: string }) {
 
             {/* Блок 3 — показатели */}
             <Card className="p-4 space-y-2">
-              <div className="text-[13px] font-semibold">Показатели</div>
+              <div className="text-base font-semibold">Показатели</div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
-                  <label className="text-[11px] text-muted-foreground">📈 Позиции</label>
+                  <label className="text-xs text-muted-foreground">📈 Позиции</label>
                   <Input
                     value={active.metrics.positions_text || ""}
                     onChange={(e) => setReports((cur) => cur.map((r) => r.id === active.id ? { ...r, metrics: { ...r.metrics, positions_text: e.target.value } } : r))}
                     onBlur={() => updateActive({ metrics: active.metrics })}
                     placeholder="+12 запросов в топ-10"
-                    className="h-8 text-[12px]"
+                    className="h-8 text-sm"
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] text-muted-foreground">📊 Трафик</label>
+                  <label className="text-xs text-muted-foreground">📊 Трафик</label>
                   <Input
                     value={active.metrics.traffic_text || ""}
                     onChange={(e) => setReports((cur) => cur.map((r) => r.id === active.id ? { ...r, metrics: { ...r.metrics, traffic_text: e.target.value } } : r))}
                     onBlur={() => updateActive({ metrics: active.metrics })}
                     placeholder="1 245 визитов"
-                    className="h-8 text-[12px]"
+                    className="h-8 text-sm"
                   />
                 </div>
               </div>
@@ -352,13 +352,13 @@ export function WeeklyReportsTab({ projectId }: { projectId: string }) {
 
             {/* Блок 4 — комментарий */}
             <Card className="p-4 space-y-2">
-              <div className="text-[13px] font-semibold">Комментарий менеджера</div>
+              <div className="text-base font-semibold">Комментарий менеджера</div>
               <Textarea
                 value={active.manager_comment}
                 onChange={(e) => setReports((cur) => cur.map((r) => r.id === active.id ? { ...r, manager_comment: e.target.value } : r))}
                 onBlur={() => updateActive({ manager_comment: active.manager_comment })}
                 placeholder="Свободный текст для клиента…"
-                className="min-h-[100px] text-[13px]"
+                className="min-h-[100px] text-base"
               />
             </Card>
           </>

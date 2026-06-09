@@ -142,7 +142,7 @@ export default function ChatPage() {
           groupedMessages.map((group) => (
             <div key={group.date}>
               <div className="flex items-center justify-center my-4">
-                <span className="text-[11px] text-muted-foreground bg-muted/50 px-3 py-1 rounded-full">
+                <span className="text-xs text-muted-foreground bg-muted/50 px-3 py-1 rounded-full">
                   {group.date}
                 </span>
               </div>
@@ -161,13 +161,13 @@ export default function ChatPage() {
                       className={cn("flex gap-2.5 mb-3", isMine && "flex-row-reverse")}
                     >
                       <div
-                        className="h-8 w-8 rounded-full flex items-center justify-center text-[11px] font-bold text-foreground shrink-0 mt-1"
+                        className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-foreground shrink-0 mt-1"
                         style={{ backgroundColor: color }}
                       >
                         {getInitials(displayName)}
                       </div>
                       <div className={cn("max-w-[65%]", isMine && "text-right")}>
-                        <p className="text-[11px] font-medium mb-0.5 px-1" style={{ color }}>
+                        <p className="text-xs font-medium mb-0.5 px-1" style={{ color }}>
                           {displayName}
                         </p>
                         <div
@@ -181,7 +181,7 @@ export default function ChatPage() {
                           {msg.body}
                         </div>
                         <p className={cn(
-                          "text-[10px] text-muted-foreground mt-0.5 px-1",
+                          "text-2xs text-muted-foreground mt-0.5 px-1",
                           isMine && "text-right"
                         )}>
                           {new Date(msg.created_at).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}

@@ -71,7 +71,7 @@ const TAGS = ["SEO", "Аудит", "Ссылки", "Контент", "Техау
 
 function AvatarCircle({ name, size = "sm" }: { name: string; size?: "sm" | "md" }) {
   const initials = name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
-  const sz = size === "md" ? "h-9 w-9 text-[12px]" : "h-6 w-6 text-[10px]";
+  const sz = size === "md" ? "h-9 w-9 text-sm" : "h-6 w-6 text-2xs";
   return (
     <div className={`${sz} rounded-full bg-primary/15 text-primary font-bold flex items-center justify-center shrink-0`}>
       {initials}
@@ -370,7 +370,7 @@ export default function CrmProjectDetailPage() {
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-lg md:text-xl font-bold text-foreground truncate">{project.company?.name || project.name}</h1>
               <Badge
-                className="text-[11px] font-medium border-0"
+                className="text-xs font-medium border-0"
                 style={{ backgroundColor: `${currentStage?.color || '#9E9E9E'}20`, color: currentStage?.color || '#9E9E9E' }}
               >
                 {project.privacy || "Новые заявки"}
@@ -379,7 +379,7 @@ export default function CrmProjectDetailPage() {
             {project.url && (
               <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
                 <Globe className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                <span className="text-[13px] text-muted-foreground truncate">{project.url}</span>
+                <span className="text-base text-muted-foreground truncate">{project.url}</span>
               </div>
             )}
           </div>
@@ -388,14 +388,14 @@ export default function CrmProjectDetailPage() {
           {managerName && (
             <div className="hidden md:flex items-center gap-2 mr-3">
               <AvatarCircle name={managerName} size="md" />
-              <span className="text-[13px] text-foreground">{managerName}</span>
+              <span className="text-base text-foreground">{managerName}</span>
             </div>
           )}
-          <Button variant="outline" size="sm" className="h-8 text-[13px] gap-1.5 shrink-0" onClick={() => setEditOpen(true)}>
+          <Button variant="outline" size="sm" className="h-8 text-base gap-1.5 shrink-0" onClick={() => setEditOpen(true)}>
             <Edit className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Редактировать</span>
           </Button>
-          <Button variant="outline" size="sm" className="h-8 text-[13px] gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/5 shrink-0">
+          <Button variant="outline" size="sm" className="h-8 text-base gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/5 shrink-0">
             <XCircle className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Закрыть проект</span>
           </Button>
@@ -439,40 +439,40 @@ export default function CrmProjectDetailPage() {
       {/* Tab switcher */}
       <Tabs defaultValue={defaultTab} className="w-full">
         <TabsList className="mb-4">
-          <TabsTrigger value="checklist" className="gap-1.5 text-[13px]">
+          <TabsTrigger value="checklist" className="gap-1.5 text-base">
             <FileText className="h-3.5 w-3.5" /> Задачи
           </TabsTrigger>
-          <TabsTrigger value="analytics" className="gap-1.5 text-[13px]">
+          <TabsTrigger value="analytics" className="gap-1.5 text-base">
             <BarChart3 className="h-3.5 w-3.5" /> Аналитика
           </TabsTrigger>
-          <TabsTrigger value="health" className="gap-1.5 text-[13px]">
+          <TabsTrigger value="health" className="gap-1.5 text-base">
             <ShieldCheck className="h-3.5 w-3.5" /> Яндекс Вебмастер
           </TabsTrigger>
-          <TabsTrigger value="gsc" className="gap-1.5 text-[13px]">
+          <TabsTrigger value="gsc" className="gap-1.5 text-base">
             <Search className="h-3.5 w-3.5" /> Анализ GSC
           </TabsTrigger>
-          <TabsTrigger value="audit" className="gap-1.5 text-[13px]">
+          <TabsTrigger value="audit" className="gap-1.5 text-base">
             <ClipboardCheck className="h-3.5 w-3.5" /> Технический аудит
           </TabsTrigger>
-          <TabsTrigger value="mobile" className="gap-1.5 text-[13px]">
+          <TabsTrigger value="mobile" className="gap-1.5 text-base">
             <Smartphone className="h-3.5 w-3.5" /> Адаптивность
           </TabsTrigger>
-          <TabsTrigger value="pagespeed" className="gap-1.5 text-[13px]">
+          <TabsTrigger value="pagespeed" className="gap-1.5 text-base">
             <Zap className="h-3.5 w-3.5" /> PageSpeed
           </TabsTrigger>
-          <TabsTrigger value="links" className="gap-1.5 text-[13px]">
+          <TabsTrigger value="links" className="gap-1.5 text-base">
             <Link2 className="h-3.5 w-3.5" /> Ссылочный профиль
           </TabsTrigger>
-          <TabsTrigger value="periods" className="gap-1.5 text-[13px]">
+          <TabsTrigger value="periods" className="gap-1.5 text-base">
             <CalendarDays className="h-3.5 w-3.5" /> Периоды
           </TabsTrigger>
-          <TabsTrigger value="weekly" className="gap-1.5 text-[13px]">
+          <TabsTrigger value="weekly" className="gap-1.5 text-base">
             <FileBarChart className="h-3.5 w-3.5" /> Недельные отчёты
           </TabsTrigger>
-          <TabsTrigger value="team" className="gap-1.5 text-[13px]">
+          <TabsTrigger value="team" className="gap-1.5 text-base">
             <Users className="h-3.5 w-3.5" /> Команда
           </TabsTrigger>
-          <TabsTrigger value="chat" className="gap-1.5 text-[13px]">
+          <TabsTrigger value="chat" className="gap-1.5 text-base">
             <MessagesSquare className="h-3.5 w-3.5" /> Чат
           </TabsTrigger>
         </TabsList>
@@ -531,11 +531,11 @@ export default function CrmProjectDetailPage() {
             <div className="flex items-center justify-between p-4 border-b border-border">
               <div className="flex items-center gap-2">
                 <h3 className="text-sm font-semibold text-foreground">Чеклист задач</h3>
-                <span className="text-[12px] text-muted-foreground">{completedCount} из {totalCount} выполнено</span>
+                <span className="text-sm text-muted-foreground">{completedCount} из {totalCount} выполнено</span>
               </div>
               <Dialog open={addTaskOpen} onOpenChange={setAddTaskOpen}>
                 <DialogTrigger asChild>
-                  <Button size="sm" className="h-7 text-[12px] gap-1">
+                  <Button size="sm" className="h-7 text-sm gap-1">
                     <Plus className="h-3.5 w-3.5" /> Добавить задачу
                   </Button>
                 </DialogTrigger>
@@ -543,12 +543,12 @@ export default function CrmProjectDetailPage() {
                   <DialogHeader><DialogTitle>Новая задача</DialogTitle></DialogHeader>
                   <div className="space-y-3 mt-2">
                     <div>
-                      <Label className="text-[12px]">Название</Label>
+                      <Label className="text-sm">Название</Label>
                       <Input value={newTask.title} onChange={e => setNewTask(f => ({ ...f, title: e.target.value }))} placeholder="Название задачи" className="mt-1" />
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <Label className="text-[12px]">Приоритет</Label>
+                        <Label className="text-sm">Приоритет</Label>
                         <Select value={newTask.priority} onValueChange={v => setNewTask(f => ({ ...f, priority: v as "low" | "medium" | "high" }))}>
                           <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                           <SelectContent>
@@ -559,12 +559,12 @@ export default function CrmProjectDetailPage() {
                         </Select>
                       </div>
                       <div>
-                        <Label className="text-[12px]">Срок</Label>
+                        <Label className="text-sm">Срок</Label>
                         <Input type="date" value={newTask.deadline} onChange={e => setNewTask(f => ({ ...f, deadline: e.target.value }))} className="mt-1" />
                       </div>
                     </div>
                     <div>
-                      <Label className="text-[12px]">Исполнитель</Label>
+                      <Label className="text-sm">Исполнитель</Label>
                       <Select value={newTask.assignee_id} onValueChange={v => setNewTask(f => ({ ...f, assignee_id: v }))}>
                         <SelectTrigger className="mt-1"><SelectValue placeholder="Выбрать..." /></SelectTrigger>
                         <SelectContent>
@@ -590,7 +590,7 @@ export default function CrmProjectDetailPage() {
               {tasks.length === 0 ? (
                 <div className="py-12 text-center">
                   <FileText className="h-10 w-10 mx-auto mb-2 text-muted-foreground/20" />
-                  <p className="text-[13px] text-muted-foreground">Нет данных</p>
+                  <p className="text-base text-muted-foreground">Нет данных</p>
                 </div>
               ) : tasks.map((task, i) => {
                 const done = task.stage === "Завершена";
@@ -609,7 +609,7 @@ export default function CrmProjectDetailPage() {
                     onClick={() => setSelectedTask(task)}
                   >
                     {isChild && (
-                      <span className="text-muted-foreground/50 -ml-5 select-none text-[12px]">└</span>
+                      <span className="text-muted-foreground/50 -ml-5 select-none text-sm">└</span>
                     )}
                     <Checkbox
                       checked={done}
@@ -619,7 +619,7 @@ export default function CrmProjectDetailPage() {
                       onClick={(e) => e.stopPropagation()}
                     />
                     <span className={cn(
-                      "flex-1 text-[13px] text-foreground",
+                      "flex-1 text-base text-foreground",
                       done && "line-through text-muted-foreground",
                       !isChild && "font-semibold",
                     )}>
@@ -627,12 +627,12 @@ export default function CrmProjectDetailPage() {
                     </span>
                     {task.assignee && <AvatarCircle name={task.assignee.full_name} />}
                     {task.deadline && (
-                      <span className={cn("text-[11px]", overdue ? "text-destructive font-medium" : "text-muted-foreground")}>
+                      <span className={cn("text-xs", overdue ? "text-destructive font-medium" : "text-muted-foreground")}>
                         {format(parseISO(task.deadline), "dd.MM")}
                       </span>
                     )}
                     <span
-                      className="text-[10px] px-1.5 py-0.5 rounded font-medium"
+                      className="text-2xs px-1.5 py-0.5 rounded font-medium"
                       style={{ backgroundColor: `${pri.color}15`, color: pri.color }}
                     >
                       {pri.label}
@@ -663,25 +663,25 @@ export default function CrmProjectDetailPage() {
             <div className="flex items-center gap-2 p-4 border-b border-border">
               <MessageSquare className="h-4 w-4 text-muted-foreground" />
               <h3 className="text-sm font-semibold text-foreground">Комментарии</h3>
-              <Badge variant="secondary" className="text-[10px] h-5">{projectComments.length}</Badge>
+              <Badge variant="secondary" className="text-2xs h-5">{projectComments.length}</Badge>
             </div>
             <div className="max-h-[400px] overflow-y-auto divide-y divide-border/30">
               {projectComments.length === 0 ? (
                 <div className="py-12 text-center">
                   <MessageSquare className="h-10 w-10 mx-auto mb-2 text-muted-foreground/20" />
-                  <p className="text-[13px] text-muted-foreground">Нет данных</p>
+                  <p className="text-base text-muted-foreground">Нет данных</p>
                 </div>
               ) : projectComments.map(c => (
                 <div key={c.id} className="flex gap-3 p-4">
                   <AvatarCircle name={c.author?.full_name || "?"} size="md" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline gap-2 mb-1">
-                      <span className="text-[13px] font-semibold text-foreground">{c.author?.full_name || "Аноним"}</span>
-                      <span className="text-[11px] text-muted-foreground">
+                      <span className="text-base font-semibold text-foreground">{c.author?.full_name || "Аноним"}</span>
+                      <span className="text-xs text-muted-foreground">
                         {format(parseISO(c.created_at), "dd.MM.yyyy HH:mm")}
                       </span>
                     </div>
-                    <p className="text-[13px] text-foreground leading-relaxed whitespace-pre-wrap break-words">{linkify(c.body)}</p>
+                    <p className="text-base text-foreground leading-relaxed whitespace-pre-wrap break-words">{linkify(c.body)}</p>
                   </div>
                 </div>
               ))}
@@ -691,7 +691,7 @@ export default function CrmProjectDetailPage() {
                 placeholder="Написать комментарий..."
                 value={commentText}
                 onChange={e => setCommentText(e.target.value)}
-                className="flex-1 h-9 text-[13px]"
+                className="flex-1 h-9 text-base"
                 onKeyDown={e => e.key === "Enter" && commentText.trim() && sendComment.mutate()}
               />
               <Button size="sm" className="h-9 px-4" disabled={!commentText.trim() || sendComment.isPending} onClick={() => sendComment.mutate()}>
@@ -711,12 +711,12 @@ export default function CrmProjectDetailPage() {
             <div className="flex items-start gap-3">
               <CalendarDays className="h-4 w-4 text-muted-foreground mt-0.5" />
               <div className="flex-1">
-                <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Дедлайн</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Дедлайн</p>
                 <Popover>
                   <PopoverTrigger asChild>
                     <button
                       className={cn(
-                        "text-[13px] font-medium text-left hover:underline focus:outline-none",
+                        "text-base font-medium text-left hover:underline focus:outline-none",
                         (project as any).deadline && isPast(parseISO((project as any).deadline)) ? "text-destructive" : "text-foreground"
                       )}
                       disabled={!canEdit}
@@ -729,10 +729,10 @@ export default function CrmProjectDetailPage() {
                       type="date"
                       defaultValue={(project as any).deadline ? format(parseISO((project as any).deadline), "yyyy-MM-dd") : ""}
                       onChange={(e) => updateDeadline.mutate(e.target.value || null)}
-                      className="h-9 text-[13px]"
+                      className="h-9 text-base"
                     />
                     {(project as any).deadline && (
-                      <Button size="sm" variant="ghost" className="w-full h-7 text-[12px]" onClick={() => updateDeadline.mutate(null)}>
+                      <Button size="sm" variant="ghost" className="w-full h-7 text-sm" onClick={() => updateDeadline.mutate(null)}>
                         Очистить
                       </Button>
                     )}
@@ -746,14 +746,14 @@ export default function CrmProjectDetailPage() {
             <div className="flex items-start gap-3">
               <User className="h-4 w-4 text-muted-foreground mt-0.5" />
               <div>
-                <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Ответственный</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Ответственный</p>
                 {managerName ? (
                   <div className="flex items-center gap-2 mt-1">
                     <AvatarCircle name={managerName} />
-                    <span className="text-[13px] font-medium text-foreground">{managerName}</span>
+                    <span className="text-base font-medium text-foreground">{managerName}</span>
                   </div>
                 ) : (
-                  <p className="text-[13px] text-muted-foreground">Не назначен</p>
+                  <p className="text-base text-muted-foreground">Не назначен</p>
                 )}
               </div>
             </div>
@@ -762,9 +762,9 @@ export default function CrmProjectDetailPage() {
             <div className="flex items-start gap-3">
               <Tag className="h-4 w-4 text-muted-foreground mt-0.5" />
               <div className="flex-1">
-                <p className="text-[11px] text-muted-foreground uppercase tracking-wide mb-1">Статус проекта</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Статус проекта</p>
                 <Select value={project.privacy || "В работе"} onValueChange={v => updateStage.mutate(v)}>
-                  <SelectTrigger className="h-8 text-[13px]"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-8 text-base"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {STAGES.map(s => (
                       <SelectItem key={s.key} value={s.key}>
@@ -783,10 +783,10 @@ export default function CrmProjectDetailPage() {
             <div className="flex items-start gap-3">
               <Tag className="h-4 w-4 text-muted-foreground mt-0.5" />
               <div>
-                <p className="text-[11px] text-muted-foreground uppercase tracking-wide mb-1.5">Теги</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1.5">Теги</p>
                 <div className="flex flex-wrap gap-1.5">
                   {TAGS.map(tag => (
-                    <Badge key={tag} variant="secondary" className="text-[11px] font-medium">{tag}</Badge>
+                    <Badge key={tag} variant="secondary" className="text-xs font-medium">{tag}</Badge>
                   ))}
                 </div>
               </div>
@@ -796,8 +796,8 @@ export default function CrmProjectDetailPage() {
             <div className="flex items-start gap-3">
               <Clock className="h-4 w-4 text-muted-foreground mt-0.5" />
               <div>
-                <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Дата создания</p>
-                <p className="text-[13px] text-foreground">{format(parseISO(project.created_at), "dd.MM.yyyy")}</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Дата создания</p>
+                <p className="text-base text-foreground">{format(parseISO(project.created_at), "dd.MM.yyyy")}</p>
               </div>
             </div>
           </Card>
@@ -828,8 +828,8 @@ export default function CrmProjectDetailPage() {
               ) : (
                 <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground/40" />
               )}
-              <p className="text-[13px] text-muted-foreground">Перетащите файлы или нажмите для загрузки</p>
-              <p className="text-[11px] text-muted-foreground/60 mt-1">PDF, DOCX, XLSX, PNG</p>
+              <p className="text-base text-muted-foreground">Перетащите файлы или нажмите для загрузки</p>
+              <p className="text-xs text-muted-foreground/60 mt-1">PDF, DOCX, XLSX, PNG</p>
             </div>
 
             {/* Uploaded files */}
@@ -841,8 +841,8 @@ export default function CrmProjectDetailPage() {
                     <div key={file.id} className="flex items-center gap-3 p-2.5 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors">
                       <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-[12px] font-medium text-foreground truncate">{file.name}</p>
-                        <p className="text-[10px] text-muted-foreground">{sizeStr} · {format(parseISO(file.created_at), "dd.MM.yyyy")}</p>
+                        <p className="text-sm font-medium text-foreground truncate">{file.name}</p>
+                        <p className="text-2xs text-muted-foreground">{sizeStr} · {format(parseISO(file.created_at), "dd.MM.yyyy")}</p>
                       </div>
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" asChild>
                         <a href={file.url} target="_blank" rel="noopener noreferrer"><Download className="h-3.5 w-3.5" /></a>
@@ -857,7 +857,7 @@ export default function CrmProjectDetailPage() {
             )}
 
             {projectFiles.length === 0 && (
-              <p className="text-[12px] text-muted-foreground text-center mt-3">Нет загруженных файлов</p>
+              <p className="text-sm text-muted-foreground text-center mt-3">Нет загруженных файлов</p>
             )}
           </Card>
         </div>

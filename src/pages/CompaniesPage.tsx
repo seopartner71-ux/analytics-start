@@ -130,7 +130,7 @@ function CompanyDetailSheet({ company, open, onClose }: { company: Company | nul
               <div className="flex-1 min-w-0">
                 <SheetTitle className="text-xl font-bold tracking-tight">{company.name}</SheetTitle>
                 <div className="flex items-center gap-2 mt-1.5">
-                  <Badge variant="outline" className="text-[10px] font-medium">{company.type}</Badge>
+                  <Badge variant="outline" className="text-2xs font-medium">{company.type}</Badge>
                   {company.industry && (
                     <>
                       <span className="text-xs text-muted-foreground">·</span>
@@ -161,7 +161,7 @@ function CompanyDetailSheet({ company, open, onClose }: { company: Company | nul
           <TabsContent value="general" className="space-y-5 mt-0">
             <Card className="border-border/60 shadow-sm">
               <CardContent className="p-5">
-                <h3 className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-4">О компании</h3>
+                <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-4">О компании</h3>
                 {company.description && <p className="text-sm text-foreground/80 leading-relaxed mb-5">{company.description}</p>}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {company.website && <InfoRow icon={<Globe className="h-4 w-4" />} label="Сайт" value={company.website} />}
@@ -175,7 +175,7 @@ function CompanyDetailSheet({ company, open, onClose }: { company: Company | nul
             </Card>
             <Card className="border-border/60 shadow-sm">
               <CardContent className="p-5">
-                <h3 className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-4">Дополнительно</h3>
+                <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-4">Дополнительно</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {company.inn && <InfoRow icon={<FileText className="h-4 w-4" />} label="ИНН" value={company.inn} />}
                   {company.responsible && <InfoRow icon={<Users className="h-4 w-4" />} label="Ответственный" value={company.responsible.full_name} />}
@@ -204,7 +204,7 @@ function CompanyDetailSheet({ company, open, onClose }: { company: Company | nul
                         <span className="text-sm font-medium text-foreground">{d.title}</span>
                         <div className="flex items-center gap-2">
                           <span className="text-sm text-muted-foreground">{(d.amount || 0).toLocaleString("ru-RU")} ₽</span>
-                          <Badge variant="secondary" className="text-[10px]">{d.status}</Badge>
+                          <Badge variant="secondary" className="text-2xs">{d.status}</Badge>
                         </div>
                       </div>
                     ))}
@@ -246,7 +246,7 @@ function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string;
     <div className="flex items-start gap-3 group">
       <span className="text-muted-foreground/60 mt-0.5 group-hover:text-primary transition-colors">{icon}</span>
       <div>
-        <p className="text-[11px] text-muted-foreground uppercase tracking-wider">{label}</p>
+        <p className="text-xs text-muted-foreground uppercase tracking-wider">{label}</p>
         <p className="text-sm font-medium text-foreground">{value}</p>
       </div>
     </div>
@@ -370,7 +370,7 @@ export default function CompaniesPage() {
                           </div>
                           <div>
                             <p className="text-sm font-semibold text-foreground">{c.name}</p>
-                            <p className="text-[11px] text-muted-foreground">{c.type}</p>
+                            <p className="text-xs text-muted-foreground">{c.type}</p>
                           </div>
                         </div>
                       </td>
@@ -380,9 +380,9 @@ export default function CompaniesPage() {
                             {dealCount} {dealCount === 1 ? "сделка" : dealCount >= 2 && dealCount <= 4 ? "сделки" : "сделок"}
                           </p>
                           {totalSum > 0 && (
-                            <p className="text-[11px] text-muted-foreground">{totalSum.toLocaleString("ru-RU")} ₽</p>
+                            <p className="text-xs text-muted-foreground">{totalSum.toLocaleString("ru-RU")} ₽</p>
                           )}
-                          <Badge variant="secondary" className="text-[10px] font-medium">{latestStatus}</Badge>
+                          <Badge variant="secondary" className="text-2xs font-medium">{latestStatus}</Badge>
                         </div>
                       </td>
                       <td>

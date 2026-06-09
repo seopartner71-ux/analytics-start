@@ -110,7 +110,7 @@ export function PageHeader({
                       {p.logo_url ? (
                         <img src={p.logo_url} alt="" className="h-4 w-4 rounded object-cover" />
                       ) : (
-                        <div className="h-4 w-4 rounded bg-primary/20 text-[8px] flex items-center justify-center font-bold text-primary">
+                        <div className="h-4 w-4 rounded bg-primary/20 text-2xs flex items-center justify-center font-bold text-primary">
                           {p.name.slice(0, 2).toUpperCase()}
                         </div>
                       )}
@@ -131,7 +131,7 @@ export function PageHeader({
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Поиск..."
-              className="pl-9 h-8 text-[13px] bg-muted/50 border-border"
+              className="pl-9 h-8 text-base bg-muted/50 border-border"
             />
           </div>
         </div>
@@ -147,7 +147,7 @@ export function PageHeader({
             <LogOut className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Выход</span>
           </Button>
-          <div className="hidden sm:flex h-8 w-8 rounded-full bg-primary items-center justify-center text-[11px] font-semibold text-primary-foreground ml-1 cursor-default">
+          <div className="hidden sm:flex h-8 w-8 rounded-full bg-primary items-center justify-center text-xs font-semibold text-primary-foreground ml-1 cursor-default">
             {initials}
           </div>
         </div>
@@ -160,7 +160,7 @@ export function PageHeader({
             {(["7d", "30d", "thisMonth", "lastMonth"] as const).map((p) => {
               const labels: Record<string, string> = { "7d": "7 дней", "30d": "30 дней", "thisMonth": "Этот месяц", "lastMonth": "Прошлый месяц" };
               return (
-                <Button key={p} variant="ghost" size="sm" className="h-7 text-[11px] px-2 text-muted-foreground hover:text-foreground" onClick={() => applyPreset(p)}>
+                <Button key={p} variant="ghost" size="sm" className="h-7 text-xs px-2 text-muted-foreground hover:text-foreground" onClick={() => applyPreset(p)}>
                   {labels[p]}
                 </Button>
               );
@@ -169,7 +169,7 @@ export function PageHeader({
           <div className="w-px h-5 bg-border mx-1" />
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1.5 px-2.5">
+              <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5 px-2.5">
                 <CalendarDays className="h-3 w-3" />
                 {formatDate(dateRange.from)} — {formatDate(dateRange.to)}
               </Button>
@@ -181,13 +181,13 @@ export function PageHeader({
           {onShowComparisonChange && (
             <div className="flex items-center gap-1.5">
               <Switch checked={showComparison} onCheckedChange={onShowComparisonChange} className="scale-75" />
-              <Label className="text-[11px] text-muted-foreground cursor-pointer" onClick={() => onShowComparisonChange?.(!showComparison)}>Сравнение</Label>
+              <Label className="text-xs text-muted-foreground cursor-pointer" onClick={() => onShowComparisonChange?.(!showComparison)}>Сравнение</Label>
             </div>
           )}
           {showComparison && compRange && onCompRangeChange && (
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1.5 px-2.5 border-dashed">
+                <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5 px-2.5 border-dashed">
                   <CalendarDays className="h-3 w-3" />
                   {formatDate(compRange.from)} — {formatDate(compRange.to)}
                 </Button>
@@ -199,11 +199,11 @@ export function PageHeader({
           )}
           <ChannelFilter />
           <div className="w-px h-5 bg-border mx-1" />
-          <Button size="sm" className="h-7 text-[11px] px-3" onClick={onApply}>Применить</Button>
+          <Button size="sm" className="h-7 text-xs px-3" onClick={onApply}>Применить</Button>
           {onRefresh && (
             <>
               <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" onClick={onRefresh}><RefreshCw className="h-3.5 w-3.5" /></Button>
-              {lastUpdated && <span className="text-[10px] text-muted-foreground whitespace-nowrap">Обновлено: {lastUpdated}</span>}
+              {lastUpdated && <span className="text-2xs text-muted-foreground whitespace-nowrap">Обновлено: {lastUpdated}</span>}
             </>
           )}
         </div>

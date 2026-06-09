@@ -199,14 +199,14 @@ export function WorkLogTab({ projectId, tasks, isAdmin }: WorkLogTabProps) {
 
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <Badge variant="outline" className={`text-[10px] gap-1 px-2 py-0.5 ${meta.colorClass}`}>
+                            <Badge variant="outline" className={`text-2xs gap-1 px-2 py-0.5 ${meta.colorClass}`}>
                               <Icon className="h-3 w-3" />
                               {t(`project.worklog.cat.${cat}`)}
                             </Badge>
                             <span className="text-xs text-muted-foreground">{task.task_date}</span>
                             <Badge
                               variant="outline"
-                              className={`text-[10px] px-2 py-0.5 ml-auto shrink-0 ${
+                              className={`text-2xs px-2 py-0.5 ml-auto shrink-0 ${
                                 task.status === "done"
                                   ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400"
                                   : "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-400"

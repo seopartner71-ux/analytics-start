@@ -392,7 +392,7 @@ export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) 
               if (m.is_system) {
                 return (
                   <div key={m.id} className="flex justify-center">
-                    <Badge variant="secondary" className="text-[11px] font-normal">
+                    <Badge variant="secondary" className="text-xs font-normal">
                       {m.body} · {formatTime(m.created_at)}
                     </Badge>
                   </div>
@@ -409,7 +409,7 @@ export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) 
                     fallbackClassName="bg-muted"
                   />
                   <div className={`max-w-[75%] ${isMine ? "items-end" : "items-start"} flex flex-col gap-1`}>
-                    <div className="flex items-baseline gap-2 text-[11px] text-muted-foreground">
+                    <div className="flex items-baseline gap-2 text-xs text-muted-foreground">
                       <span className="font-medium text-foreground">{m.user_name}</span>
                       <span>{formatTime(m.created_at)}</span>
                     </div>
@@ -463,7 +463,7 @@ export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) 
                                 }`}
                               >
                                 <span className="mr-0.5">{emoji}</span>
-                                <span className="text-[10px]">{list.length}</span>
+                                <span className="text-2xs">{list.length}</span>
                               </button>
                             );
                           })}

@@ -231,37 +231,37 @@ const DirectorDashboard = () => {
     <div className="p-6 space-y-6">
       <div>
         <h1 className="text-xl font-bold text-foreground">Дашборд директора</h1>
-        <p className="text-[13px] text-muted-foreground mt-0.5">KPI команды, рентабельность, топ-3 и алерты в одном экране</p>
+        <p className="text-base text-muted-foreground mt-0.5">KPI команды, рентабельность, топ-3 и алерты в одном экране</p>
       </div>
 
       {/* KPI */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <Card className="p-4 border-l-[3px] border-l-destructive">
-          <p className="text-[11px] text-muted-foreground uppercase tracking-wide font-medium">Просрочено</p>
+          <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Просрочено</p>
           <p className="text-3xl font-bold text-destructive mt-1">{totalOverdue}</p>
-          <p className="text-[12px] text-muted-foreground mt-1">{overdueByEmployee.length} сотр.</p>
+          <p className="text-sm text-muted-foreground mt-1">{overdueByEmployee.length} сотр.</p>
         </Card>
         <Card className="p-4">
-          <p className="text-[11px] text-muted-foreground uppercase tracking-wide font-medium">Активных задач</p>
+          <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Активных задач</p>
           <p className="text-3xl font-bold text-foreground mt-1">{totalActiveTasks}</p>
-          <p className="text-[12px] text-muted-foreground mt-1">в работе</p>
+          <p className="text-sm text-muted-foreground mt-1">в работе</p>
         </Card>
         <Card className="p-4">
-          <p className="text-[11px] text-muted-foreground uppercase tracking-wide font-medium">Активных проектов</p>
+          <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Активных проектов</p>
           <p className="text-3xl font-bold text-foreground mt-1">{activeProjects.length}</p>
-          <p className="text-[12px] text-muted-foreground mt-1">из {projects.length}</p>
+          <p className="text-sm text-muted-foreground mt-1">из {projects.length}</p>
         </Card>
         <Card className={cn("p-4 border-l-[3px]", totalProfit >= 0 ? "border-l-success" : "border-l-destructive")}>
-          <p className="text-[11px] text-muted-foreground uppercase tracking-wide font-medium">Прибыль за месяц</p>
+          <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Прибыль за месяц</p>
           <p className={cn("text-2xl font-bold mt-1", totalProfit >= 0 ? "text-success" : "text-destructive")}>
             {fmtMoney(totalProfit)}
           </p>
-          <p className="text-[12px] text-muted-foreground mt-1">{fmtMoney(totalBudget)} / {fmtMoney(totalCost)}</p>
+          <p className="text-sm text-muted-foreground mt-1">{fmtMoney(totalBudget)} / {fmtMoney(totalCost)}</p>
         </Card>
         <Card className={cn("p-4 border-l-[3px]", lossProjects > 0 ? "border-l-destructive" : "border-l-success")}>
-          <p className="text-[11px] text-muted-foreground uppercase tracking-wide font-medium">Проблемных проектов</p>
+          <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Проблемных проектов</p>
           <p className={cn("text-3xl font-bold mt-1", lossProjects > 0 ? "text-destructive" : "text-success")}>{lossProjects}</p>
-          <p className="text-[12px] text-muted-foreground mt-1">убыток / перерасход</p>
+          <p className="text-sm text-muted-foreground mt-1">убыток / перерасход</p>
         </Card>
       </div>
 
@@ -276,24 +276,24 @@ const DirectorDashboard = () => {
             
           </div>
           {topEmployees.length === 0 ? (
-            <p className="text-[13px] text-muted-foreground text-center py-8">Нет завершённых задач за месяц</p>
+            <p className="text-base text-muted-foreground text-center py-8">Нет завершённых задач за месяц</p>
           ) : (
             <div className="space-y-3">
               {topEmployees.map((emp, idx) => (
                 <div key={emp.name} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border">
                   <div className={cn(
-                    "h-8 w-8 rounded-full flex items-center justify-center text-[13px] font-bold shrink-0",
+                    "h-8 w-8 rounded-full flex items-center justify-center text-base font-bold shrink-0",
                     idx === 0 ? "bg-warning/20 text-warning" : idx === 1 ? "bg-muted text-muted-foreground" : "bg-accent/40 text-foreground"
                   )}>
                     {idx + 1}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-[13px] font-medium text-foreground truncate">{emp.name}</p>
-                    <p className="text-[11px] text-muted-foreground">
+                    <p className="text-base font-medium text-foreground truncate">{emp.name}</p>
+                    <p className="text-xs text-muted-foreground">
                       {emp.closed} закрыто · в срок {emp.onTimePct}% · ср. {emp.avgDays}д
                     </p>
                   </div>
-                  <Badge variant={emp.onTimePct >= 80 ? "default" : "secondary"} className="text-[10px] shrink-0">
+                  <Badge variant={emp.onTimePct >= 80 ? "default" : "secondary"} className="text-2xs shrink-0">
                     {emp.score}
                   </Badge>
                 </div>
@@ -312,7 +312,7 @@ const DirectorDashboard = () => {
             
           </div>
           {projectProfitability.length === 0 ? (
-            <p className="text-[13px] text-muted-foreground text-center py-8">Нет проектов с финансовыми данными</p>
+            <p className="text-base text-muted-foreground text-center py-8">Нет проектов с финансовыми данными</p>
           ) : (
             <div className="space-y-2 max-h-[340px] overflow-y-auto">
               {projectProfitability.map((p) => (
@@ -328,9 +328,9 @@ const DirectorDashboard = () => {
                   )}
                 >
                   <div className="flex items-center justify-between mb-1.5">
-                    <p className="text-[13px] font-medium text-foreground truncate flex-1">{p.name}</p>
+                    <p className="text-base font-medium text-foreground truncate flex-1">{p.name}</p>
                     <span className={cn(
-                      "text-[12px] font-semibold tabular-nums shrink-0 ml-2",
+                      "text-sm font-semibold tabular-nums shrink-0 ml-2",
                       p.profit >= 0 ? "text-success" : "text-destructive"
                     )}>
                       {fmtMoney(p.profit)}
@@ -340,13 +340,13 @@ const DirectorDashboard = () => {
                     {p.planned > 0 && (
                       <>
                         <Progress value={Math.min(100, p.usagePct)} className="h-1.5 flex-1" />
-                        <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">
+                        <span className="text-2xs text-muted-foreground tabular-nums shrink-0">
                           {p.actualHours.toFixed(1)}/{p.planned}ч ({p.usagePct}%)
                         </span>
                       </>
                     )}
                     {p.planned === 0 && p.budget > 0 && (
-                      <span className="text-[10px] text-muted-foreground">Бюджет: {fmtMoney(p.budget)}</span>
+                      <span className="text-2xs text-muted-foreground">Бюджет: {fmtMoney(p.budget)}</span>
                     )}
                   </div>
                 </div>
@@ -364,10 +364,10 @@ const DirectorDashboard = () => {
               <Bell className="h-4 w-4 text-warning" />
               Последние алерты
             </h3>
-            <Badge variant="secondary" className="text-[10px]">{notifications.length}</Badge>
+            <Badge variant="secondary" className="text-2xs">{notifications.length}</Badge>
           </div>
           {notifications.length === 0 ? (
-            <p className="text-[13px] text-muted-foreground text-center py-8">Нет уведомлений</p>
+            <p className="text-base text-muted-foreground text-center py-8">Нет уведомлений</p>
           ) : (
             <div className="space-y-2 max-h-[360px] overflow-y-auto">
               {notifications.map((n) => {
@@ -386,9 +386,9 @@ const DirectorDashboard = () => {
                       !n.is_read && "ring-1 ring-primary/20"
                     )}
                   >
-                    <p className="text-[13px] font-medium text-foreground line-clamp-1">{n.title}</p>
-                    {n.body && <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">{n.body}</p>}
-                    <p className="text-[10px] text-muted-foreground mt-1">
+                    <p className="text-base font-medium text-foreground line-clamp-1">{n.title}</p>
+                    {n.body && <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{n.body}</p>}
+                    <p className="text-2xs text-muted-foreground mt-1">
                       {proj?.name && <span>{proj.name} · </span>}
                       {format(parseISO(n.created_at), "d MMM, HH:mm", { locale: ruLocale })}
                     </p>
@@ -409,20 +409,20 @@ const DirectorDashboard = () => {
             
           </div>
           {teamLoad.length === 0 ? (
-            <p className="text-[13px] text-muted-foreground text-center py-8">Нет активных задач</p>
+            <p className="text-base text-muted-foreground text-center py-8">Нет активных задач</p>
           ) : (
             <div className="space-y-3 max-h-[360px] overflow-y-auto">
               {teamLoad.map((emp) => (
                 <div key={emp.name}>
                   <div className="flex items-center justify-between mb-1.5">
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-[13px] text-foreground truncate">{emp.name}</span>
-                      <span className="text-[10px] text-muted-foreground">{emp.role}</span>
+                      <span className="text-base text-foreground truncate">{emp.name}</span>
+                      <span className="text-2xs text-muted-foreground">{emp.role}</span>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
-                      {emp.overdue > 0 && <Badge variant="destructive" className="text-[10px] h-4 px-1.5">{emp.overdue}</Badge>}
-                      {emp.soon > 0 && <Badge variant="outline" className="text-[10px] h-4 px-1.5 border-warning text-warning">{emp.soon}</Badge>}
-                      <span className="text-[12px] font-semibold text-foreground tabular-nums">{emp.active}</span>
+                      {emp.overdue > 0 && <Badge variant="destructive" className="text-2xs h-4 px-1.5">{emp.overdue}</Badge>}
+                      {emp.soon > 0 && <Badge variant="outline" className="text-2xs h-4 px-1.5 border-warning text-warning">{emp.soon}</Badge>}
+                      <span className="text-sm font-semibold text-foreground tabular-nums">{emp.active}</span>
                     </div>
                   </div>
                   <Progress value={emp.pct} className="h-1.5" />
@@ -441,10 +441,10 @@ const DirectorDashboard = () => {
               <FolderKanban className="h-4 w-4 text-primary" />
               Активные проекты
             </h3>
-            <Badge variant="secondary" className="text-[10px]">{activeProjects.length}</Badge>
+            <Badge variant="secondary" className="text-2xs">{activeProjects.length}</Badge>
           </div>
           {activeProjects.length === 0 ? (
-            <p className="text-[13px] text-muted-foreground text-center py-8">Нет активных проектов</p>
+            <p className="text-base text-muted-foreground text-center py-8">Нет активных проектов</p>
           ) : (
             <div className="space-y-2 max-h-[360px] overflow-y-auto">
               {activeProjects.slice(0, 10).map((p) => {
@@ -459,15 +459,15 @@ const DirectorDashboard = () => {
                     {p.logo_url ? (
                       <img src={p.logo_url} alt="" className="h-9 w-9 rounded object-cover shrink-0" />
                     ) : (
-                      <div className="h-9 w-9 rounded bg-primary/20 flex items-center justify-center text-[11px] font-bold text-primary shrink-0">
+                      <div className="h-9 w-9 rounded bg-primary/20 flex items-center justify-center text-xs font-bold text-primary shrink-0">
                         {p.name.slice(0, 2).toUpperCase()}
                       </div>
                     )}
                     <div className="min-w-0 flex-1">
-                      <p className="text-[13px] font-medium text-foreground truncate">{p.name}</p>
-                      <p className="text-[11px] text-muted-foreground truncate">{am?.full_name || seo?.full_name || "Без ответственного"}</p>
+                      <p className="text-base font-medium text-foreground truncate">{p.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{am?.full_name || seo?.full_name || "Без ответственного"}</p>
                     </div>
-                    {p.efficiency != null && <Badge variant="outline" className="text-[10px] shrink-0">{p.efficiency}%</Badge>}
+                    {p.efficiency != null && <Badge variant="outline" className="text-2xs shrink-0">{p.efficiency}%</Badge>}
                     <ArrowRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                   </div>
                 );
@@ -483,10 +483,10 @@ const DirectorDashboard = () => {
               <Calendar className="h-4 w-4 text-primary" />
               Ближайшие дедлайны
             </h3>
-            <Badge variant="secondary" className="text-[10px]">{upcomingDeadlines.length}</Badge>
+            <Badge variant="secondary" className="text-2xs">{upcomingDeadlines.length}</Badge>
           </div>
           {upcomingDeadlines.length === 0 ? (
-            <p className="text-[13px] text-muted-foreground text-center py-8">Нет дедлайнов</p>
+            <p className="text-base text-muted-foreground text-center py-8">Нет дедлайнов</p>
           ) : (
             <div className="space-y-2 max-h-[360px] overflow-y-auto">
               {upcomingDeadlines.map((item) => {
@@ -506,14 +506,14 @@ const DirectorDashboard = () => {
                     <Clock className={cn("h-4 w-4 shrink-0", overdue ? "text-destructive" : soon ? "text-warning" : "text-muted-foreground")} />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
-                        <Badge variant="outline" className="text-[9px] h-4 px-1 shrink-0">{item.type === "project" ? "Проект" : "Задача"}</Badge>
-                        <p className="text-[13px] font-medium text-foreground truncate">{item.title}</p>
+                        <Badge variant="outline" className="text-2xs h-4 px-1 shrink-0">{item.type === "project" ? "Проект" : "Задача"}</Badge>
+                        <p className="text-base font-medium text-foreground truncate">{item.title}</p>
                       </div>
-                      <p className="text-[11px] text-muted-foreground truncate mt-0.5">
+                      <p className="text-xs text-muted-foreground truncate mt-0.5">
                         {item.assignee} · {format(parseISO(item.deadline), "d MMM yyyy", { locale: ruLocale })}
                       </p>
                     </div>
-                    <span className={cn("text-[11px] font-semibold shrink-0 tabular-nums", overdue ? "text-destructive" : soon ? "text-warning" : "text-muted-foreground")}>
+                    <span className={cn("text-xs font-semibold shrink-0 tabular-nums", overdue ? "text-destructive" : soon ? "text-warning" : "text-muted-foreground")}>
                       {overdue ? `${Math.abs(item.diffDays)}д` : `+${item.diffDays}д`}
                     </span>
                   </div>

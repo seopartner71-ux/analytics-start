@@ -197,7 +197,7 @@ export function DepartmentsEditor() {
                   <div className="font-medium text-sm">{d.name}</div>
                   {d.description && <div className="text-xs text-muted-foreground truncate">{d.description}</div>}
                 </div>
-                <Badge variant="secondary" className="text-[10px]">{memberCount(d.id)} чел.</Badge>
+                <Badge variant="secondary" className="text-2xs">{memberCount(d.id)} чел.</Badge>
                 <Button size="sm" variant="ghost" onClick={() => { setEditing(d); setOpen(true); }}>
                   <Edit2 className="h-3.5 w-3.5" />
                 </Button>

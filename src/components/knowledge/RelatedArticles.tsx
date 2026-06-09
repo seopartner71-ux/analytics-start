@@ -57,24 +57,24 @@ export function RelatedArticles({ taskId, scope, canEdit }: Props) {
   return (
     <div className="rounded-md border bg-muted/30 p-3 space-y-2">
       <div className="flex items-center justify-between">
-        <div className="text-[12px] font-medium flex items-center gap-1.5">
+        <div className="text-sm font-medium flex items-center gap-1.5">
           📚 Связанные инструкции
         </div>
         {editable && (
-          <Button size="sm" variant="ghost" className="h-6 text-[11px] gap-1" onClick={() => setPickerOpen(true)}>
+          <Button size="sm" variant="ghost" className="h-6 text-xs gap-1" onClick={() => setPickerOpen(true)}>
             <Plus className="h-3 w-3" /> Прикрепить
           </Button>
         )}
       </div>
       {items.length === 0 ? (
-        <div className="text-[11px] text-muted-foreground">Нет прикреплённых статей</div>
+        <div className="text-xs text-muted-foreground">Нет прикреплённых статей</div>
       ) : (
         <div className="space-y-1">
           {items.map((a) => (
             <button
               key={a.id}
               onClick={() => setOpenId(a.id)}
-              className="flex items-center justify-between w-full text-left text-[12px] px-2 py-1.5 rounded hover:bg-background transition"
+              className="flex items-center justify-between w-full text-left text-sm px-2 py-1.5 rounded hover:bg-background transition"
             >
               <span className="flex items-center gap-2 min-w-0">
                 <FileText className="h-3.5 w-3.5 shrink-0 text-primary" />

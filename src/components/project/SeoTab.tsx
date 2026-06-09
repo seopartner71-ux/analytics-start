@@ -297,7 +297,7 @@ export function SeoTab({ projectId, projectName }: SeoTabProps) {
             {(["all", "brand", "informational", "commercial"] as const).map(type => (
               <ToggleGroupItem key={type} value={type} variant="outline" size="sm" className="text-xs gap-1.5 h-7">
                 {QUERY_TYPE_LABELS[lang][type]}
-                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">
+                <Badge variant="secondary" className="text-2xs px-1.5 py-0 h-4">
                   {type === "all" ? keywords.length : typeCounts[type]}
                 </Badge>
               </ToggleGroupItem>
@@ -472,7 +472,7 @@ export function SeoTab({ projectId, projectName }: SeoTabProps) {
                       </TableCell>
                       <TableCell className="text-sm font-medium text-foreground max-w-[300px] truncate">{q.query}</TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 h-4",
+                        <Badge variant="outline" className={cn("text-2xs px-1.5 py-0 h-4",
                           q.queryType === "brand" && "border-primary/40 text-primary",
                           q.queryType === "commercial" && "border-emerald-500/40 text-emerald-600",
                           q.queryType === "informational" && "border-amber-500/40 text-amber-600",

@@ -666,25 +666,25 @@ function PositionsDashboard({
           <CardContent className="p-3">
             <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-11 gap-2">
               <div className="flex flex-col items-center justify-center px-2 py-2 rounded-md border border-border/50">
-                <span className="text-[10px] text-emerald-500 font-medium">▲ (0%)</span>
+                <span className="text-2xs text-emerald-500 font-medium">▲ (0%)</span>
                 <span className="text-xl font-bold text-foreground mt-0.5">0</span>
               </div>
               <div className="flex flex-col items-center justify-center px-2 py-2 rounded-md border border-border/50">
-                <span className="text-[10px] text-muted-foreground font-medium">⊖ (100%)</span>
+                <span className="text-2xs text-muted-foreground font-medium">⊖ (100%)</span>
                 <span className="text-xl font-bold text-foreground mt-0.5">{checkedCount}</span>
               </div>
               <div className="flex flex-col items-center justify-center px-2 py-2 rounded-md border border-border/50">
-                <span className="text-[10px] text-destructive font-medium">▼ (0%)</span>
+                <span className="text-2xs text-destructive font-medium">▼ (0%)</span>
                 <span className="text-xl font-bold text-foreground mt-0.5">0</span>
               </div>
 
               <div className="flex flex-col items-center justify-center px-2 py-2 rounded-md border border-border bg-muted/30">
-                <span className="text-[10px] text-muted-foreground font-medium">{isRu ? "Средняя" : "Average"}</span>
+                <span className="text-2xs text-muted-foreground font-medium">{isRu ? "Средняя" : "Average"}</span>
                 <span className="text-xl font-bold text-foreground mt-0.5">{avgPos > 0 ? avgPos.toFixed(0) : "—"}</span>
               </div>
 
               <div className="flex flex-col items-center justify-center px-2 py-2 rounded-md border border-border bg-muted/30">
-                <span className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
+                <span className="text-2xs text-muted-foreground font-medium flex items-center gap-1">
                   {isRu ? "Видимость (%)" : "Visibility (%)"}
                   <AlertCircle className="h-3 w-3 text-amber-500" />
                 </span>
@@ -692,31 +692,31 @@ function PositionsDashboard({
               </div>
 
               <div className="flex flex-col items-center justify-center px-2 py-2 rounded-md border border-border/50">
-                <span className="text-[10px] text-muted-foreground font-medium">1-3 <span className="text-emerald-500">({pct(b1_3)}%)</span></span>
+                <span className="text-2xs text-muted-foreground font-medium">1-3 <span className="text-emerald-500">({pct(b1_3)}%)</span></span>
                 <span className="text-xl font-bold text-foreground mt-0.5">{b1_3}</span>
               </div>
               <div className="flex flex-col items-center justify-center px-2 py-2 rounded-md border border-border/50">
-                <span className="text-[10px] text-muted-foreground font-medium">1-10 <span className="text-emerald-500">({pct(b1_10)}%)</span></span>
+                <span className="text-2xs text-muted-foreground font-medium">1-10 <span className="text-emerald-500">({pct(b1_10)}%)</span></span>
                 <span className="text-xl font-bold text-foreground mt-0.5">{b1_10}</span>
               </div>
               <div className="flex flex-col items-center justify-center px-2 py-2 rounded-md border border-border/50">
-                <span className="text-[10px] text-muted-foreground font-medium">11-30 <span className="text-primary">({pct(b11_30)}%)</span></span>
+                <span className="text-2xs text-muted-foreground font-medium">11-30 <span className="text-primary">({pct(b11_30)}%)</span></span>
                 <span className="text-xl font-bold text-foreground mt-0.5">{b11_30}</span>
               </div>
               <div className="flex flex-col items-center justify-center px-2 py-2 rounded-md border border-border/50">
-                <span className="text-[10px] text-muted-foreground font-medium">31-50 <span className="text-amber-500">({pct(b31_50)}%)</span></span>
+                <span className="text-2xs text-muted-foreground font-medium">31-50 <span className="text-amber-500">({pct(b31_50)}%)</span></span>
                 <span className="text-xl font-bold text-foreground mt-0.5">{b31_50}</span>
               </div>
               <div className="flex flex-col items-center justify-center px-2 py-2 rounded-md border border-border/50">
-                <span className="text-[10px] text-muted-foreground font-medium">51-100 <span className="text-amber-500">({pct(b51_100)}%)</span></span>
+                <span className="text-2xs text-muted-foreground font-medium">51-100 <span className="text-amber-500">({pct(b51_100)}%)</span></span>
                 <span className="text-xl font-bold text-foreground mt-0.5">{b51_100}</span>
               </div>
               <div className="flex flex-col items-center justify-center px-2 py-2 rounded-md border border-border/50">
-                <span className="text-[10px] text-muted-foreground font-medium">100+ <span className="text-destructive">({pct(b100plus + noDataCount)}%)</span></span>
+                <span className="text-2xs text-muted-foreground font-medium">100+ <span className="text-destructive">({pct(b100plus + noDataCount)}%)</span></span>
                 <span className="text-xl font-bold text-foreground mt-0.5">{b100plus + noDataCount}</span>
               </div>
             </div>
-            <div className="mt-2 px-1 text-[10px] text-muted-foreground">
+            <div className="mt-2 px-1 text-2xs text-muted-foreground">
               {isRu ? "Данные за" : "Data for"}: <span className="text-foreground font-medium">{latestDate || "—"}</span>
               {" • "}{searcherName} • {regionName}
               {" • "}{isRu ? "всего запросов" : "total keywords"}: <span className="text-foreground font-medium">{filtered.length}</span>
@@ -773,7 +773,7 @@ function PositionsDashboard({
                               {kw.keyword}
                             </span>
                             {kw.isBrand && (
-                              <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-amber-400/50 text-amber-400 shrink-0">
+                              <Badge variant="outline" className="text-2xs px-1.5 py-0 border-amber-400/50 text-amber-400 shrink-0">
                                 Brand
                               </Badge>
                             )}
@@ -826,7 +826,7 @@ function PositionsDashboard({
                                 </span>
                                 {delta !== null && delta !== 0 && (
                                   <span className={cn(
-                                    "text-[9px] flex items-center gap-0.5",
+                                    "text-2xs flex items-center gap-0.5",
                                     delta > 0 ? "text-emerald-500" : "text-destructive"
                                   )}>
                                     {delta > 0 ? <ArrowUp className="h-2.5 w-2.5" /> : <ArrowDown className="h-2.5 w-2.5" />}
@@ -980,33 +980,33 @@ function PositionsDashboard({
               <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-9 gap-2">
                 {/* Средняя позиция */}
                 <div className="flex flex-col items-center justify-center px-2 py-2 rounded-md border border-border bg-muted/30">
-                  <span className="text-[10px] text-muted-foreground font-medium">{isRu ? "Средняя позиция" : "Avg position"}</span>
+                  <span className="text-2xs text-muted-foreground font-medium">{isRu ? "Средняя позиция" : "Avg position"}</span>
                   <span className="text-xl font-bold text-foreground mt-0.5">{avg > 0 ? avg.toFixed(1) : "—"}</span>
                 </div>
 
                 {/* Видимость */}
                 <div className="flex flex-col items-center justify-center px-2 py-2 rounded-md border border-border bg-muted/30">
-                  <span className="text-[10px] text-muted-foreground font-medium">{isRu ? "Видимость (%)" : "Visibility (%)"}</span>
+                  <span className="text-2xs text-muted-foreground font-medium">{isRu ? "Видимость (%)" : "Visibility (%)"}</span>
                   <span className="text-xl font-bold text-foreground mt-0.5">{visibility}</span>
                 </div>
 
                 {/* Проверено */}
                 <div className="flex flex-col items-center justify-center px-2 py-2 rounded-md border border-border bg-muted/30">
-                  <span className="text-[10px] text-muted-foreground font-medium">{isRu ? "Проверено" : "Checked"}</span>
+                  <span className="text-2xs text-muted-foreground font-medium">{isRu ? "Проверено" : "Checked"}</span>
                   <span className="text-xl font-bold text-foreground mt-0.5">{checked}<span className="text-xs text-muted-foreground"> / {totalKw}</span></span>
                 </div>
 
                 {/* Диапазоны позиций */}
                 {ranges.map((r) => (
                   <div key={r.label} className="flex flex-col items-center justify-center px-2 py-2 rounded-md border border-border bg-muted/30">
-                    <span className="text-[10px] text-muted-foreground font-medium">{r.label}</span>
+                    <span className="text-2xs text-muted-foreground font-medium">{r.label}</span>
                     <span className={cn("text-xl font-bold mt-0.5", r.color)}>{r.value}</span>
-                    <span className="text-[10px] text-muted-foreground">{pct(r.value)}%</span>
+                    <span className="text-2xs text-muted-foreground">{pct(r.value)}%</span>
                   </div>
                 ))}
               </div>
 
-              <div className="mt-2 px-1 text-[10px] text-muted-foreground">
+              <div className="mt-2 px-1 text-2xs text-muted-foreground">
                 {isRu ? "Данные за" : "Data for"}: <span className="text-foreground font-medium">{latestDate || "—"}</span>
                 {" • "}{isRu ? "всего запросов" : "total keywords"}: <span className="text-foreground font-medium">{totalKw}</span>
               </div>

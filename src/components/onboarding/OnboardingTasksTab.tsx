@@ -159,8 +159,8 @@ export function OnboardingTasksTab({ projectId }: { projectId: string }) {
       {/* Общий прогресс */}
       <Card className="p-4">
         <div className="flex items-center justify-between mb-2">
-          <div className="text-[13px] font-medium">Общий прогресс проекта</div>
-          <div className="text-[12px] text-muted-foreground tabular-nums">
+          <div className="text-base font-medium">Общий прогресс проекта</div>
+          <div className="text-sm text-muted-foreground tabular-nums">
             Всего {stats.all.total} • Выполнено {stats.all.done} • {stats.all.percent}%
           </div>
         </div>
@@ -168,7 +168,7 @@ export function OnboardingTasksTab({ projectId }: { projectId: string }) {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
           {[1, 2, 3].map((p) => (
             <div key={p} className="space-y-1.5">
-              <div className="flex items-center justify-between text-[12px]">
+              <div className="flex items-center justify-between text-sm">
                 <span className="font-medium">{PERIOD_LABEL[p]}</span>
                 <span className="text-muted-foreground tabular-nums">{stats[p as 1|2|3].done}/{stats[p as 1|2|3].total} • {stats[p as 1|2|3].percent}%</span>
               </div>
@@ -182,8 +182,8 @@ export function OnboardingTasksTab({ projectId }: { projectId: string }) {
       <Tabs value={period} onValueChange={setPeriod}>
         <TabsList>
           {[1, 2, 3].map((p) => (
-            <TabsTrigger key={p} value={String(p)} className="text-[13px]">
-              Период {p} <span className="ml-1.5 text-[11px] text-muted-foreground tabular-nums">{stats[p as 1|2|3].done}/{stats[p as 1|2|3].total}</span>
+            <TabsTrigger key={p} value={String(p)} className="text-base">
+              Период {p} <span className="ml-1.5 text-xs text-muted-foreground tabular-nums">{stats[p as 1|2|3].done}/{stats[p as 1|2|3].total}</span>
             </TabsTrigger>
           ))}
         </TabsList>
@@ -204,11 +204,11 @@ export function OnboardingTasksTab({ projectId }: { projectId: string }) {
                     />
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className={cn("text-[13px] font-medium", task.checked && "line-through text-muted-foreground")}>{task.title}</span>
-                        <Badge variant="outline" className="text-[10px] h-5">Неделя {task.week}</Badge>
-                        <Badge variant="secondary" className={cn("text-[10px] h-5 border-0", stOpt.className)}>{stOpt.label}</Badge>
+                        <span className={cn("text-base font-medium", task.checked && "line-through text-muted-foreground")}>{task.title}</span>
+                        <Badge variant="outline" className="text-2xs h-5">Неделя {task.week}</Badge>
+                        <Badge variant="secondary" className={cn("text-2xs h-5 border-0", stOpt.className)}>{stOpt.label}</Badge>
                       </div>
-                      <div className="flex flex-wrap items-center gap-3 mt-2 text-[11px] text-muted-foreground">
+                      <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-muted-foreground">
                         {task.due_date && (
                           <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{format(parseISO(task.due_date), "dd.MM.yyyy")}</span>
                         )}
@@ -226,9 +226,9 @@ export function OnboardingTasksTab({ projectId }: { projectId: string }) {
                             value={draftComments[task.id] ?? task.comment ?? ""}
                             onChange={(e) => setDraftComments((d) => ({ ...d, [task.id]: e.target.value }))}
                             placeholder="Комментарий к задаче…"
-                            className="text-[12px] min-h-[60px]"
+                            className="text-sm min-h-[60px]"
                           />
-                          <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => saveComment(task)}>Сохранить</Button>
+                          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => saveComment(task)}>Сохранить</Button>
                         </div>
                       )}
 
@@ -238,16 +238,16 @@ export function OnboardingTasksTab({ projectId }: { projectId: string }) {
                     </div>
                     <div className="flex flex-col gap-1.5 shrink-0 w-40">
                       <Select value={task.status} onValueChange={(v) => changeStatus(task, v)}>
-                        <SelectTrigger className="h-7 text-[11px]"><SelectValue /></SelectTrigger>
+                        <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          {STATUS_OPTIONS.map((s) => <SelectItem key={s.value} value={s.value} className="text-[12px]">{s.label}</SelectItem>)}
+                          {STATUS_OPTIONS.map((s) => <SelectItem key={s.value} value={s.value} className="text-sm">{s.label}</SelectItem>)}
                         </SelectContent>
                       </Select>
                       <Select value={task.assignee_id || "none"} onValueChange={(v) => changeAssignee(task, v)}>
-                        <SelectTrigger className="h-7 text-[11px]"><SelectValue placeholder="Исполнитель" /></SelectTrigger>
+                        <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="Исполнитель" /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="none" className="text-[12px]">Не назначен</SelectItem>
-                          {team.map((m) => <SelectItem key={m.id} value={m.id} className="text-[12px]">{m.full_name}</SelectItem>)}
+                          <SelectItem value="none" className="text-sm">Не назначен</SelectItem>
+                          {team.map((m) => <SelectItem key={m.id} value={m.id} className="text-sm">{m.full_name}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     </div>

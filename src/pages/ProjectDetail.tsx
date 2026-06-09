@@ -522,7 +522,7 @@ function ProjectDetailInner() {
                   {t("project.shareLinkExpiry")}
                 </Label>
                 <Input type="date" value={editShareExpiry} onChange={(e) => setEditShareExpiry(e.target.value)} className="max-w-[200px] h-8 text-xs" min={new Date().toISOString().slice(0, 10)} />
-                <p className="text-[11px] text-muted-foreground">{t("project.shareLinkExpiryHint")}</p>
+                <p className="text-xs text-muted-foreground">{t("project.shareLinkExpiryHint")}</p>
               </div>
             </div>
             {/* Integrations inside settings */}

@@ -157,7 +157,7 @@ export function TaskAttachmentsBlock({ taskId }: { taskId: string }) {
                 <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="text-sm text-foreground truncate">{f.file_name}</div>
-                  <div className="text-[11px] text-muted-foreground">{formatSize(f.file_size)}</div>
+                  <div className="text-xs text-muted-foreground">{formatSize(f.file_size)}</div>
                 </div>
                 <Button
                   size="icon"

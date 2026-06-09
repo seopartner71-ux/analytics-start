@@ -177,7 +177,7 @@ export function AiAssistantFab() {
             </div>
             <div className="flex-1 min-w-0">
               <h3 className="text-sm font-semibold">AI-ассистент SEO</h3>
-              <p className="text-[11px] text-muted-foreground">Помощник для джунов</p>
+              <p className="text-xs text-muted-foreground">Помощник для джунов</p>
             </div>
             <Button size="icon" variant="ghost" className="h-8 w-8" onClick={clearHistory} title="Очистить">
               <Trash2 className="h-4 w-4" />

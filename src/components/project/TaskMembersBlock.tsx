@@ -159,7 +159,7 @@ export function TaskMembersBlock({ taskId, taskOwnerId, creatorTeamMemberId, can
           className="h-7 w-7 rounded-full ring-1 ring-border/60 object-cover"
         />
         <span className="text-sm flex-1 truncate text-foreground">{name}</span>
-        <Badge variant="outline" className={cn("text-[10px] h-5", ROLE_META[r.role].cls)}>
+        <Badge variant="outline" className={cn("text-2xs h-5", ROLE_META[r.role].cls)}>
           {ROLE_META[r.role].label}
         </Badge>
         {canManage && (
@@ -196,7 +196,7 @@ export function TaskMembersBlock({ taskId, taskOwnerId, creatorTeamMemberId, can
               </PopoverTrigger>
               <PopoverContent className="w-72 p-3 space-y-2" align="end">
                 <div className="space-y-1.5">
-                  <span className="text-[11px] uppercase tracking-wide text-muted-foreground">Роль</span>
+                  <span className="text-xs uppercase tracking-wide text-muted-foreground">Роль</span>
                   <Select value={pickerRole} onValueChange={(v) => setPickerRole(v as Role)}>
                     <SelectTrigger className="h-8 text-sm">
                       <SelectValue />
@@ -206,7 +206,7 @@ export function TaskMembersBlock({ taskId, taskOwnerId, creatorTeamMemberId, can
                       <SelectItem value="auditor">Наблюдатель</SelectItem>
                     </SelectContent>
                   </Select>
-                  <p className="text-[11px] text-muted-foreground leading-snug">
+                  <p className="text-xs text-muted-foreground leading-snug">
                     {ROLE_META[pickerRole].hint}
                   </p>
                 </div>
@@ -251,7 +251,7 @@ export function TaskMembersBlock({ taskId, taskOwnerId, creatorTeamMemberId, can
           <div className="space-y-3">
             {accomplices.length > 0 && (
               <div className="space-y-0.5">
-                <div className="text-[10px] uppercase tracking-wide text-muted-foreground px-2">
+                <div className="text-2xs uppercase tracking-wide text-muted-foreground px-2">
                   Соисполнители · {accomplices.length}
                 </div>
                 {accomplices.map(renderRow)}
@@ -259,7 +259,7 @@ export function TaskMembersBlock({ taskId, taskOwnerId, creatorTeamMemberId, can
             )}
             {auditors.length > 0 && (
               <div className="space-y-0.5">
-                <div className="text-[10px] uppercase tracking-wide text-muted-foreground px-2">
+                <div className="text-2xs uppercase tracking-wide text-muted-foreground px-2">
                   Наблюдатели · {auditors.length}
                 </div>
                 {auditors.map(renderRow)}

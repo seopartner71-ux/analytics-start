@@ -316,7 +316,7 @@ const Index = () => {
           <div>
             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-accent/10 border border-accent/20 mb-3">
               <Sparkles className="h-3 w-3 text-accent" />
-              <span className="text-[10px] font-semibold text-accent uppercase tracking-wider">Сводка отдела</span>
+              <span className="text-2xs font-semibold text-accent uppercase tracking-wider">Сводка отдела</span>
             </div>
             <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
               Добро пожаловать{profile?.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""}
@@ -344,13 +344,13 @@ const Index = () => {
         <Card className="p-4 bg-card rounded-lg shadow-sm border border-border">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-[12px] text-muted-foreground font-medium uppercase tracking-wide">Проекты в работе</p>
+              <p className="text-sm text-muted-foreground font-medium uppercase tracking-wide">Проекты в работе</p>
               <p className="text-3xl font-bold text-foreground mt-1">{activeProjects}</p>
-              <p className="text-[12px] text-muted-foreground mt-1">активных проектов</p>
+              <p className="text-sm text-muted-foreground mt-1">активных проектов</p>
               {completedProjects > 0 && (
                 <div className="flex items-center gap-1 mt-1">
                   <CheckCircle2 className="h-3 w-3 text-success" />
-                  <span className="text-[11px] text-success font-medium">{completedProjects} завершено</span>
+                  <span className="text-xs text-success font-medium">{completedProjects} завершено</span>
                 </div>
               )}
             </div>
@@ -364,15 +364,15 @@ const Index = () => {
         <Card className="p-4 bg-card rounded-lg shadow-sm border border-border">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-[12px] text-muted-foreground font-medium uppercase tracking-wide">Органический трафик</p>
+              <p className="text-sm text-muted-foreground font-medium uppercase tracking-wide">Органический трафик</p>
               <p className="text-3xl font-bold text-foreground mt-1">
                 {totalTraffic > 0 ? totalTraffic.toLocaleString("ru-RU") : "—"}
               </p>
-              <p className="text-[12px] text-muted-foreground mt-1">визитов за месяц</p>
+              <p className="text-sm text-muted-foreground mt-1">визитов за месяц</p>
               {totalTraffic > 0 && (
                 <div className="flex items-center gap-1 mt-1">
                   <ArrowUp className="h-3 w-3 text-success" />
-                  <span className="text-[11px] font-medium text-success">данные из Метрики</span>
+                  <span className="text-xs font-medium text-success">данные из Метрики</span>
                 </div>
               )}
             </div>
@@ -386,9 +386,9 @@ const Index = () => {
         <Card className="p-4 bg-card rounded-lg shadow-sm border border-border">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-[12px] text-muted-foreground font-medium uppercase tracking-wide">Выполнение задач</p>
+              <p className="text-sm text-muted-foreground font-medium uppercase tracking-wide">Выполнение задач</p>
               <p className="text-3xl font-bold text-foreground mt-1">{taskCompletionPct}%</p>
-              <p className="text-[12px] text-muted-foreground mt-1">{completedTasks} из {totalTasks} задач</p>
+              <p className="text-sm text-muted-foreground mt-1">{completedTasks} из {totalTasks} задач</p>
               <Progress value={taskCompletionPct} className="h-1.5 mt-2" />
             </div>
             <div className="h-10 w-10 rounded-lg bg-accent/10 flex items-center justify-center">
@@ -401,9 +401,9 @@ const Index = () => {
         <Card className="p-4 bg-card rounded-lg shadow-sm border border-border border-l-[3px] border-l-destructive">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-[12px] text-muted-foreground font-medium uppercase tracking-wide">Просроченные задачи</p>
+              <p className="text-sm text-muted-foreground font-medium uppercase tracking-wide">Просроченные задачи</p>
               <p className="text-3xl font-bold text-destructive mt-1">{overdueTasks.length}</p>
-              <p className="text-[12px] text-muted-foreground mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 {overdueProjects.length} {overdueProjects.length === 1 ? "проект" : "проектов"}
               </p>
             </div>
@@ -415,15 +415,15 @@ const Index = () => {
 
         {/* Manager KPI */}
         <Card className="p-4 bg-card rounded-lg shadow-sm border border-border">
-          <p className="text-[12px] text-muted-foreground font-medium uppercase tracking-wide mb-3">KPI менеджеров</p>
+          <p className="text-sm text-muted-foreground font-medium uppercase tracking-wide mb-3">KPI менеджеров</p>
           {managerKpi.length > 0 ? (
             <div className="space-y-2.5">
               {managerKpi.map(m => (
                 <div key={m.name}>
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-[12px] text-foreground truncate max-w-[100px]">{m.name.split(" ")[0]}</span>
+                    <span className="text-sm text-foreground truncate max-w-[100px]">{m.name.split(" ")[0]}</span>
                     <span className={cn(
-                      "text-[11px] font-medium",
+                      "text-xs font-medium",
                       m.pct >= 80 ? "text-success" : m.pct >= 50 ? "text-warning" : "text-destructive"
                     )}>{m.pct}%</span>
                   </div>
@@ -432,7 +432,7 @@ const Index = () => {
               ))}
             </div>
           ) : (
-            <p className="text-[12px] text-muted-foreground text-center py-4">Нет данных</p>
+            <p className="text-sm text-muted-foreground text-center py-4">Нет данных</p>
           )}
         </Card>
       </div>
@@ -462,11 +462,11 @@ const Index = () => {
           <div className="flex items-center gap-6 mt-3">
             <div className="flex items-center gap-2">
               <div className="h-2 w-5 rounded" style={{ backgroundColor: "#2FC6F6" }} />
-              <span className="text-[11px] text-muted-foreground">Новых проектов</span>
+              <span className="text-xs text-muted-foreground">Новых проектов</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="h-2 w-5 rounded" style={{ backgroundColor: "#4CAF50" }} />
-              <span className="text-[11px] text-muted-foreground">Задач выполнено</span>
+              <span className="text-xs text-muted-foreground">Задач выполнено</span>
             </div>
           </div>
         </Card>
@@ -494,7 +494,7 @@ const Index = () => {
               </ResponsiveContainer>
             </div>
           ) : (
-            <div className="flex items-center justify-center h-[280px] text-muted-foreground text-[13px]">Нет проектов</div>
+            <div className="flex items-center justify-center h-[280px] text-muted-foreground text-base">Нет проектов</div>
           )}
         </Card>
       </div>
@@ -528,7 +528,7 @@ const Index = () => {
       <Card className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
         <div className="flex items-center gap-3 p-4 border-b border-border">
           <h3 className="text-sm font-semibold text-foreground">Просроченные проекты</h3>
-          <Badge variant="destructive" className="text-[11px] h-5 px-2">{overdueProjects.length}</Badge>
+          <Badge variant="destructive" className="text-xs h-5 px-2">{overdueProjects.length}</Badge>
         </div>
         <div className="overflow-x-auto">
           <table className="crm-table">
@@ -545,29 +545,29 @@ const Index = () => {
             <tbody>
               {overdueProjects.length > 0 ? overdueProjects.slice(0, 10).map((row, i) => (
                 <tr key={i} className="bg-destructive/[0.03] hover:bg-destructive/[0.06]">
-                  <td className="text-[13px] text-foreground font-medium">{row.name}</td>
-                  <td className="text-[13px] text-muted-foreground">{row.url}</td>
-                  <td className="text-[13px] text-destructive font-medium">
+                  <td className="text-base text-foreground font-medium">{row.name}</td>
+                  <td className="text-base text-muted-foreground">{row.url}</td>
+                  <td className="text-base text-destructive font-medium">
                     {format(parseISO(row.deadline), "dd.MM.yyyy")}
                   </td>
-                  <td className="text-[13px] text-muted-foreground">{row.assignee}</td>
+                  <td className="text-base text-muted-foreground">{row.assignee}</td>
                   <td>
                     <span
-                      className="px-2 py-0.5 text-[11px] rounded-full font-medium"
+                      className="px-2 py-0.5 text-xs rounded-full font-medium"
                       style={{ background: `${row.stageColor}20`, color: row.stageColor }}
                     >
                       {row.stage}
                     </span>
                   </td>
                   <td>
-                    <Button variant="outline" size="sm" className="h-7 text-[11px]" onClick={() => navigate(`/crm-projects/${row.projectId}`)}>
+                    <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => navigate(`/crm-projects/${row.projectId}`)}>
                       Открыть
                     </Button>
                   </td>
                 </tr>
               )) : (
                 <tr>
-                  <td colSpan={6} className="text-center py-8 text-[13px] text-muted-foreground">
+                  <td colSpan={6} className="text-center py-8 text-base text-muted-foreground">
                     Нет просроченных проектов 🎉
                   </td>
                 </tr>
@@ -581,7 +581,7 @@ const Index = () => {
         <div className="flex items-center gap-3 p-4 border-b border-border">
           <FileText className="h-4 w-4 text-primary" />
           <h3 className="text-sm font-semibold text-foreground">Ближайшие отчёты по проектам</h3>
-          <Badge variant="secondary" className="text-[11px] h-5 px-2">{upcomingReports.length}</Badge>
+          <Badge variant="secondary" className="text-xs h-5 px-2">{upcomingReports.length}</Badge>
         </div>
         <div className="overflow-x-auto">
           <table className="crm-table">
@@ -599,9 +599,9 @@ const Index = () => {
             <tbody>
               {upcomingReports.length > 0 ? upcomingReports.map((row) => (
                 <tr key={row.id} className={row.isOverdue ? "bg-destructive/[0.03] hover:bg-destructive/[0.06]" : "hover:bg-muted/40"}>
-                  <td className="text-[13px] text-foreground font-medium">{row.name}</td>
-                  <td className="text-[13px] text-muted-foreground">{row.url}</td>
-                  <td className="text-[13px] font-medium">
+                  <td className="text-base text-foreground font-medium">{row.name}</td>
+                  <td className="text-base text-muted-foreground">{row.url}</td>
+                  <td className="text-base font-medium">
                     <span className={row.isOverdue ? "text-destructive" : "text-foreground"}>
                       {format(parseISO(row.deadline), "dd.MM.yyyy")}
                     </span>
@@ -610,24 +610,24 @@ const Index = () => {
                     <Badge
                       variant={row.isOverdue ? "destructive" : row.diffDays <= 3 ? "outline" : "secondary"}
                       className={cn(
-                        "text-[11px] h-5 px-2",
+                        "text-xs h-5 px-2",
                         !row.isOverdue && row.diffDays <= 3 && "border-warning text-warning"
                       )}
                     >
                       {row.isOverdue ? `просрочен ${Math.abs(row.diffDays)} дн.` : `${row.diffDays} дн.`}
                     </Badge>
                   </td>
-                  <td className="text-[13px] text-muted-foreground">{row.manager}</td>
+                  <td className="text-base text-muted-foreground">{row.manager}</td>
                   <td>
                     <span
-                      className="px-2 py-0.5 text-[11px] rounded-full font-medium"
+                      className="px-2 py-0.5 text-xs rounded-full font-medium"
                       style={{ background: `${row.stageColor}20`, color: row.stageColor }}
                     >
                       {row.stage}
                     </span>
                   </td>
                   <td>
-                    <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1" onClick={() => navigate(`/crm-projects/${row.id}?tab=builder`)}>
+                    <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => navigate(`/crm-projects/${row.id}?tab=builder`)}>
                       <Calendar className="h-3 w-3" />
                       Отчёт
                     </Button>
@@ -635,7 +635,7 @@ const Index = () => {
                 </tr>
               )) : (
                 <tr>
-                  <td colSpan={7} className="text-center py-8 text-[13px] text-muted-foreground">
+                  <td colSpan={7} className="text-center py-8 text-base text-muted-foreground">
                     Нет проектов с установленной отчётной датой
                   </td>
                 </tr>

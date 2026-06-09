@@ -372,13 +372,13 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
         <Tabs defaultValue="general" className="w-full">
           <div className="px-6 pt-4">
             <TabsList className="w-full grid grid-cols-3">
-              <TabsTrigger value="general" className="text-[13px] gap-1.5">
+              <TabsTrigger value="general" className="text-base gap-1.5">
                 <Settings2 className="h-3.5 w-3.5" /> Основное
               </TabsTrigger>
-              <TabsTrigger value="integrations" className="text-[13px] gap-1.5">
+              <TabsTrigger value="integrations" className="text-base gap-1.5">
                 <Link2 className="h-3.5 w-3.5" /> Интеграции
               </TabsTrigger>
-              <TabsTrigger value="team" className="text-[13px] gap-1.5">
+              <TabsTrigger value="team" className="text-base gap-1.5">
                 <Users className="h-3.5 w-3.5" /> Команда
               </TabsTrigger>
             </TabsList>
@@ -388,16 +388,16 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
           <TabsContent value="general" className="px-6 py-5 space-y-5 mt-0">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label className="text-[12px] text-muted-foreground flex items-center gap-1.5">
+                <Label className="text-sm text-muted-foreground flex items-center gap-1.5">
                   <Settings2 className="h-3 w-3" /> Название проекта
                 </Label>
-                <Input value={name} onChange={e => setName(e.target.value)} className="h-9 text-[13px]" />
+                <Input value={name} onChange={e => setName(e.target.value)} className="h-9 text-base" />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-[12px] text-muted-foreground flex items-center gap-1.5">
+                <Label className="text-sm text-muted-foreground flex items-center gap-1.5">
                   <Globe className="h-3 w-3" /> URL сайта
                 </Label>
-                <Input value={url} onChange={e => setUrl(e.target.value)} placeholder="https://example.com" className="h-9 text-[13px]" />
+                <Input value={url} onChange={e => setUrl(e.target.value)} placeholder="https://example.com" className="h-9 text-base" />
               </div>
             </div>
 
@@ -405,34 +405,34 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label className="text-[12px] text-muted-foreground flex items-center gap-1.5">
+                <Label className="text-sm text-muted-foreground flex items-center gap-1.5">
                   <CalendarDays className="h-3 w-3" /> Дата начала работ
                 </Label>
                 <Input
                   type="date"
                   value={startDate}
                   onChange={e => setStartDate(e.target.value)}
-                  className="h-9 text-[13px]"
+                  className="h-9 text-base"
                 />
-                <p className="text-[11px] text-muted-foreground/70">
+                <p className="text-xs text-muted-foreground/70">
                   От этой даты считаются план-факт, недельные отчёты и онбординг
                 </p>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-[12px] text-muted-foreground flex items-center gap-1.5">
+                <Label className="text-sm text-muted-foreground flex items-center gap-1.5">
                   <CalendarDays className="h-3 w-3" /> Дедлайн проекта
                 </Label>
-                <Input type="date" value={deadline} onChange={e => setDeadline(e.target.value)} className="h-9 text-[13px]" />
+                <Input type="date" value={deadline} onChange={e => setDeadline(e.target.value)} className="h-9 text-base" />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-[12px] text-muted-foreground flex items-center gap-1.5">
+              <Label className="text-sm text-muted-foreground flex items-center gap-1.5">
                 <CalendarDays className="h-3 w-3" /> Отчётный период
               </Label>
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
                 <Select value={reportPeriod} onValueChange={(v) => setReportPeriod(v as any)}>
-                  <SelectTrigger className="h-9 text-[13px] w-full sm:w-56">
+                  <SelectTrigger className="h-9 text-base w-full sm:w-56">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -443,7 +443,7 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
                   </SelectContent>
                 </Select>
                 {reportPeriod === "monthly" && (
-                  <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
+                  <div className="flex items-center gap-2 text-base text-muted-foreground">
                     <span>Формировать</span>
                     <Input
                       type="number"
@@ -454,7 +454,7 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
                         const n = Math.max(1, Math.min(28, Number(e.target.value) || 1));
                         setReportDay(n);
                       }}
-                      className="h-9 text-[13px] w-16 text-center"
+                      className="h-9 text-base w-16 text-center"
                     />
                     <span>числа каждого месяца</span>
                   </div>
@@ -465,12 +465,12 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
             <Separator />
 
             <div className="space-y-2">
-              <Label className="text-[12px] text-muted-foreground flex items-center gap-1.5">
+              <Label className="text-sm text-muted-foreground flex items-center gap-1.5">
                 <Wallet className="h-3 w-3" /> План-факт по проекту (за месяц)
               </Label>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="space-y-1">
-                  <Label className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                  <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
                     <Clock className="h-3 w-3" /> Часов по договору
                   </Label>
                   <Input
@@ -480,11 +480,11 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
                     value={plannedHours}
                     onChange={(e) => setPlannedHours(e.target.value)}
                     placeholder="40"
-                    className="h-9 text-[13px]"
+                    className="h-9 text-base"
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                  <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
                     <DollarSign className="h-3 w-3" /> Ставка в час, ₽
                   </Label>
                   <Input
@@ -494,11 +494,11 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
                     value={hourlyRate}
                     onChange={(e) => setHourlyRate(e.target.value)}
                     placeholder="2000"
-                    className="h-9 text-[13px]"
+                    className="h-9 text-base"
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                  <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
                     <Wallet className="h-3 w-3" /> Бюджет договора, ₽
                   </Label>
                   <Input
@@ -508,11 +508,11 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
                     value={monthlyBudget}
                     onChange={(e) => setMonthlyBudget(e.target.value)}
                     placeholder="80000"
-                    className="h-9 text-[13px]"
+                    className="h-9 text-base"
                   />
                 </div>
               </div>
-              <p className="text-[10px] text-muted-foreground">Используется на странице План-факт для контроля прибыльности.</p>
+              <p className="text-2xs text-muted-foreground">Используется на странице План-факт для контроля прибыльности.</p>
             </div>
           </TabsContent>
           <TabsContent value="integrations" className="px-6 py-5 space-y-4 mt-0">
@@ -522,19 +522,19 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
                 <div className="flex items-center gap-3">
                   <div className="h-8 w-8 rounded-lg flex items-center justify-center text-xs font-bold text-foreground bg-[hsl(var(--primary))]">Я</div>
                   <div>
-                    <p className="text-[13px] font-semibold text-foreground">Авторизация Яндекс</p>
-                    <p className="text-[11px] text-muted-foreground">Один токен для Метрики и Вебмастера</p>
+                    <p className="text-base font-semibold text-foreground">Авторизация Яндекс</p>
+                    <p className="text-xs text-muted-foreground">Один токен для Метрики и Вебмастера</p>
                   </div>
                 </div>
                 {yandexOAuthStep === "done" ? (
-                  <Badge className="bg-emerald-500/10 text-emerald-500 border-0 gap-1 text-[11px]">
+                  <Badge className="bg-emerald-500/10 text-emerald-500 border-0 gap-1 text-xs">
                     <CheckCircle2 className="h-3 w-3" /> Авторизовано
                   </Badge>
                 ) : null}
               </div>
 
               {yandexOAuthStep === "idle" && (
-                <Button size="sm" variant="outline" className="gap-1.5 text-[12px]" onClick={handleYandexStartOAuth}>
+                <Button size="sm" variant="outline" className="gap-1.5 text-sm" onClick={handleYandexStartOAuth}>
                   <ExternalLink className="h-3.5 w-3.5" /> Войти через Яндекс
                 </Button>
               )}
@@ -545,10 +545,10 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
                     value={yandexCodeInput}
                     onChange={e => setYandexCodeInput(e.target.value)}
                     placeholder="Вставьте код подтверждения"
-                    className="h-8 text-[12px] flex-1"
+                    className="h-8 text-sm flex-1"
                     autoFocus
                   />
-                  <Button size="sm" className="h-8 text-[12px]" onClick={handleYandexCode} disabled={!yandexCodeInput.trim()}>
+                  <Button size="sm" className="h-8 text-sm" onClick={handleYandexCode} disabled={!yandexCodeInput.trim()}>
                     Подтвердить
                   </Button>
                 </div>
@@ -565,9 +565,9 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
                   {/* Counter selector */}
                   {yandexCounters.length > 0 && (
                     <div className="space-y-1">
-                      <Label className="text-[11px] text-muted-foreground">Счётчик Яндекс.Метрики</Label>
+                      <Label className="text-xs text-muted-foreground">Счётчик Яндекс.Метрики</Label>
                       <Select value={selectedCounter} onValueChange={setSelectedCounter}>
-                        <SelectTrigger className="h-8 text-[12px]">
+                        <SelectTrigger className="h-8 text-sm">
                           <SelectValue placeholder="Выберите счётчик..." />
                         </SelectTrigger>
                         <SelectContent>
@@ -577,7 +577,7 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
                         </SelectContent>
                       </Select>
                       {selectedCounter && (
-                        <p className="text-[11px] text-emerald-500 flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Выбран</p>
+                        <p className="text-xs text-emerald-500 flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Выбран</p>
                       )}
                     </div>
                   )}
@@ -585,9 +585,9 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
                   {/* Host selector */}
                   {yandexHosts.length > 0 && (
                     <div className="space-y-1">
-                      <Label className="text-[11px] text-muted-foreground">Сайт в Яндекс.Вебмастере</Label>
+                      <Label className="text-xs text-muted-foreground">Сайт в Яндекс.Вебмастере</Label>
                       <Select value={selectedHost} onValueChange={setSelectedHost}>
-                        <SelectTrigger className="h-8 text-[12px]">
+                        <SelectTrigger className="h-8 text-sm">
                           <SelectValue placeholder="Выберите сайт..." />
                         </SelectTrigger>
                         <SelectContent>
@@ -597,16 +597,16 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
                         </SelectContent>
                       </Select>
                       {selectedHost && (
-                        <p className="text-[11px] text-emerald-500 flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Выбран</p>
+                        <p className="text-xs text-emerald-500 flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Выбран</p>
                       )}
                     </div>
                   )}
 
                   {yandexCounters.length === 0 && yandexHosts.length === 0 && (
-                    <p className="text-[11px] text-muted-foreground">Данные не найдены. Проверьте настройки аккаунта Яндекс.</p>
+                    <p className="text-xs text-muted-foreground">Данные не найдены. Проверьте настройки аккаунта Яндекс.</p>
                   )}
 
-                  <Button size="sm" variant="ghost" className="gap-1.5 text-[11px] text-muted-foreground" onClick={() => { setYandexOAuthStep("idle"); setYandexCodeInput(""); }}>
+                  <Button size="sm" variant="ghost" className="gap-1.5 text-xs text-muted-foreground" onClick={() => { setYandexOAuthStep("idle"); setYandexCodeInput(""); }}>
                     Переавторизоваться
                   </Button>
                 </div>
@@ -629,19 +629,19 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
                         {def.icon}
                       </div>
                       <div>
-                        <p className="text-[13px] font-semibold text-foreground">{def.label}</p>
-                        <p className="text-[11px] text-muted-foreground">{def.fieldLabel}</p>
+                        <p className="text-base font-semibold text-foreground">{def.label}</p>
+                        <p className="text-xs text-muted-foreground">{def.fieldLabel}</p>
                       </div>
                     </div>
                     {isConnected ? (
                       <div className="flex items-center gap-2">
-                        <Badge className="bg-emerald-500/10 text-emerald-500 border-0 gap-1 text-[11px]">
+                        <Badge className="bg-emerald-500/10 text-emerald-500 border-0 gap-1 text-xs">
                           <CheckCircle2 className="h-3 w-3" /> Подключено
                         </Badge>
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-7 px-2 text-[11px] gap-1 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          className="h-7 px-2 text-xs gap-1 text-destructive hover:text-destructive hover:bg-destructive/10"
                           disabled={disconnectIntegration.isPending}
                           onClick={() => {
                             if (confirm(`Отключить ${def.label}? Сохранённые данные останутся, отключатся только текущие учётные данные.`)) {
@@ -656,29 +656,29 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
                         </Button>
                       </div>
                     ) : (
-                      <Badge variant="secondary" className="gap-1 text-[11px]">
+                      <Badge variant="secondary" className="gap-1 text-xs">
                         <AlertCircle className="h-3 w-3" /> Не подключено
                       </Badge>
                     )}
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <Label className="text-[11px] text-muted-foreground">{def.fieldLabel}</Label>
+                      <Label className="text-xs text-muted-foreground">{def.fieldLabel}</Label>
                       <Input
                         value={vals[def.fieldKey] || ""}
                         onChange={e => setIntField(def.key, def.fieldKey, e.target.value)}
                         placeholder={`Введите ${def.fieldLabel.toLowerCase()}`}
-                        className="h-8 text-[12px]"
+                        className="h-8 text-sm"
                       />
                     </div>
                     {(def as any).extraFields?.map((ef: { label: string; key: string; type?: string; placeholder?: string }) => (
                       <div key={ef.key} className="space-y-1">
-                        <Label className="text-[11px] text-muted-foreground">{ef.label}</Label>
+                        <Label className="text-xs text-muted-foreground">{ef.label}</Label>
                         <Input
                           value={vals[ef.key] || ""}
                           onChange={e => setIntField(def.key, ef.key, e.target.value)}
                           placeholder={ef.placeholder || `Введите ${ef.label.toLowerCase()}`}
-                          className="h-8 text-[12px]"
+                          className="h-8 text-sm"
                           type={ef.type === "password" ? "password" : "text"}
                         />
                       </div>
@@ -697,11 +697,11 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
               { label: "Аккаунт-менеджер", icon: <Users className="h-3 w-3" />, value: accountManagerId, setter: setAccountManagerId },
             ].map(role => (
               <div key={role.label} className="space-y-1.5">
-                <Label className="text-[12px] text-muted-foreground flex items-center gap-1.5">
+                <Label className="text-sm text-muted-foreground flex items-center gap-1.5">
                   {role.icon} {role.label}
                 </Label>
                 <Select value={role.value} onValueChange={role.setter}>
-                  <SelectTrigger className="h-9 text-[13px]"><SelectValue placeholder="Выбрать..." /></SelectTrigger>
+                  <SelectTrigger className="h-9 text-base"><SelectValue placeholder="Выбрать..." /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__none">Не назначен</SelectItem>
                     {members.map(m => <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>)}
@@ -714,14 +714,14 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
 
             {/* Multi-select: Co-executors */}
             <div className="space-y-2">
-              <Label className="text-[12px] text-muted-foreground flex items-center gap-1.5">
+              <Label className="text-sm text-muted-foreground flex items-center gap-1.5">
                 <UserPlus className="h-3 w-3" /> Соисполнители
               </Label>
               <div className="flex flex-wrap gap-1.5 min-h-[28px]">
                 {coExecutors.map(id => {
                   const m = members.find(mm => mm.id === id);
                   return m ? (
-                    <Badge key={id} variant="secondary" className="text-[11px] gap-1 pr-1">
+                    <Badge key={id} variant="secondary" className="text-xs gap-1 pr-1">
                       {m.full_name}
                       <button onClick={() => removeMulti(coExecutors, setCoExecutors, id)} className="hover:text-destructive ml-0.5">
                         <X className="h-3 w-3" />
@@ -731,7 +731,7 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
                 })}
               </div>
               <Select onValueChange={v => addMulti(coExecutors, setCoExecutors, v)}>
-                <SelectTrigger className="h-8 text-[12px] w-48"><SelectValue placeholder="Добавить..." /></SelectTrigger>
+                <SelectTrigger className="h-8 text-sm w-48"><SelectValue placeholder="Добавить..." /></SelectTrigger>
                 <SelectContent>
                   {members.filter(m => !coExecutors.includes(m.id)).map(m => (
                     <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>
@@ -742,14 +742,14 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
 
             {/* Multi-select: Observers */}
             <div className="space-y-2">
-              <Label className="text-[12px] text-muted-foreground flex items-center gap-1.5">
+              <Label className="text-sm text-muted-foreground flex items-center gap-1.5">
                 <Eye className="h-3 w-3" /> Наблюдатели
               </Label>
               <div className="flex flex-wrap gap-1.5 min-h-[28px]">
                 {observers.map(id => {
                   const m = members.find(mm => mm.id === id);
                   return m ? (
-                    <Badge key={id} variant="secondary" className="text-[11px] gap-1 pr-1">
+                    <Badge key={id} variant="secondary" className="text-xs gap-1 pr-1">
                       {m.full_name}
                       <button onClick={() => removeMulti(observers, setObservers, id)} className="hover:text-destructive ml-0.5">
                         <X className="h-3 w-3" />
@@ -759,7 +759,7 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
                 })}
               </div>
               <Select onValueChange={v => addMulti(observers, setObservers, v)}>
-                <SelectTrigger className="h-8 text-[12px] w-48"><SelectValue placeholder="Добавить..." /></SelectTrigger>
+                <SelectTrigger className="h-8 text-sm w-48"><SelectValue placeholder="Добавить..." /></SelectTrigger>
                 <SelectContent>
                   {members.filter(m => !observers.includes(m.id)).map(m => (
                     <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>
@@ -772,14 +772,14 @@ export default function EditProjectDialog({ open, onOpenChange, project, project
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-border bg-muted/30">
-          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} className="h-9 px-5 text-[13px] gap-1.5">
+          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} className="h-9 px-5 text-base gap-1.5">
             <X className="h-3.5 w-3.5" /> Отмена
           </Button>
           <Button
             size="sm"
             onClick={() => saveProject.mutate()}
             disabled={saveProject.isPending || !name.trim()}
-            className="h-9 px-5 text-[13px] gap-1.5"
+            className="h-9 px-5 text-base gap-1.5"
           >
             <Save className="h-3.5 w-3.5" /> Сохранить
           </Button>

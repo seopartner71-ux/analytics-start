@@ -221,7 +221,7 @@ function TrafficDynamicsChart({ appliedRange, appliedCompRange, showComparison, 
             {visibleChannels.map(ch => (
               <div key={ch} className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full" style={{ background: CHANNEL_COLORS[ch] }} />
-                <span className="text-[11px] text-muted-foreground">{channelNames[ch]}</span>
+                <span className="text-xs text-muted-foreground">{channelNames[ch]}</span>
               </div>
             ))}
           </div>

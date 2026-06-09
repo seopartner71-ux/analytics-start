@@ -567,12 +567,12 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
         <div className="px-8 py-6 border-b border-border/60 bg-card space-y-5 shrink-0">
           <div className="flex items-start gap-4">
             <div className="flex-1 min-w-0 space-y-2.5">
-              <SheetTitle className="text-[20px] font-bold text-foreground leading-tight tracking-tight">
+              <SheetTitle className="text-xl font-bold text-foreground leading-tight tracking-tight">
                 {task.title}
               </SheetTitle>
               <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
                 <Badge
-                  className="text-[11px] h-5 border-0"
+                  className="text-xs h-5 border-0"
                   style={{ backgroundColor: `${task.stage_color || "hsl(var(--primary))"}20`, color: task.stage_color || "hsl(var(--primary))" }}
                 >
                   {editStage || task.stage}
@@ -645,7 +645,7 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                 <b.icon className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
                 <span className="truncate flex-1 text-left">{b.label}</span>
                 {b.count !== undefined && (
-                  <span className="text-[10px] tabular-nums text-muted-foreground bg-muted/60 px-1.5 rounded-full">
+                  <span className="text-2xs tabular-nums text-muted-foreground bg-muted/60 px-1.5 rounded-full">
                     {b.count}
                   </span>
                 )}
@@ -732,11 +732,11 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                     {blocker.isBlocked ? (
                       <FrozenDeadlineBadge />
                     ) : deadlineStatus === "overdue" ? (
-                      <Badge variant="destructive" className="text-[10px] h-5 gap-1">
+                      <Badge variant="destructive" className="text-2xs h-5 gap-1">
                         <AlertTriangle className="h-3 w-3" /> Просрочено {overduePeriod}
                       </Badge>
                     ) : deadlineStatus === "soon" ? (
-                      <Badge className={cn("text-[10px] h-5 gap-1 border-0", DEADLINE_STYLES.soon.bg, DEADLINE_STYLES.soon.text)}>
+                      <Badge className={cn("text-2xs h-5 gap-1 border-0", DEADLINE_STYLES.soon.bg, DEADLINE_STYLES.soon.text)}>
                         <Clock className="h-3 w-3" /> Скоро
                       </Badge>
                     ) : null}
@@ -802,7 +802,7 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                   {subtasks.length > 0 && (
                     <div className="space-y-1.5">
                       <Progress value={subtasksProgress} className="h-1.5" />
-                      <div className="flex justify-between text-[10px] text-muted-foreground">
+                      <div className="flex justify-between text-2xs text-muted-foreground">
                         <span>{subtasksProgress}% выполнено</span>
                         <span>{completedSubs}/{subtasks.length} шагов</span>
                       </div>
@@ -826,7 +826,7 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                             {s.title}
                           </span>
                           {assignee && (
-                            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                               <img
                                 src={getAvatarUrl(assignee.full_name)}
                                 alt={assignee.full_name}
@@ -836,7 +836,7 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                             </div>
                           )}
                           {dl && (
-                            <span className="text-[11px] text-muted-foreground tabular-nums whitespace-nowrap flex items-center gap-1">
+                            <span className="text-xs text-muted-foreground tabular-nums whitespace-nowrap flex items-center gap-1">
                               <CalendarDays className="h-3 w-3" />
                               {dl.toLocaleDateString("ru-RU", { day: "2-digit", month: "short" })}
                             </span>
@@ -904,7 +904,7 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                 </Button>
               )}
               {!canEditFields && (
-                <p className="text-[11px] text-muted-foreground text-center py-1">
+                <p className="text-xs text-muted-foreground text-center py-1">
                   Редактировать задачу может только постановщик, администратор или директор
                 </p>
               )}
@@ -928,7 +928,7 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                 </Button>
               )}
               {isAssignee && !canApproveTask && editStage === "На проверке" && (
-                <p className="text-[12px] text-muted-foreground text-center py-2">
+                <p className="text-sm text-muted-foreground text-center py-2">
                   Задача отправлена постановщику на проверку. Закрыть её может только он.
                 </p>
               )}
@@ -965,7 +965,7 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                         <RotateCcw className="h-3.5 w-3.5" /> Возобновить
                       </Button>
                     )}
-                    <Badge className="ml-auto text-[10px]" style={{ backgroundColor: `${task.stage_color || '#3b82f6'}20`, color: task.stage_color || '#3b82f6' }}>
+                    <Badge className="ml-auto text-2xs" style={{ backgroundColor: `${task.stage_color || '#3b82f6'}20`, color: task.stage_color || '#3b82f6' }}>
                       {editStage || task.stage}
                     </Badge>
                   </div>
@@ -1005,7 +1005,7 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                   <div key={m.id}>
                     {showDateSep && (
                       <div className="flex justify-center my-5">
-                        <span className="text-[11px] text-muted-foreground bg-muted/60 px-4 py-1.5 rounded-full font-medium shadow-sm border border-border/30">
+                        <span className="text-xs text-muted-foreground bg-muted/60 px-4 py-1.5 rounded-full font-medium shadow-sm border border-border/30">
                           {new Date(curDate).toLocaleDateString("ru-RU", { weekday: "long", day: "numeric", month: "long" })}
                         </span>
                       </div>
@@ -1022,14 +1022,14 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                         <div className="flex-1 min-w-0">
                           <div className="flex items-baseline gap-2 mb-1">
                             <span className="text-sm font-semibold text-primary">{m.author?.full_name || "Аноним"}</span>
-                            <span className="text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span className="text-2xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
                               {new Date(m.created_at).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
                             </span>
                           </div>
                           <div className="bg-card rounded-2xl rounded-tl-md p-3.5 border border-border/40 shadow-sm max-w-[85%]">
                             <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap break-words">{renderWithMentions(m.body)}</p>
                           </div>
-                          <span className="text-[10px] text-muted-foreground/50 ml-1 mt-1 block">
+                          <span className="text-2xs text-muted-foreground/50 ml-1 mt-1 block">
                             {new Date(m.created_at).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
                           </span>
                         </div>

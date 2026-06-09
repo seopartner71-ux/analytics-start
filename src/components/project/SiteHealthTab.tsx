@@ -825,7 +825,7 @@ function SiteHealthDashboard({ projectId, accessToken, hostId }: {
               <AlertTriangle className="h-4 w-4 text-amber-500" />
               {isRu ? "Замечания по сайту" : "Site Issues"}
               {activeProblems.length > 0 && (
-                <Badge variant="secondary" className="text-[10px] ml-1">{activeProblems.length}</Badge>
+                <Badge variant="secondary" className="text-2xs ml-1">{activeProblems.length}</Badge>
               )}
             </CardTitle>
           </div>
@@ -864,7 +864,7 @@ function SiteHealthDashboard({ projectId, accessToken, hostId }: {
                             </p>
                           )}
                         </div>
-                        <Badge variant="outline" className={cn("text-[10px] shrink-0", colors.badge)}>
+                        <Badge variant="outline" className={cn("text-2xs shrink-0", colors.badge)}>
                           {isRu ? (SEVERITY_LABELS_RU[p.severity] || p.severity) : p.severity}
                         </Badge>
                       </div>
@@ -921,7 +921,7 @@ function SiteHealthDashboard({ projectId, accessToken, hostId }: {
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <Shield className="h-4 w-4 text-primary" />
               {isRu ? "Все проверки Вебмастера" : "All Webmaster Checks"}
-              <Badge variant="secondary" className="text-[10px] ml-1">{allChecks.length}</Badge>
+              <Badge variant="secondary" className="text-2xs ml-1">{allChecks.length}</Badge>
             </CardTitle>
             <Button
               size="sm"
@@ -961,7 +961,7 @@ function SiteHealthDashboard({ projectId, accessToken, hostId }: {
                       <Badge
                         variant="outline"
                         className={cn(
-                          "text-[10px] shrink-0",
+                          "text-2xs shrink-0",
                           isPassed ? "border-emerald-500/30 text-emerald-600 bg-emerald-500/10" : colors.badge
                         )}
                       >

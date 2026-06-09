@@ -76,13 +76,13 @@ export function CreateSubtaskDialog({
               transition={{ duration: 0.18, ease: "easeOut" }}
             >
               <DialogHeader className="px-6 pt-5 pb-4 border-b border-border/60 bg-gradient-to-r from-primary/[0.05] to-transparent space-y-1.5">
-                <DialogTitle className="flex items-center gap-2 text-[16px] font-semibold tracking-tight">
+                <DialogTitle className="flex items-center gap-2 text-lg font-semibold tracking-tight">
                   <span className="h-7 w-7 rounded-lg bg-primary/15 text-primary flex items-center justify-center">
                     <ListPlus className="h-4 w-4" />
                   </span>
                   Создать подзадачу
                 </DialogTitle>
-                <DialogDescription className="text-[12px] text-muted-foreground">
+                <DialogDescription className="text-sm text-muted-foreground">
                   Родительская задача:{" "}
                   <span className="text-foreground/80 font-medium">
                     #{parentTaskShortId} {parentTaskTitle}
@@ -92,38 +92,38 @@ export function CreateSubtaskDialog({
 
               <div className="px-6 py-5 space-y-4">
                 <div className="space-y-1.5">
-                  <Label className="text-[12px] font-medium text-foreground/80">
+                  <Label className="text-sm font-medium text-foreground/80">
                     Название задачи <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="Например: Подготовить ТЗ для копирайтера"
-                    className="h-9 text-[13px]"
+                    className="h-9 text-base"
                     autoFocus
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label className="text-[12px] font-medium text-foreground/80">Описание / ТЗ</Label>
+                  <Label className="text-sm font-medium text-foreground/80">Описание / ТЗ</Label>
                   <Textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Опишите детали, требования, ссылки..."
-                    className="min-h-[88px] text-[13px] resize-none"
+                    className="min-h-[88px] text-base resize-none"
                   />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label className="text-[12px] font-medium text-foreground/80">Исполнитель</Label>
+                    <Label className="text-sm font-medium text-foreground/80">Исполнитель</Label>
                     <Select value={assigneeId} onValueChange={setAssigneeId}>
-                      <SelectTrigger className="h-9 text-[13px]">
+                      <SelectTrigger className="h-9 text-base">
                         <SelectValue placeholder="Не назначен" />
                       </SelectTrigger>
                       <SelectContent>
                         {members.map((m) => (
-                          <SelectItem key={m.id} value={m.id} className="text-[13px]">
+                          <SelectItem key={m.id} value={m.id} className="text-base">
                             {m.full_name}
                           </SelectItem>
                         ))}
@@ -131,18 +131,18 @@ export function CreateSubtaskDialog({
                     </Select>
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-[12px] font-medium text-foreground/80">Крайний срок</Label>
+                    <Label className="text-sm font-medium text-foreground/80">Крайний срок</Label>
                     <Input
                       type="datetime-local"
                       value={deadline}
                       onChange={(e) => setDeadline(e.target.value)}
-                      className="h-9 text-[13px]"
+                      className="h-9 text-base"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label className="text-[12px] font-medium text-foreground/80">План времени (часов)</Label>
+                  <Label className="text-sm font-medium text-foreground/80">План времени (часов)</Label>
                   <Input
                     type="number"
                     min={0}
@@ -150,7 +150,7 @@ export function CreateSubtaskDialog({
                     value={planHours}
                     onChange={(e) => setPlanHours(e.target.value)}
                     placeholder="Например: 2"
-                    className="h-9 text-[13px] w-32"
+                    className="h-9 text-base w-32"
                   />
                 </div>
               </div>
@@ -159,7 +159,7 @@ export function CreateSubtaskDialog({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-9 text-[13px]"
+                  className="h-9 text-base"
                   onClick={() => onOpenChange(false)}
                   disabled={submitting}
                 >
@@ -167,7 +167,7 @@ export function CreateSubtaskDialog({
                 </Button>
                 <Button
                   size="sm"
-                  className="h-9 text-[13px] bg-amber-500 hover:bg-amber-500/90 text-white gap-1.5"
+                  className="h-9 text-base bg-amber-500 hover:bg-amber-500/90 text-white gap-1.5"
                   onClick={handleSubmit}
                   disabled={submitting || !title.trim()}
                 >

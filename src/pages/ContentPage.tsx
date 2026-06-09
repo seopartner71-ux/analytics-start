@@ -46,15 +46,15 @@ export default function ContentPage() {
                     <FileText className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                     <div className="flex items-center gap-1.5">
                       <span style={{ color: cfg.color }}>{cfg.icon}</span>
-                      <Badge variant="secondary" className="text-[10px] font-medium">{item.status}</Badge>
+                      <Badge variant="secondary" className="text-2xs font-medium">{item.status}</Badge>
                     </div>
                   </div>
                   <p className="text-sm font-semibold text-foreground leading-snug">{item.title}</p>
-                  <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span>{item.author}</span>
                     <span className="font-medium">{item.words.toLocaleString()} слов</span>
                   </div>
-                  <p className="text-[11px] text-muted-foreground">{new Date(item.date).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })}</p>
+                  <p className="text-xs text-muted-foreground">{new Date(item.date).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })}</p>
                 </CardContent>
               </Card>
             </motion.div>

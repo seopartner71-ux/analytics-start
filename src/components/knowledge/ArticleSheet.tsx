@@ -43,14 +43,14 @@ export function ArticleSheet({ articleId, open, onOpenChange }: Props) {
         ) : (
           <div className="mt-4 space-y-3">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="secondary" className="text-[10px]">
+              <Badge variant="secondary" className="text-2xs">
                 {getCategoryMeta(article.category).icon} {getCategoryMeta(article.category).label}
               </Badge>
               {(article.tags || []).map((t: string) => (
-                <Badge key={t} variant="outline" className="text-[10px]">{t}</Badge>
+                <Badge key={t} variant="outline" className="text-2xs">{t}</Badge>
               ))}
             </div>
-            <div className="text-[11px] text-muted-foreground">
+            <div className="text-xs text-muted-foreground">
               Обновлено: {format(new Date(article.updated_at), "dd.MM.yyyy HH:mm")} • Просмотров: {article.views_count}
             </div>
             <div className="border-t pt-3">

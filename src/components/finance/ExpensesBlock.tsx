@@ -313,7 +313,7 @@ export function ExpensesBlock() {
                     <td className="py-2.5">
                       <Badge
                         variant="outline"
-                        className={`text-[10px] ${CATEGORY_TONE[e.category] || ""}`}
+                        className={`text-2xs ${CATEGORY_TONE[e.category] || ""}`}
                       >
                         {CATEGORY_LABEL[e.category] || e.category}
                       </Badge>

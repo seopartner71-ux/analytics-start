@@ -237,7 +237,7 @@ export default function ReliabilityLeaderboard() {
       ) : (
         <div className="rounded-xl border border-border/60 bg-card shadow-sm overflow-hidden">
           {/* Table head */}
-          <div className="hidden md:grid grid-cols-[2fr_1fr_1.4fr_1fr_1.2fr_40px] gap-4 px-5 py-3 border-b border-border/60 bg-muted/30 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <div className="hidden md:grid grid-cols-[2fr_1fr_1.4fr_1fr_1.2fr_40px] gap-4 px-5 py-3 border-b border-border/60 bg-muted/30 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             <div>Сотрудник</div>
             <div className="text-center">Всего задач</div>
             <div>Сдано в срок</div>
@@ -272,7 +272,7 @@ export default function ReliabilityLeaderboard() {
                         {i < 3 && (
                           <div
                             className={cn(
-                              "absolute -top-1 -right-1 h-4 w-4 rounded-full flex items-center justify-center text-[9px] font-bold border-2 border-card",
+                              "absolute -top-1 -right-1 h-4 w-4 rounded-full flex items-center justify-center text-2xs font-bold border-2 border-card",
                               i === 0 && "bg-amber-500 text-amber-950",
                               i === 1 && "bg-slate-400 text-slate-900",
                               i === 2 && "bg-orange-700 text-orange-50",
@@ -429,7 +429,7 @@ function Stat({
       <div className={cn("text-2xl font-bold tabular-nums leading-none", colorMap[accent])}>
         {value}
       </div>
-      <div className="text-[11px] text-muted-foreground mt-1 uppercase tracking-wider">
+      <div className="text-xs text-muted-foreground mt-1 uppercase tracking-wider">
         {label}
       </div>
     </div>

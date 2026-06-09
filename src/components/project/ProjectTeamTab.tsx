@@ -170,7 +170,7 @@ export function ProjectTeamTab({ projectId }: { projectId: string }) {
             <span className="h-8 w-8 rounded-lg bg-primary/15 text-primary flex items-center justify-center">
               <Users className="h-4 w-4" />
             </span>
-            <h2 className="text-[18px] font-semibold tracking-tight">Команда проекта</h2>
+            <h2 className="text-xl font-semibold tracking-tight">Команда проекта</h2>
           </div>
           <p className="text-[12.5px] text-muted-foreground max-w-xl">
             Участники имеют доступ ко всем задачам данного проекта и автоматически добавляются в чат проекта.
@@ -178,7 +178,7 @@ export function ProjectTeamTab({ projectId }: { projectId: string }) {
         </div>
         <Button
           size="sm"
-          className="h-9 text-[13px] bg-amber-500 hover:bg-amber-500/90 text-white gap-1.5"
+          className="h-9 text-base bg-amber-500 hover:bg-amber-500/90 text-white gap-1.5"
           onClick={() => setAddOpen(true)}
         >
           <Plus className="h-4 w-4" /> Добавить участника
@@ -238,7 +238,7 @@ export function ProjectTeamTab({ projectId }: { projectId: string }) {
                   onClick={() => toggleNotifications.mutate(m)}
                   disabled={toggleNotifications.isPending}
                   className={cn(
-                    "flex items-center gap-1.5 h-9 px-2.5 rounded-md border text-[12px] transition-colors",
+                    "flex items-center gap-1.5 h-9 px-2.5 rounded-md border text-sm transition-colors",
                     m.notifications_enabled
                       ? "border-amber-500/40 text-amber-400 bg-amber-500/10 hover:bg-amber-500/15"
                       : "border-border/60 text-muted-foreground hover:bg-muted/40"
@@ -276,27 +276,27 @@ export function ProjectTeamTab({ projectId }: { projectId: string }) {
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden bg-card border-border/70">
           <DialogHeader className="px-6 pt-5 pb-4 border-b border-border/60 bg-gradient-to-r from-primary/[0.05] to-transparent space-y-1.5">
-            <DialogTitle className="flex items-center gap-2 text-[16px] font-semibold tracking-tight">
+            <DialogTitle className="flex items-center gap-2 text-lg font-semibold tracking-tight">
               <span className="h-7 w-7 rounded-lg bg-primary/15 text-primary flex items-center justify-center">
                 <UserPlus className="h-4 w-4" />
               </span>
               Добавление в проект
             </DialogTitle>
-            <DialogDescription className="text-[12px] text-muted-foreground">
+            <DialogDescription className="text-sm text-muted-foreground">
               Сотрудник появится в команде и автоматически будет добавлен в чат проекта.
             </DialogDescription>
           </DialogHeader>
 
           <div className="px-6 py-5 space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-[12px] font-medium text-foreground/80">Сотрудник</Label>
+              <Label className="text-sm font-medium text-foreground/80">Сотрудник</Label>
               <Select value={newTeamMemberId} onValueChange={setNewTeamMemberId}>
-                <SelectTrigger className="h-9 text-[13px]">
+                <SelectTrigger className="h-9 text-base">
                   <SelectValue placeholder={availableCandidates.length ? "Выберите сотрудника" : "Все сотрудники уже в проекте"} />
                 </SelectTrigger>
                 <SelectContent>
                   {availableCandidates.map((m) => (
-                    <SelectItem key={m.id} value={m.id} className="text-[13px]">
+                    <SelectItem key={m.id} value={m.id} className="text-base">
                       {m.full_name}
                     </SelectItem>
                   ))}
@@ -305,14 +305,14 @@ export function ProjectTeamTab({ projectId }: { projectId: string }) {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-[12px] font-medium text-foreground/80">Роль в проекте</Label>
+              <Label className="text-sm font-medium text-foreground/80">Роль в проекте</Label>
               <Select value={newRole} onValueChange={(v) => setNewRole(v as Role)}>
-                <SelectTrigger className="h-9 text-[13px]">
+                <SelectTrigger className="h-9 text-base">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {ROLES.map((r) => (
-                    <SelectItem key={r} value={r} className="text-[13px]">
+                    <SelectItem key={r} value={r} className="text-base">
                       {r}
                     </SelectItem>
                   ))}
@@ -322,7 +322,7 @@ export function ProjectTeamTab({ projectId }: { projectId: string }) {
 
             <div className="flex items-start justify-between gap-3 rounded-lg border border-border/60 bg-muted/20 px-3 py-3">
               <div className="space-y-0.5 flex-1">
-                <Label className="text-[13px] font-medium text-foreground">Присылать уведомления</Label>
+                <Label className="text-base font-medium text-foreground">Присылать уведомления</Label>
                 <p className="text-[11.5px] text-muted-foreground leading-snug">
                   Оповещать о создании, выполнении и закрытии задач в этом проекте.
                 </p>
@@ -335,7 +335,7 @@ export function ProjectTeamTab({ projectId }: { projectId: string }) {
             <Button
               variant="ghost"
               size="sm"
-              className="h-9 text-[13px]"
+              className="h-9 text-base"
               onClick={() => setAddOpen(false)}
               disabled={addMember.isPending}
             >
@@ -343,7 +343,7 @@ export function ProjectTeamTab({ projectId }: { projectId: string }) {
             </Button>
             <Button
               size="sm"
-              className="h-9 text-[13px] bg-amber-500 hover:bg-amber-500/90 text-white gap-1.5"
+              className="h-9 text-base bg-amber-500 hover:bg-amber-500/90 text-white gap-1.5"
               onClick={() => addMember.mutate()}
               disabled={!newTeamMemberId || addMember.isPending}
             >

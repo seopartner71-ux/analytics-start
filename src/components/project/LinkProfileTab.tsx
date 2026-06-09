@@ -228,22 +228,22 @@ export function LinkProfileTab({ projectId }: Props) {
                 {filtered.map((l) => (
                   <TableRow key={l.id}>
                     <TableCell className="max-w-[260px]">
-                      <a href={l.donor_url} target="_blank" rel="noreferrer" className="text-[12px] text-primary hover:underline truncate flex items-center gap-1">
+                      <a href={l.donor_url} target="_blank" rel="noreferrer" className="text-sm text-primary hover:underline truncate flex items-center gap-1">
                         <span className="truncate">{l.donor_url}</span>
                         <ExternalLink className="h-3 w-3 shrink-0" />
                       </a>
-                      {l.last_error && <div className="text-[10px] text-red-500 mt-0.5 truncate" title={l.last_error}>{l.last_error}</div>}
+                      {l.last_error && <div className="text-2xs text-red-500 mt-0.5 truncate" title={l.last_error}>{l.last_error}</div>}
                     </TableCell>
-                    <TableCell className="text-[12px] max-w-[160px] truncate">{l.anchor || "—"}</TableCell>
+                    <TableCell className="text-sm max-w-[160px] truncate">{l.anchor || "—"}</TableCell>
                     <TableCell className="max-w-[220px]">
-                      <a href={l.acceptor_url} target="_blank" rel="noreferrer" className="text-[12px] text-muted-foreground hover:text-foreground truncate block">
+                      <a href={l.acceptor_url} target="_blank" rel="noreferrer" className="text-sm text-muted-foreground hover:text-foreground truncate block">
                         {l.acceptor_url}
                       </a>
                     </TableCell>
-                    <TableCell><Badge variant="secondary" className="text-[10px]">{TYPE_LABELS[l.type]}</Badge></TableCell>
-                    <TableCell className="text-[12px] text-right tabular-nums">{Number(l.cost).toLocaleString("ru-RU")} ₽</TableCell>
-                    <TableCell className="text-[11px] text-muted-foreground">{l.placed_at ? format(new Date(l.placed_at), "dd.MM.yy", { locale: ru }) : "—"}</TableCell>
-                    <TableCell className="text-[11px] text-muted-foreground">{l.last_checked_at ? format(new Date(l.last_checked_at), "dd.MM HH:mm", { locale: ru }) : "—"}</TableCell>
+                    <TableCell><Badge variant="secondary" className="text-2xs">{TYPE_LABELS[l.type]}</Badge></TableCell>
+                    <TableCell className="text-sm text-right tabular-nums">{Number(l.cost).toLocaleString("ru-RU")} ₽</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{l.placed_at ? format(new Date(l.placed_at), "dd.MM.yy", { locale: ru }) : "—"}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{l.last_checked_at ? format(new Date(l.last_checked_at), "dd.MM HH:mm", { locale: ru }) : "—"}</TableCell>
                     <TableCell><StatusBadge status={l.status} /></TableCell>
                     <TableCell>
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-red-500" onClick={() => deleteMutation.mutate(l.id)}>
@@ -294,7 +294,7 @@ export function LinkProfileTab({ projectId }: Props) {
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Импорт CSV</DialogTitle></DialogHeader>
           <div className="space-y-2">
-            <Label className="text-xs">Формат: <code className="text-[11px]">donor_url, anchor, acceptor_url, type, cost</code></Label>
+            <Label className="text-xs">Формат: <code className="text-xs">donor_url, anchor, acceptor_url, type, cost</code></Label>
             <Textarea rows={10} value={csvText} onChange={(e) => setCsvText(e.target.value)} placeholder="https://donor.ru, анкор, https://mysite.ru, outreach, 5000" className="font-mono text-xs" />
           </div>
           <DialogFooter>

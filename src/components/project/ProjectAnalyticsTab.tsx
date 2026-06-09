@@ -903,7 +903,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
           return (
             <div key={item.label} className={cn("rounded-lg px-3 py-2", item.tone)}>
               <div className="flex items-center gap-1 mb-1">
-                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{item.label}</p>
+                <p className="text-2xs uppercase tracking-wide text-muted-foreground">{item.label}</p>
                 {item.info && (
                   <Popover>
                     <PopoverTrigger asChild>
@@ -934,7 +934,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
               <div className="flex items-end gap-1.5">
                 <p className="text-lg font-bold leading-none">{item.value}</p>
                 {item.delta !== undefined && item.delta !== 0 && (
-                  <span className={cn("text-[10px] font-semibold flex items-center gap-0.5", positive ? "text-emerald-500" : "text-red-500")}>
+                  <span className={cn("text-2xs font-semibold flex items-center gap-0.5", positive ? "text-emerald-500" : "text-red-500")}>
                     {positive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
                     {Math.abs(Number(item.delta))}
                   </span>
@@ -1014,7 +1014,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
                 key={p.key}
                 variant={activePreset === p.key ? "default" : "outline"}
                 size="sm"
-                className="h-7 text-[11px] px-2.5"
+                className="h-7 text-xs px-2.5"
                 onClick={() => handlePreset(p.key, p.days)}
               >
                 {p.label}
@@ -1026,7 +1026,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
             {/* Period A */}
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1.5 px-2.5">
+                <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5 px-2.5">
                   <CalendarDays className="h-3 w-3" />
                   {format(range.from, "dd.MM.yy")} — {format(range.to, "dd.MM.yy")}
                 </Button>
@@ -1053,7 +1053,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
                 className="scale-75"
               />
               <Label
-                className="text-[11px] text-muted-foreground cursor-pointer flex items-center gap-1"
+                className="text-xs text-muted-foreground cursor-pointer flex items-center gap-1"
                 onClick={() => handleToggleComparison(!showComparison)}
               >
                 <ArrowRightLeft className="h-3 w-3" />
@@ -1065,7 +1065,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
             {showComparison && (
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1.5 px-2.5 border-dashed">
+                  <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5 px-2.5 border-dashed">
                     <CalendarDays className="h-3 w-3" />
                     {format(compRange.from, "dd.MM.yy")} — {format(compRange.to, "dd.MM.yy")}
                   </Button>
@@ -1089,7 +1089,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
 
             {/* Traffic channel */}
             <Select value={channel} onValueChange={(v) => setChannel(v as TrafficChannel)}>
-              <SelectTrigger className="w-[170px] h-7 text-[11px]">
+              <SelectTrigger className="w-[170px] h-7 text-xs">
                 <Filter className="h-3 w-3 mr-1 text-muted-foreground" />
                 <SelectValue />
               </SelectTrigger>
@@ -1103,7 +1103,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
             </Select>
 
             {/* Apply */}
-            <Button size="sm" className="h-7 text-[11px] px-3 ml-auto" onClick={handleApply}>
+            <Button size="sm" className="h-7 text-xs px-3 ml-auto" onClick={handleApply}>
               Применить
             </Button>
           </div>
@@ -1111,11 +1111,11 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
           {/* Row 2: Comparison presets (when active) */}
           {showComparison && (
             <div className="flex items-center gap-2 pt-1.5 border-t border-border/50">
-              <span className="text-[11px] text-muted-foreground">Пресеты:</span>
-              <Button variant="outline" size="sm" className="h-6 text-[10px] px-2" onClick={() => handleCompPreset("previous")}>
+              <span className="text-xs text-muted-foreground">Пресеты:</span>
+              <Button variant="outline" size="sm" className="h-6 text-2xs px-2" onClick={() => handleCompPreset("previous")}>
                 Предыдущий период
               </Button>
-              <Button variant="outline" size="sm" className="h-6 text-[10px] px-2" onClick={() => handleCompPreset("lastYear")}>
+              <Button variant="outline" size="sm" className="h-6 text-2xs px-2" onClick={() => handleCompPreset("lastYear")}>
                 Год к году
               </Button>
             </div>
@@ -1140,11 +1140,11 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
               <BarChart3 className="h-4.5 w-4.5 text-primary" />
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Визиты</p>
+              <p className="text-2xs text-muted-foreground uppercase tracking-wide">Визиты</p>
               <p className="text-xl font-bold text-foreground">{totalVisits.toLocaleString("ru-RU")}</p>
               {showComparison && visitsChange !== 0 && (
                 <span className={cn(
-                  "text-[10px] font-semibold",
+                  "text-2xs font-semibold",
                   visitsChange >= 0 ? "text-emerald-500" : "text-red-500"
                 )}>
                   {visitsChange >= 0 ? "+" : ""}{visitsChange}%
@@ -1160,7 +1160,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
               <Users className="h-4.5 w-4.5 text-[hsl(var(--chart-2))]" />
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Посетители</p>
+              <p className="text-2xs text-muted-foreground uppercase tracking-wide">Посетители</p>
               <p className="text-xl font-bold text-foreground">{totalUsers.toLocaleString("ru-RU")}</p>
             </div>
           </div>
@@ -1172,7 +1172,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
               <Target className="h-4.5 w-4.5 text-[hsl(var(--chart-3))]" />
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Ср. позиция</p>
+              <p className="text-2xs text-muted-foreground uppercase tracking-wide">Ср. позиция</p>
               <p className="text-xl font-bold text-foreground">{avgPosition > 0 ? avgPosition.toFixed(1) : "—"}</p>
             </div>
           </div>
@@ -1184,7 +1184,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
               <Search className="h-4.5 w-4.5 text-[hsl(var(--chart-4))]" />
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Ключевых слов</p>
+              <p className="text-2xs text-muted-foreground uppercase tracking-wide">Ключевых слов</p>
               <p className="text-xl font-bold text-foreground">{keywords.length}</p>
             </div>
           </div>
@@ -1197,21 +1197,21 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
           <Card className="bg-card rounded-lg shadow-sm border border-border p-3 text-center">
             <div className="flex items-center justify-center gap-1.5 text-muted-foreground mb-1">
               <MousePointerClick className="h-3.5 w-3.5" />
-              <span className="text-[11px]">Отказы</span>
+              <span className="text-xs">Отказы</span>
             </div>
             <p className="text-lg font-bold text-foreground">{bounceRate}%</p>
           </Card>
           <Card className="bg-card rounded-lg shadow-sm border border-border p-3 text-center">
             <div className="flex items-center justify-center gap-1.5 text-muted-foreground mb-1">
               <Layers className="h-3.5 w-3.5" />
-              <span className="text-[11px]">Глубина</span>
+              <span className="text-xs">Глубина</span>
             </div>
             <p className="text-lg font-bold text-foreground">{pageDepth.toFixed(1)}</p>
           </Card>
           <Card className="bg-card rounded-lg shadow-sm border border-border p-3 text-center">
             <div className="flex items-center justify-center gap-1.5 text-muted-foreground mb-1">
               <Clock className="h-3.5 w-3.5" />
-              <span className="text-[11px]">Время на сайте</span>
+              <span className="text-xs">Время на сайте</span>
             </div>
             <p className="text-lg font-bold text-foreground">{formatDuration(avgDuration)}</p>
           </Card>
@@ -1227,7 +1227,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
               {channel === "all" ? "Все визиты" : CHANNEL_LABELS[channel]}
             </h3>
             {channel === "all" && !showComparison && (
-              <div className="flex flex-wrap items-center gap-3 text-[10px]">
+              <div className="flex flex-wrap items-center gap-3 text-2xs">
                 {ALL_CHANNELS.map(ch => (
                   <span key={ch} className="flex items-center gap-1">
                     <span className="w-2.5 h-2.5 rounded-sm" style={{ background: CHANNEL_COLORS[ch] }} />
@@ -1237,7 +1237,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
               </div>
             )}
             {channel !== "all" && showComparison && (
-              <div className="flex items-center gap-3 text-[10px]">
+              <div className="flex items-center gap-3 text-2xs">
                 <span className="flex items-center gap-1"><span className="w-2.5 h-0.5 rounded" style={{ background: CHANNEL_COLORS[channel] }} /> Период А</span>
                 <span className="flex items-center gap-1"><span className="w-2.5 h-0.5 bg-[hsl(var(--chart-3))] rounded" style={{ borderBottom: "1px dashed" }} /> Период Б</span>
               </div>
@@ -1246,7 +1246,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
           {trafficChart.length === 0 ? (
             <div className="py-16 text-center">
               <BarChart3 className="h-10 w-10 mx-auto mb-2 text-muted-foreground/20" />
-              <p className="text-[13px] text-muted-foreground">
+              <p className="text-base text-muted-foreground">
                 {hasMetrika ? "Нет данных за период" : "Подключите Яндекс.Метрику на вкладке «Интеграции»"}
               </p>
             </div>
@@ -1334,26 +1334,26 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
           {!integration?.access_token ? (
             <div className="py-16 text-center">
               <Search className="h-10 w-10 mx-auto mb-2 text-muted-foreground/20" />
-              <p className="text-[13px] text-muted-foreground">Подключите Яндекс.Метрику на вкладке «Интеграции»</p>
+              <p className="text-base text-muted-foreground">Подключите Яндекс.Метрику на вкладке «Интеграции»</p>
             </div>
           ) : searchPhrasesLoading ? (
             <div className="py-16 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></div>
           ) : topSearchPhrases.length === 0 ? (
             <div className="py-16 text-center">
               <Search className="h-10 w-10 mx-auto mb-2 text-muted-foreground/20" />
-              <p className="text-[13px] text-muted-foreground">Нет данных по поисковым запросам</p>
+              <p className="text-base text-muted-foreground">Нет данных по поисковым запросам</p>
             </div>
           ) : (
             <div className="space-y-2 max-h-[260px] overflow-y-auto pr-1">
               {topSearchPhrases.map((phrase, idx) => (
                 <div key={idx} className="flex items-center justify-between gap-2 py-1.5 border-b border-border/50 last:border-0">
                   <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <span className="text-[10px] text-muted-foreground w-4 shrink-0">{idx + 1}</span>
+                    <span className="text-2xs text-muted-foreground w-4 shrink-0">{idx + 1}</span>
                     <span className="text-xs text-foreground truncate">{phrase.phrase}</span>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
                     <span className="text-xs font-medium tabular-nums">{phrase.visits.toLocaleString("ru-RU")}</span>
-                    <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                    <Badge variant="outline" className="text-2xs px-1.5 py-0">
                       {phrase.bounceRate.toFixed(0)}%
                     </Badge>
                   </div>
@@ -1375,7 +1375,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
               </h3>
             </div>
             {searchGoalsData.length > 0 && (
-              <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+              <div className="flex items-center gap-2 text-2xs text-muted-foreground">
                 <span>Всего: <strong className="text-foreground">{searchGoalsData.reduce((s, g) => s + g.reaches, 0)}</strong></span>
               </div>
             )}
@@ -1388,7 +1388,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
           ) : searchGoalsData.length === 0 ? (
             <div className="py-12 text-center">
               <Target className="h-8 w-8 mx-auto mb-2 text-muted-foreground/20" />
-              <p className="text-[13px] text-muted-foreground">Нет данных о конверсиях по поисковому трафику</p>
+              <p className="text-base text-muted-foreground">Нет данных о конверсиях по поисковому трафику</p>
             </div>
           ) : (
             <>
@@ -1396,14 +1396,14 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
                 {searchGoalsData.slice(0, 4).map((g, i) => (
                   <div key={g.id} className="rounded-lg border border-border/50 bg-muted/20 p-3">
-                    <p className="text-[10px] text-muted-foreground truncate mb-1">{g.name}</p>
+                    <p className="text-2xs text-muted-foreground truncate mb-1">{g.name}</p>
                     <p className="text-lg font-bold text-foreground tabular-nums">{g.reaches}</p>
                     <div className="flex items-center gap-1 mt-0.5">
-                      <span className="text-[10px] text-muted-foreground">CR</span>
-                      <span className="text-[11px] font-semibold text-foreground">{g.conversionRate}%</span>
+                      <span className="text-2xs text-muted-foreground">CR</span>
+                      <span className="text-xs font-semibold text-foreground">{g.conversionRate}%</span>
                       {g.change !== 0 && (
                         <span className={cn(
-                          "text-[10px] font-semibold ml-1",
+                          "text-2xs font-semibold ml-1",
                           g.change > 0 ? "text-emerald-500" : "text-red-500"
                         )}>
                           {g.change > 0 ? "+" : ""}{Math.round(g.change)}%
@@ -1499,7 +1499,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
                   >
                     <TabsList className="h-7 bg-muted/50">
                       {tvSearchers.map((s) => (
-                        <TabsTrigger key={s.key} value={String(s.key)} className="text-[11px] h-6 px-2.5">
+                        <TabsTrigger key={s.key} value={String(s.key)} className="text-xs h-6 px-2.5">
                           {s.name}
                         </TabsTrigger>
                       ))}
@@ -1514,12 +1514,12 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
                       value={tvRegionIndex || ""}
                       onValueChange={(v) => setTvRegionIndex(v)}
                     >
-                      <SelectTrigger className="h-7 text-[11px] w-auto min-w-[160px]">
+                      <SelectTrigger className="h-7 text-xs w-auto min-w-[160px]">
                         <SelectValue placeholder="Регион" />
                       </SelectTrigger>
                       <SelectContent>
                         {cur.regions.map((r) => (
-                          <SelectItem key={r.index} value={r.index} className="text-[12px]">
+                          <SelectItem key={r.index} value={r.index} className="text-sm">
                             {r.name}
                           </SelectItem>
                         ))}
@@ -1528,16 +1528,16 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
                   );
                 })()}
               </div>
-              <span className="text-[11px] text-muted-foreground">
+              <span className="text-xs text-muted-foreground">
                 Данные за: <span className="text-foreground font-medium">{(() => { if (!keywordDates[0]) return "—"; const d = new Date(keywordDates[0]); return isNaN(d.getTime()) ? String(keywordDates[0]) : format(d, "dd.MM.yyyy"); })()}</span>
               </span>
             </div>
             <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-2">
               {cells.map((c) => (
                 <div key={c.label} className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-center">
-                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">{c.label}</div>
+                  <div className="text-2xs uppercase tracking-wide text-muted-foreground mb-1">{c.label}</div>
                   <div className={cn("text-lg font-semibold", c.tone || "text-foreground")}>{c.value}</div>
-                  {c.sub && <div className="text-[10px] text-muted-foreground mt-0.5">{c.sub}</div>}
+                  {c.sub && <div className="text-2xs text-muted-foreground mt-0.5">{c.sub}</div>}
                 </div>
               ))}
             </div>
@@ -1549,13 +1549,13 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
         <div className="flex items-center gap-2 p-4 border-b border-border">
           <Search className="h-4 w-4 text-muted-foreground" />
           <h3 className="text-sm font-semibold text-foreground">Запросы</h3>
-          <Badge variant="secondary" className="text-[10px] h-5">{keywords.length}</Badge>
+          <Badge variant="secondary" className="text-2xs h-5">{keywords.length}</Badge>
         </div>
         {!project?.topvisor_api_key || !project?.topvisor_project_id || !project?.topvisor_user_id ? (
           <div className="py-16 text-center">
             <Search className="h-10 w-10 mx-auto mb-2 text-muted-foreground/20" />
-            <p className="text-[13px] text-muted-foreground mb-1">Topvisor не подключён</p>
-            <p className="text-[11px] text-muted-foreground/70">
+            <p className="text-base text-muted-foreground mb-1">Topvisor не подключён</p>
+            <p className="text-xs text-muted-foreground/70">
               Заполните API-ключ, User ID и Project ID Topvisor в настройках проекта
             </p>
           </div>
@@ -1566,14 +1566,14 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
         ) : topProjectPositions.length === 0 ? (
           <div className="py-16 text-center">
             <Search className="h-10 w-10 mx-auto mb-2 text-muted-foreground/20" />
-            <p className="text-[13px] text-muted-foreground mb-1">Нет данных по позициям проекта</p>
-            <p className="text-[11px] text-muted-foreground/70">
+            <p className="text-base text-muted-foreground mb-1">Нет данных по позициям проекта</p>
+            <p className="text-xs text-muted-foreground/70">
               Проверьте, что в проекте Topvisor (ID: {project.topvisor_project_id}) добавлены ключевые слова и сделан хотя бы один съём позиций
             </p>
           </div>
         ) : (
           <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
-            <table className="w-full text-[13px]">
+            <table className="w-full text-base">
               <thead className="sticky top-0 bg-card z-10">
                 <tr className="border-b border-border bg-muted/30">
                   <th className="text-left px-4 py-2.5 font-medium text-muted-foreground w-8">#</th>
@@ -1595,7 +1595,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
                   const dates = keywordDates.slice(0, 5);
                   return (
                     <tr key={`${item.keyword}-${i}`} className={cn("hover:bg-muted/30 transition-colors", i % 2 === 1 && "bg-muted/10")}>
-                      <td className="px-4 py-2 text-muted-foreground text-[11px]">{i + 1}</td>
+                      <td className="px-4 py-2 text-muted-foreground text-xs">{i + 1}</td>
                       <td className="px-4 py-2 text-foreground">{item.keyword}</td>
                       <td className="px-3 py-2 text-center text-muted-foreground tabular-nums">{item.frequency}</td>
                       {dates.map((date, di) => {
@@ -1616,7 +1616,7 @@ export default function ProjectAnalyticsTab({ projectId }: Props) {
                               <div className="flex items-center justify-center gap-1">
                                 <span className="font-semibold">{pos}</span>
                                 {delta !== null && delta !== 0 && (
-                                  <span className={cn("text-[10px]", delta > 0 ? "text-emerald-500" : "text-red-500")}>
+                                  <span className={cn("text-2xs", delta > 0 ? "text-emerald-500" : "text-red-500")}>
                                     {delta > 0 ? `↑${delta}` : `↓${Math.abs(delta)}`}
                                   </span>
                                 )}

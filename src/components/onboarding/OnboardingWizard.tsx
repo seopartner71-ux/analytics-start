@@ -239,20 +239,20 @@ export function OnboardingWizard({ open, onOpenChange, onCreated }: Props) {
         {step === 1 && (
           <div className="space-y-3">
             <div>
-              <Label className="text-[12px]">Название проекта / клиента *</Label>
+              <Label className="text-sm">Название проекта / клиента *</Label>
               <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="ООО Ромашка" />
             </div>
             <div>
-              <Label className="text-[12px]">Сайт клиента</Label>
+              <Label className="text-sm">Сайт клиента</Label>
               <Input value={siteUrl} onChange={(e) => setSiteUrl(e.target.value)} placeholder="https://example.com" />
             </div>
             <div>
-              <Label className="text-[12px]">Дата старта *</Label>
+              <Label className="text-sm">Дата старта *</Label>
               <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <Label className="text-[12px]">SEO-специалист *</Label>
+                <Label className="text-sm">SEO-специалист *</Label>
                 <Select value={seoId} onValueChange={setSeoId}>
                   <SelectTrigger><SelectValue placeholder="Выбрать" /></SelectTrigger>
                   <SelectContent>
@@ -261,7 +261,7 @@ export function OnboardingWizard({ open, onOpenChange, onCreated }: Props) {
                 </Select>
               </div>
               <div>
-                <Label className="text-[12px]">Аккаунт-менеджер *</Label>
+                <Label className="text-sm">Аккаунт-менеджер *</Label>
                 <Select value={managerId} onValueChange={setManagerId}>
                   <SelectTrigger><SelectValue placeholder="Выбрать" /></SelectTrigger>
                   <SelectContent>
@@ -275,15 +275,15 @@ export function OnboardingWizard({ open, onOpenChange, onCreated }: Props) {
 
         {step === 2 && (
           <div className="space-y-3">
-            <Label className="text-[12px]">Тариф *</Label>
+            <Label className="text-sm">Тариф *</Label>
             <RadioGroup value={tariffId} onValueChange={setTariffId} className="space-y-2">
               {tariffs.map((t) => (
                 <Card key={t.id} className={`p-3 cursor-pointer transition ${tariffId === t.id ? "border-primary bg-primary/5" : ""}`} onClick={() => setTariffId(t.id)}>
                   <div className="flex items-center gap-3">
                     <RadioGroupItem value={t.id} id={t.id} />
                     <div className="flex-1">
-                      <div className="text-[13px] font-medium">{t.name}</div>
-                      <div className="text-[11px] text-muted-foreground">{t.description}</div>
+                      <div className="text-base font-medium">{t.name}</div>
+                      <div className="text-xs text-muted-foreground">{t.description}</div>
                     </div>
                   </div>
                 </Card>
@@ -292,17 +292,17 @@ export function OnboardingWizard({ open, onOpenChange, onCreated }: Props) {
 
             {selectedTariff?.is_custom && (
               <div>
-                <Label className="text-[12px]">Бюджет договора, ₽ *</Label>
+                <Label className="text-sm">Бюджет договора, ₽ *</Label>
                 <Input type="number" value={budget} onChange={(e) => setBudget(e.target.value)} placeholder="120000" />
               </div>
             )}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <Label className="text-[12px]">Дата первой оплаты</Label>
+                <Label className="text-sm">Дата первой оплаты</Label>
                 <Input type="date" value={firstPayment} onChange={(e) => setFirstPayment(e.target.value)} />
               </div>
               <div>
-                <Label className="text-[12px]">Периодичность</Label>
+                <Label className="text-sm">Периодичность</Label>
                 <Select value={recurrence} onValueChange={(v: any) => setRecurrence(v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -318,26 +318,26 @@ export function OnboardingWizard({ open, onOpenChange, onCreated }: Props) {
         {step === 3 && (
           <div className="space-y-3">
             <div>
-              <Label className="text-[12px]">Контактное лицо</Label>
+              <Label className="text-sm">Контактное лицо</Label>
               <Input value={contactName} onChange={(e) => setContactName(e.target.value)} placeholder="Иван Иванов" />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <Label className="text-[12px]">Телефон</Label>
+                <Label className="text-sm">Телефон</Label>
                 <Input value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} placeholder="+7 ..." />
               </div>
               <div>
-                <Label className="text-[12px]">Email</Label>
+                <Label className="text-sm">Email</Label>
                 <Input type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="client@example.com" />
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <Label className="text-[12px]">Telegram</Label>
+                <Label className="text-sm">Telegram</Label>
                 <Input value={contactTg} onChange={(e) => setContactTg(e.target.value)} placeholder="@username" />
               </div>
               <div>
-                <Label className="text-[12px]">Предпочтительный канал</Label>
+                <Label className="text-sm">Предпочтительный канал</Label>
                 <Select value={contactPref} onValueChange={setContactPref}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>

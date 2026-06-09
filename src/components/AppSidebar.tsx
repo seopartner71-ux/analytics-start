@@ -113,7 +113,7 @@ export function AppSidebar({ activeTab, onTabChange, projectName, projectLogo }:
           to={item.url}
           end={item.url === "/"}
           className={cn(
-            "flex items-center gap-2.5 px-3 py-2 text-[13px] rounded-none transition-colors",
+            "flex items-center gap-2.5 px-3 py-2 text-base rounded-none transition-colors",
             "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
           )}
           activeClassName="bg-primary/[0.08] text-primary font-medium border-l-[3px] border-primary"
@@ -130,7 +130,7 @@ export function AppSidebar({ activeTab, onTabChange, projectName, projectLogo }:
       <SidebarMenuButton
         onClick={() => onTabChange?.(item.tab)}
         className={cn(
-          "flex items-center gap-2.5 px-3 py-2 text-[13px] rounded-none transition-colors cursor-pointer",
+          "flex items-center gap-2.5 px-3 py-2 text-base rounded-none transition-colors cursor-pointer",
           "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
           activeTab === item.tab && "bg-primary/[0.08] text-primary font-medium border-l-[3px] border-primary"
         )}
@@ -138,7 +138,7 @@ export function AppSidebar({ activeTab, onTabChange, projectName, projectLogo }:
         <item.icon className="h-4 w-4 shrink-0" />
         {!collapsed && <span className="flex-1">{item.title}</span>}
         {!collapsed && item.badge && item.badge > 0 ? (
-          <span className="ml-auto inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold">
+          <span className="ml-auto inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-primary-foreground text-2xs font-semibold">
             {item.badge > 99 ? "99+" : item.badge}
           </span>
         ) : null}
@@ -155,7 +155,7 @@ export function AppSidebar({ activeTab, onTabChange, projectName, projectLogo }:
             <BarChart3 className="h-4 w-4 text-primary-foreground" />
           </div>
           {!collapsed && (
-            <span className="text-[15px] font-semibold tracking-tight text-sidebar-accent-foreground">
+            <span className="text-lg font-semibold tracking-tight text-sidebar-accent-foreground">
               SEO-CRM
             </span>
           )}
@@ -167,7 +167,7 @@ export function AppSidebar({ activeTab, onTabChange, projectName, projectLogo }:
               <SidebarGroupContent>
                 <SidebarMenu>
                   <SidebarMenuItem>
-                    <SidebarMenuButton onClick={() => navigate("/")} className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer rounded-none">
+                    <SidebarMenuButton onClick={() => navigate("/")} className="flex items-center gap-2.5 px-3 py-2 text-base text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer rounded-none">
                       <ChevronLeft className="h-4 w-4 shrink-0" />
                       {!collapsed && <span>Все проекты</span>}
                     </SidebarMenuButton>
@@ -182,11 +182,11 @@ export function AppSidebar({ activeTab, onTabChange, projectName, projectLogo }:
                   {projectLogo ? (
                     <img src={projectLogo} alt={projectName} className="h-7 w-7 rounded object-cover" />
                   ) : (
-                    <div className="h-7 w-7 rounded bg-primary/20 flex items-center justify-center text-[11px] font-bold text-primary">
+                    <div className="h-7 w-7 rounded bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
                       {projectName.slice(0, 2).toUpperCase()}
                     </div>
                   )}
-                  <span className="text-[13px] font-medium text-sidebar-accent-foreground truncate">{projectName}</span>
+                  <span className="text-base font-medium text-sidebar-accent-foreground truncate">{projectName}</span>
                 </div>
               </div>
             )}
@@ -237,7 +237,7 @@ export function AppSidebar({ activeTab, onTabChange, projectName, projectLogo }:
                           {p.logo_url ? (
                             <img src={p.logo_url} alt="" className="h-4 w-4 rounded object-cover" />
                           ) : (
-                            <div className="h-4 w-4 rounded bg-primary/20 text-[8px] flex items-center justify-center font-bold text-primary">
+                            <div className="h-4 w-4 rounded bg-primary/20 text-2xs flex items-center justify-center font-bold text-primary">
                               {p.name.slice(0, 2).toUpperCase()}
                             </div>
                           )}
@@ -266,8 +266,8 @@ export function AppSidebar({ activeTab, onTabChange, projectName, projectLogo }:
               size="sm"
             />
             <div className="min-w-0 flex-1">
-              <p className="text-[12px] font-medium text-sidebar-accent-foreground truncate">{profile?.full_name || user?.email}</p>
-              <p className="text-[10px] text-sidebar-foreground/50">Мой профиль</p>
+              <p className="text-sm font-medium text-sidebar-accent-foreground truncate">{profile?.full_name || user?.email}</p>
+              <p className="text-2xs text-sidebar-foreground/50">Мой профиль</p>
             </div>
           </div>
         </SidebarFooter>

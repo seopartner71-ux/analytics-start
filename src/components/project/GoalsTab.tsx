@@ -303,15 +303,15 @@ export function GoalsTab({ projectId, projectName }: GoalsTabProps) {
                     {/* Metrics row */}
                     <div className="grid grid-cols-3 gap-4 mb-3">
                       <div>
-                        <p className="text-[11px] text-muted-foreground uppercase tracking-wider">{t("goals.reaches")}</p>
+                        <p className="text-xs text-muted-foreground uppercase tracking-wider">{t("goals.reaches")}</p>
                         <p className="text-lg font-bold text-foreground tabular-nums">{g.reaches.toLocaleString()}</p>
                       </div>
                       <div>
-                        <p className="text-[11px] text-muted-foreground uppercase tracking-wider">CR%</p>
+                        <p className="text-xs text-muted-foreground uppercase tracking-wider">CR%</p>
                         <p className="text-lg font-bold text-foreground tabular-nums">{g.conversionRate}%</p>
                       </div>
                       <div>
-                        <p className="text-[11px] text-muted-foreground uppercase tracking-wider">
+                        <p className="text-xs text-muted-foreground uppercase tracking-wider">
                           {i18n.language === "ru" ? "Таргет" : "Target"}
                         </p>
                         <p className="text-lg font-bold text-foreground tabular-nums">{g.target.toLocaleString()}</p>
@@ -321,7 +321,7 @@ export function GoalsTab({ projectId, projectName }: GoalsTabProps) {
                     {/* Progress bar */}
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between">
-                        <span className="text-[11px] text-muted-foreground">
+                        <span className="text-xs text-muted-foreground">
                           {i18n.language === "ru" ? "Выполнение плана" : "Plan completion"}
                         </span>
                         <span className="text-xs font-semibold tabular-nums" style={{ color: g.color }}>

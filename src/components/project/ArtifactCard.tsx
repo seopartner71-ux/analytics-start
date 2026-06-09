@@ -45,7 +45,7 @@ export function ArtifactCard({ url, title }: ArtifactCardProps) {
         <span className={service.color}>{service.icon}</span>
         <div className="min-w-0">
           <p className="text-xs font-medium text-foreground truncate max-w-[160px]">{displayTitle}</p>
-          <p className="text-[10px] text-muted-foreground">{service.name}</p>
+          <p className="text-2xs text-muted-foreground">{service.name}</p>
         </div>
         <div className="flex items-center gap-0.5 ml-1">
           {service.embeddable && (

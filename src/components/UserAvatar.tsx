@@ -5,9 +5,9 @@ import { cn } from "@/lib/utils";
 export type UserAvatarSize = "xs" | "sm" | "md" | "lg" | "xl";
 
 const SIZE_MAP: Record<UserAvatarSize, { box: string; text: string; px: number }> = {
-  xs: { box: "h-5 w-5", text: "text-[9px]", px: 40 },
-  sm: { box: "h-7 w-7", text: "text-[10px]", px: 56 },
-  md: { box: "h-9 w-9", text: "text-[11px]", px: 72 },
+  xs: { box: "h-5 w-5", text: "text-2xs", px: 40 },
+  sm: { box: "h-7 w-7", text: "text-2xs", px: 56 },
+  md: { box: "h-9 w-9", text: "text-xs", px: 72 },
   lg: { box: "h-12 w-12", text: "text-sm", px: 96 },
   xl: { box: "h-20 w-20", text: "text-lg", px: 160 },
 };

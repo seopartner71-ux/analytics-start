@@ -199,7 +199,7 @@ export function NotificationBell() {
         >
           <Bell className="h-4 w-4" />
           {unreadCount > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
+            <span className="absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 rounded-full bg-destructive text-destructive-foreground text-2xs font-bold flex items-center justify-center">
               {unreadCount > 99 ? "99+" : unreadCount}
             </span>
           )}
@@ -228,7 +228,7 @@ export function NotificationBell() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 text-[11px] text-muted-foreground hover:text-foreground gap-1 px-2"
+                className="h-7 text-xs text-muted-foreground hover:text-foreground gap-1 px-2"
                 onClick={() => markAllRead.mutate()}
               >
                 <Check className="h-3 w-3" /> Прочитать все
@@ -240,7 +240,7 @@ export function NotificationBell() {
           {notifications.length === 0 ? (
             <div className="py-10 text-center">
               <Bell className="h-8 w-8 mx-auto mb-2 text-muted-foreground/20" />
-              <p className="text-[13px] text-muted-foreground">Нет уведомлений</p>
+              <p className="text-base text-muted-foreground">Нет уведомлений</p>
             </div>
           ) : (
             <div className="divide-y divide-border/40">
@@ -265,16 +265,16 @@ export function NotificationBell() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-baseline gap-2">
                       <span className={cn(
-                        "text-[12px] truncate",
+                        "text-sm truncate",
                         !notif.is_read ? "font-semibold text-foreground" : "text-foreground"
                       )}>
                         {notif.title}
                       </span>
                     </div>
-                    <p className="text-[11px] text-muted-foreground truncate mt-0.5">
+                    <p className="text-xs text-muted-foreground truncate mt-0.5">
                       {notif.project?.name || "Проект"} {notif.body ? `· ${notif.body}` : ""}
                     </p>
-                    <p className="text-[10px] text-muted-foreground/60 mt-0.5">
+                    <p className="text-2xs text-muted-foreground/60 mt-0.5">
                       {format(parseISO(notif.created_at), "dd.MM.yy HH:mm")}
                     </p>
                   </div>
@@ -290,7 +290,7 @@ export function NotificationBell() {
           <Button
             variant="ghost"
             size="sm"
-            className="w-full justify-start gap-2 text-[12px] text-muted-foreground hover:text-foreground"
+            className="w-full justify-start gap-2 text-sm text-muted-foreground hover:text-foreground"
             onClick={() => {
               setOpen(false);
               navigate("/notifications/settings");

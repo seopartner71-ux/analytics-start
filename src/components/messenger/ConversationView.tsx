@@ -241,8 +241,8 @@ export function ConversationView({ conversationId, onBack, employeeById, directO
           </div>
         )}
         <div className="min-w-0 flex-1">
-          <p className="text-[13px] font-semibold truncate">{headerTitle}</p>
-          <p className="text-[11px] text-muted-foreground truncate">{headerSubtitle}</p>
+          <p className="text-base font-semibold truncate">{headerTitle}</p>
+          <p className="text-xs text-muted-foreground truncate">{headerSubtitle}</p>
         </div>
       </div>
 
@@ -258,7 +258,7 @@ export function ConversationView({ conversationId, onBack, employeeById, directO
             if (m.is_system) {
               return (
                 <div key={m.id} className="text-center">
-                  <span className="text-[11px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{m.body}</span>
+                  <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{m.body}</span>
                 </div>
               );
             }
@@ -266,12 +266,12 @@ export function ConversationView({ conversationId, onBack, employeeById, directO
               <div key={m.id} className={cn("flex gap-2", isMine ? "justify-end" : "justify-start")}>
                 <div
                   className={cn(
-                    "max-w-[75%] rounded-2xl px-3 py-2 text-[13px] break-words",
+                    "max-w-[75%] rounded-2xl px-3 py-2 text-base break-words",
                     isMine ? "bg-primary text-primary-foreground rounded-br-sm" : "bg-muted text-foreground rounded-bl-sm",
                   )}
                 >
                   {!isMine && conv?.type !== "direct" && (
-                    <p className="text-[10px] font-semibold opacity-70 mb-0.5">{m.user_name}</p>
+                    <p className="text-2xs font-semibold opacity-70 mb-0.5">{m.user_name}</p>
                   )}
                   {m.body && <p className="whitespace-pre-wrap">{m.body}</p>}
                   {m.attachments?.length > 0 && (
@@ -289,7 +289,7 @@ export function ConversationView({ conversationId, onBack, employeeById, directO
                             target="_blank"
                             rel="noreferrer"
                             className={cn(
-                              "flex items-center gap-1.5 rounded px-2 py-1 text-[11px]",
+                              "flex items-center gap-1.5 rounded px-2 py-1 text-xs",
                               isMine ? "bg-primary-foreground/15 hover:bg-primary-foreground/25" : "bg-background/80 hover:bg-background",
                             )}
                           >
@@ -301,7 +301,7 @@ export function ConversationView({ conversationId, onBack, employeeById, directO
                     </div>
                   )}
                   <div className="flex items-center justify-end gap-1 mt-0.5">
-                    <span className={cn("text-[9px]", isMine ? "text-primary-foreground/70" : "text-muted-foreground")}>
+                    <span className={cn("text-2xs", isMine ? "text-primary-foreground/70" : "text-muted-foreground")}>
                       {new Date(m.created_at).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
                     </span>
                     {isMine && (
@@ -323,7 +323,7 @@ export function ConversationView({ conversationId, onBack, employeeById, directO
       {pendingFiles.length > 0 && (
         <div className="flex flex-wrap gap-1 px-3 py-2 border-t border-border/60 bg-muted/30">
           {pendingFiles.map((f, i) => (
-            <div key={i} className="flex items-center gap-1 bg-background border border-border rounded px-2 py-0.5 text-[11px]">
+            <div key={i} className="flex items-center gap-1 bg-background border border-border rounded px-2 py-0.5 text-xs">
               <span className="truncate max-w-[120px]">{f.name}</span>
               <button onClick={() => setPendingFiles((prev) => prev.filter((_, idx) => idx !== i))}>
                 <X className="h-3 w-3" />
@@ -363,7 +363,7 @@ export function ConversationView({ conversationId, onBack, employeeById, directO
           }}
           placeholder="Написать сообщение..."
           rows={1}
-          className="min-h-[36px] max-h-32 resize-none text-[13px] py-2"
+          className="min-h-[36px] max-h-32 resize-none text-base py-2"
         />
         <Button
           size="icon"

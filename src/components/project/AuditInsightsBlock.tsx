@@ -112,7 +112,7 @@ export function AuditInsightsBlock({ jobId, projectId, isAdmin = true }: Props) 
             </div>
             <div>
               <h3 className="text-sm font-semibold text-foreground">Выводы и рекомендации AI</h3>
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 {generatedAt
                   ? `Сгенерировано: ${new Date(generatedAt).toLocaleString("ru-RU")}`
                   : "Краткий разбор результатов аудита"}
@@ -257,7 +257,7 @@ function PriorityBadge({ priority }: { priority: string }) {
   };
   const cfg = map[priority] ?? map.low;
   return (
-    <Badge variant="outline" className={cn("text-[10px] font-semibold border", cfg.cls)}>
+    <Badge variant="outline" className={cn("text-2xs font-semibold border", cfg.cls)}>
       {cfg.label}
     </Badge>
   );

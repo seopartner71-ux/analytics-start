@@ -154,7 +154,7 @@ function ScoreCircle({ score }: { score: number }) {
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <div className={cn("text-3xl font-bold tabular-nums", c.text)}>{score}</div>
-        <div className="text-[10px] uppercase tracking-wider text-muted-foreground">из 100</div>
+        <div className="text-2xs uppercase tracking-wider text-muted-foreground">из 100</div>
       </div>
     </div>
   );
@@ -163,9 +163,9 @@ function ScoreCircle({ score }: { score: number }) {
 function MetricCard({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
     <div className="rounded-lg border border-border bg-card p-3">
-      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className="text-2xs uppercase tracking-wider text-muted-foreground">{label}</div>
       <div className="mt-1 text-lg font-semibold text-foreground tabular-nums">{value}</div>
-      {hint && <div className="text-[11px] text-muted-foreground mt-0.5">{hint}</div>}
+      {hint && <div className="text-xs text-muted-foreground mt-0.5">{hint}</div>}
     </div>
   );
 }
@@ -212,12 +212,12 @@ function AuditRow({ item }: { item: AuditItem }) {
           <div className="flex items-center gap-2 flex-wrap">
             <div className="text-sm font-medium text-foreground">{item.title}</div>
             {item.displayValue && (
-              <span className={cn("text-[11px] px-1.5 py-0.5 rounded font-semibold tabular-nums", meta.text, "bg-background/40")}>
+              <span className={cn("text-xs px-1.5 py-0.5 rounded font-semibold tabular-nums", meta.text, "bg-background/40")}>
                 {item.displayValue}
               </span>
             )}
             {item.savingsMs && item.savingsMs > 0 && (
-              <span className="text-[11px] px-1.5 py-0.5 rounded bg-background/40 text-muted-foreground tabular-nums">
+              <span className="text-xs px-1.5 py-0.5 rounded bg-background/40 text-muted-foreground tabular-nums">
                 экономия ~{Math.round(item.savingsMs)} мс
               </span>
             )}
@@ -248,7 +248,7 @@ function AuditGroup({ title, subtitle, items }: { title: string; subtitle?: stri
     <div className="space-y-2">
       <div>
         <div className="text-sm font-semibold text-foreground">{title} · <span className="text-muted-foreground tabular-nums">{items.length}</span></div>
-        {subtitle && <div className="text-[11px] text-muted-foreground">{subtitle}</div>}
+        {subtitle && <div className="text-xs text-muted-foreground">{subtitle}</div>}
       </div>
       <div className="space-y-2">
         {items.map((it) => (
@@ -312,7 +312,7 @@ function ResultPanel({ data }: { data: PageSpeedMetrics }) {
                 </div>
                 <div>
                   <div className="text-sm font-semibold text-foreground">Топ-3 приоритета</div>
-                  <div className="text-[11px] text-muted-foreground">Самые значимые проблемы по экономии времени и серьёзности</div>
+                  <div className="text-xs text-muted-foreground">Самые значимые проблемы по экономии времени и серьёзности</div>
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
@@ -321,21 +321,21 @@ function ResultPanel({ data }: { data: PageSpeedMetrics }) {
                   return (
                     <div key={it.id} className={cn("rounded-lg border p-3", meta.ring, meta.bg)}>
                       <div className="flex items-center gap-2 mb-1.5">
-                        <span className={cn("h-5 w-5 rounded-full flex items-center justify-center text-[11px] font-bold", meta.text, "bg-background/40")}>
+                        <span className={cn("h-5 w-5 rounded-full flex items-center justify-center text-xs font-bold", meta.text, "bg-background/40")}>
                           {idx + 1}
                         </span>
-                        <span className={cn("text-[10px] uppercase tracking-wider font-semibold", meta.text)}>
+                        <span className={cn("text-2xs uppercase tracking-wider font-semibold", meta.text)}>
                           {meta.label}
                         </span>
                       </div>
-                      <div className="text-[13px] font-medium text-foreground leading-snug line-clamp-2">{it.title}</div>
+                      <div className="text-base font-medium text-foreground leading-snug line-clamp-2">{it.title}</div>
                       {(it.savingsMs ?? 0) > 0 && (
-                        <div className="mt-1.5 text-[11px] text-muted-foreground tabular-nums">
+                        <div className="mt-1.5 text-xs text-muted-foreground tabular-nums">
                           экономия ~{Math.round(it.savingsMs!)} мс
                         </div>
                       )}
                       {!it.savingsMs && it.displayValue && (
-                        <div className="mt-1.5 text-[11px] text-muted-foreground">{it.displayValue}</div>
+                        <div className="mt-1.5 text-xs text-muted-foreground">{it.displayValue}</div>
                       )}
                     </div>
                   );
@@ -482,7 +482,7 @@ export function PageSpeedBlock({ siteUrl }: { siteUrl?: string | null }) {
               <div className="text-base font-semibold text-foreground">PageSpeed Insights</div>
               <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", open && "rotate-180")} />
               {hasResults && (
-                <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                <span className="text-2xs uppercase tracking-wider px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
                   данные есть
                 </span>
               )}
@@ -491,7 +491,7 @@ export function PageSpeedBlock({ siteUrl }: { siteUrl?: string | null }) {
               {url ? url : "URL сайта не указан в проекте"}
             </div>
             {checkedAt && hasResults && (
-              <div className="text-[11px] text-muted-foreground mt-0.5">
+              <div className="text-xs text-muted-foreground mt-0.5">
                 Последняя проверка: {formatCheckedAt(checkedAt)}
               </div>
             )}

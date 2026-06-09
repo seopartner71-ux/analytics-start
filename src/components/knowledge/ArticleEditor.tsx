@@ -73,12 +73,12 @@ export function ArticleEditor({ open, onOpenChange, articleId, onSaved }: Props)
         </DialogHeader>
         <div className="space-y-3">
           <div>
-            <Label className="text-[12px]">Заголовок *</Label>
+            <Label className="text-sm">Заголовок *</Label>
             <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Как настроить Robots.txt" />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <Label className="text-[12px]">Категория</Label>
+              <Label className="text-sm">Категория</Label>
               <Select value={category} onValueChange={setCategory}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -89,12 +89,12 @@ export function ArticleEditor({ open, onOpenChange, articleId, onSaved }: Props)
               </Select>
             </div>
             <div>
-              <Label className="text-[12px]">Теги (через запятую)</Label>
+              <Label className="text-sm">Теги (через запятую)</Label>
               <Input value={tagsInput} onChange={(e) => setTagsInput(e.target.value)} placeholder="robots.txt, индексация" />
             </div>
           </div>
           <div data-color-mode={theme === "dark" ? "dark" : "light"}>
-            <Label className="text-[12px]">Содержимое</Label>
+            <Label className="text-sm">Содержимое</Label>
             <MDEditor value={content} onChange={(v) => setContent(v || "")} height={400} preview="edit" />
           </div>
         </div>
