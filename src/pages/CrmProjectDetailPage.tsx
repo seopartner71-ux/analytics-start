@@ -471,10 +471,6 @@ export default function CrmProjectDetailPage() {
           <Suspense fallback={<TabFallback />}><WeeklyReportsTab projectId={id!} /></Suspense>
         </TabsContent>
 
-        <TabsContent value="links">
-          <Suspense fallback={<TabFallback />}><LinkProfileTab projectId={id!} /></Suspense>
-        </TabsContent>
-
         <TabsContent value="chat">
           <Suspense fallback={<TabFallback />}><ProjectChatTab projectId={id!} projectName={project?.name || ""} /></Suspense>
         </TabsContent>
@@ -483,25 +479,6 @@ export default function CrmProjectDetailPage() {
           <Suspense fallback={<TabFallback />}><ProjectAnalyticsTab projectId={id!} /></Suspense>
         </TabsContent>
 
-        <TabsContent value="health">
-          <Suspense fallback={<TabFallback />}><YandexWebmasterTab projectId={id!} /></Suspense>
-        </TabsContent>
-
-        <TabsContent value="gsc">
-          <Suspense fallback={<TabFallback />}><GscAnalysisTab projectId={id!} /></Suspense>
-        </TabsContent>
-
-        <TabsContent value="audit">
-          <Suspense fallback={<TabFallback />}><TechnicalAuditTab projectId={id!} /></Suspense>
-        </TabsContent>
-
-        <TabsContent value="mobile">
-          <Suspense fallback={<TabFallback />}><MobileFriendlyTab projectId={id!} /></Suspense>
-        </TabsContent>
-
-        <TabsContent value="pagespeed">
-          <Suspense fallback={<TabFallback />}><PageSpeedTab projectId={id!} /></Suspense>
-        </TabsContent>
 
         <TabsContent value="checklist">
       {/* Two-column layout */}
