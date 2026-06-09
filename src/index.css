@@ -193,7 +193,7 @@
     @apply border-b border-border bg-muted/30;
   }
   .crm-table thead th {
-    @apply text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground p-3;
+    @apply text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground p-3;
   }
   .crm-table tbody tr {
     @apply border-b border-border/40 transition-all duration-150 cursor-pointer;
