@@ -446,7 +446,6 @@ export default function CrmProjectDetailPage() {
             <BarChart3 className="h-3.5 w-3.5" /> Аналитика
           </TabsTrigger>
           <TabsTrigger value="periods" className="gap-1.5 text-base">
-
             <CalendarDays className="h-3.5 w-3.5" /> Периоды
           </TabsTrigger>
           <TabsTrigger value="weekly" className="gap-1.5 text-base">
