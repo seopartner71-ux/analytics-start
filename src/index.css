@@ -133,6 +133,15 @@
     --sidebar-border: 240 4% 12%;
     --sidebar-ring: 240 5% 65%;
     --sidebar-muted: 240 4% 14%;
+
+    /* Elevation / shadow tokens (dark) */
+    --shadow-xs: 0 1px 0 0 hsl(0 0% 100% / 0.04);
+    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.4), inset 0 1px 0 hsl(0 0% 100% / 0.04);
+    --shadow-md: 0 4px 12px -2px hsl(0 0% 0% / 0.4), inset 0 1px 0 hsl(0 0% 100% / 0.04);
+    --shadow-lg: 0 10px 30px -10px hsl(0 0% 0% / 0.5), inset 0 1px 0 hsl(0 0% 100% / 0.05);
+
+    --border-subtle: hsl(0 0% 100% / 0.06);
+    --border-strong: hsl(0 0% 100% / 0.10);
   }
 }
 
