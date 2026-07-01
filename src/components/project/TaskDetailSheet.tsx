@@ -336,7 +336,27 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
 
   const sendForReview = async () => {
     if (!task) return;
-    const hasAttachment = comments.some(c => !c.is_system);
+    // Проверяем наличие результата: пользовательский комментарий/файл в task_comments,
+    // прикреплённый файл в task_attachments, либо не пустой resultText в поле ввода.
+    let hasAttachment = comments.some(c => c.is_system === false);
+    if (!hasAttachment) {
+      const { data: freshComments } = await supabase
+        .from("task_comments")
+        .select("id,is_system")
+        .eq("task_id", task.id);
+      hasAttachment = (freshComments || []).some((c: any) => c.is_system === false);
+    }
+    if (!hasAttachment) {
+      const { count } = await supabase
+        .from("task_attachments")
+        .select("id", { count: "exact", head: true })
+        .eq("task_id", task.id);
+      if ((count || 0) > 0) hasAttachment = true;
+    }
+    if (!hasAttachment && resultText.trim()) {
+      await saveResult();
+      hasAttachment = true;
+    }
     if (!hasAttachment) {
       toast.warning("Прикрепите файл или ссылку как результат работы перед отправкой на проверку.", { duration: 4000 });
       return;
