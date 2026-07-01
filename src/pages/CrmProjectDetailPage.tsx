@@ -203,6 +203,45 @@ export default function CrmProjectDetailPage() {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedTask, setSelectedTask] = useState<CrmTask | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const toggleSelected = (taskId: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(taskId)) next.delete(taskId); else next.add(taskId);
+      return next;
+    });
+  };
+  const clearSelection = () => setSelectedIds(new Set());
+
+  // Bulk update
+  const bulkUpdate = useMutation({
+    mutationFn: async (patch: Record<string, any>) => {
+      const ids = Array.from(selectedIds);
+      if (!ids.length) return;
+      const { error } = await supabase.from("crm_tasks").update(patch).in("id", ids);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["project-tasks", id] });
+      toast.success("Задачи обновлены");
+      clearSelection();
+    },
+    onError: (e: any) => toast.error(e.message || "Ошибка обновления"),
+  });
+  const bulkDelete = useMutation({
+    mutationFn: async () => {
+      const ids = Array.from(selectedIds);
+      if (!ids.length) return;
+      const { error } = await supabase.from("crm_tasks").delete().in("id", ids);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["project-tasks", id] });
+      toast.success("Задачи удалены");
+      clearSelection();
+    },
+    onError: (e: any) => toast.error(e.message || "Ошибка удаления"),
+  });
 
   // Toggle task completion
   const toggleTask = useMutation({
