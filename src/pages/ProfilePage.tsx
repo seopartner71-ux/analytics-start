@@ -28,6 +28,7 @@ const BADGE_ICONS = [
 ];
 
 import { getDefaultAvatar } from "@/lib/avatar";
+import AvatarEditorDialog from "@/components/AvatarEditorDialog";
 
 export default function ProfilePage() {
   const { user, profile, role, refreshProfile } = useAuth();
