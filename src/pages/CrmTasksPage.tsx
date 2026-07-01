@@ -363,7 +363,72 @@ export default function CrmTasksPage() {
   const totalTasks = tasksData?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalTasks / PAGE_SIZE));
 
+  const { data: allMembers = [] } = useQuery({
+    queryKey: ["team-members-bulk"],
+    queryFn: async () => {
+      const { data } = await supabase.from("team_members").select("id, full_name").order("full_name");
+      return data || [];
+    },
+  });
+
+  // Bulk edit state
+  const [bulkAssignee, setBulkAssignee] = useState<string>("");
+  const [bulkDeadline, setBulkDeadline] = useState<string>("");
+  const [bulkStage, setBulkStage] = useState<string>("");
+  const [bulkPriority, setBulkPriority] = useState<string>("");
+  const [bulkSaving, setBulkSaving] = useState(false);
+
+  const applyBulkEdit = async () => {
+    if (selected.size === 0) return;
+    const patch: any = {};
+    if (bulkAssignee) patch.assignee_id = bulkAssignee === "__none__" ? null : bulkAssignee;
+    if (bulkDeadline) patch.deadline = new Date(bulkDeadline).toISOString();
+    if (bulkStage) {
+      patch.stage = bulkStage;
+      patch.stage_color = STAGE_COLORS[bulkStage as keyof typeof STAGE_COLORS];
+      patch.stage_progress = STAGE_PROGRESS[bulkStage as keyof typeof STAGE_PROGRESS];
+    }
+    if (bulkPriority) patch.priority = bulkPriority;
+    if (Object.keys(patch).length === 0) {
+      toast.info("Выберите хотя бы одно поле для изменения");
+      return;
+    }
+    setBulkSaving(true);
+    try {
+      const ids = Array.from(selected);
+      const { error } = await supabase.from("crm_tasks").update(patch).in("id", ids);
+      if (error) throw error;
+      toast.success(`Обновлено задач: ${ids.length}`);
+      setBulkAssignee(""); setBulkDeadline(""); setBulkStage(""); setBulkPriority("");
+      setSelected(new Set());
+      queryClient.invalidateQueries({ queryKey: ["crm-tasks"] });
+    } catch (e: any) {
+      toast.error(e?.message || "Не удалось обновить задачи");
+    } finally {
+      setBulkSaving(false);
+    }
+  };
+
+  const bulkDelete = async () => {
+    if (selected.size === 0) return;
+    if (!confirm(`Удалить ${selected.size} задач(и)? Это действие необратимо.`)) return;
+    setBulkSaving(true);
+    try {
+      const ids = Array.from(selected);
+      const { error } = await supabase.from("crm_tasks").delete().in("id", ids);
+      if (error) throw error;
+      toast.success(`Удалено задач: ${ids.length}`);
+      setSelected(new Set());
+      queryClient.invalidateQueries({ queryKey: ["crm-tasks"] });
+    } catch (e: any) {
+      toast.error(e?.message || "Не удалось удалить задачи");
+    } finally {
+      setBulkSaving(false);
+    }
+  };
+
   const canDeleteTask = (_t: CrmTask) => !!user;
+
 
   const deleteTask = async (t: CrmTask) => {
     try {
