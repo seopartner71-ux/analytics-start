@@ -37,6 +37,7 @@ export default function ProfilePage() {
   const [editing, setEditing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [editorSrc, setEditorSrc] = useState<string | null>(null);
 
   // Editable fields
   const [fullName, setFullName] = useState("");
