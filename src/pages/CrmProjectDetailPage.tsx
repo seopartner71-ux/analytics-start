@@ -654,12 +654,23 @@ export default function CrmProjectDetailPage() {
                       <span className="text-muted-foreground/50 -ml-5 select-none text-sm">└</span>
                     )}
                     <Checkbox
+                      checked={selectedIds.has(task.id)}
+                      onCheckedChange={() => toggleSelected(task.id)}
+                      onClick={(e) => e.stopPropagation()}
+                      aria-label="Выбрать задачу"
+                      className="border-muted-foreground/50"
+                    />
+                    <span className="w-px h-5 bg-border/60" />
+                    <Checkbox
                       checked={done}
                       onCheckedChange={(v) => {
                         v !== undefined && toggleTask.mutate({ taskId: task.id, done: !!v });
                       }}
                       onClick={(e) => e.stopPropagation()}
+                      aria-label="Отметить выполненной"
+                      className="data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500"
                     />
+
                     <span className={cn(
                       "flex-1 text-base text-foreground",
                       done && "line-through text-muted-foreground",
