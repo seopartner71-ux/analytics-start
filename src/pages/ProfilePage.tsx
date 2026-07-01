@@ -190,9 +190,17 @@ export default function ProfilePage() {
         className="hidden"
         onChange={(e) => {
           const f = e.target.files?.[0];
-          if (f) handleAvatarUpload(f);
+          if (f) handleFilePick(f);
           e.target.value = "";
         }}
+      />
+
+      <AvatarEditorDialog
+        open={!!editorSrc}
+        imageSrc={editorSrc}
+        saving={uploadingAvatar}
+        onCancel={() => setEditorSrc(null)}
+        onSave={handleAvatarUpload}
       />
 
       {/* Profile Header */}
