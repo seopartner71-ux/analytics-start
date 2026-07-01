@@ -474,13 +474,17 @@ export function PeriodsTab({ projectId }: { projectId: string }) {
       }
       return p as Period;
     },
-    onSuccess: (p) => {
+    onSuccess: (p, vars) => {
       qc.invalidateQueries({ queryKey: ["project-periods", projectId] });
       qc.invalidateQueries({ queryKey: ["project-tasks", projectId] });
       qc.invalidateQueries({ queryKey: ["crm-tasks"] });
       setSelectedPeriodId(p.id);
       setCreateOpen(false);
       toast.success(`Период «${p.title}» создан`);
+      if (vars.tasks.length > 0) {
+        const count = vars.tasks.length;
+        toast.success(`Добавлено ${count} задач${count === 1 ? "а" : count < 5 ? "и" : ""}`);
+      }
     },
     onError: (e: any) => toast.error(e.message || "Ошибка создания периода"),
   });
