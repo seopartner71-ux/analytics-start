@@ -118,31 +118,39 @@ export default function ProfilePage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const handleAvatarUpload = async (file: File) => {
-    if (!user) return;
+  const handleFilePick = (file: File) => {
     if (!file.type.startsWith("image/")) {
       toast.error("Можно загружать только изображения");
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Размер файла не должен превышать 5 МБ");
+    if (file.size > 8 * 1024 * 1024) {
+      toast.error("Размер файла не должен превышать 8 МБ");
       return;
     }
+    const reader = new FileReader();
+    reader.onload = () => setEditorSrc(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const handleAvatarUpload = async (blob: Blob) => {
+    if (!user) return;
     setUploadingAvatar(true);
     try {
-      const ext = file.name.split(".").pop() || "jpg";
-      const path = `${user.id}/avatar-${Date.now()}.${ext}`;
+      const path = `${user.id}/avatar-${Date.now()}.jpg`;
       const { error: upErr } = await supabase.storage
         .from("avatars")
-        .upload(path, file, { upsert: true, cacheControl: "3600" });
+        .upload(path, blob, { upsert: true, cacheControl: "3600", contentType: "image/jpeg" });
       if (upErr) throw upErr;
       const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
+      const url = `${pub.publicUrl}?v=${Date.now()}`;
       const { error: updErr } = await supabase
         .from("profiles")
-        .update({ avatar_url: pub.publicUrl })
+        .update({ avatar_url: url })
         .eq("user_id", user.id);
       if (updErr) throw updErr;
       await refreshProfile();
+      queryClient.invalidateQueries();
+      setEditorSrc(null);
       toast.success("Аватар обновлён");
     } catch (e: any) {
       toast.error(e.message || "Не удалось загрузить");
