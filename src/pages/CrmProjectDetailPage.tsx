@@ -218,7 +218,7 @@ export default function CrmProjectDetailPage() {
     mutationFn: async (patch: Record<string, any>) => {
       const ids = Array.from(selectedIds);
       if (!ids.length) return;
-      const { error } = await supabase.from("crm_tasks").update(patch).in("id", ids);
+      const { error } = await (supabase.from("crm_tasks") as any).update(patch).in("id", ids);
       if (error) throw error;
     },
     onSuccess: () => {
