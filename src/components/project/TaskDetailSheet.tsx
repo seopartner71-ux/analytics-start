@@ -135,12 +135,30 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
     queryKey: ["subtasks", task?.id],
     queryFn: async () => {
       if (!task) return [];
-      const { data } = await supabase
+      // Legacy subtasks table
+      const { data: legacy } = await supabase
         .from("subtasks")
         .select("*")
         .eq("task_id", task.id)
         .order("sort_order");
-      return (data || []) as any[];
+      // CRM tasks children (parent_id) — период создаёт именно их
+      const { data: children } = await supabase
+        .from("crm_tasks")
+        .select("id, title, stage, assignee_id, deadline, created_at")
+        .eq("parent_id", task.id)
+        .order("created_at");
+      const mappedLegacy = (legacy || []).map((s: any) => ({ ...s, __source: "subtask" as const }));
+      const mappedChildren = (children || []).map((c: any, i: number) => ({
+        id: c.id,
+        title: c.title,
+        is_done: c.stage === "Завершена",
+        assignee_id: c.assignee_id,
+        deadline: c.deadline,
+        sort_order: 1000 + i,
+        plan_minutes: null,
+        __source: "crm_task" as const,
+      }));
+      return [...mappedLegacy, ...mappedChildren] as any[];
     },
     enabled: !!task,
   });
