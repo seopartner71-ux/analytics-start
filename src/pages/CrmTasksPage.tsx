@@ -668,7 +668,15 @@ export default function CrmTasksPage() {
             <table className="crm-table min-w-[900px]">
               <thead>
                 <tr>
-                  <th className="w-8"><Checkbox /></th>
+                  <th className="w-8">
+                    <Checkbox
+                      checked={filtered.length > 0 && filtered.every(t => selected.has(t.id))}
+                      onCheckedChange={(v) => {
+                        if (v) setSelected(new Set(filtered.map(t => t.id)));
+                        else setSelected(new Set());
+                      }}
+                    />
+                  </th>
                   <th className="w-8"></th>
                   <th>Название</th>
                   <th>Стадия</th>
