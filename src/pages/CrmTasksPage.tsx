@@ -596,6 +596,61 @@ export default function CrmTasksPage() {
         )}
       </div>
 
+      {selected.size > 0 && (
+        <div className="sticky top-2 z-20 rounded-xl border border-primary/40 bg-card shadow-md p-3 flex flex-wrap items-center gap-2">
+          <Badge variant="secondary" className="text-xs">Выбрано: {selected.size}</Badge>
+
+          <Select value={bulkAssignee} onValueChange={setBulkAssignee}>
+            <SelectTrigger className="h-8 w-[180px] text-xs"><SelectValue placeholder="Исполнитель" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">Снять исполнителя</SelectItem>
+              {allMembers.map((m: any) => (
+                <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Input
+            type="date"
+            value={bulkDeadline}
+            onChange={(e) => setBulkDeadline(e.target.value)}
+            className="h-8 w-[160px] text-xs"
+            placeholder="Дедлайн"
+          />
+
+          <Select value={bulkStage} onValueChange={setBulkStage}>
+            <SelectTrigger className="h-8 w-[160px] text-xs"><SelectValue placeholder="Стадия" /></SelectTrigger>
+            <SelectContent>
+              {TASK_STAGES.map((s) => (
+                <SelectItem key={s} value={s}>{s}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={bulkPriority} onValueChange={setBulkPriority}>
+            <SelectTrigger className="h-8 w-[140px] text-xs"><SelectValue placeholder="Приоритет" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="low">Низкий</SelectItem>
+              <SelectItem value="medium">Средний</SelectItem>
+              <SelectItem value="high">Высокий</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Button size="sm" className="h-8 text-xs" onClick={applyBulkEdit} disabled={bulkSaving}>
+            {bulkSaving ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5 mr-1" />}
+            Применить
+          </Button>
+          <Button size="sm" variant="outline" className="h-8 text-xs text-destructive border-destructive/30 hover:bg-destructive/5" onClick={bulkDelete} disabled={bulkSaving}>
+            Удалить
+          </Button>
+          <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => setSelected(new Set())}>
+            <X className="h-3.5 w-3.5 mr-1" /> Сбросить
+          </Button>
+        </div>
+      )}
+
+
+
       {isLoading ? (
         <div className="flex justify-center py-20">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
