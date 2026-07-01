@@ -583,6 +583,50 @@ export default function CrmProjectDetailPage() {
               <Progress value={progressPct} className="h-2" />
             </div>
 
+            {/* Bulk actions toolbar */}
+            {selectedIds.size > 0 && (
+              <div className="flex flex-wrap items-center gap-2 px-4 py-2 border-b border-border bg-primary/5">
+                <span className="text-sm font-medium">Выбрано: {selectedIds.size}</span>
+                <Select onValueChange={v => bulkUpdate.mutate({ assignee_id: v })}>
+                  <SelectTrigger className="h-8 w-40 text-xs"><SelectValue placeholder="Исполнитель" /></SelectTrigger>
+                  <SelectContent>
+                    {members.map(m => <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select onValueChange={v => bulkUpdate.mutate({ priority: v })}>
+                  <SelectTrigger className="h-8 w-32 text-xs"><SelectValue placeholder="Приоритет" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="high">Высокий</SelectItem>
+                    <SelectItem value="medium">Средний</SelectItem>
+                    <SelectItem value="low">Низкий</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Input
+                  type="date"
+                  className="h-8 w-40 text-xs"
+                  onChange={e => e.target.value && bulkUpdate.mutate({ deadline: e.target.value })}
+                />
+                <Select onValueChange={v => bulkUpdate.mutate({ stage: v, stage_color: v === "Завершена" ? "#10b981" : "#3b82f6" })}>
+                  <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Стадия" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Новые">Новые</SelectItem>
+                    <SelectItem value="В работе">В работе</SelectItem>
+                    <SelectItem value="На проверке">На проверке</SelectItem>
+                    <SelectItem value="Завершена">Завершена</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button size="sm" variant="destructive" className="h-8" onClick={() => {
+                  if (confirm(`Удалить ${selectedIds.size} задач?`)) bulkDelete.mutate();
+                }}>
+                  <Trash2 className="h-3.5 w-3.5 mr-1" /> Удалить
+                </Button>
+                <Button size="sm" variant="ghost" className="h-8" onClick={clearSelection}>
+                  Отмена
+                </Button>
+              </div>
+            )}
+
+
             {/* Task rows */}
             <div className="divide-y divide-border/40">
               {tasks.length === 0 ? (
