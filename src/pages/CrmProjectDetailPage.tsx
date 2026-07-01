@@ -203,6 +203,45 @@ export default function CrmProjectDetailPage() {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedTask, setSelectedTask] = useState<CrmTask | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const toggleSelected = (taskId: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(taskId)) next.delete(taskId); else next.add(taskId);
+      return next;
+    });
+  };
+  const clearSelection = () => setSelectedIds(new Set());
+
+  // Bulk update
+  const bulkUpdate = useMutation({
+    mutationFn: async (patch: Record<string, any>) => {
+      const ids = Array.from(selectedIds);
+      if (!ids.length) return;
+      const { error } = await (supabase.from("crm_tasks") as any).update(patch).in("id", ids);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["project-tasks", id] });
+      toast.success("Задачи обновлены");
+      clearSelection();
+    },
+    onError: (e: any) => toast.error(e.message || "Ошибка обновления"),
+  });
+  const bulkDelete = useMutation({
+    mutationFn: async () => {
+      const ids = Array.from(selectedIds);
+      if (!ids.length) return;
+      const { error } = await supabase.from("crm_tasks").delete().in("id", ids);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["project-tasks", id] });
+      toast.success("Задачи удалены");
+      clearSelection();
+    },
+    onError: (e: any) => toast.error(e.message || "Ошибка удаления"),
+  });
 
   // Toggle task completion
   const toggleTask = useMutation({
@@ -544,6 +583,50 @@ export default function CrmProjectDetailPage() {
               <Progress value={progressPct} className="h-2" />
             </div>
 
+            {/* Bulk actions toolbar */}
+            {selectedIds.size > 0 && (
+              <div className="flex flex-wrap items-center gap-2 px-4 py-2 border-b border-border bg-primary/5">
+                <span className="text-sm font-medium">Выбрано: {selectedIds.size}</span>
+                <Select onValueChange={v => bulkUpdate.mutate({ assignee_id: v })}>
+                  <SelectTrigger className="h-8 w-40 text-xs"><SelectValue placeholder="Исполнитель" /></SelectTrigger>
+                  <SelectContent>
+                    {members.map(m => <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select onValueChange={v => bulkUpdate.mutate({ priority: v })}>
+                  <SelectTrigger className="h-8 w-32 text-xs"><SelectValue placeholder="Приоритет" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="high">Высокий</SelectItem>
+                    <SelectItem value="medium">Средний</SelectItem>
+                    <SelectItem value="low">Низкий</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Input
+                  type="date"
+                  className="h-8 w-40 text-xs"
+                  onChange={e => e.target.value && bulkUpdate.mutate({ deadline: e.target.value })}
+                />
+                <Select onValueChange={v => bulkUpdate.mutate({ stage: v, stage_color: v === "Завершена" ? "#10b981" : "#3b82f6" })}>
+                  <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Стадия" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Новые">Новые</SelectItem>
+                    <SelectItem value="В работе">В работе</SelectItem>
+                    <SelectItem value="На проверке">На проверке</SelectItem>
+                    <SelectItem value="Завершена">Завершена</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button size="sm" variant="destructive" className="h-8" onClick={() => {
+                  if (confirm(`Удалить ${selectedIds.size} задач?`)) bulkDelete.mutate();
+                }}>
+                  <Trash2 className="h-3.5 w-3.5 mr-1" /> Удалить
+                </Button>
+                <Button size="sm" variant="ghost" className="h-8" onClick={clearSelection}>
+                  Отмена
+                </Button>
+              </div>
+            )}
+
+
             {/* Task rows */}
             <div className="divide-y divide-border/40">
               {tasks.length === 0 ? (
@@ -571,12 +654,23 @@ export default function CrmProjectDetailPage() {
                       <span className="text-muted-foreground/50 -ml-5 select-none text-sm">└</span>
                     )}
                     <Checkbox
+                      checked={selectedIds.has(task.id)}
+                      onCheckedChange={() => toggleSelected(task.id)}
+                      onClick={(e) => e.stopPropagation()}
+                      aria-label="Выбрать задачу"
+                      className="border-muted-foreground/50"
+                    />
+                    <span className="w-px h-5 bg-border/60" />
+                    <Checkbox
                       checked={done}
                       onCheckedChange={(v) => {
                         v !== undefined && toggleTask.mutate({ taskId: task.id, done: !!v });
                       }}
                       onClick={(e) => e.stopPropagation()}
+                      aria-label="Отметить выполненной"
+                      className="data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500"
                     />
+
                     <span className={cn(
                       "flex-1 text-base text-foreground",
                       done && "line-through text-muted-foreground",
