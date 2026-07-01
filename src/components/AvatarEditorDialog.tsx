@@ -16,7 +16,7 @@ interface Props {
 async function getCroppedBlob(imageSrc: string, area: Area, rotation: number): Promise<Blob> {
   const image = await new Promise<HTMLImageElement>((resolve, reject) => {
     const img = new Image();
-    img.crossOrigin = "anonymous";
+    if (!imageSrc.startsWith("data:")) img.crossOrigin = "anonymous";
     img.onload = () => resolve(img);
     img.onerror = reject;
     img.src = imageSrc;
