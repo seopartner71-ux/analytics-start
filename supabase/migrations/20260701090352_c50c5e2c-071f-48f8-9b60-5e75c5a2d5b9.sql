@@ -1,0 +1,1 @@
+CREATE POLICY "Authenticated users can view active profiles" ON public.profiles FOR SELECT TO authenticated USING (status = 'active');
