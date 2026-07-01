@@ -135,12 +135,30 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
     queryKey: ["subtasks", task?.id],
     queryFn: async () => {
       if (!task) return [];
-      const { data } = await supabase
+      // Legacy subtasks table
+      const { data: legacy } = await supabase
         .from("subtasks")
         .select("*")
         .eq("task_id", task.id)
         .order("sort_order");
-      return (data || []) as any[];
+      // CRM tasks children (parent_id) — период создаёт именно их
+      const { data: children } = await supabase
+        .from("crm_tasks")
+        .select("id, title, stage, assignee_id, deadline, created_at")
+        .eq("parent_id", task.id)
+        .order("created_at");
+      const mappedLegacy = (legacy || []).map((s: any) => ({ ...s, __source: "subtask" as const }));
+      const mappedChildren = (children || []).map((c: any, i: number) => ({
+        id: c.id,
+        title: c.title,
+        is_done: c.stage === "Завершена",
+        assignee_id: c.assignee_id,
+        deadline: c.deadline,
+        sort_order: 1000 + i,
+        plan_minutes: null,
+        __source: "crm_task" as const,
+      }));
+      return [...mappedLegacy, ...mappedChildren] as any[];
     },
     enabled: !!task,
   });
@@ -468,19 +486,29 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
     if (!task) return;
     setCreatingSubtask(true);
     try {
+      // Создаём как дочернюю CRM-задачу, чтобы она была видна во вкладке «Задачи» проекта.
+      const { resolveCurrentTeamMemberId } = await import("@/lib/task-helpers");
+      const creatorTmId = user ? await resolveCurrentTeamMemberId(supabase, user.id, user.email) : null;
       const payload: any = {
-        task_id: task.id,
         title: values.title,
-        sort_order: subtasks.length,
         description: values.description || null,
-        assignee_id: values.assignee_id,
+        assignee_id: values.assignee_id || null,
         deadline: values.deadline ? new Date(values.deadline).toISOString() : null,
-        plan_minutes: values.plan_hours != null ? Math.round(values.plan_hours * 60) : null,
+        stage: "Новые",
+        stage_color: "#3b82f6",
+        stage_progress: 0,
+        priority: "medium",
+        project_id: task.project_id,
+        parent_id: task.id,
+        owner_id: user?.id,
+        creator_id: creatorTmId,
       };
-      const { error } = await supabase.from("subtasks").insert(payload);
+      const { error } = await supabase.from("crm_tasks").insert(payload);
       if (error) throw error;
       await addSystemLog(`Добавлена подзадача «${values.title}»`);
       queryClient.invalidateQueries({ queryKey: ["subtasks", task.id] });
+      queryClient.invalidateQueries({ queryKey: ["project-tasks", task.project_id] });
+      queryClient.invalidateQueries({ queryKey: ["crm-tasks"] });
       setIsCreateSubtaskModalOpen(false);
       toast.success("Подзадача успешно создана");
     } catch (e: any) {
@@ -492,8 +520,16 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
 
   const toggleSubtask = useMutation({
     mutationFn: async ({ id: stId, done }: { id: string; done: boolean }) => {
-      await supabase.from("subtasks").update({ is_done: done } as any).eq("id", stId);
-      const st = subtasks.find(s => s.id === stId);
+      const st = subtasks.find((s: any) => s.id === stId) as any;
+      if (st?.__source === "crm_task") {
+        await supabase.from("crm_tasks").update({
+          stage: done ? "Завершена" : "В работе",
+          stage_color: done ? "#10b981" : "#f59e0b",
+          stage_progress: done ? 100 : 50,
+        } as any).eq("id", stId);
+      } else {
+        await supabase.from("subtasks").update({ is_done: done } as any).eq("id", stId);
+      }
       await addSystemLog(`Подзадача «${st?.title}» ${done ? "выполнена ✓" : "возвращена в работу"}`);
       // Обратная синхронизация: пункт периода, привязанный к этой подзадаче
       await supabase
@@ -504,6 +540,8 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["subtasks", task?.id] });
       queryClient.invalidateQueries({ queryKey: ["period-tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["project-tasks", task?.project_id] });
+      queryClient.invalidateQueries({ queryKey: ["crm-tasks"] });
     },
   });
 
