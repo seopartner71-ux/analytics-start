@@ -46,7 +46,7 @@ function projectInitials(name: string | null | undefined) {
 function ProjectChatIcon({ name, className }: { name: string | null | undefined; className?: string }) {
   return (
     <div
-      className={cn("rounded-full flex items-center justify-center font-semibold text-[11px]", className)}
+      className={cn("h-10 w-10 shrink-0 rounded-full flex items-center justify-center font-semibold text-[12px]", className)}
       style={{ backgroundColor: hashColor(name || "project"), color: "white" }}
       aria-hidden
     >
