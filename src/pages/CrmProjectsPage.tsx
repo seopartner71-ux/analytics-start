@@ -463,7 +463,7 @@ export default function CrmProjectsPage() {
       ) : projects.length === 0 ? (
         <div className="text-center py-20">
           <FolderKanban className="h-12 w-12 mx-auto mb-3 text-muted-foreground/30" />
-          <p className="text-muted-foreground">Нет проектов. Создайте первый!</p>
+          <p className="text-muted-foreground">{showArchive ? "В архиве пусто." : "Нет проектов. Создайте первый!"}</p>
         </div>
       ) : view === "kanban" ? (
         <div className="space-y-6">
