@@ -203,9 +203,11 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
 
   const sendComment = useMutation({
     mutationFn: async () => {
+      const { ensureCurrentTeamMemberId } = await import("@/lib/task-helpers");
+      const authorId = user ? await ensureCurrentTeamMemberId(supabase, user.id, user.email) : null;
       const { data: inserted, error } = await supabase
         .from("task_comments")
-        .insert({ task_id: task!.id, body: msg, is_system: false })
+        .insert({ task_id: task!.id, body: msg, is_system: false, author_id: authorId })
         .select("id")
         .single();
       if (error) throw error;
