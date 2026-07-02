@@ -74,6 +74,7 @@ export function MessengerPanel() {
   const sound = useNotificationSound();
   const qc = useQueryClient();
   const navigate = useNavigate();
+  const location = useLocation();
   const [tab, setTab] = useState<Tab>("people");
   const [search, setSearch] = useState("");
   const lastSeenIdsRef = useRef<Set<string>>(new Set());
