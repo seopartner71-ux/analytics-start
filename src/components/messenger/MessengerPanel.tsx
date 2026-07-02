@@ -37,6 +37,7 @@ export function MessengerPanel() {
   const { isOnline } = usePresence();
   const sound = useNotificationSound();
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>("people");
   const [search, setSearch] = useState("");
   const lastSeenIdsRef = useRef<Set<string>>(new Set());
