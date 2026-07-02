@@ -177,16 +177,13 @@ export default function ChatPage() {
                       transition={{ duration: 0.15 }}
                       className={cn("flex gap-2.5 mb-3", isMine && "flex-row-reverse")}
                     >
-                      <div
-                        className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 mt-1 overflow-hidden"
-                        style={{ backgroundColor: color }}
-                      >
-                        {avatarMap[msg.user_id] ? (
-                          <img src={avatarMap[msg.user_id] as string} alt={displayName} className="h-full w-full object-cover" />
-                        ) : (
-                          getInitials(displayName)
-                        )}
-                      </div>
+                      <UserAvatar
+                        avatarUrl={avatarMap[msg.user_id] ?? null}
+                        name={displayName}
+                        seed={msg.user_id}
+                        size="md"
+                        className="h-9 w-9 shrink-0 mt-1 ring-1 ring-border"
+                      />
                       <div className={cn("max-w-[65%]", isMine && "text-right")}>
                         <p className="text-xs font-medium mb-0.5 px-1" style={{ color }}>
                           {displayName}
