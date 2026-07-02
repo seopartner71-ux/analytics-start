@@ -386,6 +386,20 @@ export default function CrmProjectsPage() {
               <LayoutList className="h-4 w-4" />
             </button>
           </div>
+
+          <button
+            onClick={() => setShowArchive(v => !v)}
+            className={cn(
+              "flex items-center gap-1.5 px-2.5 py-1.5 text-base rounded-md border transition-colors ml-1",
+              showArchive
+                ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                : "bg-card text-muted-foreground border-border hover:text-foreground"
+            )}
+            title={showArchive ? "Показать активные" : "Показать архив"}
+          >
+            <Archive className="h-4 w-4" />
+            <span className="hidden sm:inline">{showArchive ? "Архив" : "Архив"}</span>
+          </button>
         </div>
 
         {canAddProject(role) && (
