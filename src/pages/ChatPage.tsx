@@ -49,6 +49,22 @@ export default function ChatPage() {
     },
   });
 
+  const userIds = Array.from(new Set(messages.map((m) => m.user_id).filter(Boolean)));
+  const { data: avatarMap = {} } = useQuery({
+    queryKey: ["chat-avatars", userIds.join(",")],
+    queryFn: async () => {
+      if (!userIds.length) return {} as Record<string, string | null>;
+      const { data } = await supabase
+        .from("profiles")
+        .select("user_id, avatar_url")
+        .in("user_id", userIds);
+      const map: Record<string, string | null> = {};
+      for (const p of data || []) map[p.user_id] = p.avatar_url;
+      return map;
+    },
+    enabled: userIds.length > 0,
+  });
+
   // Realtime subscription
   useEffect(() => {
     const channelName = `chat-realtime-${Date.now()}`;
