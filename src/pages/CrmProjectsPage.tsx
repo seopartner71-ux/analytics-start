@@ -550,7 +550,6 @@ export default function CrmProjectsPage() {
                                     entityName={p.name}
                                     entityLabel="проект"
                                     doubleConfirm
-                                    icon={<Archive className="h-3.5 w-3.5" />}
                                     cascadeInfo={<>Проект «{p.name}» будет отправлен в архив. Восстановить его можно из вкладки «Архив».</>}
                                     onConfirm={() => deleteProject(p)}
                                   />
