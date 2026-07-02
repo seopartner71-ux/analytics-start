@@ -60,6 +60,25 @@ const formatTime = (iso: string) => {
 const initialsOf = (name: string) =>
   name.split(" ").map(s => s[0]).join("").slice(0, 2).toUpperCase() || "??";
 
+const renderBodyWithMentions = (body: string, isMine: boolean) => {
+  const parts = body.split(/(@[\p{L}0-9_]+)/gu);
+  return parts.map((part, i) => {
+    if (/^@[\p{L}0-9_]+$/u.test(part)) {
+      return (
+        <span
+          key={i}
+          className={`font-medium rounded px-1 ${
+            isMine ? "bg-primary-foreground/20 text-primary-foreground" : "bg-primary/15 text-primary"
+          }`}
+        >
+          {part}
+        </span>
+      );
+    }
+    return <span key={i}>{part}</span>;
+  });
+};
+
 export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) {
   const { user, profile } = useAuth();
   const queryClient = useQueryClient();
