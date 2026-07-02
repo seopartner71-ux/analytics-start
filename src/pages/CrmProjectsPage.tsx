@@ -130,6 +130,7 @@ export default function CrmProjectsPage() {
   const [view, setView] = useState<"kanban" | "list">("kanban");
   const [filter, setFilter] = useState<"all" | "my" | "overdue">("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [showArchive, setShowArchive] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [newUrl, setNewUrl] = useState("");
