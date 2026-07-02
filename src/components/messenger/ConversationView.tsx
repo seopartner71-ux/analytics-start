@@ -219,24 +219,25 @@ export function ConversationView({ conversationId, onBack, employeeById, directO
           <ArrowLeft className="h-4 w-4" />
         </Button>
         {conv?.type === "direct" && otherUser ? (
-          <div className="relative">
+          <div className="relative h-10 w-10 shrink-0">
             <UserAvatar
               avatarUrl={otherUser.avatar_url}
               name={otherUser.full_name || otherUser.email}
               seed={otherUser.user_id}
-              size="sm"
+              size="md"
+              className="h-10 w-10"
             />
             {otherUserId && (
               <span
                 className={cn(
-                  "absolute bottom-0 right-0 h-2 w-2 rounded-full border-2 border-card",
+                  "absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-card",
                   isOnline(otherUserId) ? "bg-emerald-500" : "bg-muted-foreground/40",
                 )}
               />
             )}
           </div>
         ) : (
-          <div className="h-8 w-8 rounded-full bg-primary/15 text-primary flex items-center justify-center text-xs font-semibold">
+          <div className="h-10 w-10 shrink-0 rounded-full bg-primary/15 text-primary flex items-center justify-center text-xs font-semibold">
             {headerTitle.slice(0, 2).toUpperCase()}
           </div>
         )}

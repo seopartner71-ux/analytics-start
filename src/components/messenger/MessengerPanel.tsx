@@ -46,7 +46,7 @@ function projectInitials(name: string | null | undefined) {
 function ProjectChatIcon({ name, className }: { name: string | null | undefined; className?: string }) {
   return (
     <div
-      className={cn("rounded-full flex items-center justify-center font-semibold text-[11px]", className)}
+      className={cn("h-10 w-10 shrink-0 rounded-full flex items-center justify-center font-semibold text-[12px]", className)}
       style={{ backgroundColor: hashColor(name || "project"), color: "white" }}
       aria-hidden
     >
@@ -344,10 +344,10 @@ export function MessengerPanel() {
               <button
                 key={`rail-pc-${c.project_id}`}
                 onClick={() => navigate(`/crm-projects/${c.project_id}?tab=chat`)}
-                className="relative group h-11 w-11 rounded-full flex items-center justify-center ring-1 ring-border hover:ring-primary/40 transition"
+                className="relative group h-10 w-10 rounded-full flex items-center justify-center ring-1 ring-border hover:ring-primary/40 transition"
                 title={`Чат — ${c.name}`}
               >
-                <ProjectChatIcon name={c.name} className="h-full w-full" />
+                <ProjectChatIcon name={c.name} />
               </button>
             ))}
             {projectChats.length > 0 && employees.length > 0 && (
@@ -359,7 +359,7 @@ export function MessengerPanel() {
                 <button
                   key={e.user_id}
                   onClick={() => openDirect(e.user_id)}
-                  className="relative group"
+                  className="relative group h-10 w-10 shrink-0"
                   title={e.full_name || e.email}
                 >
                   <UserAvatar
@@ -367,7 +367,7 @@ export function MessengerPanel() {
                     name={e.full_name || e.email}
                     seed={e.user_id}
                     size="md"
-                    className="ring-1 ring-border group-hover:ring-primary/40 transition"
+                    className="h-10 w-10 ring-1 ring-border group-hover:ring-primary/40 transition"
                   />
                   <span
                     className={cn(
