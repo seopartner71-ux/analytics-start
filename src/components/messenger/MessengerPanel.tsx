@@ -11,7 +11,8 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { MessageSquare, Search, Users, Hash, X, Volume2, VolumeX } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Profile {
   user_id: string;
@@ -31,12 +32,22 @@ interface ConversationRow {
 
 type Tab = "people" | "chats";
 
-// Deterministic project-chat icon helpers
-function hashColor(str: string) {
-  let h = 0;
-  for (let i = 0; i < str.length; i++) h = str.charCodeAt(i) + ((h << 5) - h);
-  const hue = Math.abs(h % 360);
-  return `hsl(${hue} 60% 50%)`;
+// Deterministic project-chat icon palette (Linear/Notion-style muted pastels)
+const PROJECT_PALETTE = [
+  { bg: "#eef1fd", fg: "#4c5bd4" }, // indigo
+  { bg: "#e6f6f8", fg: "#0e8a9e" }, // cyan
+  { bg: "#e9f6ef", fg: "#2f855a" }, // green
+  { bg: "#fdf1e7", fg: "#c05621" }, // orange
+  { bg: "#fdeaea", fg: "#c53030" }, // red
+  { bg: "#f3eefe", fg: "#7c4dcc" }, // violet
+  { bg: "#fbf5e4", fg: "#997a0e" }, // yellow
+  { bg: "#f0f2f5", fg: "#5a6472" }, // gray
+];
+function projectPalette(name: string | null | undefined) {
+  const s = (name || "project").trim();
+  let sum = 0;
+  for (let i = 0; i < s.length; i++) sum += s.charCodeAt(i);
+  return PROJECT_PALETTE[sum % PROJECT_PALETTE.length];
 }
 function projectInitials(name: string | null | undefined) {
   if (!name) return "П";
@@ -44,10 +55,11 @@ function projectInitials(name: string | null | undefined) {
   return (first[0] || "П").toUpperCase();
 }
 function ProjectChatIcon({ name, className }: { name: string | null | undefined; className?: string }) {
+  const { bg, fg } = projectPalette(name);
   return (
     <div
-      className={cn("h-10 w-10 shrink-0 rounded-full flex items-center justify-center font-semibold text-[12px]", className)}
-      style={{ backgroundColor: hashColor(name || "project"), color: "white" }}
+      className={cn("h-8 w-8 shrink-0 rounded-lg flex items-center justify-center", className)}
+      style={{ backgroundColor: bg, color: fg, fontSize: 13, fontWeight: 600, lineHeight: 1 }}
       aria-hidden
     >
       {projectInitials(name)}
@@ -62,6 +74,7 @@ export function MessengerPanel() {
   const sound = useNotificationSound();
   const qc = useQueryClient();
   const navigate = useNavigate();
+  const location = useLocation();
   const [tab, setTab] = useState<Tab>("people");
   const [search, setSearch] = useState("");
   const lastSeenIdsRef = useRef<Set<string>>(new Set());
@@ -340,16 +353,26 @@ export function MessengerPanel() {
         <div className="my-1 h-px w-8 bg-border" />
         <ScrollArea className="flex-1 w-full">
           <div className="flex flex-col items-center gap-2 px-1 pb-3">
-            {projectChats.map((c) => (
-              <button
-                key={`rail-pc-${c.project_id}`}
-                onClick={() => navigate(`/crm-projects/${c.project_id}?tab=chat`)}
-                className="relative group h-10 w-10 rounded-full flex items-center justify-center ring-1 ring-border hover:ring-primary/40 transition"
-                title={`Чат — ${c.name}`}
-              >
-                <ProjectChatIcon name={c.name} />
-              </button>
-            ))}
+            {projectChats.map((c) => {
+              const isActive = location.pathname === `/crm-projects/${c.project_id}`;
+              return (
+                <Tooltip key={`rail-pc-${c.project_id}`} delayDuration={200}>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => navigate(`/crm-projects/${c.project_id}?tab=chat`)}
+                      aria-label={`Чат — ${c.name}`}
+                      className={cn(
+                        "relative group h-8 w-8 rounded-lg flex items-center justify-center transition",
+                        isActive && "ring-2 ring-indigo-500 ring-offset-2 ring-offset-card",
+                      )}
+                    >
+                      <ProjectChatIcon name={c.name} />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="left">{c.name}</TooltipContent>
+                </Tooltip>
+              );
+            })}
             {projectChats.length > 0 && employees.length > 0 && (
               <div className="my-1 h-px w-8 bg-border" />
             )}
