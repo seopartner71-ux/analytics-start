@@ -542,12 +542,12 @@ export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) 
       {/* Input */}
       <div className="border-t border-border p-3 relative">
         {mentionMatches.length > 0 && (
-          <div className="absolute bottom-full left-3 mb-1 bg-popover border border-border rounded-md shadow-lg z-10 max-h-40 overflow-y-auto min-w-[200px]">
+          <div className="absolute bottom-full left-3 mb-1 bg-popover border border-border rounded-md shadow-lg z-20 max-h-48 overflow-y-auto min-w-[220px]">
             {mentionMatches.map(p => (
               <button
                 key={p.id}
                 type="button"
-                onClick={() => insertMention(p)}
+                onMouseDown={(e) => { e.preventDefault(); insertMention(p); }}
                 className="w-full text-left px-3 py-1.5 text-xs hover:bg-accent flex items-center gap-2"
               >
                 <UserAvatar name={p.full_name} seed={p.id} size="xs" />
