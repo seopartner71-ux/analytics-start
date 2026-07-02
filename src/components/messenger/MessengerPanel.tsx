@@ -115,6 +115,41 @@ export function MessengerPanel() {
     },
   });
 
+  // Project chats (from project_messages) — projects the user participates in
+  const { data: projectChats = [] } = useQuery({
+    queryKey: ["messenger-project-chats", user?.id],
+    enabled: !!user,
+    refetchInterval: 20_000,
+    queryFn: async () => {
+      const { data: msgs } = await supabase
+        .from("project_messages")
+        .select("project_id, created_at, body, user_id")
+        .order("created_at", { ascending: false })
+        .limit(500);
+      const seen = new Map<string, { project_id: string; last_at: string; last_body: string; last_user: string | null }>();
+      for (const m of (msgs ?? []) as any[]) {
+        if (!seen.has(m.project_id)) {
+          seen.set(m.project_id, {
+            project_id: m.project_id,
+            last_at: m.created_at,
+            last_body: m.body,
+            last_user: m.user_id,
+          });
+        }
+      }
+      const ids = Array.from(seen.keys());
+      if (!ids.length) return [];
+      const { data: projs } = await supabase.from("projects").select("id, name").in("id", ids);
+      const nameById = new Map<string, string>();
+      (projs ?? []).forEach((p: any) => nameById.set(p.id, p.name));
+      return Array.from(seen.values())
+        .filter((c) => nameById.has(c.project_id))
+        .map((c) => ({ ...c, name: nameById.get(c.project_id) || "Проект" }))
+        .sort((a, b) => (a.last_at < b.last_at ? 1 : -1));
+    },
+  });
+
+
   // Last-read map and unread counters
   const { data: parts = [] } = useQuery({
     queryKey: ["messenger-participation", user?.id],
