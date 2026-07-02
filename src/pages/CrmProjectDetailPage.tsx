@@ -285,17 +285,8 @@ export default function CrmProjectDetailPage() {
   // Send project comment
   const sendComment = useMutation({
     mutationFn: async () => {
-      // Найти team_member текущего пользователя по email, чтобы подписать комментарий
-      let authorId: string | null = null;
-      if (user?.email) {
-        const { data: tm } = await supabase
-          .from("team_members")
-          .select("id")
-          .ilike("email", user.email)
-          .limit(1)
-          .maybeSingle();
-        authorId = tm?.id ?? null;
-      }
+      const { ensureCurrentTeamMemberId } = await import("@/lib/task-helpers");
+      const authorId = user ? await ensureCurrentTeamMemberId(supabase, user.id, user.email) : null;
       const { error } = await supabase.from("project_comments").insert({
         project_id: id!,
         body: commentText,
@@ -730,7 +721,7 @@ export default function CrmProjectDetailPage() {
                   <AvatarCircle name={c.author?.full_name || "?"} size="md" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline gap-2 mb-1">
-                      <span className="text-base font-semibold text-foreground">{c.author?.full_name || "Аноним"}</span>
+                      <span className="text-base font-semibold text-foreground">{c.author?.full_name || "Пользователь"}</span>
                       <span className="text-xs text-muted-foreground">
                         {format(parseISO(c.created_at), "dd.MM.yyyy HH:mm")}
                       </span>

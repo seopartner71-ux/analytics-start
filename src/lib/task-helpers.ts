@@ -94,3 +94,40 @@ export async function resolveCurrentTeamMemberId(
   }
   return null;
 }
+
+/**
+ * Возвращает team_members.id текущего пользователя, создавая запись если её нет.
+ * Использует profiles (full_name, email) для заполнения полей.
+ */
+export async function ensureCurrentTeamMemberId(
+  supabase: any,
+  userId: string,
+  email?: string | null
+): Promise<string | null> {
+  const existing = await resolveCurrentTeamMemberId(supabase, userId, email);
+  if (existing) return existing;
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("full_name, first_name, last_name, email, phone")
+    .eq("user_id", userId)
+    .maybeSingle();
+  const full_name =
+    profile?.full_name ||
+    [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") ||
+    email ||
+    "Пользователь";
+  const { data: inserted, error } = await supabase
+    .from("team_members")
+    .insert({
+      owner_id: userId,
+      full_name,
+      email: profile?.email || email || null,
+      phone: profile?.phone || null,
+      role: "user",
+      status: "active",
+    })
+    .select("id")
+    .single();
+  if (error) return null;
+  return inserted?.id ?? null;
+}
