@@ -700,14 +700,25 @@ export default function CrmProjectsPage() {
                       )}
                     </td>
                     <td onClick={e => e.stopPropagation()} className="text-right">
-                      <DeleteButton
-                        visible={canDeleteProject}
-                        entityName={p.name}
-                        entityLabel="проект"
-                        doubleConfirm
-                        cascadeInfo={<>Будут архивированы проект «{p.name}» и связанные данные.</>}
-                        onConfirm={() => deleteProject(p)}
-                      />
+                      {showArchive ? (
+                        <button
+                          type="button"
+                          onClick={() => restoreProject(p)}
+                          className="inline-flex items-center gap-1.5 h-7 px-2 rounded border border-border text-xs text-muted-foreground hover:text-foreground hover:bg-accent"
+                          title="Восстановить из архива"
+                        >
+                          <ArchiveRestore className="h-3.5 w-3.5" /> Восстановить
+                        </button>
+                      ) : (
+                        <DeleteButton
+                          visible={canDeleteProject}
+                          entityName={p.name}
+                          entityLabel="проект"
+                          doubleConfirm
+                          cascadeInfo={<>Проект «{p.name}» будет отправлен в архив. Восстановить его можно из вкладки «Архив».</>}
+                          onConfirm={() => deleteProject(p)}
+                        />
+                      )}
                     </td>
                   </tr>
                 );
