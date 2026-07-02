@@ -177,10 +177,14 @@ export default function ChatPage() {
                       className={cn("flex gap-2.5 mb-3", isMine && "flex-row-reverse")}
                     >
                       <div
-                        className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-foreground shrink-0 mt-1"
+                        className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 mt-1 overflow-hidden"
                         style={{ backgroundColor: color }}
                       >
-                        {getInitials(displayName)}
+                        {avatarMap[msg.user_id] ? (
+                          <img src={avatarMap[msg.user_id] as string} alt={displayName} className="h-full w-full object-cover" />
+                        ) : (
+                          getInitials(displayName)
+                        )}
                       </div>
                       <div className={cn("max-w-[65%]", isMine && "text-right")}>
                         <p className="text-xs font-medium mb-0.5 px-1" style={{ color }}>
