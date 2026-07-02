@@ -14,7 +14,7 @@ export function CrmLayout({ children }: { children: ReactNode }) {
       <MessengerProvider>
         <div className="min-h-screen flex w-full bg-background">
           <AppSidebar />
-          <div className="flex-1 flex flex-col min-w-0 md:pr-14">
+          <div className="flex-1 flex flex-col min-w-0 md:pr-16">
             <PageHeader />
             <main className="flex-1 p-3 sm:p-4 md:p-6 animate-in fade-in duration-300 overflow-x-hidden">
               {children}

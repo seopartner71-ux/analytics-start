@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { MessageSquare, Search, Users, Hash, X, Volume2, VolumeX, Folder } from "lucide-react";
+import { MessageSquare, Search, Users, Hash, X, Volume2, VolumeX } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface Profile {
