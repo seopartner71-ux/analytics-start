@@ -347,17 +347,7 @@ export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) 
         mentions,
       });
       if (error) throw error;
-
-      // Send notifications to mentioned users
-      for (const uid of mentions) {
-        if (uid === user.id) continue;
-        await supabase.from("notifications").insert({
-          user_id: uid,
-          project_id: projectId,
-          title: `Вас упомянули в чате: ${projectName}`,
-          body: body.slice(0, 200),
-        });
-      }
+      // Уведомления упомянутым пользователям создаются триггером notify_chat_mentions
 
       setText("");
       setFile(null);
