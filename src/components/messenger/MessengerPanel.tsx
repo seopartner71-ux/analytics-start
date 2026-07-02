@@ -316,6 +316,19 @@ export function MessengerPanel() {
         <div className="my-1 h-px w-8 bg-border" />
         <ScrollArea className="flex-1 w-full">
           <div className="flex flex-col items-center gap-2 px-1 pb-3">
+            {projectChats.map((c) => (
+              <button
+                key={`rail-pc-${c.project_id}`}
+                onClick={() => navigate(`/crm-projects/${c.project_id}?tab=chat`)}
+                className="relative group h-10 w-10 rounded-full bg-blue-500/15 text-blue-500 flex items-center justify-center ring-1 ring-border hover:ring-primary/40 transition"
+                title={`Чат — ${c.name}`}
+              >
+                <Folder className="h-5 w-5" />
+              </button>
+            ))}
+            {projectChats.length > 0 && employees.length > 0 && (
+              <div className="my-1 h-px w-8 bg-border" />
+            )}
             {employees.slice(0, 30).map((e) => {
               const online = isOnline(e.user_id);
               return (
