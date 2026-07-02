@@ -353,16 +353,26 @@ export function MessengerPanel() {
         <div className="my-1 h-px w-8 bg-border" />
         <ScrollArea className="flex-1 w-full">
           <div className="flex flex-col items-center gap-2 px-1 pb-3">
-            {projectChats.map((c) => (
-              <button
-                key={`rail-pc-${c.project_id}`}
-                onClick={() => navigate(`/crm-projects/${c.project_id}?tab=chat`)}
-                className="relative group h-10 w-10 rounded-full flex items-center justify-center ring-1 ring-border hover:ring-primary/40 transition"
-                title={`Чат — ${c.name}`}
-              >
-                <ProjectChatIcon name={c.name} />
-              </button>
-            ))}
+            {projectChats.map((c) => {
+              const isActive = location.pathname === `/crm-projects/${c.project_id}`;
+              return (
+                <Tooltip key={`rail-pc-${c.project_id}`} delayDuration={200}>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => navigate(`/crm-projects/${c.project_id}?tab=chat`)}
+                      aria-label={`Чат — ${c.name}`}
+                      className={cn(
+                        "relative group h-8 w-8 rounded-lg flex items-center justify-center transition",
+                        isActive && "ring-2 ring-indigo-500 ring-offset-2 ring-offset-card",
+                      )}
+                    >
+                      <ProjectChatIcon name={c.name} />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="left">{c.name}</TooltipContent>
+                </Tooltip>
+              );
+            })}
             {projectChats.length > 0 && employees.length > 0 && (
               <div className="my-1 h-px w-8 bg-border" />
             )}
