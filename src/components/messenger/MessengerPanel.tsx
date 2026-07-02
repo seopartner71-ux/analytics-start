@@ -32,12 +32,22 @@ interface ConversationRow {
 
 type Tab = "people" | "chats";
 
-// Deterministic project-chat icon helpers
-function hashColor(str: string) {
-  let h = 0;
-  for (let i = 0; i < str.length; i++) h = str.charCodeAt(i) + ((h << 5) - h);
-  const hue = Math.abs(h % 360);
-  return `hsl(${hue} 60% 50%)`;
+// Deterministic project-chat icon palette (Linear/Notion-style muted pastels)
+const PROJECT_PALETTE = [
+  { bg: "#eef1fd", fg: "#4c5bd4" }, // indigo
+  { bg: "#e6f6f8", fg: "#0e8a9e" }, // cyan
+  { bg: "#e9f6ef", fg: "#2f855a" }, // green
+  { bg: "#fdf1e7", fg: "#c05621" }, // orange
+  { bg: "#fdeaea", fg: "#c53030" }, // red
+  { bg: "#f3eefe", fg: "#7c4dcc" }, // violet
+  { bg: "#fbf5e4", fg: "#997a0e" }, // yellow
+  { bg: "#f0f2f5", fg: "#5a6472" }, // gray
+];
+function projectPalette(name: string | null | undefined) {
+  const s = (name || "project").trim();
+  let sum = 0;
+  for (let i = 0; i < s.length; i++) sum += s.charCodeAt(i);
+  return PROJECT_PALETTE[sum % PROJECT_PALETTE.length];
 }
 function projectInitials(name: string | null | undefined) {
   if (!name) return "П";
@@ -45,10 +55,11 @@ function projectInitials(name: string | null | undefined) {
   return (first[0] || "П").toUpperCase();
 }
 function ProjectChatIcon({ name, className }: { name: string | null | undefined; className?: string }) {
+  const { bg, fg } = projectPalette(name);
   return (
     <div
-      className={cn("h-10 w-10 shrink-0 rounded-full flex items-center justify-center font-semibold text-[12px]", className)}
-      style={{ backgroundColor: hashColor(name || "project"), color: "white" }}
+      className={cn("h-8 w-8 shrink-0 rounded-lg flex items-center justify-center", className)}
+      style={{ backgroundColor: bg, color: fg, fontSize: 13, fontWeight: 600, lineHeight: 1 }}
       aria-hidden
     >
       {projectInitials(name)}
