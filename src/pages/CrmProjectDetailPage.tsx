@@ -69,9 +69,18 @@ const PRIORITY_MAP: Record<string, { label: string; color: string }> = {
 };
 const TAGS = ["SEO", "Аудит", "Ссылки", "Контент", "Техаудит"];
 
-function AvatarCircle({ name, size = "sm" }: { name: string; size?: "sm" | "md" }) {
+function AvatarCircle({ name, size = "sm", src }: { name: string; size?: "sm" | "md"; src?: string | null }) {
   const initials = name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
   const sz = size === "md" ? "h-9 w-9 text-sm" : "h-6 w-6 text-2xs";
+  if (src) {
+    return (
+      <img
+        src={src}
+        alt={name}
+        className={`${sz} rounded-full object-cover shrink-0 ring-1 ring-border`}
+      />
+    );
+  }
   return (
     <div className={`${sz} rounded-full bg-primary/15 text-primary font-bold flex items-center justify-center shrink-0`}>
       {initials}
@@ -149,8 +158,24 @@ export default function CrmProjectDetailPage() {
   const { data: members = [] } = useQuery({
     queryKey: ["team-members"],
     queryFn: async () => {
-      const { data } = await supabase.from("team_members").select("id, full_name").order("full_name");
+      const { data } = await supabase.from("team_members").select("id, full_name, owner_id").order("full_name");
       return data || [];
+    },
+  });
+
+  // Avatars by team_member.id (joined via profiles.user_id = team_members.owner_id)
+  const { data: avatarByMemberId = {} as Record<string, string | null> } = useQuery({
+    queryKey: ["team-members-avatars", (members as any[]).map(m => m.owner_id).sort().join(",")],
+    enabled: (members as any[]).length > 0,
+    queryFn: async () => {
+      const userIds = Array.from(new Set((members as any[]).map(m => m.owner_id).filter(Boolean)));
+      if (userIds.length === 0) return {};
+      const { data } = await supabase.from("profiles").select("user_id, avatar_url").in("user_id", userIds);
+      const byUser: Record<string, string | null> = {};
+      (data || []).forEach((p: any) => { byUser[p.user_id] = p.avatar_url; });
+      const map: Record<string, string | null> = {};
+      (members as any[]).forEach(m => { map[m.id] = byUser[m.owner_id] || null; });
+      return map;
     },
   });
 
@@ -368,8 +393,9 @@ export default function CrmProjectDetailPage() {
   const totalCount = tasks.length;
   const progressPct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
-  const managerName = project?.seo_specialist ||
-    (project?.seo_specialist_id ? members.find(m => m.id === project.seo_specialist_id)?.full_name : null);
+  const managerMember = project?.seo_specialist_id ? (members as any[]).find(m => m.id === project.seo_specialist_id) : null;
+  const managerName = project?.seo_specialist || managerMember?.full_name || null;
+  const managerAvatar = project?.seo_specialist_id ? (avatarByMemberId as Record<string, string | null>)[project.seo_specialist_id] : null;
 
   const currentStage = STAGES.find(s => s.key === (project?.privacy || "Новые заявки"));
 
@@ -418,7 +444,7 @@ export default function CrmProjectDetailPage() {
         <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto scrollbar-none">
           {managerName && (
             <div className="hidden md:flex items-center gap-2 mr-3">
-              <AvatarCircle name={managerName} size="md" />
+              <AvatarCircle name={managerName} size="md" src={managerAvatar} />
               <span className="text-base text-foreground">{managerName}</span>
             </div>
           )}
@@ -670,7 +696,7 @@ export default function CrmProjectDetailPage() {
                     )}>
                       {task.title}
                     </span>
-                    {task.assignee && <AvatarCircle name={task.assignee.full_name} />}
+                    {task.assignee && <AvatarCircle name={task.assignee.full_name} src={(avatarByMemberId as Record<string, string | null>)[task.assignee.id]} />}
                     {task.deadline && (
                       <span className={cn("text-xs", overdue ? "text-destructive font-medium" : "text-muted-foreground")}>
                         {format(parseISO(task.deadline), "dd.MM")}
@@ -718,7 +744,7 @@ export default function CrmProjectDetailPage() {
                 </div>
               ) : projectComments.map(c => (
                 <div key={c.id} className="flex gap-3 p-4">
-                  <AvatarCircle name={c.author?.full_name || "?"} size="md" />
+                  <AvatarCircle name={c.author?.full_name || "?"} size="md" src={c.author?.id ? (avatarByMemberId as Record<string, string | null>)[c.author.id] : null} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline gap-2 mb-1">
                       <span className="text-base font-semibold text-foreground">{c.author?.full_name || "Пользователь"}</span>
@@ -794,7 +820,7 @@ export default function CrmProjectDetailPage() {
                 <p className="text-xs text-muted-foreground uppercase tracking-wide">Ответственный</p>
                 {managerName ? (
                   <div className="flex items-center gap-2 mt-1">
-                    <AvatarCircle name={managerName} />
+                    <AvatarCircle name={managerName} src={managerAvatar} />
                     <span className="text-base font-medium text-foreground">{managerName}</span>
                   </div>
                 ) : (
