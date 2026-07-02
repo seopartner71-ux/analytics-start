@@ -820,7 +820,7 @@ export default function CrmProjectDetailPage() {
                 <p className="text-xs text-muted-foreground uppercase tracking-wide">Ответственный</p>
                 {managerName ? (
                   <div className="flex items-center gap-2 mt-1">
-                    <AvatarCircle name={managerName} />
+                    <AvatarCircle name={managerName} src={managerAvatar} />
                     <span className="text-base font-medium text-foreground">{managerName}</span>
                   </div>
                 ) : (
