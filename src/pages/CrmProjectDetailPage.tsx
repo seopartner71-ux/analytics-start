@@ -696,7 +696,7 @@ export default function CrmProjectDetailPage() {
                     )}>
                       {task.title}
                     </span>
-                    {task.assignee && <AvatarCircle name={task.assignee.full_name} />}
+                    {task.assignee && <AvatarCircle name={task.assignee.full_name} src={(avatarByMemberId as Record<string, string | null>)[task.assignee.id]} />}
                     {task.deadline && (
                       <span className={cn("text-xs", overdue ? "text-destructive font-medium" : "text-muted-foreground")}>
                         {format(parseISO(task.deadline), "dd.MM")}
