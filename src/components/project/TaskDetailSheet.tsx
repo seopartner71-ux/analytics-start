@@ -1081,7 +1081,7 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                         <img src={m.author ? getAvatarUrl(m.author.full_name) : "https://i.pravatar.cc/80?u=anon"} alt="" className="h-9 w-9 rounded-full object-cover ring-2 ring-background shadow-sm mt-0.5 shrink-0" />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-baseline gap-2 mb-1">
-                            <span className="text-sm font-semibold text-primary">{m.author?.full_name || "Аноним"}</span>
+                            <span className="text-sm font-semibold text-primary">{m.author?.full_name || "Пользователь"}</span>
                             <span className="text-2xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
                               {new Date(m.created_at).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
                             </span>
