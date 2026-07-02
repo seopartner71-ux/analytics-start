@@ -234,6 +234,15 @@ export function MessengerPanel() {
           }
         },
       )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "project_messages" },
+        (payload) => {
+          const msg = payload.new as { user_id: string | null };
+          qc.invalidateQueries({ queryKey: ["messenger-project-chats", user.id] });
+          if (msg.user_id && msg.user_id !== user.id) sound.play();
+        },
+      )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
