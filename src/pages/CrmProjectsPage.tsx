@@ -238,6 +238,20 @@ export default function CrmProjectsPage() {
       context: { url: p.url, company: p.company?.name || null },
     });
     queryClient.invalidateQueries({ queryKey: ["crm-projects"] });
+    toast.success(`Проект «${p.name}» отправлен в архив`);
+  };
+
+  const restoreProject = async (p: Project) => {
+    const { error } = await supabase
+      .from("projects")
+      .update({ archived_at: null, archived_by: null })
+      .eq("id", p.id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    queryClient.invalidateQueries({ queryKey: ["crm-projects"] });
+    toast.success(`Проект «${p.name}» восстановлен`);
   };
 
   const getManagerName = (id: string | null) => {
