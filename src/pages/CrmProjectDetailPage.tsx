@@ -158,8 +158,24 @@ export default function CrmProjectDetailPage() {
   const { data: members = [] } = useQuery({
     queryKey: ["team-members"],
     queryFn: async () => {
-      const { data } = await supabase.from("team_members").select("id, full_name").order("full_name");
+      const { data } = await supabase.from("team_members").select("id, full_name, owner_id").order("full_name");
       return data || [];
+    },
+  });
+
+  // Avatars by team_member.id (joined via profiles.user_id = team_members.owner_id)
+  const { data: avatarByMemberId = {} as Record<string, string | null> } = useQuery({
+    queryKey: ["team-members-avatars", (members as any[]).map(m => m.owner_id).sort().join(",")],
+    enabled: (members as any[]).length > 0,
+    queryFn: async () => {
+      const userIds = Array.from(new Set((members as any[]).map(m => m.owner_id).filter(Boolean)));
+      if (userIds.length === 0) return {};
+      const { data } = await supabase.from("profiles").select("user_id, avatar_url").in("user_id", userIds);
+      const byUser: Record<string, string | null> = {};
+      (data || []).forEach((p: any) => { byUser[p.user_id] = p.avatar_url; });
+      const map: Record<string, string | null> = {};
+      (members as any[]).forEach(m => { map[m.id] = byUser[m.owner_id] || null; });
+      return map;
     },
   });
 
