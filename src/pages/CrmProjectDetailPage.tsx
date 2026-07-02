@@ -444,7 +444,7 @@ export default function CrmProjectDetailPage() {
         <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto scrollbar-none">
           {managerName && (
             <div className="hidden md:flex items-center gap-2 mr-3">
-              <AvatarCircle name={managerName} size="md" />
+              <AvatarCircle name={managerName} size="md" src={managerAvatar} />
               <span className="text-base text-foreground">{managerName}</span>
             </div>
           )}
