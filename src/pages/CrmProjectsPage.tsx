@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, GripVertical, Globe, CalendarDays, MessageSquare, Loader2, FolderKanban, LayoutList, Kanban, TrendingUp, TrendingDown, Moon } from "lucide-react";
+import { Plus, Search, GripVertical, Globe, CalendarDays, MessageSquare, Loader2, FolderKanban, LayoutList, Kanban, TrendingUp, TrendingDown, Moon, Archive, ArchiveRestore } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -130,6 +130,7 @@ export default function CrmProjectsPage() {
   const [view, setView] = useState<"kanban" | "list">("kanban");
   const [filter, setFilter] = useState<"all" | "my" | "overdue">("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [showArchive, setShowArchive] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [newUrl, setNewUrl] = useState("");
@@ -141,13 +142,13 @@ export default function CrmProjectsPage() {
 
   // Load projects with latest comment
   const { data: projects = [], isLoading } = useQuery({
-    queryKey: ["crm-projects"],
+    queryKey: ["crm-projects", showArchive ? "archived" : "active"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("projects")
-        .select("*, company:companies(*)")
-        .is("archived_at", null)
-        .order("created_at", { ascending: false });
+        .select("*, company:companies(*)");
+      q = showArchive ? q.not("archived_at", "is", null) : q.is("archived_at", null);
+      const { data, error } = await q.order(showArchive ? "archived_at" : "created_at", { ascending: false });
       if (error) throw error;
 
       // Fetch latest comment per project
@@ -237,6 +238,20 @@ export default function CrmProjectsPage() {
       context: { url: p.url, company: p.company?.name || null },
     });
     queryClient.invalidateQueries({ queryKey: ["crm-projects"] });
+    toast.success(`Проект «${p.name}» отправлен в архив`);
+  };
+
+  const restoreProject = async (p: Project) => {
+    const { error } = await supabase
+      .from("projects")
+      .update({ archived_at: null, archived_by: null })
+      .eq("id", p.id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    queryClient.invalidateQueries({ queryKey: ["crm-projects"] });
+    toast.success(`Проект «${p.name}» восстановлен`);
   };
 
   const getManagerName = (id: string | null) => {
@@ -371,6 +386,20 @@ export default function CrmProjectsPage() {
               <LayoutList className="h-4 w-4" />
             </button>
           </div>
+
+          <button
+            onClick={() => setShowArchive(v => !v)}
+            className={cn(
+              "flex items-center gap-1.5 px-2.5 py-1.5 text-base rounded-md border transition-colors ml-1",
+              showArchive
+                ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                : "bg-card text-muted-foreground border-border hover:text-foreground"
+            )}
+            title={showArchive ? "Показать активные" : "Показать архив"}
+          >
+            <Archive className="h-4 w-4" />
+            <span className="hidden sm:inline">{showArchive ? "Архив" : "Архив"}</span>
+          </button>
         </div>
 
         {canAddProject(role) && (
@@ -434,7 +463,7 @@ export default function CrmProjectsPage() {
       ) : projects.length === 0 ? (
         <div className="text-center py-20">
           <FolderKanban className="h-12 w-12 mx-auto mb-3 text-muted-foreground/30" />
-          <p className="text-muted-foreground">Нет проектов. Создайте первый!</p>
+          <p className="text-muted-foreground">{showArchive ? "В архиве пусто." : "Нет проектов. Создайте первый!"}</p>
         </div>
       ) : view === "kanban" ? (
         <div className="space-y-6">
@@ -506,14 +535,25 @@ export default function CrmProjectsPage() {
                               </button>
                               <GripVertical className="h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors" />
                               <div onClick={e => e.stopPropagation()} className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                <DeleteButton
-                                  visible={canDeleteProject}
-                                  entityName={p.name}
-                                  entityLabel="проект"
-                                  doubleConfirm
-                                  cascadeInfo={<>Будут архивированы проект «{p.name}» и связанные данные. Восстановить может только администратор.</>}
-                                  onConfirm={() => deleteProject(p)}
-                                />
+                                {showArchive ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => restoreProject(p)}
+                                    title="Восстановить из архива"
+                                    className="h-6 w-6 inline-flex items-center justify-center rounded hover:bg-accent text-muted-foreground hover:text-foreground"
+                                  >
+                                    <ArchiveRestore className="h-3.5 w-3.5" />
+                                  </button>
+                                ) : (
+                                  <DeleteButton
+                                    visible={canDeleteProject}
+                                    entityName={p.name}
+                                    entityLabel="проект"
+                                    doubleConfirm
+                                    cascadeInfo={<>Проект «{p.name}» будет отправлен в архив. Восстановить его можно из вкладки «Архив».</>}
+                                    onConfirm={() => deleteProject(p)}
+                                  />
+                                )}
                               </div>
                             </div>
                           </div>
@@ -660,14 +700,25 @@ export default function CrmProjectsPage() {
                       )}
                     </td>
                     <td onClick={e => e.stopPropagation()} className="text-right">
-                      <DeleteButton
-                        visible={canDeleteProject}
-                        entityName={p.name}
-                        entityLabel="проект"
-                        doubleConfirm
-                        cascadeInfo={<>Будут архивированы проект «{p.name}» и связанные данные.</>}
-                        onConfirm={() => deleteProject(p)}
-                      />
+                      {showArchive ? (
+                        <button
+                          type="button"
+                          onClick={() => restoreProject(p)}
+                          className="inline-flex items-center gap-1.5 h-7 px-2 rounded border border-border text-xs text-muted-foreground hover:text-foreground hover:bg-accent"
+                          title="Восстановить из архива"
+                        >
+                          <ArchiveRestore className="h-3.5 w-3.5" /> Восстановить
+                        </button>
+                      ) : (
+                        <DeleteButton
+                          visible={canDeleteProject}
+                          entityName={p.name}
+                          entityLabel="проект"
+                          doubleConfirm
+                          cascadeInfo={<>Проект «{p.name}» будет отправлен в архив. Восстановить его можно из вкладки «Архив».</>}
+                          onConfirm={() => deleteProject(p)}
+                        />
+                      )}
                     </td>
                   </tr>
                 );
