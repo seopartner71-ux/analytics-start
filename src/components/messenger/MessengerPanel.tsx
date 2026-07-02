@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { MessageSquare, Search, Users, Hash, X, Volume2, VolumeX, Folder } from "lucide-react";
+import { MessageSquare, Search, Users, Hash, X, Volume2, VolumeX } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface Profile {
@@ -30,6 +30,30 @@ interface ConversationRow {
 }
 
 type Tab = "people" | "chats";
+
+// Deterministic project-chat icon helpers
+function hashColor(str: string) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = str.charCodeAt(i) + ((h << 5) - h);
+  const hue = Math.abs(h % 360);
+  return `hsl(${hue} 60% 50%)`;
+}
+function projectInitials(name: string | null | undefined) {
+  if (!name) return "П";
+  const first = name.trim().split(/\s+/)[0];
+  return (first[0] || "П").toUpperCase();
+}
+function ProjectChatIcon({ name, className }: { name: string | null | undefined; className?: string }) {
+  return (
+    <div
+      className={cn("rounded-full flex items-center justify-center font-semibold text-[11px]", className)}
+      style={{ backgroundColor: hashColor(name || "project"), color: "white" }}
+      aria-hidden
+    >
+      {projectInitials(name)}
+    </div>
+  );
+}
 
 export function MessengerPanel() {
   const { user } = useAuth();
@@ -287,7 +311,7 @@ export function MessengerPanel() {
   return (
     <>
       {/* Compact rail (always visible on md+) */}
-      <aside className="hidden md:flex fixed right-0 top-0 bottom-0 z-30 w-14 flex-col items-center gap-2 border-l border-border/60 bg-card/80 backdrop-blur py-3">
+      <aside className="hidden md:flex fixed right-0 top-0 bottom-0 z-30 w-16 flex-col items-center gap-2 border-l border-border/60 bg-card/80 backdrop-blur py-3">
         <button
           onClick={() => {
             if (isOpen) close();
@@ -320,10 +344,10 @@ export function MessengerPanel() {
               <button
                 key={`rail-pc-${c.project_id}`}
                 onClick={() => navigate(`/crm-projects/${c.project_id}?tab=chat`)}
-                className="relative group h-10 w-10 rounded-full bg-blue-500/15 text-blue-500 flex items-center justify-center ring-1 ring-border hover:ring-primary/40 transition"
+                className="relative group h-11 w-11 rounded-full flex items-center justify-center ring-1 ring-border hover:ring-primary/40 transition"
                 title={`Чат — ${c.name}`}
               >
-                <Folder className="h-5 w-5" />
+                <ProjectChatIcon name={c.name} className="h-full w-full" />
               </button>
             ))}
             {projectChats.length > 0 && employees.length > 0 && (
@@ -537,8 +561,8 @@ export function MessengerPanel() {
                             }}
                             className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-accent text-left"
                           >
-                            <div className="h-9 w-9 rounded-full bg-blue-500/15 text-blue-500 flex items-center justify-center shrink-0">
-                              <Folder className="h-4 w-4" />
+                            <div className="h-9 w-9 rounded-full flex items-center justify-center shrink-0">
+                              <ProjectChatIcon name={c.name} className="h-full w-full" />
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium truncate">{c.name}</p>
