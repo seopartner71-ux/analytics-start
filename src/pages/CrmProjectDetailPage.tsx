@@ -69,9 +69,18 @@ const PRIORITY_MAP: Record<string, { label: string; color: string }> = {
 };
 const TAGS = ["SEO", "Аудит", "Ссылки", "Контент", "Техаудит"];
 
-function AvatarCircle({ name, size = "sm" }: { name: string; size?: "sm" | "md" }) {
+function AvatarCircle({ name, size = "sm", src }: { name: string; size?: "sm" | "md"; src?: string | null }) {
   const initials = name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
   const sz = size === "md" ? "h-9 w-9 text-sm" : "h-6 w-6 text-2xs";
+  if (src) {
+    return (
+      <img
+        src={src}
+        alt={name}
+        className={`${sz} rounded-full object-cover shrink-0 ring-1 ring-border`}
+      />
+    );
+  }
   return (
     <div className={`${sz} rounded-full bg-primary/15 text-primary font-bold flex items-center justify-center shrink-0`}>
       {initials}
