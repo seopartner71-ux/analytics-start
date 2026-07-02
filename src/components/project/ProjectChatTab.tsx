@@ -84,6 +84,16 @@ export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) 
 
       const tmIds = [project.seo_specialist_id, project.account_manager_id].filter(Boolean) as string[];
       const list: Participant[] = [];
+      const seenUserIds = new Set<string>();
+      const seenNames = new Set<string>();
+      const push = (p: Participant) => {
+        const key = (p.full_name || "").trim().toLowerCase();
+        if (p.user_id && seenUserIds.has(p.user_id)) return;
+        if (key && seenNames.has(key)) return;
+        if (p.user_id) seenUserIds.add(p.user_id);
+        if (key) seenNames.add(key);
+        list.push(p);
+      };
 
       // Owner profile
       const { data: ownerProf } = await supabase
@@ -92,7 +102,7 @@ export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) 
         .eq("user_id", project.owner_id)
         .maybeSingle();
       if (ownerProf) {
-        list.push({
+        push({
           id: project.owner_id,
           user_id: project.owner_id,
           full_name: ownerProf.full_name || ownerProf.email || "Владелец",
@@ -106,7 +116,7 @@ export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) 
           .select("id, owner_id, full_name, role")
           .in("id", tmIds);
         for (const tm of tms || []) {
-          list.push({
+          push({
             id: tm.id,
             user_id: tm.owner_id,
             full_name: tm.full_name,
@@ -123,8 +133,7 @@ export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) 
       for (const row of (pmRows || []) as any[]) {
         const tm = row.team_member;
         if (!tm) continue;
-        if (list.some((p) => p.id === tm.id)) continue;
-        list.push({
+        push({
           id: tm.id,
           user_id: tm.owner_id,
           full_name: tm.full_name,
