@@ -535,14 +535,26 @@ export default function CrmProjectsPage() {
                               </button>
                               <GripVertical className="h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors" />
                               <div onClick={e => e.stopPropagation()} className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                <DeleteButton
-                                  visible={canDeleteProject}
-                                  entityName={p.name}
-                                  entityLabel="проект"
-                                  doubleConfirm
-                                  cascadeInfo={<>Будут архивированы проект «{p.name}» и связанные данные. Восстановить может только администратор.</>}
-                                  onConfirm={() => deleteProject(p)}
-                                />
+                                {showArchive ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => restoreProject(p)}
+                                    title="Восстановить из архива"
+                                    className="h-6 w-6 inline-flex items-center justify-center rounded hover:bg-accent text-muted-foreground hover:text-foreground"
+                                  >
+                                    <ArchiveRestore className="h-3.5 w-3.5" />
+                                  </button>
+                                ) : (
+                                  <DeleteButton
+                                    visible={canDeleteProject}
+                                    entityName={p.name}
+                                    entityLabel="проект"
+                                    doubleConfirm
+                                    icon={<Archive className="h-3.5 w-3.5" />}
+                                    cascadeInfo={<>Проект «{p.name}» будет отправлен в архив. Восстановить его можно из вкладки «Архив».</>}
+                                    onConfirm={() => deleteProject(p)}
+                                  />
+                                )}
                               </div>
                             </div>
                           </div>
