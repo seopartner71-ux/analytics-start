@@ -60,6 +60,25 @@ const formatTime = (iso: string) => {
 const initialsOf = (name: string) =>
   name.split(" ").map(s => s[0]).join("").slice(0, 2).toUpperCase() || "??";
 
+const renderBodyWithMentions = (body: string, isMine: boolean) => {
+  const parts = body.split(/(@[\p{L}0-9_]+)/gu);
+  return parts.map((part, i) => {
+    if (/^@[\p{L}0-9_]+$/u.test(part)) {
+      return (
+        <span
+          key={i}
+          className={`font-medium rounded px-1 ${
+            isMine ? "bg-primary-foreground/20 text-primary-foreground" : "bg-primary/15 text-primary"
+          }`}
+        >
+          {part}
+        </span>
+      );
+    }
+    return <span key={i}>{part}</span>;
+  });
+};
+
 export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) {
   const { user, profile } = useAuth();
   const queryClient = useQueryClient();
@@ -347,17 +366,7 @@ export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) 
         mentions,
       });
       if (error) throw error;
-
-      // Send notifications to mentioned users
-      for (const uid of mentions) {
-        if (uid === user.id) continue;
-        await supabase.from("notifications").insert({
-          user_id: uid,
-          project_id: projectId,
-          title: `Вас упомянули в чате: ${projectName}`,
-          body: body.slice(0, 200),
-        });
-      }
+      // Уведомления упомянутым пользователям создаются триггером notify_chat_mentions
 
       setText("");
       setFile(null);
@@ -449,7 +458,7 @@ export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) 
                         isMine ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
                       }`}
                     >
-                      {m.body}
+                      {renderBodyWithMentions(m.body, isMine)}
                       {m.attachment_url && (
                         <a
                           href={m.attachment_url}
