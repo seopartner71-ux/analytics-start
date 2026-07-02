@@ -458,7 +458,7 @@ export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) 
                         isMine ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
                       }`}
                     >
-                      {m.body}
+                      {renderBodyWithMentions(m.body, isMine)}
                       {m.attachment_url && (
                         <a
                           href={m.attachment_url}
