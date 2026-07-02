@@ -423,6 +423,7 @@ export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) 
               return (
                 <div key={m.id} className={`flex gap-2 ${isMine ? "flex-row-reverse" : ""}`}>
                   <UserAvatar
+                    avatarUrl={m.user_id ? authorAvatars[m.user_id] : null}
                     name={m.user_name}
                     seed={m.user_id || m.user_name}
                     size="sm"
