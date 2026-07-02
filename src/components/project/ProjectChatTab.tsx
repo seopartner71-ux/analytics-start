@@ -153,6 +153,27 @@ export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) 
   });
   const canLoadMore = messages.length === messageLimit;
 
+  // --- Avatars for message authors ---
+  const authorIds = useMemo(() => {
+    const s = new Set<string>();
+    for (const m of messages) if (m.user_id) s.add(m.user_id);
+    return Array.from(s);
+  }, [messages]);
+  const { data: authorAvatars = {} } = useQuery<Record<string, string | null>>({
+    queryKey: ["chat-author-avatars", authorIds],
+    queryFn: async () => {
+      if (!authorIds.length) return {};
+      const { data } = await supabase
+        .from("profiles")
+        .select("user_id, avatar_url")
+        .in("user_id", authorIds);
+      const map: Record<string, string | null> = {};
+      for (const p of data || []) map[p.user_id] = p.avatar_url;
+      return map;
+    },
+    enabled: authorIds.length > 0,
+  });
+
   // --- Reactions ---
   const messageIds = useMemo(() => messages.map(m => m.id), [messages]);
   const { data: reactions = [] } = useQuery<Reaction[]>({
@@ -402,6 +423,7 @@ export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) 
               return (
                 <div key={m.id} className={`flex gap-2 ${isMine ? "flex-row-reverse" : ""}`}>
                   <UserAvatar
+                    avatarUrl={m.user_id ? authorAvatars[m.user_id] : null}
                     name={m.user_name}
                     seed={m.user_id || m.user_name}
                     size="sm"

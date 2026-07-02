@@ -49,6 +49,22 @@ export default function ChatPage() {
     },
   });
 
+  const userIds = Array.from(new Set(messages.map((m) => m.user_id).filter(Boolean)));
+  const { data: avatarMap = {} } = useQuery({
+    queryKey: ["chat-avatars", userIds.join(",")],
+    queryFn: async () => {
+      if (!userIds.length) return {} as Record<string, string | null>;
+      const { data } = await supabase
+        .from("profiles")
+        .select("user_id, avatar_url")
+        .in("user_id", userIds);
+      const map: Record<string, string | null> = {};
+      for (const p of data || []) map[p.user_id] = p.avatar_url;
+      return map;
+    },
+    enabled: userIds.length > 0,
+  });
+
   // Realtime subscription
   useEffect(() => {
     const channelName = `chat-realtime-${Date.now()}`;
@@ -161,10 +177,14 @@ export default function ChatPage() {
                       className={cn("flex gap-2.5 mb-3", isMine && "flex-row-reverse")}
                     >
                       <div
-                        className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-foreground shrink-0 mt-1"
+                        className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 mt-1 overflow-hidden"
                         style={{ backgroundColor: color }}
                       >
-                        {getInitials(displayName)}
+                        {avatarMap[msg.user_id] ? (
+                          <img src={avatarMap[msg.user_id] as string} alt={displayName} className="h-full w-full object-cover" />
+                        ) : (
+                          getInitials(displayName)
+                        )}
                       </div>
                       <div className={cn("max-w-[65%]", isMine && "text-right")}>
                         <p className="text-xs font-medium mb-0.5 px-1" style={{ color }}>
