@@ -85,7 +85,8 @@ export default function CrmProjectDetailPage() {
   const [searchParams] = useSearchParams();
   const { user, canEdit, isViewer, role } = useAuth();
   const queryClient = useQueryClient();
-  const defaultTab = searchParams.get("tab") === "analytics" ? "analytics" : searchParams.get("tab") === "health" ? "health" : "checklist";
+  const tabParam = searchParams.get("tab");
+  const defaultTab = tabParam === "analytics" ? "analytics" : tabParam === "health" ? "health" : tabParam === "chat" ? "chat" : "checklist";
 
   // Project
   const { data: project, isLoading: projectLoading } = useQuery({

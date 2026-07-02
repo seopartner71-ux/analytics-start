@@ -10,7 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { MessageSquare, Search, Users, Hash, X, Volume2, VolumeX } from "lucide-react";
+import { MessageSquare, Search, Users, Hash, X, Volume2, VolumeX, Folder } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface Profile {
   user_id: string;
@@ -36,6 +37,7 @@ export function MessengerPanel() {
   const { isOnline } = usePresence();
   const sound = useNotificationSound();
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>("people");
   const [search, setSearch] = useState("");
   const lastSeenIdsRef = useRef<Set<string>>(new Set());
@@ -112,6 +114,41 @@ export function MessengerPanel() {
       return (data ?? []) as ConversationRow[];
     },
   });
+
+  // Project chats (from project_messages) — projects the user participates in
+  const { data: projectChats = [] } = useQuery({
+    queryKey: ["messenger-project-chats", user?.id],
+    enabled: !!user,
+    refetchInterval: 20_000,
+    queryFn: async () => {
+      const { data: msgs } = await supabase
+        .from("project_messages")
+        .select("project_id, created_at, body, user_id")
+        .order("created_at", { ascending: false })
+        .limit(500);
+      const seen = new Map<string, { project_id: string; last_at: string; last_body: string; last_user: string | null }>();
+      for (const m of (msgs ?? []) as any[]) {
+        if (!seen.has(m.project_id)) {
+          seen.set(m.project_id, {
+            project_id: m.project_id,
+            last_at: m.created_at,
+            last_body: m.body,
+            last_user: m.user_id,
+          });
+        }
+      }
+      const ids = Array.from(seen.keys());
+      if (!ids.length) return [];
+      const { data: projs } = await supabase.from("projects").select("id, name").in("id", ids);
+      const nameById = new Map<string, string>();
+      (projs ?? []).forEach((p: any) => nameById.set(p.id, p.name));
+      return Array.from(seen.values())
+        .filter((c) => nameById.has(c.project_id))
+        .map((c) => ({ ...c, name: nameById.get(c.project_id) || "Проект" }))
+        .sort((a, b) => (a.last_at < b.last_at ? 1 : -1));
+    },
+  });
+
 
   // Last-read map and unread counters
   const { data: parts = [] } = useQuery({
@@ -195,6 +232,15 @@ export function MessengerPanel() {
               sound.play();
             }
           }
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "project_messages" },
+        (payload) => {
+          const msg = payload.new as { user_id: string | null };
+          qc.invalidateQueries({ queryKey: ["messenger-project-chats", user.id] });
+          if (msg.user_id && msg.user_id !== user.id) sound.play();
         },
       )
       .subscribe();
@@ -459,6 +505,32 @@ export function MessengerPanel() {
                                 {unreadMap[c.id]}
                               </span>
                             )}
+                          </button>
+                        ))}
+                      </>
+                    )}
+
+                    {projectChats.length > 0 && (
+                      <>
+                        <p className="px-3 pt-3 pb-1 text-2xs uppercase tracking-wider text-muted-foreground">
+                          Чаты проектов
+                        </p>
+                        {projectChats.map((c) => (
+                          <button
+                            key={`pc-${c.project_id}`}
+                            onClick={() => {
+                              close();
+                              navigate(`/crm-projects/${c.project_id}?tab=chat`);
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-accent text-left"
+                          >
+                            <div className="h-9 w-9 rounded-full bg-blue-500/15 text-blue-500 flex items-center justify-center shrink-0">
+                              <Folder className="h-4 w-4" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{c.name}</p>
+                              <p className="text-xs text-muted-foreground truncate">{c.last_body}</p>
+                            </div>
                           </button>
                         ))}
                       </>
