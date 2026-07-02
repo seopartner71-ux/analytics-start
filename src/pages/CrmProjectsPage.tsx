@@ -142,13 +142,13 @@ export default function CrmProjectsPage() {
 
   // Load projects with latest comment
   const { data: projects = [], isLoading } = useQuery({
-    queryKey: ["crm-projects"],
+    queryKey: ["crm-projects", showArchive ? "archived" : "active"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("projects")
-        .select("*, company:companies(*)")
-        .is("archived_at", null)
-        .order("created_at", { ascending: false });
+        .select("*, company:companies(*)");
+      q = showArchive ? q.not("archived_at", "is", null) : q.is("archived_at", null);
+      const { data, error } = await q.order(showArchive ? "archived_at" : "created_at", { ascending: false });
       if (error) throw error;
 
       // Fetch latest comment per project
