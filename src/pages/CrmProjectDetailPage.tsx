@@ -393,8 +393,9 @@ export default function CrmProjectDetailPage() {
   const totalCount = tasks.length;
   const progressPct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
-  const managerName = project?.seo_specialist ||
-    (project?.seo_specialist_id ? members.find(m => m.id === project.seo_specialist_id)?.full_name : null);
+  const managerMember = project?.seo_specialist_id ? (members as any[]).find(m => m.id === project.seo_specialist_id) : null;
+  const managerName = project?.seo_specialist || managerMember?.full_name || null;
+  const managerAvatar = project?.seo_specialist_id ? (avatarByMemberId as Record<string, string | null>)[project.seo_specialist_id] : null;
 
   const currentStage = STAGES.find(s => s.key === (project?.privacy || "Новые заявки"));
 
