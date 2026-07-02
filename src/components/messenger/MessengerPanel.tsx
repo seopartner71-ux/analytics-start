@@ -501,6 +501,32 @@ export function MessengerPanel() {
                       </>
                     )}
 
+                    {projectChats.length > 0 && (
+                      <>
+                        <p className="px-3 pt-3 pb-1 text-2xs uppercase tracking-wider text-muted-foreground">
+                          Чаты проектов
+                        </p>
+                        {projectChats.map((c) => (
+                          <button
+                            key={`pc-${c.project_id}`}
+                            onClick={() => {
+                              close();
+                              navigate(`/crm-projects/${c.project_id}?tab=chat`);
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-accent text-left"
+                          >
+                            <div className="h-9 w-9 rounded-full bg-blue-500/15 text-blue-500 flex items-center justify-center shrink-0">
+                              <Folder className="h-4 w-4" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{c.name}</p>
+                              <p className="text-xs text-muted-foreground truncate">{c.last_body}</p>
+                            </div>
+                          </button>
+                        ))}
+                      </>
+                    )}
+
                     {directConvs.length > 0 && (
                       <>
                         <p className="px-3 pt-3 pb-1 text-2xs uppercase tracking-wider text-muted-foreground">Личные</p>
