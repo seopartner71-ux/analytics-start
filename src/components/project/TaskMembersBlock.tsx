@@ -13,6 +13,8 @@ import { Input } from "@/components/ui/input";
 import { Users, UserPlus, X, Search } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { UserAvatar } from "@/components/UserAvatar";
+
 
 type Role = "accomplice" | "auditor";
 
@@ -29,10 +31,8 @@ const ROLE_META: Record<Role, { label: string; hint: string; cls: string }> = {
   },
 };
 
-function getAvatarUrl(name: string) {
-  const hash = name.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
-  return `https://i.pravatar.cc/80?u=${hash}`;
-}
+// Avatar теперь берётся из profiles через team_members.owner_id/email
+
 
 interface Props {
   taskId: string;
@@ -45,7 +45,7 @@ type MemberRow = {
   id: string;
   team_member_id: string;
   role: Role;
-  team_members?: { id: string; full_name: string; owner_id: string | null } | null;
+  team_members?: { id: string; full_name: string; owner_id: string | null; email: string | null } | null;
 };
 
 export function TaskMembersBlock({ taskId, taskOwnerId, creatorTeamMemberId, canManage }: Props) {
@@ -60,7 +60,7 @@ export function TaskMembersBlock({ taskId, taskOwnerId, creatorTeamMemberId, can
     queryFn: async () => {
       const { data, error } = await supabase
         .from("task_members")
-        .select("id, team_member_id, role, team_members!task_members_team_member_id_fkey(id, full_name, owner_id)")
+        .select("id, team_member_id, role, team_members!task_members_team_member_id_fkey(id, full_name, owner_id, email)")
         .eq("task_id", taskId);
       if (error) throw error;
       return (data ?? []) as unknown as MemberRow[];
@@ -72,11 +72,50 @@ export function TaskMembersBlock({ taskId, taskOwnerId, creatorTeamMemberId, can
     queryFn: async () => {
       const { data } = await supabase
         .from("team_members")
-        .select("id, full_name, owner_id")
+        .select("id, full_name, owner_id, email")
         .order("full_name");
-      return data ?? [];
+      return (data ?? []) as { id: string; full_name: string; owner_id: string | null; email: string | null }[];
     },
   });
+
+  // Собираем аватары из profiles для всех задействованных участников
+  const allTm = useMemo(() => {
+    const map = new Map<string, { owner_id: string | null; email: string | null }>();
+    for (const r of rows) if (r.team_members) map.set(r.team_members.id, { owner_id: r.team_members.owner_id, email: r.team_members.email });
+    for (const m of allMembers) map.set(m.id, { owner_id: m.owner_id, email: m.email });
+    return map;
+  }, [rows, allMembers]);
+
+  const { data: avatarByTm = new Map<string, string | null>() } = useQuery({
+    queryKey: ["task-member-avatars", Array.from(allTm.keys()).sort().join(",")],
+    enabled: allTm.size > 0,
+    queryFn: async () => {
+      const ownerIds = Array.from(new Set(Array.from(allTm.values()).map((v) => v.owner_id).filter(Boolean))) as string[];
+      const emails = Array.from(new Set(Array.from(allTm.values()).map((v) => v.email).filter(Boolean))) as string[];
+      const byUser = new Map<string, string | null>();
+      const byEmail = new Map<string, string | null>();
+      if (ownerIds.length) {
+        const { data } = await supabase.from("profiles").select("user_id, avatar_url, email").in("user_id", ownerIds);
+        for (const p of data || []) {
+          byUser.set((p as any).user_id, (p as any).avatar_url ?? null);
+          if ((p as any).email) byEmail.set(String((p as any).email).toLowerCase(), (p as any).avatar_url ?? null);
+        }
+      }
+      if (emails.length) {
+        const { data } = await supabase.from("profiles").select("avatar_url, email").in("email", emails);
+        for (const p of data || []) {
+          if ((p as any).email) byEmail.set(String((p as any).email).toLowerCase(), (p as any).avatar_url ?? null);
+        }
+      }
+      const out = new Map<string, string | null>();
+      for (const [tmId, v] of allTm.entries()) {
+        const url = (v.owner_id && byUser.get(v.owner_id)) || (v.email && byEmail.get(v.email.toLowerCase())) || null;
+        out.set(tmId, url ?? null);
+      }
+      return out;
+    },
+  });
+
 
   // Realtime
   useEffect(() => {
@@ -153,11 +192,14 @@ export function TaskMembersBlock({ taskId, taskOwnerId, creatorTeamMemberId, can
         key={r.id}
         className="flex items-center gap-2.5 py-1.5 px-2 rounded-lg hover:bg-muted/30 transition-colors"
       >
-        <img
-          src={getAvatarUrl(name)}
-          alt={name}
-          className="h-7 w-7 rounded-full ring-1 ring-border/60 object-cover"
+        <UserAvatar
+          avatarUrl={avatarByTm.get(r.team_member_id) ?? null}
+          name={name}
+          seed={r.team_member_id}
+          size="sm"
+          className="ring-1 ring-border/60"
         />
+
         <span className="text-sm flex-1 truncate text-foreground">{name}</span>
         <Badge variant="outline" className={cn("text-2xs h-5", ROLE_META[r.role].cls)}>
           {ROLE_META[r.role].label}
@@ -232,7 +274,7 @@ export function TaskMembersBlock({ taskId, taskOwnerId, creatorTeamMemberId, can
                         onClick={() => addMember.mutate({ teamMemberId: m.id, role: pickerRole })}
                         disabled={addMember.isPending}
                       >
-                        <img src={getAvatarUrl(m.full_name)} alt="" className="h-6 w-6 rounded-full" />
+                        <UserAvatar avatarUrl={avatarByTm.get(m.id) ?? null} name={m.full_name} seed={m.id} size="sm" />
                         <span className="text-sm truncate flex-1">{m.full_name}</span>
                       </button>
                     ))

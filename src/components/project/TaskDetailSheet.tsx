@@ -34,6 +34,9 @@ import { TaskMembersBlock } from "@/components/project/TaskMembersBlock";
 import { TaskAttachmentsBlock } from "@/components/project/TaskAttachmentsBlock";
 import { TaskActivityBlock } from "@/components/project/TaskActivityBlock";
 import { renderWithMentions, extractMentionedMembers } from "@/lib/mentions";
+import { UserAvatar } from "@/components/UserAvatar";
+import { getDefaultAvatar } from "@/lib/avatar";
+
 
 export type CrmTask = Tables<"crm_tasks"> & {
   creator?: Tables<"team_members"> | null;
@@ -46,10 +49,14 @@ type TaskComment = Tables<"task_comments"> & {
   author?: Tables<"team_members"> | null;
 };
 
+// Оставлен для обратной совместимости с CrmTasksPage — теперь возвращает
+// детерминированный аватар с инициалами (DiceBear), тот же, что использует
+// UserAvatar в качестве заглушки. Внутри компонента используем UserAvatar
+// с реальным avatar_url из profiles.
 export function getAvatarUrl(name: string) {
-  const hash = name.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
-  return `https://i.pravatar.cc/80?u=${hash}`;
+  return getDefaultAvatar(name, 80);
 }
+
 
 export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null; open: boolean; onClose: () => void }) {
   const { user } = useAuth();
@@ -174,10 +181,42 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
   const { data: members = [] } = useQuery({
     queryKey: ["team-members-detail"],
     queryFn: async () => {
-      const { data } = await supabase.from("team_members").select("id, full_name, owner_id").order("full_name");
-      return data || [];
+      const { data } = await supabase.from("team_members").select("id, full_name, owner_id, email").order("full_name");
+      return (data || []) as { id: string; full_name: string; owner_id: string | null; email: string | null }[];
     },
   });
+
+  // Карта team_member.id -> avatar_url (из profiles)
+  const { data: avatarByTm = new Map<string, string | null>() } = useQuery({
+    queryKey: ["team-members-avatars", members.map((m) => m.id).sort().join(",")],
+    enabled: members.length > 0,
+    queryFn: async () => {
+      const ownerIds = Array.from(new Set(members.map((m) => m.owner_id).filter(Boolean))) as string[];
+      const emails = Array.from(new Set(members.map((m) => m.email).filter(Boolean))) as string[];
+      const byUser = new Map<string, string | null>();
+      const byEmail = new Map<string, string | null>();
+      if (ownerIds.length) {
+        const { data } = await supabase.from("profiles").select("user_id, avatar_url, email").in("user_id", ownerIds);
+        for (const p of data || []) {
+          byUser.set((p as any).user_id, (p as any).avatar_url ?? null);
+          if ((p as any).email) byEmail.set(String((p as any).email).toLowerCase(), (p as any).avatar_url ?? null);
+        }
+      }
+      if (emails.length) {
+        const { data } = await supabase.from("profiles").select("avatar_url, email").in("email", emails);
+        for (const p of data || []) {
+          if ((p as any).email) byEmail.set(String((p as any).email).toLowerCase(), (p as any).avatar_url ?? null);
+        }
+      }
+      const out = new Map<string, string | null>();
+      for (const m of members) {
+        const url = (m.owner_id && byUser.get(m.owner_id)) || (m.email && byEmail.get(m.email.toLowerCase())) || null;
+        out.set(m.id, url ?? null);
+      }
+      return out;
+    },
+  });
+
 
   useEffect(() => {
     if (!task) return;
@@ -757,7 +796,7 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                               const name = 'full_name' in a ? a.full_name : '';
                               return (
                                 <div className="flex items-center gap-2">
-                                  <img src={getAvatarUrl(name)} alt="" className="h-6 w-6 rounded-full object-cover" />
+                                  <UserAvatar avatarUrl={avatarByTm.get(a.id) ?? null} name={name} seed={a.id} size="sm" />
                                   <span className="font-medium">{name}</span>
                                 </div>
                               );
@@ -770,7 +809,7 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                       </Select>
                     ) : task.assignee ? (
                       <div className="flex items-center gap-2">
-                        <img src={getAvatarUrl(task.assignee.full_name)} alt="" className="h-7 w-7 rounded-full object-cover ring-2 ring-background shadow-sm" />
+                        <UserAvatar avatarUrl={avatarByTm.get(task.assignee.id) ?? null} name={task.assignee.full_name} seed={task.assignee.id} size="sm" className="ring-2 ring-background shadow-sm" />
                         <span className="text-sm font-medium text-foreground">{task.assignee.full_name}</span>
                       </div>
                     ) : <span className="text-sm text-muted-foreground">Не назначен</span>}
@@ -887,11 +926,14 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                           </span>
                           {assignee && (
                             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                              <img
-                                src={getAvatarUrl(assignee.full_name)}
-                                alt={assignee.full_name}
-                                className="h-5 w-5 rounded-full ring-1 ring-border/60"
+                              <UserAvatar
+                                avatarUrl={avatarByTm.get(assignee.id) ?? null}
+                                name={assignee.full_name}
+                                seed={assignee.id}
+                                size="xs"
+                                className="ring-1 ring-border/60"
                               />
+
                               <span className="hidden sm:inline max-w-[80px] truncate">{assignee.full_name}</span>
                             </div>
                           )}
@@ -1078,7 +1120,14 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                       </div>
                     ) : (
                       <motion.div className="flex gap-3 group" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.02, duration: 0.2 }}>
-                        <img src={m.author ? getAvatarUrl(m.author.full_name) : "https://i.pravatar.cc/80?u=anon"} alt="" className="h-9 w-9 rounded-full object-cover ring-2 ring-background shadow-sm mt-0.5 shrink-0" />
+                        <UserAvatar
+                          avatarUrl={m.author ? (avatarByTm.get(m.author.id) ?? null) : null}
+                          name={m.author?.full_name || "Пользователь"}
+                          seed={m.author?.id || m.author_id || "anon"}
+                          size="md"
+                          className="ring-2 ring-background shadow-sm mt-0.5 shrink-0"
+                        />
+
                         <div className="flex-1 min-w-0">
                           <div className="flex items-baseline gap-2 mb-1">
                             <span className="text-sm font-semibold text-primary">{m.author?.full_name || "Пользователь"}</span>
