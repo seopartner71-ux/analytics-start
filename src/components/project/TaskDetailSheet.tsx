@@ -1120,7 +1120,14 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                       </div>
                     ) : (
                       <motion.div className="flex gap-3 group" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.02, duration: 0.2 }}>
-                        <img src={m.author ? getAvatarUrl(m.author.full_name) : "https://i.pravatar.cc/80?u=anon"} alt="" className="h-9 w-9 rounded-full object-cover ring-2 ring-background shadow-sm mt-0.5 shrink-0" />
+                        <UserAvatar
+                          avatarUrl={m.author ? (avatarByTm.get(m.author.id) ?? null) : null}
+                          name={m.author?.full_name || "Пользователь"}
+                          seed={m.author?.id || m.author_id || "anon"}
+                          size="md"
+                          className="ring-2 ring-background shadow-sm mt-0.5 shrink-0"
+                        />
+
                         <div className="flex-1 min-w-0">
                           <div className="flex items-baseline gap-2 mb-1">
                             <span className="text-sm font-semibold text-primary">{m.author?.full_name || "Пользователь"}</span>
