@@ -46,10 +46,14 @@ type TaskComment = Tables<"task_comments"> & {
   author?: Tables<"team_members"> | null;
 };
 
+// Оставлен для обратной совместимости с CrmTasksPage — теперь возвращает
+// детерминированный аватар с инициалами (DiceBear), тот же, что использует
+// UserAvatar в качестве заглушки. Внутри компонента используем UserAvatar
+// с реальным avatar_url из profiles.
 export function getAvatarUrl(name: string) {
-  const hash = name.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
-  return `https://i.pravatar.cc/80?u=${hash}`;
+  return getDefaultAvatar(name, 80);
 }
+
 
 export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null; open: boolean; onClose: () => void }) {
   const { user } = useAuth();
