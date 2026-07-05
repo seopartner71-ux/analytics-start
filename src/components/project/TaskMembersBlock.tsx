@@ -31,10 +31,8 @@ const ROLE_META: Record<Role, { label: string; hint: string; cls: string }> = {
   },
 };
 
-function getAvatarUrl(name: string) {
-  const hash = name.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
-  return `https://i.pravatar.cc/80?u=${hash}`;
-}
+// Avatar теперь берётся из profiles через team_members.owner_id/email
+
 
 interface Props {
   taskId: string;
