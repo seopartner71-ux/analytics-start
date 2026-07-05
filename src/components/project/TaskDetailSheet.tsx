@@ -34,6 +34,9 @@ import { TaskMembersBlock } from "@/components/project/TaskMembersBlock";
 import { TaskAttachmentsBlock } from "@/components/project/TaskAttachmentsBlock";
 import { TaskActivityBlock } from "@/components/project/TaskActivityBlock";
 import { renderWithMentions, extractMentionedMembers } from "@/lib/mentions";
+import { UserAvatar } from "@/components/UserAvatar";
+import { getDefaultAvatar } from "@/lib/avatar";
+
 
 export type CrmTask = Tables<"crm_tasks"> & {
   creator?: Tables<"team_members"> | null;
