@@ -192,11 +192,14 @@ export function TaskMembersBlock({ taskId, taskOwnerId, creatorTeamMemberId, can
         key={r.id}
         className="flex items-center gap-2.5 py-1.5 px-2 rounded-lg hover:bg-muted/30 transition-colors"
       >
-        <img
-          src={getAvatarUrl(name)}
-          alt={name}
-          className="h-7 w-7 rounded-full ring-1 ring-border/60 object-cover"
+        <UserAvatar
+          avatarUrl={avatarByTm.get(r.team_member_id) ?? null}
+          name={name}
+          seed={r.team_member_id}
+          size="sm"
+          className="ring-1 ring-border/60"
         />
+
         <span className="text-sm flex-1 truncate text-foreground">{name}</span>
         <Badge variant="outline" className={cn("text-2xs h-5", ROLE_META[r.role].cls)}>
           {ROLE_META[r.role].label}
