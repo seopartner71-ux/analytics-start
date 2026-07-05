@@ -13,6 +13,8 @@ import { Input } from "@/components/ui/input";
 import { Users, UserPlus, X, Search } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { UserAvatar } from "@/components/UserAvatar";
+
 
 type Role = "accomplice" | "auditor";
 
