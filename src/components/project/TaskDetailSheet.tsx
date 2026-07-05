@@ -809,7 +809,7 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                       </Select>
                     ) : task.assignee ? (
                       <div className="flex items-center gap-2">
-                        <img src={getAvatarUrl(task.assignee.full_name)} alt="" className="h-7 w-7 rounded-full object-cover ring-2 ring-background shadow-sm" />
+                        <UserAvatar avatarUrl={avatarByTm.get(task.assignee.id) ?? null} name={task.assignee.full_name} seed={task.assignee.id} size="sm" className="ring-2 ring-background shadow-sm" />
                         <span className="text-sm font-medium text-foreground">{task.assignee.full_name}</span>
                       </div>
                     ) : <span className="text-sm text-muted-foreground">Не назначен</span>}
