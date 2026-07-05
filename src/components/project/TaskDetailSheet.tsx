@@ -181,10 +181,42 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
   const { data: members = [] } = useQuery({
     queryKey: ["team-members-detail"],
     queryFn: async () => {
-      const { data } = await supabase.from("team_members").select("id, full_name, owner_id").order("full_name");
-      return data || [];
+      const { data } = await supabase.from("team_members").select("id, full_name, owner_id, email").order("full_name");
+      return (data || []) as { id: string; full_name: string; owner_id: string | null; email: string | null }[];
     },
   });
+
+  // Карта team_member.id -> avatar_url (из profiles)
+  const { data: avatarByTm = new Map<string, string | null>() } = useQuery({
+    queryKey: ["team-members-avatars", members.map((m) => m.id).sort().join(",")],
+    enabled: members.length > 0,
+    queryFn: async () => {
+      const ownerIds = Array.from(new Set(members.map((m) => m.owner_id).filter(Boolean))) as string[];
+      const emails = Array.from(new Set(members.map((m) => m.email).filter(Boolean))) as string[];
+      const byUser = new Map<string, string | null>();
+      const byEmail = new Map<string, string | null>();
+      if (ownerIds.length) {
+        const { data } = await supabase.from("profiles").select("user_id, avatar_url, email").in("user_id", ownerIds);
+        for (const p of data || []) {
+          byUser.set((p as any).user_id, (p as any).avatar_url ?? null);
+          if ((p as any).email) byEmail.set(String((p as any).email).toLowerCase(), (p as any).avatar_url ?? null);
+        }
+      }
+      if (emails.length) {
+        const { data } = await supabase.from("profiles").select("avatar_url, email").in("email", emails);
+        for (const p of data || []) {
+          if ((p as any).email) byEmail.set(String((p as any).email).toLowerCase(), (p as any).avatar_url ?? null);
+        }
+      }
+      const out = new Map<string, string | null>();
+      for (const m of members) {
+        const url = (m.owner_id && byUser.get(m.owner_id)) || (m.email && byEmail.get(m.email.toLowerCase())) || null;
+        out.set(m.id, url ?? null);
+      }
+      return out;
+    },
+  });
+
 
   useEffect(() => {
     if (!task) return;
