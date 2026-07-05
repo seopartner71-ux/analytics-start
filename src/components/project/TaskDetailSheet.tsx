@@ -926,11 +926,14 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                           </span>
                           {assignee && (
                             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                              <img
-                                src={getAvatarUrl(assignee.full_name)}
-                                alt={assignee.full_name}
-                                className="h-5 w-5 rounded-full ring-1 ring-border/60"
+                              <UserAvatar
+                                avatarUrl={avatarByTm.get(assignee.id) ?? null}
+                                name={assignee.full_name}
+                                seed={assignee.id}
+                                size="xs"
+                                className="ring-1 ring-border/60"
                               />
+
                               <span className="hidden sm:inline max-w-[80px] truncate">{assignee.full_name}</span>
                             </div>
                           )}
