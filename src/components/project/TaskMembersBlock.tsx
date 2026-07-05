@@ -274,7 +274,7 @@ export function TaskMembersBlock({ taskId, taskOwnerId, creatorTeamMemberId, can
                         onClick={() => addMember.mutate({ teamMemberId: m.id, role: pickerRole })}
                         disabled={addMember.isPending}
                       >
-                        <img src={getAvatarUrl(m.full_name)} alt="" className="h-6 w-6 rounded-full" />
+                        <UserAvatar avatarUrl={avatarByTm.get(m.id) ?? null} name={m.full_name} seed={m.id} size="sm" />
                         <span className="text-sm truncate flex-1">{m.full_name}</span>
                       </button>
                     ))
