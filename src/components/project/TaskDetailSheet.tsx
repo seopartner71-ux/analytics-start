@@ -796,7 +796,7 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                               const name = 'full_name' in a ? a.full_name : '';
                               return (
                                 <div className="flex items-center gap-2">
-                                  <img src={getAvatarUrl(name)} alt="" className="h-6 w-6 rounded-full object-cover" />
+                                  <UserAvatar avatarUrl={avatarByTm.get(a.id) ?? null} name={name} seed={a.id} size="sm" />
                                   <span className="font-medium">{name}</span>
                                 </div>
                               );
