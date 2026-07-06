@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { UserAvatar } from "@/components/UserAvatar";
 import { Badge } from "@/components/ui/badge";
-import { Paperclip, Send, Search, X, FileIcon, Trash2, SmilePlus } from "lucide-react";
+import { Paperclip, Send, Search, X, FileIcon, Trash2, SmilePlus, Pencil, Check } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
 import { format, isToday, isYesterday } from "date-fns";
