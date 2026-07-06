@@ -4604,6 +4604,50 @@ export type Database = {
         Returns: boolean
       }
       touch_user_presence: { Args: never; Returns: undefined }
+      update_project_deadline: {
+        Args: { _deadline: string; _project_id: string }
+        Returns: {
+          account_manager: string | null
+          account_manager_id: string | null
+          archived_at: string | null
+          archived_by: string | null
+          client_email: string | null
+          company_id: string | null
+          created_at: string
+          deadline: string | null
+          description: string | null
+          efficiency: number | null
+          gsc_site_url: string | null
+          hourly_rate: number
+          id: string
+          logo_url: string | null
+          metrika_counter_id: string | null
+          monthly_budget: number
+          name: string
+          owner_id: string
+          planned_hours: number
+          privacy: string | null
+          report_day: number
+          report_period: string
+          seo_specialist: string | null
+          seo_specialist_id: string | null
+          share_link_expires_at: string | null
+          share_token: string | null
+          start_date: string | null
+          topvisor_api_key: string | null
+          topvisor_project_id: string | null
+          topvisor_user_id: string | null
+          updated_at: string
+          url: string | null
+          yandex_webmaster_host_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "projects"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
       app_role: "admin" | "viewer" | "manager" | "director" | "seo" | "junior"
