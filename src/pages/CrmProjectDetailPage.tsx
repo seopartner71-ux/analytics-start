@@ -379,12 +379,10 @@ export default function CrmProjectDetailPage() {
   const updateDeadline = useMutation({
     mutationFn: async (deadline: string | null) => {
       const iso = deadline ? new Date(`${deadline}T12:00:00`).toISOString() : null;
-      const { data, error } = await supabase
-        .from("projects")
-        .update({ deadline: iso } as any)
-        .eq("id", id!)
-        .select("id, deadline")
-        .maybeSingle();
+      const { data, error } = await (supabase as any).rpc("update_project_deadline", {
+        _project_id: id!,
+        _deadline: iso,
+      });
       if (error) throw error;
       if (!data) throw new Error("Недостаточно прав для изменения дедлайна проекта");
     },
