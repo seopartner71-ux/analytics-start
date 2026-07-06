@@ -263,9 +263,19 @@ export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) 
       )
       .on(
         "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "project_messages", filter: `project_id=eq.${projectId}` },
+        (payload) => {
+          const updated = payload.new as ChatMessage;
+          queryClient.setQueryData<ChatMessage[]>(["project-messages", projectId, messageLimit], (old = []) =>
+            old.map(m => (m.id === updated.id ? { ...m, ...updated } : m))
+          );
+        }
+      )
+      .on(
+        "postgres_changes",
         { event: "DELETE", schema: "public", table: "project_messages", filter: `project_id=eq.${projectId}` },
         (payload) => {
-          queryClient.setQueryData<ChatMessage[]>(["project-messages", projectId], (old = []) =>
+          queryClient.setQueryData<ChatMessage[]>(["project-messages", projectId, messageLimit], (old = []) =>
             old.filter(m => m.id !== (payload.old as any).id)
           );
         }
