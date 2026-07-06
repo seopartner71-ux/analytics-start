@@ -960,6 +960,7 @@ export type Database = {
           priority: Database["public"]["Enums"]["task_priority"]
           project_id: string | null
           requires_approval: boolean
+          result: string | null
           source_id: string | null
           source_type: string | null
           stage: string
@@ -986,6 +987,7 @@ export type Database = {
           priority?: Database["public"]["Enums"]["task_priority"]
           project_id?: string | null
           requires_approval?: boolean
+          result?: string | null
           source_id?: string | null
           source_type?: string | null
           stage?: string
@@ -1012,6 +1014,7 @@ export type Database = {
           priority?: Database["public"]["Enums"]["task_priority"]
           project_id?: string | null
           requires_approval?: boolean
+          result?: string | null
           source_id?: string | null
           source_type?: string | null
           stage?: string

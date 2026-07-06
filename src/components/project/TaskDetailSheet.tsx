@@ -86,6 +86,7 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
     setEditProjectId(task.project_id || "");
     setEditStage(task.stage);
     setEditAssigneeId(task.assignee_id || "");
+    setResultText(((task as any).result as string) || "");
     setEditingField(null);
     setIsCreateSubtaskModalOpen(false);
   }, [task?.id, open]);
@@ -495,11 +496,17 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
   };
 
   const saveResult = async () => {
-    if (!resultText.trim() || !task) return;
-    await supabase.from("task_comments").insert({ task_id: task.id, body: `📎 Результат: ${resultText}`, is_system: false });
-    await addSystemLog(`Добавлен результат работы`);
+    if (!task) return;
+    const value = resultText.trim();
+    const { error } = await supabase.from("crm_tasks").update({ result: value || null } as any).eq("id", task.id);
+    if (error) {
+      toast.error(error.message || "Не удалось сохранить результат");
+      return;
+    }
+    await supabase.from("task_comments").insert({ task_id: task.id, body: value ? `📎 Результат обновлён: ${value}` : `📎 Результат очищен`, is_system: true });
+    await addSystemLog(value ? `Результат работы обновлён` : `Результат работы очищен`);
     queryClient.invalidateQueries({ queryKey: ["task-comments", task.id] });
-    setResultText("");
+    queryClient.invalidateQueries({ queryKey: ["crm-tasks"] });
     toast.success("Результат сохранён");
   };
 
@@ -960,7 +967,7 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                   <div className="space-y-2">
                     <Textarea value={resultText} onChange={e => setResultText(e.target.value)} placeholder="Введите текст, ссылку на результат..." className="text-sm min-h-[60px] resize-none" />
                     <div className="flex items-center gap-2">
-                      <Button size="sm" className="h-7 text-xs gap-1" onClick={saveResult} disabled={!resultText.trim()}>
+                      <Button size="sm" className="h-7 text-xs gap-1" onClick={saveResult}>
                         <Link className="h-3 w-3" /> Сохранить
                       </Button>
                       <input ref={resultFileRef} type="file" className="hidden" accept="image/*,.pdf,.docx,.xlsx" onChange={e => handleResultUpload(e.target.files)} />
