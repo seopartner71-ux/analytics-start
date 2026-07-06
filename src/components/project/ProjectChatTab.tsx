@@ -31,6 +31,7 @@ interface ChatMessage {
   attachment_mime: string | null;
   mentions: string[];
   created_at: string;
+  edited_at?: string | null;
 }
 
 interface Reaction {
