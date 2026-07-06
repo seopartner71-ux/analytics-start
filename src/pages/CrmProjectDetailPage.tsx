@@ -659,7 +659,7 @@ export default function CrmProjectDetailPage() {
                   <p className="text-base text-muted-foreground">Нет данных</p>
                 </div>
               ) : tasks.map((task, i) => {
-                const done = task.stage === "Завершена";
+                const done = ["Завершена", "Принята", "Выполнено"].includes(task.stage as string);
                 const pri = PRIORITY_MAP[task.priority] || PRIORITY_MAP.medium;
                 const overdue = task.deadline && isPast(parseISO(task.deadline)) && !done;
                 const isChild = !!(task as any).parent_id;
