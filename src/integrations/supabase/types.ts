@@ -3197,6 +3197,7 @@ export type Database = {
           attachment_url: string | null
           body: string
           created_at: string
+          edited_at: string | null
           id: string
           is_system: boolean
           mentions: string[]
@@ -3210,6 +3211,7 @@ export type Database = {
           attachment_url?: string | null
           body?: string
           created_at?: string
+          edited_at?: string | null
           id?: string
           is_system?: boolean
           mentions?: string[]
@@ -3223,6 +3225,7 @@ export type Database = {
           attachment_url?: string | null
           body?: string
           created_at?: string
+          edited_at?: string | null
           id?: string
           is_system?: boolean
           mentions?: string[]
