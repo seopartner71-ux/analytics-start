@@ -86,6 +86,7 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
     setEditProjectId(task.project_id || "");
     setEditStage(task.stage);
     setEditAssigneeId(task.assignee_id || "");
+    setResultText(((task as any).result as string) || "");
     setEditingField(null);
     setIsCreateSubtaskModalOpen(false);
   }, [task?.id, open]);
