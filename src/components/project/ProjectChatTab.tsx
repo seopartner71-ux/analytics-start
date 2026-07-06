@@ -401,6 +401,39 @@ export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) 
     if (error) toast.error(error.message);
   }, []);
 
+  // --- Edit message ---
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
+
+  const startEdit = (m: ChatMessage) => {
+    setEditingId(m.id);
+    setEditText(m.body);
+  };
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditText("");
+  };
+  const saveEdit = async (id: string) => {
+    const body = editText.trim();
+    if (!body) {
+      toast.error("Сообщение не может быть пустым");
+      return;
+    }
+    const { error } = await supabase
+      .from("project_messages")
+      .update({ body, edited_at: new Date().toISOString() })
+      .eq("id", id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    // Оптимистичное обновление на случай, если realtime UPDATE не долетит
+    queryClient.setQueryData<ChatMessage[]>(["project-messages", projectId, messageLimit], (old = []) =>
+      old.map(m => (m.id === id ? { ...m, body, edited_at: new Date().toISOString() } : m))
+    );
+    cancelEdit();
+  };
+
   return (
     <div className="flex flex-col h-[calc(100vh-220px)] min-h-[500px] bg-card border border-border rounded-lg overflow-hidden">
       {/* Header */}
