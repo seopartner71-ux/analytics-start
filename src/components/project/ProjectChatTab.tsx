@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { UserAvatar } from "@/components/UserAvatar";
 import { Badge } from "@/components/ui/badge";
-import { Paperclip, Send, Search, X, FileIcon, Trash2, SmilePlus } from "lucide-react";
+import { Paperclip, Send, Search, X, FileIcon, Trash2, SmilePlus, Pencil, Check } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
 import { format, isToday, isYesterday } from "date-fns";
@@ -31,6 +31,7 @@ interface ChatMessage {
   attachment_mime: string | null;
   mentions: string[];
   created_at: string;
+  edited_at?: string | null;
 }
 
 interface Reaction {
@@ -262,9 +263,19 @@ export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) 
       )
       .on(
         "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "project_messages", filter: `project_id=eq.${projectId}` },
+        (payload) => {
+          const updated = payload.new as ChatMessage;
+          queryClient.setQueryData<ChatMessage[]>(["project-messages", projectId, messageLimit], (old = []) =>
+            old.map(m => (m.id === updated.id ? { ...m, ...updated } : m))
+          );
+        }
+      )
+      .on(
+        "postgres_changes",
         { event: "DELETE", schema: "public", table: "project_messages", filter: `project_id=eq.${projectId}` },
         (payload) => {
-          queryClient.setQueryData<ChatMessage[]>(["project-messages", projectId], (old = []) =>
+          queryClient.setQueryData<ChatMessage[]>(["project-messages", projectId, messageLimit], (old = []) =>
             old.filter(m => m.id !== (payload.old as any).id)
           );
         }
@@ -390,6 +401,39 @@ export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) 
     if (error) toast.error(error.message);
   }, []);
 
+  // --- Edit message ---
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
+
+  const startEdit = (m: ChatMessage) => {
+    setEditingId(m.id);
+    setEditText(m.body);
+  };
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditText("");
+  };
+  const saveEdit = async (id: string) => {
+    const body = editText.trim();
+    if (!body) {
+      toast.error("Сообщение не может быть пустым");
+      return;
+    }
+    const { error } = await supabase
+      .from("project_messages")
+      .update({ body, edited_at: new Date().toISOString() })
+      .eq("id", id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    // Оптимистичное обновление на случай, если realtime UPDATE не долетит
+    queryClient.setQueryData<ChatMessage[]>(["project-messages", projectId, messageLimit], (old = []) =>
+      old.map(m => (m.id === id ? { ...m, body, edited_at: new Date().toISOString() } : m))
+    );
+    cancelEdit();
+  };
+
   return (
     <div className="flex flex-col h-[calc(100vh-220px)] min-h-[500px] bg-card border border-border rounded-lg overflow-hidden">
       {/* Header */}
@@ -452,33 +496,64 @@ export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) 
                     <div className="flex items-baseline gap-2 text-xs text-muted-foreground">
                       <span className="font-medium text-foreground">{m.user_name}</span>
                       <span>{formatTime(m.created_at)}</span>
+                      {m.edited_at && <span className="italic">(изменено)</span>}
                     </div>
-                    <div
-                      className={`rounded-lg px-3 py-2 text-sm whitespace-pre-wrap break-words ${
-                        isMine ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
-                      }`}
-                    >
-                      {renderBodyWithMentions(m.body, isMine)}
-                      {m.attachment_url && (
-                        <a
-                          href={m.attachment_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className={`mt-2 flex items-center gap-2 text-xs underline ${
-                            isMine ? "text-primary-foreground/90" : "text-primary"
-                          }`}
-                        >
-                          {m.attachment_mime?.startsWith("image/") ? (
-                            <img src={m.attachment_url} alt={m.attachment_name || ""} className="max-h-40 rounded" />
-                          ) : (
-                            <>
-                              <FileIcon className="h-3.5 w-3.5" />
-                              {m.attachment_name}
-                            </>
-                          )}
-                        </a>
-                      )}
-                    </div>
+                    {editingId === m.id ? (
+                      <div className={`w-full flex flex-col gap-1 ${isMine ? "items-end" : "items-start"}`}>
+                        <Textarea
+                          value={editText}
+                          onChange={(e) => setEditText(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && !e.shiftKey) {
+                              e.preventDefault();
+                              saveEdit(m.id);
+                            }
+                            if (e.key === "Escape") {
+                              e.preventDefault();
+                              cancelEdit();
+                            }
+                          }}
+                          rows={2}
+                          autoFocus
+                          className="resize-none min-w-[240px] text-sm"
+                        />
+                        <div className="flex items-center gap-1">
+                          <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={cancelEdit}>
+                            Отмена
+                          </Button>
+                          <Button size="sm" className="h-7 px-2 text-xs gap-1" onClick={() => saveEdit(m.id)}>
+                            <Check className="h-3 w-3" /> Сохранить
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        className={`rounded-lg px-3 py-2 text-sm whitespace-pre-wrap break-words ${
+                          isMine ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
+                        }`}
+                      >
+                        {renderBodyWithMentions(m.body, isMine)}
+                        {m.attachment_url && (
+                          <a
+                            href={m.attachment_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className={`mt-2 flex items-center gap-2 text-xs underline ${
+                              isMine ? "text-primary-foreground/90" : "text-primary"
+                            }`}
+                          >
+                            {m.attachment_mime?.startsWith("image/") ? (
+                              <img src={m.attachment_url} alt={m.attachment_name || ""} className="max-h-40 rounded" />
+                            ) : (
+                              <>
+                                <FileIcon className="h-3.5 w-3.5" />
+                                {m.attachment_name}
+                              </>
+                            )}
+                          </a>
+                        )}
+                      </div>
+                    )}
                     {(() => {
                       const msgReactions = reactionsByMessage.get(m.id) || [];
                       const grouped = new Map<string, Reaction[]>();
@@ -528,14 +603,23 @@ export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) 
                               ))}
                             </PopoverContent>
                           </Popover>
-                          {isMine && (
-                            <button
-                              onClick={() => deleteMessage(m.id)}
-                              className="text-muted-foreground hover:text-destructive transition-colors p-0.5"
-                              title="Удалить"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </button>
+                          {isMine && editingId !== m.id && (
+                            <>
+                              <button
+                                onClick={() => startEdit(m)}
+                                className="text-muted-foreground hover:text-foreground transition-colors p-0.5"
+                                title="Редактировать"
+                              >
+                                <Pencil className="h-3 w-3" />
+                              </button>
+                              <button
+                                onClick={() => deleteMessage(m.id)}
+                                className="text-muted-foreground hover:text-destructive transition-colors p-0.5"
+                                title="Удалить"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            </>
                           )}
                         </div>
                       );
