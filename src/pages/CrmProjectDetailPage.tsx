@@ -394,7 +394,8 @@ export default function CrmProjectDetailPage() {
   });
 
 
-  const completedCount = tasks.filter(t => t.stage === "Завершена").length;
+  const DONE_STAGES = ["Завершена", "Принята", "Выполнено"];
+  const completedCount = tasks.filter(t => DONE_STAGES.includes(t.stage as string)).length;
   const totalCount = tasks.length;
   const progressPct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
