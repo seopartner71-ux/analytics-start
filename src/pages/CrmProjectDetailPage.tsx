@@ -795,9 +795,11 @@ export default function CrmProjectDetailPage() {
                     <button
                       className={cn(
                         "text-base font-medium text-left hover:underline focus:outline-none",
-                        (project as any).deadline && isPast(parseISO((project as any).deadline)) ? "text-destructive" : "text-foreground"
+                        (project as any).deadline && isPast(parseISO((project as any).deadline)) ? "text-destructive" : "text-foreground",
+                        !canEdit && "cursor-not-allowed opacity-70"
                       )}
                       disabled={!canEdit}
+                      title={canEdit ? "Изменить дедлайн" : "Недостаточно прав"}
                     >
                       {(project as any).deadline ? format(parseISO((project as any).deadline), "dd.MM.yyyy") : "Не установлен"}
                     </button>
@@ -806,11 +808,12 @@ export default function CrmProjectDetailPage() {
                     <Input
                       type="date"
                       defaultValue={(project as any).deadline ? format(parseISO((project as any).deadline), "yyyy-MM-dd") : ""}
-                      onChange={(e) => updateDeadline.mutate(e.target.value || null)}
+                      onChange={(e) => { if (e.target.value) updateDeadline.mutate(e.target.value); }}
                       className="h-9 text-base"
+                      disabled={updateDeadline.isPending}
                     />
                     {(project as any).deadline && (
-                      <Button size="sm" variant="ghost" className="w-full h-7 text-sm" onClick={() => updateDeadline.mutate(null)}>
+                      <Button size="sm" variant="ghost" className="w-full h-7 text-sm" onClick={() => updateDeadline.mutate(null)} disabled={updateDeadline.isPending}>
                         Очистить
                       </Button>
                     )}
