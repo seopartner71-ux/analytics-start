@@ -967,7 +967,7 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                   <div className="space-y-2">
                     <Textarea value={resultText} onChange={e => setResultText(e.target.value)} placeholder="Введите текст, ссылку на результат..." className="text-sm min-h-[60px] resize-none" />
                     <div className="flex items-center gap-2">
-                      <Button size="sm" className="h-7 text-xs gap-1" onClick={saveResult} disabled={!resultText.trim()}>
+                      <Button size="sm" className="h-7 text-xs gap-1" onClick={saveResult}>
                         <Link className="h-3 w-3" /> Сохранить
                       </Button>
                       <input ref={resultFileRef} type="file" className="hidden" accept="image/*,.pdf,.docx,.xlsx" onChange={e => handleResultUpload(e.target.files)} />
