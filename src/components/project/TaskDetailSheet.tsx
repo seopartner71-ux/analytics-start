@@ -496,11 +496,17 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
   };
 
   const saveResult = async () => {
-    if (!resultText.trim() || !task) return;
-    await supabase.from("task_comments").insert({ task_id: task.id, body: `📎 Результат: ${resultText}`, is_system: false });
-    await addSystemLog(`Добавлен результат работы`);
+    if (!task) return;
+    const value = resultText.trim();
+    const { error } = await supabase.from("crm_tasks").update({ result: value || null } as any).eq("id", task.id);
+    if (error) {
+      toast.error(error.message || "Не удалось сохранить результат");
+      return;
+    }
+    await supabase.from("task_comments").insert({ task_id: task.id, body: value ? `📎 Результат обновлён: ${value}` : `📎 Результат очищен`, is_system: true });
+    await addSystemLog(value ? `Результат работы обновлён` : `Результат работы очищен`);
     queryClient.invalidateQueries({ queryKey: ["task-comments", task.id] });
-    setResultText("");
+    queryClient.invalidateQueries({ queryKey: ["crm-tasks"] });
     toast.success("Результат сохранён");
   };
 
