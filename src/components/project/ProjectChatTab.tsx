@@ -682,8 +682,8 @@ export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) 
             onChange={(e) => onTextChange(e.target.value)}
             onKeyDown={onKeyDown}
             placeholder="Напишите сообщение... (@ — упомянуть)"
-            rows={1}
-            className="resize-none min-h-[36px] max-h-32 text-sm"
+            rows={2}
+            className="resize-y min-h-[40px] max-h-[400px] text-sm"
             disabled={sending}
           />
           <Button onClick={send} disabled={sending || (!text.trim() && !file)} size="icon" className="h-9 w-9 shrink-0">
