@@ -603,14 +603,23 @@ export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) 
                               ))}
                             </PopoverContent>
                           </Popover>
-                          {isMine && (
-                            <button
-                              onClick={() => deleteMessage(m.id)}
-                              className="text-muted-foreground hover:text-destructive transition-colors p-0.5"
-                              title="Удалить"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </button>
+                          {isMine && editingId !== m.id && (
+                            <>
+                              <button
+                                onClick={() => startEdit(m)}
+                                className="text-muted-foreground hover:text-foreground transition-colors p-0.5"
+                                title="Редактировать"
+                              >
+                                <Pencil className="h-3 w-3" />
+                              </button>
+                              <button
+                                onClick={() => deleteMessage(m.id)}
+                                className="text-muted-foreground hover:text-destructive transition-colors p-0.5"
+                                title="Удалить"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            </>
                           )}
                         </div>
                       );
