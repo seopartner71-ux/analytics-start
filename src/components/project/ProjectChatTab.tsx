@@ -496,33 +496,64 @@ export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) 
                     <div className="flex items-baseline gap-2 text-xs text-muted-foreground">
                       <span className="font-medium text-foreground">{m.user_name}</span>
                       <span>{formatTime(m.created_at)}</span>
+                      {m.edited_at && <span className="italic">(изменено)</span>}
                     </div>
-                    <div
-                      className={`rounded-lg px-3 py-2 text-sm whitespace-pre-wrap break-words ${
-                        isMine ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
-                      }`}
-                    >
-                      {renderBodyWithMentions(m.body, isMine)}
-                      {m.attachment_url && (
-                        <a
-                          href={m.attachment_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className={`mt-2 flex items-center gap-2 text-xs underline ${
-                            isMine ? "text-primary-foreground/90" : "text-primary"
-                          }`}
-                        >
-                          {m.attachment_mime?.startsWith("image/") ? (
-                            <img src={m.attachment_url} alt={m.attachment_name || ""} className="max-h-40 rounded" />
-                          ) : (
-                            <>
-                              <FileIcon className="h-3.5 w-3.5" />
-                              {m.attachment_name}
-                            </>
-                          )}
-                        </a>
-                      )}
-                    </div>
+                    {editingId === m.id ? (
+                      <div className={`w-full flex flex-col gap-1 ${isMine ? "items-end" : "items-start"}`}>
+                        <Textarea
+                          value={editText}
+                          onChange={(e) => setEditText(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && !e.shiftKey) {
+                              e.preventDefault();
+                              saveEdit(m.id);
+                            }
+                            if (e.key === "Escape") {
+                              e.preventDefault();
+                              cancelEdit();
+                            }
+                          }}
+                          rows={2}
+                          autoFocus
+                          className="resize-none min-w-[240px] text-sm"
+                        />
+                        <div className="flex items-center gap-1">
+                          <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={cancelEdit}>
+                            Отмена
+                          </Button>
+                          <Button size="sm" className="h-7 px-2 text-xs gap-1" onClick={() => saveEdit(m.id)}>
+                            <Check className="h-3 w-3" /> Сохранить
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        className={`rounded-lg px-3 py-2 text-sm whitespace-pre-wrap break-words ${
+                          isMine ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
+                        }`}
+                      >
+                        {renderBodyWithMentions(m.body, isMine)}
+                        {m.attachment_url && (
+                          <a
+                            href={m.attachment_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className={`mt-2 flex items-center gap-2 text-xs underline ${
+                              isMine ? "text-primary-foreground/90" : "text-primary"
+                            }`}
+                          >
+                            {m.attachment_mime?.startsWith("image/") ? (
+                              <img src={m.attachment_url} alt={m.attachment_name || ""} className="max-h-40 rounded" />
+                            ) : (
+                              <>
+                                <FileIcon className="h-3.5 w-3.5" />
+                                {m.attachment_name}
+                              </>
+                            )}
+                          </a>
+                        )}
+                      </div>
+                    )}
                     {(() => {
                       const msgReactions = reactionsByMessage.get(m.id) || [];
                       const grouped = new Map<string, Reaction[]>();
