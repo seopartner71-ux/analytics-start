@@ -255,7 +255,7 @@ export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) 
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "project_messages", filter: `project_id=eq.${projectId}` },
         (payload) => {
-          queryClient.setQueryData<ChatMessage[]>(["project-messages", projectId], (old = []) => {
+          queryClient.setQueryData<ChatMessage[]>(["project-messages", projectId, messageLimit], (old = []) => {
             if (old.find(m => m.id === (payload.new as any).id)) return old;
             return [...old, payload.new as ChatMessage];
           });
