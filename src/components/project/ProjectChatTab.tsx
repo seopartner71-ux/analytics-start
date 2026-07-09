@@ -291,7 +291,7 @@ export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [projectId, queryClient]);
+  }, [projectId, queryClient, messageLimit]);
 
   // --- Mark as read ---
   useEffect(() => {
