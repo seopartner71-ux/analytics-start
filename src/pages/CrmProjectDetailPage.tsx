@@ -195,6 +195,46 @@ export default function CrmProjectDetailPage() {
     enabled: !!id,
   });
 
+  // Unread chat messages badge for the "Чат" tab
+  const { data: unreadChatCount = 0 } = useQuery({
+    queryKey: ["project-chat-unread", id, user?.id],
+    enabled: !!id && !!user?.id,
+    queryFn: async () => {
+      const { data: readRow } = await supabase
+        .from("project_message_reads")
+        .select("last_read_at")
+        .eq("project_id", id!)
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      const since = readRow?.last_read_at || "1970-01-01T00:00:00Z";
+      const { count } = await supabase
+        .from("project_messages")
+        .select("id", { count: "exact", head: true })
+        .eq("project_id", id!)
+        .gt("created_at", since)
+        .neq("user_id", user!.id);
+      return count || 0;
+    },
+  });
+
+  useEffect(() => {
+    if (!id || !user?.id) return;
+    const channel = supabase
+      .channel(`project-chat-badge-${id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "project_messages", filter: `project_id=eq.${id}` },
+        () => queryClient.invalidateQueries({ queryKey: ["project-chat-unread", id, user.id] })
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "project_message_reads", filter: `project_id=eq.${id}` },
+        () => queryClient.invalidateQueries({ queryKey: ["project-chat-unread", id, user.id] })
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [id, user?.id, queryClient]);
+
   // Project files
   const { data: projectFiles = [] } = useQuery({
     queryKey: ["project-files", id],
@@ -517,8 +557,13 @@ export default function CrmProjectDetailPage() {
           <TabsTrigger value="team" className="gap-1.5 text-base">
             <Users className="h-3.5 w-3.5" /> Команда
           </TabsTrigger>
-          <TabsTrigger value="chat" className="gap-1.5 text-base">
+          <TabsTrigger value="chat" className="gap-1.5 text-base relative">
             <MessagesSquare className="h-3.5 w-3.5" /> Чат
+            {unreadChatCount > 0 && (
+              <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 rounded-full bg-red-500 text-white text-[10px] font-semibold leading-none">
+                {unreadChatCount > 99 ? "99+" : unreadChatCount}
+              </span>
+            )}
           </TabsTrigger>
         </TabsList>
 
