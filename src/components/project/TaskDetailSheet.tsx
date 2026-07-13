@@ -852,9 +852,44 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                   <div className="flex items-center gap-4 px-4 py-3.5">
                     <Hourglass className="h-4 w-4 text-muted-foreground shrink-0" />
                     <span className="text-xs text-muted-foreground w-24 shrink-0">Статус</span>
-                    <Badge className="text-xs" style={{ backgroundColor: `${task.stage_color || '#3b82f6'}20`, color: task.stage_color || '#3b82f6' }}>
-                      {editStage || task.stage}
-                    </Badge>
+                    {(canEditFields || canApproveTask) ? (
+                      <Select
+                        value={editStage || task.stage}
+                        onValueChange={(v) => {
+                          const color = STAGE_COLORS[v] || "#3b82f6";
+                          const progress = STAGE_PROGRESS[v] ?? 0;
+                          setEditStage(v);
+                          supabase
+                            .from("crm_tasks")
+                            .update({ stage: v, stage_color: color, stage_progress: progress } as any)
+                            .eq("id", task.id)
+                            .then(({ error }) => {
+                              if (error) { toast.error(error.message); return; }
+                              addSystemLog(`Статус изменён на «${v}»`);
+                              queryClient.invalidateQueries({ queryKey: ["crm-tasks"] });
+                              queryClient.invalidateQueries({ queryKey: ["project-tasks"] });
+                              toast.success(`Статус: ${v}`);
+                            });
+                        }}
+                      >
+                        <SelectTrigger className="h-8 text-sm border-0 bg-transparent shadow-none p-0 w-auto gap-2">
+                          <SelectValue>
+                            <Badge className="text-xs" style={{ backgroundColor: `${task.stage_color || '#3b82f6'}20`, color: task.stage_color || '#3b82f6' }}>
+                              {editStage || task.stage}
+                            </Badge>
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {["Новые","В работе","На проверке","Возвращена","Выполнена","Принята","Завершена"].map(s => (
+                            <SelectItem key={s} value={s}>{s}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Badge className="text-xs" style={{ backgroundColor: `${task.stage_color || '#3b82f6'}20`, color: task.stage_color || '#3b82f6' }}>
+                        {editStage || task.stage}
+                      </Badge>
+                    )}
                   </div>
 
                   {/* Project */}
@@ -871,6 +906,44 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                         </SelectContent>
                       </Select>
                     ) : <span className="text-sm text-foreground">{currentProject?.name || "—"}</span>}
+                  </div>
+
+                  {/* Parent task */}
+                  <div className="flex items-center gap-4 px-4 py-3.5">
+                    <Layers className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className="text-xs text-muted-foreground w-24 shrink-0">Родительская</span>
+                    {canEditFields ? (
+                      <Select
+                        value={((task as any).parent_id as string) || "__none__"}
+                        onValueChange={async (v) => {
+                          const newParent = v === "__none__" ? null : v;
+                          if (newParent === task.id) { toast.error("Нельзя выбрать саму задачу"); return; }
+                          const { error } = await supabase
+                            .from("crm_tasks")
+                            .update({ parent_id: newParent } as any)
+                            .eq("id", task.id);
+                          if (error) { toast.error(error.message); return; }
+                          await addSystemLog(newParent ? `Назначена родительская задача` : `Родительская задача снята`);
+                          queryClient.invalidateQueries({ queryKey: ["crm-tasks"] });
+                          queryClient.invalidateQueries({ queryKey: ["project-tasks"] });
+                          toast.success("Родительская задача обновлена");
+                        }}
+                      >
+                        <SelectTrigger className="h-8 text-sm border-0 bg-transparent shadow-none p-0 w-auto gap-2 max-w-[420px]">
+                          <SelectValue placeholder="Не выбрана" />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-[300px]">
+                          <SelectItem value="__none__">Без родительской</SelectItem>
+                          {parentCandidates.map(p => (
+                            <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <span className="text-sm text-foreground">
+                        {parentCandidates.find(p => p.id === (task as any).parent_id)?.title || "—"}
+                      </span>
+                    )}
                   </div>
 
                   {/* ID */}
