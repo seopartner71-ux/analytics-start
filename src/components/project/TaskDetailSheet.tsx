@@ -187,6 +187,22 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
     },
   });
 
+  // Кандидаты в родительские задачи — задачи того же проекта, исключая саму задачу и её прямых потомков
+  const { data: parentCandidates = [] } = useQuery({
+    queryKey: ["parent-candidates", task?.project_id, task?.id],
+    enabled: !!task?.project_id && !!task?.id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("crm_tasks")
+        .select("id, title, parent_id")
+        .eq("project_id", task!.project_id!)
+        .is("archived_at", null)
+        .order("created_at", { ascending: false });
+      const all = (data || []) as { id: string; title: string; parent_id: string | null }[];
+      return all.filter(t => t.id !== task!.id && t.parent_id !== task!.id);
+    },
+  });
+
   // Карта team_member.id -> avatar_url (из profiles)
   const { data: avatarByTm = new Map<string, string | null>() } = useQuery({
     queryKey: ["team-members-avatars", members.map((m) => m.id).sort().join(",")],
