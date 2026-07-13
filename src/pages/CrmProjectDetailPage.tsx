@@ -212,7 +212,7 @@ export default function CrmProjectDetailPage() {
         .select("id", { count: "exact", head: true })
         .eq("project_id", id!)
         .gt("created_at", since)
-        .neq("author_id", user!.id);
+        .neq("user_id", user!.id);
       return count || 0;
     },
   });
