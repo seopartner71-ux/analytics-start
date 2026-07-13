@@ -557,8 +557,13 @@ export default function CrmProjectDetailPage() {
           <TabsTrigger value="team" className="gap-1.5 text-base">
             <Users className="h-3.5 w-3.5" /> Команда
           </TabsTrigger>
-          <TabsTrigger value="chat" className="gap-1.5 text-base">
+          <TabsTrigger value="chat" className="gap-1.5 text-base relative">
             <MessagesSquare className="h-3.5 w-3.5" /> Чат
+            {unreadChatCount > 0 && (
+              <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 rounded-full bg-red-500 text-white text-[10px] font-semibold leading-none">
+                {unreadChatCount > 99 ? "99+" : unreadChatCount}
+              </span>
+            )}
           </TabsTrigger>
         </TabsList>
 
