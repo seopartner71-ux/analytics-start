@@ -78,6 +78,7 @@ export function MessengerPanel() {
   const location = useLocation();
   const [tab, setTab] = useState<Tab>("people");
   const [search, setSearch] = useState("");
+  const [groupDialogOpen, setGroupDialogOpen] = useState(false);
   const lastSeenIdsRef = useRef<Set<string>>(new Set());
 
   // Floating draggable window (desktop)
