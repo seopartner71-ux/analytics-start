@@ -730,6 +730,16 @@ export function MessengerPanel() {
           )}
         </div>
       )}
+
+      <CreateGroupChatDialog
+        open={groupDialogOpen}
+        onOpenChange={setGroupDialogOpen}
+        employees={employees}
+        onCreated={(convId) => {
+          qc.invalidateQueries({ queryKey: ["messenger-conversations"] });
+          open(convId);
+        }}
+      />
     </>
   );
 }
