@@ -276,7 +276,7 @@ export function ConversationView({ conversationId, onBack, employeeById, directO
                   {!isMine && conv?.type !== "direct" && (
                     <p className="text-2xs font-semibold opacity-70 mb-0.5">{m.user_name}</p>
                   )}
-                  {m.body && <p className="whitespace-pre-wrap">{m.body}</p>}
+                  {m.body && <p className="whitespace-pre-wrap">{formatChatBody(m.body, { isMine })}</p>}
                   {m.attachments?.length > 0 && (
                     <div className="mt-1.5 space-y-1">
                       {m.attachments.map((a, i) => {
