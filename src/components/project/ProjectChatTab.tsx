@@ -13,6 +13,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { toast } from "sonner";
 import { format, isToday, isYesterday } from "date-fns";
 import { ru } from "date-fns/locale";
+import { formatChatBody } from "@/lib/chatFormat";
+import { ChatFormatToolbar } from "@/components/messenger/ChatFormatToolbar";
 
 interface ProjectChatTabProps {
   projectId: string;
