@@ -10,6 +10,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { ArrowLeft, Paperclip, Send, Check, CheckCheck, Loader2, X, FileText } from "lucide-react";
 import { toast } from "sonner";
+import { formatChatBody } from "@/lib/chatFormat";
+import { ChatFormatToolbar } from "./ChatFormatToolbar";
 
 interface Profile {
   user_id: string;
