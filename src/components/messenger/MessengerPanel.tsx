@@ -584,6 +584,32 @@ export function MessengerPanel() {
                       </>
                     )}
 
+                    {groupConvs.length > 0 && (
+                      <>
+                        <p className="px-3 pt-3 pb-1 text-2xs uppercase tracking-wider text-muted-foreground">Групповые чаты</p>
+                        {groupConvs.map((c) => (
+                          <button
+                            key={c.id}
+                            onClick={() => open(c.id)}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-accent text-left"
+                          >
+                            <div className="h-9 w-9 rounded-full bg-violet-500/15 text-violet-500 flex items-center justify-center">
+                              <Users className="h-4 w-4" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-base font-medium truncate">{c.title || "Групповой чат"}</p>
+                            </div>
+                            {unreadMap[c.id] > 0 && (
+                              <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-2xs font-semibold flex items-center justify-center">
+                                {unreadMap[c.id]}
+                              </span>
+                            )}
+                          </button>
+                        ))}
+                      </>
+                    )}
+
+
                     {projectChats.length > 0 && (
                       <>
                         <p className="px-3 pt-3 pb-1 text-2xs uppercase tracking-wider text-muted-foreground">
