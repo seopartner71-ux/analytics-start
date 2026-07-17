@@ -56,6 +56,7 @@ export function ConversationView({ conversationId, onBack, employeeById, directO
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Conversation meta + participants
   const { data: conv } = useQuery({
