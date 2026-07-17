@@ -13,6 +13,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { toast } from "sonner";
 import { format, isToday, isYesterday } from "date-fns";
 import { ru } from "date-fns/locale";
+import { formatChatBody } from "@/lib/chatFormat";
+import { ChatFormatToolbar } from "@/components/messenger/ChatFormatToolbar";
 
 interface ProjectChatTabProps {
   projectId: string;
@@ -532,7 +534,7 @@ export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) 
                           isMine ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
                         }`}
                       >
-                        {renderBodyWithMentions(m.body, isMine)}
+                        {formatChatBody(m.body, { isMine })}
                         {m.attachment_url && (
                           <a
                             href={m.attachment_url}
@@ -658,6 +660,10 @@ export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) 
             </button>
           </div>
         )}
+        <div className="flex items-center gap-2 mb-1">
+          <ChatFormatToolbar textareaRef={textRef} value={text} onChange={onTextChange} />
+          <span className="text-2xs text-muted-foreground">**жирный**, [текст](ссылка)</span>
+        </div>
         <div className="flex items-end gap-2">
           <input
             ref={fileInputRef}

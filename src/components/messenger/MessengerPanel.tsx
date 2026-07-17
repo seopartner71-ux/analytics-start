@@ -10,9 +10,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { MessageSquare, Search, Users, Hash, X, Volume2, VolumeX } from "lucide-react";
+import { MessageSquare, Search, Users, Hash, X, Volume2, VolumeX, Plus } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { CreateGroupChatDialog } from "./CreateGroupChatDialog";
 
 interface Profile {
   user_id: string;
@@ -77,6 +78,7 @@ export function MessengerPanel() {
   const location = useLocation();
   const [tab, setTab] = useState<Tab>("people");
   const [search, setSearch] = useState("");
+  const [groupDialogOpen, setGroupDialogOpen] = useState(false);
   const lastSeenIdsRef = useRef<Set<string>>(new Set());
 
   // Floating draggable window (desktop)
@@ -305,6 +307,7 @@ export function MessengerPanel() {
   // Project conversations list
   const projectConvs = conversations.filter((c) => c.type === "project");
   const directConvs = conversations.filter((c) => c.type === "direct");
+  const groupConvs = conversations.filter((c) => c.type === "group");
   const companyConv = conversations.find((c) => c.type === "company");
 
   const filteredEmployees = employees.filter((e) => {
@@ -511,8 +514,8 @@ export function MessengerPanel() {
             <ConversationView conversationId={conversationId} onBack={() => setConversation(null)} employeeById={employeeById} directOther={directOther} />
           ) : (
             <>
-              <div className="px-3 py-2 border-b border-border/60">
-                <div className="relative">
+              <div className="px-3 py-2 border-b border-border/60 flex items-center gap-2">
+                <div className="relative flex-1">
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                   <Input
                     placeholder="Поиск..."
@@ -521,6 +524,17 @@ export function MessengerPanel() {
                     className="pl-8 h-8 text-xs"
                   />
                 </div>
+                {tab === "chats" && (
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    className="h-8 w-8 shrink-0"
+                    onClick={() => setGroupDialogOpen(true)}
+                    title="Создать групповой чат"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
 
               <ScrollArea className="flex-1">
@@ -569,6 +583,32 @@ export function MessengerPanel() {
                         ))}
                       </>
                     )}
+
+                    {groupConvs.length > 0 && (
+                      <>
+                        <p className="px-3 pt-3 pb-1 text-2xs uppercase tracking-wider text-muted-foreground">Групповые чаты</p>
+                        {groupConvs.map((c) => (
+                          <button
+                            key={c.id}
+                            onClick={() => open(c.id)}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-accent text-left"
+                          >
+                            <div className="h-9 w-9 rounded-full bg-violet-500/15 text-violet-500 flex items-center justify-center">
+                              <Users className="h-4 w-4" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-base font-medium truncate">{c.title || "Групповой чат"}</p>
+                            </div>
+                            {unreadMap[c.id] > 0 && (
+                              <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-2xs font-semibold flex items-center justify-center">
+                                {unreadMap[c.id]}
+                              </span>
+                            )}
+                          </button>
+                        ))}
+                      </>
+                    )}
+
 
                     {projectChats.length > 0 && (
                       <>
@@ -690,6 +730,16 @@ export function MessengerPanel() {
           )}
         </div>
       )}
+
+      <CreateGroupChatDialog
+        open={groupDialogOpen}
+        onOpenChange={setGroupDialogOpen}
+        employees={employees}
+        onCreated={(convId) => {
+          qc.invalidateQueries({ queryKey: ["messenger-conversations"] });
+          open(convId);
+        }}
+      />
     </>
   );
 }

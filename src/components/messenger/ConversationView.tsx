@@ -10,6 +10,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { ArrowLeft, Paperclip, Send, Check, CheckCheck, Loader2, X, FileText } from "lucide-react";
 import { toast } from "sonner";
+import { formatChatBody } from "@/lib/chatFormat";
+import { ChatFormatToolbar } from "./ChatFormatToolbar";
 
 interface Profile {
   user_id: string;
@@ -54,6 +56,7 @@ export function ConversationView({ conversationId, onBack, employeeById, directO
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Conversation meta + participants
   const { data: conv } = useQuery({
@@ -274,7 +277,7 @@ export function ConversationView({ conversationId, onBack, employeeById, directO
                   {!isMine && conv?.type !== "direct" && (
                     <p className="text-2xs font-semibold opacity-70 mb-0.5">{m.user_name}</p>
                   )}
-                  {m.body && <p className="whitespace-pre-wrap">{m.body}</p>}
+                  {m.body && <p className="whitespace-pre-wrap">{formatChatBody(m.body, { isMine })}</p>}
                   {m.attachments?.length > 0 && (
                     <div className="mt-1.5 space-y-1">
                       {m.attachments.map((a, i) => {
@@ -334,8 +337,14 @@ export function ConversationView({ conversationId, onBack, employeeById, directO
         </div>
       )}
 
+      {/* Format toolbar */}
+      <div className="border-t border-border/60 px-2 pt-1.5 flex items-center">
+        <ChatFormatToolbar textareaRef={textareaRef} value={text} onChange={setText} />
+        <span className="ml-2 text-2xs text-muted-foreground">**жирный**, [текст](ссылка)</span>
+      </div>
+
       {/* Composer */}
-      <div className="border-t border-border/60 p-2 flex items-end gap-1.5">
+      <div className="p-2 flex items-end gap-1.5">
         <input
           ref={fileInputRef}
           type="file"
@@ -354,6 +363,7 @@ export function ConversationView({ conversationId, onBack, employeeById, directO
           <Paperclip className="h-4 w-4" />
         </Button>
         <Textarea
+          ref={textareaRef}
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => {
