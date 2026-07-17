@@ -337,8 +337,14 @@ export function ConversationView({ conversationId, onBack, employeeById, directO
         </div>
       )}
 
+      {/* Format toolbar */}
+      <div className="border-t border-border/60 px-2 pt-1.5 flex items-center">
+        <ChatFormatToolbar textareaRef={textareaRef} value={text} onChange={setText} />
+        <span className="ml-2 text-2xs text-muted-foreground">**жирный**, [текст](ссылка)</span>
+      </div>
+
       {/* Composer */}
-      <div className="border-t border-border/60 p-2 flex items-end gap-1.5">
+      <div className="p-2 flex items-end gap-1.5">
         <input
           ref={fileInputRef}
           type="file"
