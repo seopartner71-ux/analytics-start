@@ -10,9 +10,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { MessageSquare, Search, Users, Hash, X, Volume2, VolumeX } from "lucide-react";
+import { MessageSquare, Search, Users, Hash, X, Volume2, VolumeX, Plus } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { CreateGroupChatDialog } from "./CreateGroupChatDialog";
 
 interface Profile {
   user_id: string;
