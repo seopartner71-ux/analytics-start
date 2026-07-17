@@ -307,6 +307,7 @@ export function MessengerPanel() {
   // Project conversations list
   const projectConvs = conversations.filter((c) => c.type === "project");
   const directConvs = conversations.filter((c) => c.type === "direct");
+  const groupConvs = conversations.filter((c) => c.type === "group");
   const companyConv = conversations.find((c) => c.type === "company");
 
   const filteredEmployees = employees.filter((e) => {
