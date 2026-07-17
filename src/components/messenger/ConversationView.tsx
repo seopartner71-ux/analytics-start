@@ -363,6 +363,7 @@ export function ConversationView({ conversationId, onBack, employeeById, directO
           <Paperclip className="h-4 w-4" />
         </Button>
         <Textarea
+          ref={textareaRef}
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => {
