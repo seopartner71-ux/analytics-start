@@ -15,6 +15,7 @@ import { format, isToday, isYesterday } from "date-fns";
 import { ru } from "date-fns/locale";
 import { formatChatBody } from "@/lib/chatFormat";
 import { ChatFormatToolbar } from "@/components/messenger/ChatFormatToolbar";
+import { EmojiPickerButton } from "@/components/EmojiPickerButton";
 
 interface ProjectChatTabProps {
   projectId: string;
