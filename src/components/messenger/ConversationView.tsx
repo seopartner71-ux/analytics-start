@@ -58,6 +58,7 @@ export function ConversationView({ conversationId, onBack, employeeById, directO
   const [uploading, setUploading] = useState(false);
   const [sending, setSending] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
