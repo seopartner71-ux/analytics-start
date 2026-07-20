@@ -663,6 +663,7 @@ export function ProjectChatTab({ projectId, projectName }: ProjectChatTabProps) 
         )}
         <div className="flex items-center gap-2 mb-1">
           <ChatFormatToolbar textareaRef={textRef} value={text} onChange={onTextChange} />
+          <EmojiPickerButton size="sm" onSelect={(e) => onTextChange(text + e)} />
           <span className="text-2xs text-muted-foreground">**жирный**, [текст](ссылка)</span>
         </div>
         <div className="flex items-end gap-2">
