@@ -8,12 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { ArrowLeft, Paperclip, Send, Check, CheckCheck, Loader2, X, FileText, UserPlus } from "lucide-react";
+import { ArrowLeft, Paperclip, Send, Check, CheckCheck, Loader2, X, FileText, UserPlus, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { formatChatBody } from "@/lib/chatFormat";
 import { ChatFormatToolbar } from "./ChatFormatToolbar";
 import { EmojiPickerButton } from "@/components/EmojiPickerButton";
 import { AddParticipantsDialog } from "./AddParticipantsDialog";
+import { ChatSettingsDialog } from "./ChatSettingsDialog";
 
 interface Profile {
   user_id: string;
