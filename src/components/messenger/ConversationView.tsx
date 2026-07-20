@@ -49,13 +49,14 @@ interface Props {
 }
 
 export function ConversationView({ conversationId, onBack, employeeById, directOther }: Props) {
-  const { user, profile } = useAuth();
+  const { user, profile, isAdmin } = useAuth();
   const { isOnline } = usePresence();
   const qc = useQueryClient();
   const [text, setText] = useState("");
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [sending, setSending] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
