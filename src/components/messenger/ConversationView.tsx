@@ -354,6 +354,7 @@ export function ConversationView({ conversationId, onBack, employeeById, directO
       {/* Format toolbar */}
       <div className="border-t border-border/60 px-2 pt-1.5 flex items-center">
         <ChatFormatToolbar textareaRef={textareaRef} value={text} onChange={setText} />
+        <EmojiPickerButton size="sm" onSelect={(e) => setText((v) => v + e)} />
         <span className="ml-2 text-2xs text-muted-foreground">**жирный**, [текст](ссылка)</span>
       </div>
 
@@ -399,6 +400,15 @@ export function ConversationView({ conversationId, onBack, employeeById, directO
           {sending || uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
         </Button>
       </div>
+
+      <AddParticipantsDialog
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        conversationId={conversationId}
+        employees={Object.values(employeeById)}
+        existingUserIds={participants.map((p) => p.user_id)}
+        onAdded={() => qc.invalidateQueries({ queryKey: ["dm-participants", conversationId] })}
+      />
     </div>
   );
 }
