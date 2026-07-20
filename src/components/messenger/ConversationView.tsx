@@ -67,12 +67,14 @@ export function ConversationView({ conversationId, onBack, employeeById, directO
   const { data: conv } = useQuery({
     queryKey: ["dm-conv", conversationId],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("conversations")
+      const { data } = await (supabase.from("conversations") as any)
         .select("id, type, title, project_id, created_by, description, avatar_url")
         .eq("id", conversationId)
         .maybeSingle();
-      return data;
+      return data as {
+        id: string; type: string; title: string | null; project_id: string | null;
+        created_by: string; description: string | null; avatar_url: string | null;
+      } | null;
     },
   });
 
