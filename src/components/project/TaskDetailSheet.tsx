@@ -33,6 +33,7 @@ import { linkify } from "@/lib/linkify";
 import { TaskMembersBlock } from "@/components/project/TaskMembersBlock";
 import { TaskAttachmentsBlock } from "@/components/project/TaskAttachmentsBlock";
 import { TaskActivityBlock } from "@/components/project/TaskActivityBlock";
+import { EmojiPickerButton } from "@/components/EmojiPickerButton";
 import { renderWithMentions, extractMentionedMembers } from "@/lib/mentions";
 import { UserAvatar } from "@/components/UserAvatar";
 import { getDefaultAvatar } from "@/lib/avatar";
