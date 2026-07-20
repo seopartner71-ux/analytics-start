@@ -219,6 +219,7 @@ export default function ChatPage() {
       {/* Input area */}
       <div className="border-t border-border px-4 py-3">
         <div className="flex items-center gap-2">
+          <EmojiPickerButton onSelect={(e) => setMessage((v) => v + e)} />
           <Input
             ref={inputRef}
             value={message}
