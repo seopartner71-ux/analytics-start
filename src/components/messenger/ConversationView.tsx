@@ -8,10 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { ArrowLeft, Paperclip, Send, Check, CheckCheck, Loader2, X, FileText } from "lucide-react";
+import { ArrowLeft, Paperclip, Send, Check, CheckCheck, Loader2, X, FileText, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { formatChatBody } from "@/lib/chatFormat";
 import { ChatFormatToolbar } from "./ChatFormatToolbar";
+import { EmojiPickerButton } from "@/components/EmojiPickerButton";
+import { AddParticipantsDialog } from "./AddParticipantsDialog";
 
 interface Profile {
   user_id: string;
@@ -47,13 +49,14 @@ interface Props {
 }
 
 export function ConversationView({ conversationId, onBack, employeeById, directOther }: Props) {
-  const { user, profile } = useAuth();
+  const { user, profile, isAdmin } = useAuth();
   const { isOnline } = usePresence();
   const qc = useQueryClient();
   const [text, setText] = useState("");
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [sending, setSending] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -248,6 +251,17 @@ export function ConversationView({ conversationId, onBack, employeeById, directO
           <p className="text-base font-semibold truncate">{headerTitle}</p>
           <p className="text-xs text-muted-foreground truncate">{headerSubtitle}</p>
         </div>
+        {conv?.type !== "direct" && (isAdmin || user?.email === "sinitsin3@yandex.ru" || conv?.created_by === user?.id) && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 shrink-0"
+            title="Добавить участников"
+            onClick={() => setAddOpen(true)}
+          >
+            <UserPlus className="h-4 w-4" />
+          </Button>
+        )}
       </div>
 
       {/* Messages */}
@@ -340,6 +354,7 @@ export function ConversationView({ conversationId, onBack, employeeById, directO
       {/* Format toolbar */}
       <div className="border-t border-border/60 px-2 pt-1.5 flex items-center">
         <ChatFormatToolbar textareaRef={textareaRef} value={text} onChange={setText} />
+        <EmojiPickerButton size="sm" onSelect={(e) => setText((v) => v + e)} />
         <span className="ml-2 text-2xs text-muted-foreground">**жирный**, [текст](ссылка)</span>
       </div>
 
@@ -385,6 +400,15 @@ export function ConversationView({ conversationId, onBack, employeeById, directO
           {sending || uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
         </Button>
       </div>
+
+      <AddParticipantsDialog
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        conversationId={conversationId}
+        employees={Object.values(employeeById)}
+        existingUserIds={participants.map((p) => p.user_id)}
+        onAdded={() => qc.invalidateQueries({ queryKey: ["dm-participants", conversationId] })}
+      />
     </div>
   );
 }
