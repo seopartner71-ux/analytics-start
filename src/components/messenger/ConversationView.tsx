@@ -251,6 +251,17 @@ export function ConversationView({ conversationId, onBack, employeeById, directO
           <p className="text-base font-semibold truncate">{headerTitle}</p>
           <p className="text-xs text-muted-foreground truncate">{headerSubtitle}</p>
         </div>
+        {conv?.type !== "direct" && (isAdmin || user?.email === "sinitsin3@yandex.ru" || conv?.created_by === user?.id) && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 shrink-0"
+            title="Добавить участников"
+            onClick={() => setAddOpen(true)}
+          >
+            <UserPlus className="h-4 w-4" />
+          </Button>
+        )}
       </div>
 
       {/* Messages */}
