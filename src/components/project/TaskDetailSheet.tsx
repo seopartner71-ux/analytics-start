@@ -1252,6 +1252,7 @@ export function TaskDetailSheet({ task, open, onClose }: { task: CrmTask | null;
                 <button className="text-muted-foreground hover:text-foreground transition-colors shrink-0">
                   <Paperclip className="h-4 w-4" />
                 </button>
+                <EmojiPickerButton size="sm" onSelect={(e) => setMsg((v) => v + e)} />
                 <Input placeholder="Нажмите @ или +, чтобы упомянуть человека, чат или AI" value={msg} onChange={e => setMsg(e.target.value)} className="flex-1 h-9 border-0 bg-transparent shadow-none focus-visible:ring-0 text-sm placeholder:text-muted-foreground/50" onKeyDown={e => e.key === "Enter" && msg.trim() && sendComment.mutate()} />
                 <Button size="icon" className="h-8 w-8 rounded-lg shrink-0 shadow-sm" disabled={!msg.trim() || sendComment.isPending} onClick={() => sendComment.mutate()}>
                   <Send className="h-4 w-4" />
