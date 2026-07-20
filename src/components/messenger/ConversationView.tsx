@@ -246,6 +246,8 @@ export function ConversationView({ conversationId, onBack, employeeById, directO
               />
             )}
           </div>
+        ) : conv?.avatar_url ? (
+          <img src={conv.avatar_url} alt="" className="h-10 w-10 shrink-0 rounded-full object-cover border border-border/60" />
         ) : (
           <div className="h-10 w-10 shrink-0 rounded-full bg-primary/15 text-primary flex items-center justify-center text-xs font-semibold">
             {headerTitle.slice(0, 2).toUpperCase()}
@@ -254,17 +256,33 @@ export function ConversationView({ conversationId, onBack, employeeById, directO
         <div className="min-w-0 flex-1">
           <p className="text-base font-semibold truncate">{headerTitle}</p>
           <p className="text-xs text-muted-foreground truncate">{headerSubtitle}</p>
+          {conv?.description && (
+            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2 whitespace-pre-wrap">
+              {formatChatBody(conv.description)}
+            </p>
+          )}
         </div>
         {conv?.type !== "direct" && (isAdmin || user?.email === "sinitsin3@yandex.ru" || conv?.created_by === user?.id) && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 shrink-0"
-            title="Добавить участников"
-            onClick={() => setAddOpen(true)}
-          >
-            <UserPlus className="h-4 w-4" />
-          </Button>
+          <>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 shrink-0"
+              title="Настройки чата"
+              onClick={() => setSettingsOpen(true)}
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 shrink-0"
+              title="Добавить участников"
+              onClick={() => setAddOpen(true)}
+            >
+              <UserPlus className="h-4 w-4" />
+            </Button>
+          </>
         )}
       </div>
 
