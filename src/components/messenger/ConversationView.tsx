@@ -69,7 +69,7 @@ export function ConversationView({ conversationId, onBack, employeeById, directO
     queryFn: async () => {
       const { data } = await supabase
         .from("conversations")
-        .select("id, type, title, project_id, created_by")
+        .select("id, type, title, project_id, created_by, description, avatar_url")
         .eq("id", conversationId)
         .maybeSingle();
       return data;
