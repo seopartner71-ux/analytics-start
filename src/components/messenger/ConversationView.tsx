@@ -431,6 +431,15 @@ export function ConversationView({ conversationId, onBack, employeeById, directO
         existingUserIds={participants.map((p) => p.user_id)}
         onAdded={() => qc.invalidateQueries({ queryKey: ["dm-participants", conversationId] })}
       />
+      <ChatSettingsDialog
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        conversationId={conversationId}
+        initialTitle={conv?.title || ""}
+        initialDescription={conv?.description || ""}
+        initialAvatarUrl={conv?.avatar_url || null}
+        onSaved={() => qc.invalidateQueries({ queryKey: ["dm-conv", conversationId] })}
+      />
     </div>
   );
 }
