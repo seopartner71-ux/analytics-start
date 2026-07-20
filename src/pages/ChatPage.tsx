@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { UserAvatar } from "@/components/UserAvatar";
+import { EmojiPickerButton } from "@/components/EmojiPickerButton";
 
 function getInitials(name: string) {
   return name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
