@@ -704,8 +704,10 @@ export type Database = {
       }
       conversations: {
         Row: {
+          avatar_url: string | null
           created_at: string
           created_by: string
+          description: string | null
           id: string
           last_message_at: string
           project_id: string | null
@@ -714,8 +716,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          avatar_url?: string | null
           created_at?: string
           created_by: string
+          description?: string | null
           id?: string
           last_message_at?: string
           project_id?: string | null
@@ -724,8 +728,10 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          avatar_url?: string | null
           created_at?: string
           created_by?: string
+          description?: string | null
           id?: string
           last_message_at?: string
           project_id?: string | null
