@@ -8,12 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { ArrowLeft, Paperclip, Send, Check, CheckCheck, Loader2, X, FileText, UserPlus } from "lucide-react";
+import { ArrowLeft, Paperclip, Send, Check, CheckCheck, Loader2, X, FileText, UserPlus, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { formatChatBody } from "@/lib/chatFormat";
 import { ChatFormatToolbar } from "./ChatFormatToolbar";
 import { EmojiPickerButton } from "@/components/EmojiPickerButton";
 import { AddParticipantsDialog } from "./AddParticipantsDialog";
+import { ChatSettingsDialog } from "./ChatSettingsDialog";
 
 interface Profile {
   user_id: string;
@@ -57,6 +58,7 @@ export function ConversationView({ conversationId, onBack, employeeById, directO
   const [uploading, setUploading] = useState(false);
   const [sending, setSending] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -65,12 +67,14 @@ export function ConversationView({ conversationId, onBack, employeeById, directO
   const { data: conv } = useQuery({
     queryKey: ["dm-conv", conversationId],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("conversations")
-        .select("id, type, title, project_id, created_by")
+      const { data } = await (supabase.from("conversations") as any)
+        .select("id, type, title, project_id, created_by, description, avatar_url")
         .eq("id", conversationId)
         .maybeSingle();
-      return data;
+      return data as {
+        id: string; type: string; title: string | null; project_id: string | null;
+        created_by: string; description: string | null; avatar_url: string | null;
+      } | null;
     },
   });
 
@@ -242,6 +246,8 @@ export function ConversationView({ conversationId, onBack, employeeById, directO
               />
             )}
           </div>
+        ) : conv?.avatar_url ? (
+          <img src={conv.avatar_url} alt="" className="h-10 w-10 shrink-0 rounded-full object-cover border border-border/60" />
         ) : (
           <div className="h-10 w-10 shrink-0 rounded-full bg-primary/15 text-primary flex items-center justify-center text-xs font-semibold">
             {headerTitle.slice(0, 2).toUpperCase()}
@@ -250,17 +256,33 @@ export function ConversationView({ conversationId, onBack, employeeById, directO
         <div className="min-w-0 flex-1">
           <p className="text-base font-semibold truncate">{headerTitle}</p>
           <p className="text-xs text-muted-foreground truncate">{headerSubtitle}</p>
+          {conv?.description && (
+            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2 whitespace-pre-wrap">
+              {formatChatBody(conv.description)}
+            </p>
+          )}
         </div>
         {conv?.type !== "direct" && (isAdmin || user?.email === "sinitsin3@yandex.ru" || conv?.created_by === user?.id) && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 shrink-0"
-            title="Добавить участников"
-            onClick={() => setAddOpen(true)}
-          >
-            <UserPlus className="h-4 w-4" />
-          </Button>
+          <>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 shrink-0"
+              title="Настройки чата"
+              onClick={() => setSettingsOpen(true)}
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 shrink-0"
+              title="Добавить участников"
+              onClick={() => setAddOpen(true)}
+            >
+              <UserPlus className="h-4 w-4" />
+            </Button>
+          </>
         )}
       </div>
 
@@ -408,6 +430,15 @@ export function ConversationView({ conversationId, onBack, employeeById, directO
         employees={Object.values(employeeById)}
         existingUserIds={participants.map((p) => p.user_id)}
         onAdded={() => qc.invalidateQueries({ queryKey: ["dm-participants", conversationId] })}
+      />
+      <ChatSettingsDialog
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        conversationId={conversationId}
+        initialTitle={conv?.title || ""}
+        initialDescription={conv?.description || ""}
+        initialAvatarUrl={conv?.avatar_url || null}
+        onSaved={() => qc.invalidateQueries({ queryKey: ["dm-conv", conversationId] })}
       />
     </div>
   );

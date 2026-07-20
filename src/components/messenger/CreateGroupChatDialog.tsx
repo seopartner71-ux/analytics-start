@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -8,7 +9,9 @@ import { UserAvatar } from "@/components/UserAvatar";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Loader2, Users } from "lucide-react";
+import { Loader2, Users, ImagePlus, X } from "lucide-react";
+import { ChatFormatToolbar } from "./ChatFormatToolbar";
+import { EmojiPickerButton } from "@/components/EmojiPickerButton";
 
 interface Profile {
   user_id: string;
@@ -28,9 +31,14 @@ interface Props {
 export function CreateGroupChatDialog({ open, onOpenChange, employees, onCreated }: Props) {
   const { user, profile } = useAuth();
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [creating, setCreating] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const descRef = useRef<HTMLTextAreaElement>(null);
 
   const filtered = useMemo(() => {
     if (!search) return employees;
@@ -51,8 +59,38 @@ export function CreateGroupChatDialog({ open, onOpenChange, employees, onCreated
 
   const reset = () => {
     setTitle("");
+    setDescription("");
     setSearch("");
     setSelected(new Set());
+    setAvatarFile(null);
+    setAvatarPreview(null);
+  };
+
+  const onPickAvatar = (f: File | null) => {
+    if (!f) return;
+    if (f.size > 5 * 1024 * 1024) {
+      toast.error("Файл больше 5 МБ");
+      return;
+    }
+    setAvatarFile(f);
+    const url = URL.createObjectURL(f);
+    setAvatarPreview(url);
+  };
+
+  const uploadAvatar = async (): Promise<string | null> => {
+    if (!avatarFile || !user) return null;
+    const ext = avatarFile.name.split(".").pop() || "png";
+    const path = `chat-avatars/${user.id}/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("messenger").upload(path, avatarFile, {
+      contentType: avatarFile.type,
+      upsert: false,
+    });
+    if (error) {
+      toast.error("Не удалось загрузить аватар");
+      return null;
+    }
+    const { data } = supabase.storage.from("messenger").getPublicUrl(path);
+    return data.publicUrl;
   };
 
   const create = async () => {
@@ -67,13 +105,20 @@ export function CreateGroupChatDialog({ open, onOpenChange, employees, onCreated
     }
     setCreating(true);
     try {
+      const avatar_url = await uploadAvatar();
       const { data: conv, error } = await supabase
         .from("conversations")
-        .insert({ type: "group", title: title.trim(), created_by: user.id })
+        .insert({
+          type: "group",
+          title: title.trim(),
+          description: description.trim() || null,
+          avatar_url,
+          created_by: user.id,
+        } as never)
         .select("id")
         .single();
       if (error || !conv) {
-        toast.error("Не удалось создать чат");
+        toast.error("Не удалось создать чат: " + (error?.message || ""));
         return;
       }
       const rows = [user.id, ...Array.from(selected)].map((uid) => ({
@@ -85,7 +130,6 @@ export function CreateGroupChatDialog({ open, onOpenChange, employees, onCreated
         toast.error("Не удалось добавить участников");
         return;
       }
-      // Приветственное системное сообщение
       await supabase.from("dm_messages").insert({
         conversation_id: conv.id,
         user_id: user.id,
@@ -111,12 +155,64 @@ export function CreateGroupChatDialog({ open, onOpenChange, employees, onCreated
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
+          {/* Avatar */}
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="relative h-16 w-16 rounded-full bg-muted border border-border/60 overflow-hidden flex items-center justify-center hover:bg-accent transition-colors shrink-0"
+              title="Загрузить аватар"
+            >
+              {avatarPreview ? (
+                <img src={avatarPreview} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <ImagePlus className="h-5 w-5 text-muted-foreground" />
+              )}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => onPickAvatar(e.target.files?.[0] ?? null)}
+            />
+            <div className="flex-1 space-y-1">
+              <p className="text-xs text-muted-foreground">Аватар чата (необязательно)</p>
+              {avatarPreview && (
+                <button
+                  type="button"
+                  onClick={() => { setAvatarFile(null); setAvatarPreview(null); }}
+                  className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
+                >
+                  <X className="h-3 w-3" /> Убрать
+                </button>
+              )}
+            </div>
+          </div>
+
           <Input
             placeholder="Название чата"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            autoFocus
           />
+
+          {/* Description with format toolbar */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-1">
+              <ChatFormatToolbar textareaRef={descRef} value={description} onChange={setDescription} />
+              <EmojiPickerButton size="sm" onSelect={(e) => setDescription((v) => v + e)} />
+              <span className="ml-1 text-2xs text-muted-foreground">**жирный**, [текст](ссылка)</span>
+            </div>
+            <Textarea
+              ref={descRef}
+              placeholder="Описание чата (необязательно). Можно вставить ссылку: [текст](https://...)"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={2}
+              className="resize-y min-h-[60px] text-sm"
+            />
+          </div>
+
           <Input
             placeholder="Поиск сотрудников..."
             value={search}
@@ -125,7 +221,7 @@ export function CreateGroupChatDialog({ open, onOpenChange, employees, onCreated
           {selected.size > 0 && (
             <p className="text-xs text-muted-foreground">Выбрано: {selected.size}</p>
           )}
-          <ScrollArea className="h-64 border border-border/60 rounded">
+          <ScrollArea className="h-48 border border-border/60 rounded">
             <div className="py-1">
               {filtered.map((e) => {
                 const checked = selected.has(e.user_id);
