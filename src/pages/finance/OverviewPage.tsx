@@ -6,6 +6,7 @@ import { Landmark, PiggyBank } from "lucide-react";
 
 import { PeriodFilter } from "@/components/finance/PeriodFilter";
 import { PartnersPanel } from "@/components/finance/PartnersPanel";
+import { ClientReportsAttention } from "@/components/finance/ClientReportsAttention";
 import { Metric, Panel, PageTitle, Delta, EmptyState } from "@/components/finance/primitives";
 import { useFinancePeriod } from "@/contexts/FinancePeriodContext";
 import {
@@ -116,6 +117,8 @@ export default function OverviewPage() {
           )}
         </Panel>
       </div>
+
+      <ClientReportsAttention />
 
       <PartnersPanel />
 
