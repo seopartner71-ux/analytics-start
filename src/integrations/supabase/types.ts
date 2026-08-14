@@ -1285,6 +1285,7 @@ export type Database = {
           status: string
           telegram: string | null
           updated_at: string
+          website: string | null
         }
         Insert: {
           account_number?: string | null
@@ -1313,6 +1314,7 @@ export type Database = {
           status?: string
           telegram?: string | null
           updated_at?: string
+          website?: string | null
         }
         Update: {
           account_number?: string | null
@@ -1341,6 +1343,7 @@ export type Database = {
           status?: string
           telegram?: string | null
           updated_at?: string
+          website?: string | null
         }
         Relationships: []
       }

@@ -1,0 +1,1 @@
+ALTER TABLE public.financial_clients ADD COLUMN IF NOT EXISTS website text;

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -20,6 +21,12 @@ const EMPTY: Partial<FinClient> = {
   name: "", client_type: "company", status: "active", report_enabled: false, report_day: null,
 };
 
+function normalizeSite(v: string) {
+  const s = v.trim();
+  if (!s) return null;
+  return /^https?:\/\//i.test(s) ? s : `https://${s}`;
+}
+
 export function ClientFormDialog({
   open, onOpenChange, client,
 }: {
@@ -38,6 +45,41 @@ export function ClientFormDialog({
   const set = <K extends keyof FinClient>(k: K, v: FinClient[K] | null) =>
     setForm((f) => ({ ...f, [k]: v as never }));
 
+  const [loadingInn, setLoadingInn] = useState(false);
+  const [lastInn, setLastInn] = useState("");
+
+  const lookupInn = async () => {
+    const inn = (form.inn || "").replace(/\D/g, "");
+    if (inn.length !== 10 && inn.length !== 12) return;
+    if (inn === lastInn || loadingInn) return;
+    setLoadingInn(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("dadata-party", { body: { inn } });
+      if (error) {
+        const details = "context" in error ? await (error as { context: Response }).context.text() : error.message;
+        let msg = "Не удалось получить данные по ИНН";
+        try { msg = JSON.parse(details)?.error || msg; } catch { /* ignore */ }
+        throw new Error(msg);
+      }
+      setLastInn(inn);
+      setForm((f) => ({
+        ...f,
+        inn: data.inn || f.inn,
+        legal_name: data.legal_name || f.legal_name,
+        kpp: data.kpp || f.kpp,
+        ogrn: data.ogrn || f.ogrn,
+        legal_address: data.legal_address || f.legal_address,
+        actual_address: f.actual_address || data.legal_address || null,
+        name: (f.name || "").trim() || data.short_name || data.legal_name || "",
+      }));
+      toast.success("Реквизиты подставлены по ИНН");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setLoadingInn(false);
+    }
+  };
+
   const save = useMutation({
     mutationFn: async () => {
       const payload = {
@@ -46,6 +88,7 @@ export function ClientFormDialog({
         phone: form.phone || null,
         email: form.email || null,
         telegram: form.telegram || null,
+        website: normalizeSite(form.website || ""),
         responsible_id: form.responsible_id || null,
         status: form.status || "active",
         notes: form.notes || null,
@@ -64,6 +107,7 @@ export function ClientFormDialog({
         report_enabled: !!form.report_enabled && !!form.report_day,
       };
       if (!payload.name) throw new Error("Укажите название клиента");
+      if (!payload.website) throw new Error("Укажите сайт клиента");
       if (client?.id) {
         const { error } = await supabase.from("financial_clients").update(payload).eq("id", client.id);
         if (error) throw error;
@@ -130,6 +174,15 @@ export function ClientFormDialog({
             {field("Email", "email", "client@mail.ru")}
             {field("Telegram", "telegram", "@username")}
             <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Сайт клиента *</Label>
+              <Input
+                className="h-9"
+                value={form.website || ""}
+                placeholder="example.ru"
+                onChange={(e) => set("website", e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Ответственный</Label>
               <Select
                 value={form.responsible_id || "none"}
@@ -156,7 +209,27 @@ export function ClientFormDialog({
 
           <TabsContent value="req" className="mt-4 grid max-h-[55vh] gap-3 overflow-y-auto sm:grid-cols-2">
             <div className="sm:col-span-2">{field("Юридическое название", "legal_name")}</div>
-            {field("ИНН", "inn")}
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">ИНН</Label>
+              <div className="flex gap-2">
+                <Input
+                  className="h-9"
+                  value={form.inn || ""}
+                  placeholder="7707083893"
+                  onChange={(e) => set("inn", e.target.value)}
+                  onBlur={() => lookupInn()}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-9 shrink-0"
+                  disabled={loadingInn}
+                  onClick={() => lookupInn()}
+                >
+                  {loadingInn ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Найти"}
+                </Button>
+              </div>
+            </div>
             {field("КПП", "kpp")}
             {field("ОГРН / ОГРНИП", "ogrn")}
             {field("БИК", "bik")}
