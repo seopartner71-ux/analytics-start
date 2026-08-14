@@ -160,7 +160,7 @@ export default function PartnersPage() {
           </Panel>
         ))}
         {rows.length === 0 && (
-          <Panel><EmptyState text="Партнёры не настроены в разделе «Настройки финансов»" /></Panel>
+          <Panel className="md:col-span-2"><EmptyState text="Партнёры не настроены в разделе «Настройки финансов»" /></Panel>
         )}
       </div>
 
