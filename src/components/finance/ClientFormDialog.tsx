@@ -71,6 +71,7 @@ export function ClientFormDialog({
         report_enabled: !!form.report_enabled && !!form.report_day,
       };
       if (!payload.name) throw new Error("Укажите название клиента");
+      if (!payload.website) throw new Error("Укажите сайт клиента");
       if (client?.id) {
         const { error } = await supabase.from("financial_clients").update(payload).eq("id", client.id);
         if (error) throw error;
