@@ -8,6 +8,7 @@ export interface FinClient {
   phone: string | null;
   email: string | null;
   telegram: string | null;
+  website: string | null;
   responsible_id: string | null;
   status: string;
   notes: string | null;
