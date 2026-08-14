@@ -133,6 +133,7 @@ const App = () => (
               </Suspense>
             </BrowserRouter>
           </TooltipProvider>
+          </FinancePeriodProvider>
         </WorkspaceColorProvider>
       </AuthProvider>
     </ThemeProvider>
