@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { WorkspaceColorProvider } from "@/contexts/WorkspaceColorContext";
+import { FinancePeriodProvider } from "@/contexts/FinancePeriodContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { FinanceGuard } from "@/components/FinanceGuard";
 import { CrmLayout } from "./components/CrmLayout";
@@ -39,12 +40,22 @@ const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const ChatPage = lazy(() => import("./pages/ChatPage"));
 
 const Finance = lazy(() => import("./pages/Finance"));
+const FinanceHome = lazy(() => import("./pages/finance/FinanceHome"));
+const FinanceOverview = lazy(() => import("./pages/finance/OverviewPage"));
+const FinanceOperations = lazy(() => import("./pages/finance/OperationsPage"));
+const FinanceIncome = lazy(() => import("./pages/finance/IncomePage"));
+const FinanceExpenses = lazy(() => import("./pages/finance/ExpensesPage"));
+const FinanceClients = lazy(() => import("./pages/finance/ClientsPage"));
+const FinancePayables = lazy(() => import("./pages/finance/PayablesPage"));
+const FinanceReports = lazy(() => import("./pages/finance/ReportsPage"));
+const FinanceSettings = lazy(() => import("./pages/finance/FinanceSettingsPage"));
 const KnowledgeBasePage = lazy(() => import("./pages/KnowledgeBasePage"));
 const KnowledgeBooksPage = lazy(() => import("./pages/KnowledgeBooksPage"));
 const DeletionLogPage = lazy(() => import("./pages/DeletionLogPage"));
 const CredentialsPage = lazy(() => import("./pages/CredentialsPage"));
 const NotificationSettingsPage = lazy(() => import("./pages/NotificationSettingsPage"));
 const ProjectReportsPage = lazy(() => import("./pages/ProjectReportsPage"));
+
 
 // Tuned QueryClient: cache for 60s, no refetch on window focus,
 // retry once. Greatly reduces redundant network traffic.
@@ -70,6 +81,7 @@ const App = () => (
     <ThemeProvider>
       <AuthProvider>
         <WorkspaceColorProvider>
+          <FinancePeriodProvider>
           <TooltipProvider>
             <Toaster />
             <Sonner />
@@ -82,7 +94,9 @@ const App = () => (
                   <Route path="/report/:id" element={<PublicReport />} />
                   <Route path="/weekly/:token" element={<PublicWeeklyReport />} />
                   <Route path="/oauth/yandex/callback" element={<OAuthCallback />} />
-                  <Route path="/" element={<ProtectedRoute><CrmLayout><Index /></CrmLayout></ProtectedRoute>} />
+                  <Route path="/" element={<ProtectedRoute><CrmLayout><FinanceHome /></CrmLayout></ProtectedRoute>} />
+                  <Route path="/seo-dashboard" element={<ProtectedRoute><CrmLayout><Index /></CrmLayout></ProtectedRoute>} />
+
                   <Route path="/companies" element={<ProtectedRoute><CrmLayout><CompaniesPage /></CrmLayout></ProtectedRoute>} />
                   <Route path="/employees" element={<ProtectedRoute><CrmLayout><EmployeesPage /></CrmLayout></ProtectedRoute>} />
                   <Route path="/tasks" element={<ProtectedRoute><CrmLayout><CrmTasksPage /></CrmLayout></ProtectedRoute>} />
@@ -98,6 +112,15 @@ const App = () => (
                   <Route path="/profile" element={<ProtectedRoute><CrmLayout><ProfilePage /></CrmLayout></ProtectedRoute>} />
                   <Route path="/chat" element={<ProtectedRoute><CrmLayout><ChatPage /></CrmLayout></ProtectedRoute>} />
                   <Route path="/finance" element={<ProtectedRoute><CrmLayout><FinanceGuard><Finance /></FinanceGuard></CrmLayout></ProtectedRoute>} />
+                  <Route path="/finance/overview" element={<ProtectedRoute><CrmLayout><FinanceGuard><FinanceOverview /></FinanceGuard></CrmLayout></ProtectedRoute>} />
+                  <Route path="/finance/operations" element={<ProtectedRoute><CrmLayout><FinanceGuard><FinanceOperations /></FinanceGuard></CrmLayout></ProtectedRoute>} />
+                  <Route path="/finance/income" element={<ProtectedRoute><CrmLayout><FinanceGuard><FinanceIncome /></FinanceGuard></CrmLayout></ProtectedRoute>} />
+                  <Route path="/finance/expenses" element={<ProtectedRoute><CrmLayout><FinanceGuard><FinanceExpenses /></FinanceGuard></CrmLayout></ProtectedRoute>} />
+                  <Route path="/finance/clients" element={<ProtectedRoute><CrmLayout><FinanceGuard><FinanceClients /></FinanceGuard></CrmLayout></ProtectedRoute>} />
+                  <Route path="/finance/payables" element={<ProtectedRoute><CrmLayout><FinanceGuard><FinancePayables /></FinanceGuard></CrmLayout></ProtectedRoute>} />
+                  <Route path="/finance/reports" element={<ProtectedRoute><CrmLayout><FinanceGuard><FinanceReports /></FinanceGuard></CrmLayout></ProtectedRoute>} />
+                  <Route path="/finance/settings" element={<ProtectedRoute><CrmLayout><FinanceGuard><FinanceSettings /></FinanceGuard></CrmLayout></ProtectedRoute>} />
+
                   <Route path="/knowledge" element={<ProtectedRoute><CrmLayout><KnowledgeBasePage /></CrmLayout></ProtectedRoute>} />
                   <Route path="/knowledge-books" element={<ProtectedRoute><CrmLayout><KnowledgeBooksPage /></CrmLayout></ProtectedRoute>} />
                   <Route path="/users" element={<ProtectedRoute><CrmLayout><EmployeesPage /></CrmLayout></ProtectedRoute>} />
@@ -111,6 +134,7 @@ const App = () => (
               </Suspense>
             </BrowserRouter>
           </TooltipProvider>
+          </FinancePeriodProvider>
         </WorkspaceColorProvider>
       </AuthProvider>
     </ThemeProvider>

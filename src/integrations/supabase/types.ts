@@ -1225,6 +1225,36 @@ export type Database = {
           },
         ]
       }
+      expense_categories: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          is_active: boolean
+          label: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       finance_clients: {
         Row: {
           created_at: string
@@ -1602,6 +1632,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      financial_obligations: {
+        Row: {
+          amount: number
+          category: string | null
+          comment: string | null
+          counterparty: string | null
+          created_at: string
+          created_by: string | null
+          due_date: string | null
+          id: string
+          paid_at: string | null
+          status: string
+          title: string
+          transaction_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          category?: string | null
+          comment?: string | null
+          counterparty?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_date?: string | null
+          id?: string
+          paid_at?: string | null
+          status?: string
+          title: string
+          transaction_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          category?: string | null
+          comment?: string | null
+          counterparty?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_date?: string | null
+          id?: string
+          paid_at?: string | null
+          status?: string
+          title?: string
+          transaction_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       financial_payment_history: {
         Row: {

@@ -18,23 +18,25 @@ import { cn } from "@/lib/utils";
 import { UserAvatar } from "@/components/UserAvatar";
 
 const allNav = [
-  { title: "Дашборд", url: "/", icon: LayoutDashboard, minRole: "viewer" as const },
-  { title: "Дашборд директора", url: "/director", icon: Briefcase, minRole: "admin" as const, managerPlus: true },
+  // Финансы — основной блок приложения
+  { title: "Обзор", url: "/", icon: LayoutDashboard, minRole: "viewer" as const },
+  { title: "Операции", url: "/finance/operations", icon: Activity, minRole: "manager" as const, managerPlus: true },
+  { title: "Доходы", url: "/finance/income", icon: TrendingUp, minRole: "manager" as const, managerPlus: true },
+  { title: "Расходы", url: "/finance/expenses", icon: Wallet, minRole: "manager" as const, managerPlus: true },
+  { title: "Клиенты", url: "/finance/clients", icon: Building2, minRole: "manager" as const, managerPlus: true },
+  { title: "К выплате", url: "/finance/payables", icon: Scale, minRole: "manager" as const, managerPlus: true },
+  { title: "Отчёты", url: "/finance/reports", icon: FileText, minRole: "manager" as const, managerPlus: true },
+  { title: "Настройки финансов", url: "/finance/settings", icon: Settings, minRole: "admin" as const, managerPlus: true },
+  // Работа компании
   { title: "Проекты", url: "/crm-projects", icon: FolderKanban, minRole: "viewer" as const },
   { title: "Задачи", url: "/tasks", icon: ClipboardList, minRole: "manager" as const },
   { title: "Мои задачи", url: "/my-tasks", icon: UserCheck, minRole: "viewer" as const },
-  { title: "Отчётность", url: "/project-reports", icon: FileText, minRole: "manager" as const },
-  { title: "Клиенты", url: "/companies", icon: Building2, minRole: "admin" as const, managerPlus: true },
-  { title: "Календарь", url: "/content", icon: CalendarDays, minRole: "manager" as const },
   { title: "Сотрудники", url: "/employees", icon: Users, minRole: "manager" as const },
-  { title: "База знаний", url: "/knowledge", icon: BookOpen, minRole: "viewer" as const },
-  { title: "📚 Книги для AI", url: "/knowledge-books", icon: BookOpen, minRole: "admin" as const, managerPlus: true },
   { title: "Чат", url: "/chat", icon: MessageSquare, minRole: "viewer" as const },
-  { title: "Финансы", url: "/finance", icon: Wallet, minRole: "manager" as const, managerPlus: true },
-  { title: "Доступы", url: "/credentials", icon: KeyRound, minRole: "manager" as const },
-  { title: "Интеграции", url: "/admin?tab=keys", icon: Plug, minRole: "admin" as const, managerPlus: true },
+  { title: "База знаний", url: "/knowledge", icon: BookOpen, minRole: "viewer" as const },
   { title: "Журнал удалений", url: "/admin/deletion-log", icon: History, minRole: "manager" as const, managerPlus: true },
 ];
+
 
 const analyticsNav = [
   { title: "Обзор", tab: "overview", icon: LayoutDashboard },
