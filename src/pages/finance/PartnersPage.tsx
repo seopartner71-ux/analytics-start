@@ -7,6 +7,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
@@ -23,11 +25,30 @@ export default function PartnersPage() {
   const names = usePartnerNames();
   const [payout, setPayout] = useState<{ partnerId: string; name: string; max: number } | null>(null);
   const [form, setForm] = useState({ amount: "", accountId: "" });
+  const [distOpen, setDistOpen] = useState(false);
+  const [dist, setDist] = useState({ base: "", reserve: true, pct: "6", fromId: "" });
+
+  const cashAccount = input.accounts.find((a) => (a as { kind?: string }).kind === "cash");
+  const bankAccounts = input.accounts.filter((a) => a.id !== cashAccount?.id);
 
   const partnerIds = useMemo(() => {
     const ids = [input.settings.partner1Id, input.settings.partner2Id].filter(Boolean) as string[];
     return ids.length ? ids : s.partners.map((p) => p.partnerId);
   }, [input.settings, s.partners]);
+
+  const openDistribute = () => {
+    setDist({
+      base: String(Math.round(s.distributableProfit)),
+      reserve: true,
+      pct: "6",
+      fromId: bankAccounts[0]?.id ?? input.accounts[0]?.id ?? "",
+    });
+    setDistOpen(true);
+  };
+
+  const distBase = Number(dist.base) || 0;
+  const distReserve = dist.reserve ? Math.round(distBase * ((Number(dist.pct) || 0) / 100)) : 0;
+  const distToPartners = Math.max(0, distBase - distReserve);
 
   const rows = partnerIds.map((id, i) => {
     const st = s.partners.find((p) => p.partnerId === id);
@@ -48,21 +69,49 @@ export default function PartnersPage() {
   const distribute = useMutation({
     mutationFn: async () => {
       if (partnerIds.length !== 2) throw new Error("Партнёры не настроены");
-      const amount = Math.round((s.distributableProfit / 2) * 100) / 100;
-      if (amount <= 0) throw new Error("Нечего распределять");
+      if (distBase <= 0) throw new Error("Укажите сумму к распределению");
+      if (distBase > s.distributableProfit + 0.01) throw new Error("Сумма больше доступной к распределению");
+      const today = format(new Date(), "yyyy-MM-dd");
       const period = format(new Date(), "yyyy-MM");
+
+      if (distReserve > 0) {
+        if (!cashAccount) throw new Error("Счёт «Касса» не найден");
+        if (!dist.fromId) throw new Error("Выберите счёт списания для резерва");
+        const from = input.accounts.find((a) => a.id === dist.fromId);
+        if (!from) throw new Error("Счёт списания не найден");
+        if (Number(from.balance) < distReserve) throw new Error("Недостаточно средств на счёте списания");
+        const desc = `Резерв в кассу ${dist.pct}% при распределении прибыли`;
+        const { error: e1 } = await supabase.from("transactions").insert({
+          account_id: dist.fromId, type: "expense", amount: distReserve,
+          date: today, category: "transfer_out", description: desc,
+        });
+        if (e1) throw e1;
+        const { error: e2 } = await supabase.from("transactions").insert({
+          account_id: cashAccount.id, type: "income", amount: distReserve,
+          date: today, category: "transfer_in", description: desc,
+        });
+        if (e2) throw e2;
+      }
+
+      const each = Math.round((distToPartners / 2) * 100) / 100;
+      if (each <= 0) throw new Error("Нечего распределять партнёрам");
       const { error } = await supabase.from("partner_ledger").insert(
         partnerIds.map((pid) => ({
           partner_id: pid,
           entry_type: "accrual" as const,
-          amount,
+          amount: each,
           period,
-          entry_date: format(new Date(), "yyyy-MM-dd"),
+          entry_date: today,
         })),
       );
       if (error) throw error;
     },
-    onSuccess: () => { toast.success("Прибыль начислена партнёрам 50/50"); refresh(); },
+    onSuccess: () => {
+      toast.success("Прибыль распределена 50/50");
+      setDistOpen(false);
+      refresh();
+    },
+
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -116,10 +165,11 @@ export default function PartnersPage() {
   return (
     <div className="mx-auto max-w-[1200px] space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <PageTitle title="Партнёры" subtitle="Распределение чистой прибыли 50/50, начисления и выплаты" />
-        <Button size="sm" disabled={s.distributableProfit <= 0 || distribute.isPending} onClick={() => distribute.mutate()}>
-          Начислить {money(s.distributableProfit)}
+        <PageTitle title="Партнёры" subtitle="Налоги удержаны, при желании резерв в кассу, остаток — 50/50" />
+        <Button size="sm" disabled={s.distributableProfit <= 0} onClick={openDistribute}>
+          Распределить {money(s.distributableProfit)}
         </Button>
+
       </div>
 
       <Panel
@@ -260,7 +310,71 @@ export default function PartnersPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={distOpen} onOpenChange={setDistOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader><DialogTitle>Распределение прибыли</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs">Сумма к распределению (максимум {money(s.distributableProfit)})</Label>
+              <Input
+                type="number" value={dist.base}
+                onChange={(e) => setDist((f) => ({ ...f, base: e.target.value }))}
+              />
+              <p className="mt-1 text-2xs text-muted-foreground">Налоги уже удержаны: налоговый резерв вычтен из доступной суммы.</p>
+            </div>
+
+            <div className="rounded-md border border-border p-3">
+              <label className="flex items-center gap-2 text-sm">
+                <Checkbox
+                  checked={dist.reserve}
+                  onCheckedChange={(v) => setDist((f) => ({ ...f, reserve: !!v }))}
+                />
+                Отложить в кассу
+              </label>
+              {dist.reserve && (
+                <div className="mt-3 space-y-3">
+                  <div>
+                    <Label className="text-xs">Процент в кассу</Label>
+                    <Input
+                      type="number" value={dist.pct}
+                      onChange={(e) => setDist((f) => ({ ...f, pct: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Счёт списания резерва</Label>
+                    <Select value={dist.fromId} onValueChange={(v) => setDist((f) => ({ ...f, fromId: v }))}>
+                      <SelectTrigger><SelectValue placeholder="Выберите счёт" /></SelectTrigger>
+                      <SelectContent>
+                        {bankAccounts.map((a) => (
+                          <SelectItem key={a.id} value={a.id}>{a.name} — {money(Number(a.balance))}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <ul className="space-y-1 rounded-md border border-border p-3 text-sm">
+              <li className="flex justify-between"><span className="text-muted-foreground">В кассу</span><span className="tabular-nums">{money(distReserve)}</span></li>
+              <li className="flex justify-between"><span className="text-muted-foreground">Партнёрам всего</span><span className="tabular-nums">{money(distToPartners)}</span></li>
+              {rows.map((r) => (
+                <li key={r.id} className="flex justify-between">
+                  <span className="text-muted-foreground">{r.name} (50%)</span>
+                  <span className="tabular-nums font-medium">{money(distToPartners / 2)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setDistOpen(false)}>Отмена</Button>
+            <Button onClick={() => distribute.mutate()} disabled={distribute.isPending}>Провести</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 }
 
