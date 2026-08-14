@@ -5,9 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { BarChart3, Globe, Mail, Lock, User, Sparkles, TrendingUp, Shield, Zap } from "lucide-react";
+import { BarChart3, Globe, Mail, Lock, Sparkles, TrendingUp, Shield, Zap } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Auth = () => {
@@ -17,7 +16,6 @@ const Auth = () => {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -25,22 +23,6 @@ const Auth = () => {
   }, [session, navigate]);
 
   const toggleLang = () => i18n.changeLanguage(i18n.language === "ru" ? "en" : "ru");
-
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { full_name: fullName },
-        emailRedirectTo: window.location.origin,
-      },
-    });
-    setLoading(false);
-    if (error) toast.error(error.message);
-    else toast.success(t("auth.checkEmail"));
-  };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
