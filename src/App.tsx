@@ -39,12 +39,22 @@ const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const ChatPage = lazy(() => import("./pages/ChatPage"));
 
 const Finance = lazy(() => import("./pages/Finance"));
+const FinanceHome = lazy(() => import("./pages/finance/FinanceHome"));
+const FinanceOverview = lazy(() => import("./pages/finance/OverviewPage"));
+const FinanceOperations = lazy(() => import("./pages/finance/OperationsPage"));
+const FinanceIncome = lazy(() => import("./pages/finance/IncomePage"));
+const FinanceExpenses = lazy(() => import("./pages/finance/ExpensesPage"));
+const FinanceClients = lazy(() => import("./pages/finance/ClientsPage"));
+const FinancePayables = lazy(() => import("./pages/finance/PayablesPage"));
+const FinanceReports = lazy(() => import("./pages/finance/ReportsPage"));
+const FinanceSettings = lazy(() => import("./pages/finance/FinanceSettingsPage"));
 const KnowledgeBasePage = lazy(() => import("./pages/KnowledgeBasePage"));
 const KnowledgeBooksPage = lazy(() => import("./pages/KnowledgeBooksPage"));
 const DeletionLogPage = lazy(() => import("./pages/DeletionLogPage"));
 const CredentialsPage = lazy(() => import("./pages/CredentialsPage"));
 const NotificationSettingsPage = lazy(() => import("./pages/NotificationSettingsPage"));
 const ProjectReportsPage = lazy(() => import("./pages/ProjectReportsPage"));
+
 
 // Tuned QueryClient: cache for 60s, no refetch on window focus,
 // retry once. Greatly reduces redundant network traffic.
@@ -82,7 +92,9 @@ const App = () => (
                   <Route path="/report/:id" element={<PublicReport />} />
                   <Route path="/weekly/:token" element={<PublicWeeklyReport />} />
                   <Route path="/oauth/yandex/callback" element={<OAuthCallback />} />
-                  <Route path="/" element={<ProtectedRoute><CrmLayout><Index /></CrmLayout></ProtectedRoute>} />
+                  <Route path="/" element={<ProtectedRoute><CrmLayout><FinanceHome /></CrmLayout></ProtectedRoute>} />
+                  <Route path="/seo-dashboard" element={<ProtectedRoute><CrmLayout><Index /></CrmLayout></ProtectedRoute>} />
+
                   <Route path="/companies" element={<ProtectedRoute><CrmLayout><CompaniesPage /></CrmLayout></ProtectedRoute>} />
                   <Route path="/employees" element={<ProtectedRoute><CrmLayout><EmployeesPage /></CrmLayout></ProtectedRoute>} />
                   <Route path="/tasks" element={<ProtectedRoute><CrmLayout><CrmTasksPage /></CrmLayout></ProtectedRoute>} />
