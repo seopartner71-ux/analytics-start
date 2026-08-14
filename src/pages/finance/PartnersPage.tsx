@@ -308,7 +308,71 @@ export default function PartnersPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={distOpen} onOpenChange={setDistOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader><DialogTitle>Распределение прибыли</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs">Сумма к распределению (максимум {money(s.distributableProfit)})</Label>
+              <Input
+                type="number" value={dist.base}
+                onChange={(e) => setDist((f) => ({ ...f, base: e.target.value }))}
+              />
+              <p className="mt-1 text-2xs text-muted-foreground">Налоги уже удержаны: налоговый резерв вычтен из доступной суммы.</p>
+            </div>
+
+            <div className="rounded-md border border-border p-3">
+              <label className="flex items-center gap-2 text-sm">
+                <Checkbox
+                  checked={dist.reserve}
+                  onCheckedChange={(v) => setDist((f) => ({ ...f, reserve: !!v }))}
+                />
+                Отложить в кассу
+              </label>
+              {dist.reserve && (
+                <div className="mt-3 space-y-3">
+                  <div>
+                    <Label className="text-xs">Процент в кассу</Label>
+                    <Input
+                      type="number" value={dist.pct}
+                      onChange={(e) => setDist((f) => ({ ...f, pct: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Счёт списания резерва</Label>
+                    <Select value={dist.fromId} onValueChange={(v) => setDist((f) => ({ ...f, fromId: v }))}>
+                      <SelectTrigger><SelectValue placeholder="Выберите счёт" /></SelectTrigger>
+                      <SelectContent>
+                        {bankAccounts.map((a) => (
+                          <SelectItem key={a.id} value={a.id}>{a.name} — {money(Number(a.balance))}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <ul className="space-y-1 rounded-md border border-border p-3 text-sm">
+              <li className="flex justify-between"><span className="text-muted-foreground">В кассу</span><span className="tabular-nums">{money(distReserve)}</span></li>
+              <li className="flex justify-between"><span className="text-muted-foreground">Партнёрам всего</span><span className="tabular-nums">{money(distToPartners)}</span></li>
+              {rows.map((r) => (
+                <li key={r.id} className="flex justify-between">
+                  <span className="text-muted-foreground">{r.name} (50%)</span>
+                  <span className="tabular-nums font-medium">{money(distToPartners / 2)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setDistOpen(false)}>Отмена</Button>
+            <Button onClick={() => distribute.mutate()} disabled={distribute.isPending}>Провести</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 }
 
