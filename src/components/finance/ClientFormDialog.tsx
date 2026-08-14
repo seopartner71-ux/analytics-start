@@ -138,6 +138,15 @@ export function ClientFormDialog({
             {field("Email", "email", "client@mail.ru")}
             {field("Telegram", "telegram", "@username")}
             <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Сайт клиента *</Label>
+              <Input
+                className="h-9"
+                value={form.website || ""}
+                placeholder="example.ru"
+                onChange={(e) => set("website", e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Ответственный</Label>
               <Select
                 value={form.responsible_id || "none"}
