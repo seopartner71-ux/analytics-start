@@ -21,6 +21,14 @@ const EMPTY: Partial<FinClient> = {
   name: "", client_type: "company", status: "active", report_enabled: false, report_day: null,
 };
 
+const ORG_STATUS_RU: Record<string, string> = {
+  ACTIVE: "Действующая",
+  LIQUIDATING: "В процессе ликвидации",
+  LIQUIDATED: "Ликвидирована",
+  BANKRUPT: "Банкротство",
+  REORGANIZING: "В процессе реорганизации",
+};
+
 function normalizeSite(v: string) {
   const s = v.trim();
   if (!s) return null;
@@ -77,7 +85,7 @@ export function ClientFormDialog({
         legal_address: data.legal_address || f.legal_address,
         actual_address: f.actual_address || data.legal_address || null,
         management_name: data.management || f.management_name,
-        org_status: data.status || f.org_status,
+        org_status: (data.status ? ORG_STATUS_RU[data.status] || data.status : null) || f.org_status,
         okved: data.okved || f.okved,
         okved_name: data.okved_name || f.okved_name,
         name: (f.name || "").trim() || data.short_name || data.legal_name || "",
