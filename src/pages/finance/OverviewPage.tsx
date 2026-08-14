@@ -76,7 +76,16 @@ export default function OverviewPage() {
             <p className="mt-1.5 text-[2.4rem] font-semibold leading-none tracking-tighter tabular-nums">
               {money(s.cashPosition)}
             </p>
+            <p className="mt-2 text-xs text-muted-foreground">
+              За период {fmtPeriodLabel(period)}:{" "}
+              <span className="text-[hsl(var(--success))] tabular-nums">{money(s.cashIn, true)}</span>{" "}
+              <span className="text-destructive tabular-nums">{money(-s.cashOut, true)}</span>{" "}
+              <span className={`tabular-nums font-medium ${s.cashFlow < 0 ? "text-destructive" : "text-foreground"}`}>
+                = {money(s.cashFlow, true)}
+              </span>
+            </p>
           </div>
+
           <div className="grid grid-cols-2 divide-x divide-border border-y border-border">
             <div className="px-5 py-3">
               <p className="text-2xs text-muted-foreground">Через 30 дней</p>
