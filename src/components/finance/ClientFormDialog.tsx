@@ -20,6 +20,12 @@ const EMPTY: Partial<FinClient> = {
   name: "", client_type: "company", status: "active", report_enabled: false, report_day: null,
 };
 
+function normalizeSite(v: string) {
+  const s = v.trim();
+  if (!s) return null;
+  return /^https?:\/\//i.test(s) ? s : `https://${s}`;
+}
+
 export function ClientFormDialog({
   open, onOpenChange, client,
 }: {
