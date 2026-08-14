@@ -80,6 +80,7 @@ const App = () => (
     <ThemeProvider>
       <AuthProvider>
         <WorkspaceColorProvider>
+          <FinancePeriodProvider>
           <TooltipProvider>
             <Toaster />
             <Sonner />
