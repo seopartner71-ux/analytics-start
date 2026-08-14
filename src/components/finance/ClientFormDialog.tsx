@@ -44,6 +44,41 @@ export function ClientFormDialog({
   const set = <K extends keyof FinClient>(k: K, v: FinClient[K] | null) =>
     setForm((f) => ({ ...f, [k]: v as never }));
 
+  const [loadingInn, setLoadingInn] = useState(false);
+  const [lastInn, setLastInn] = useState("");
+
+  const lookupInn = async () => {
+    const inn = (form.inn || "").replace(/\D/g, "");
+    if (inn.length !== 10 && inn.length !== 12) return;
+    if (inn === lastInn || loadingInn) return;
+    setLoadingInn(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("dadata-party", { body: { inn } });
+      if (error) {
+        const details = "context" in error ? await (error as { context: Response }).context.text() : error.message;
+        let msg = "Не удалось получить данные по ИНН";
+        try { msg = JSON.parse(details)?.error || msg; } catch { /* ignore */ }
+        throw new Error(msg);
+      }
+      setLastInn(inn);
+      setForm((f) => ({
+        ...f,
+        inn: data.inn || f.inn,
+        legal_name: data.legal_name || f.legal_name,
+        kpp: data.kpp || f.kpp,
+        ogrn: data.ogrn || f.ogrn,
+        legal_address: data.legal_address || f.legal_address,
+        actual_address: f.actual_address || data.legal_address || null,
+        name: (f.name || "").trim() || data.short_name || data.legal_name || "",
+      }));
+      toast.success("Реквизиты подставлены по ИНН");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setLoadingInn(false);
+    }
+  };
+
   const save = useMutation({
     mutationFn: async () => {
       const payload = {
