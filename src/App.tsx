@@ -27,7 +27,6 @@ const PublicWeeklyReport = lazy(() => import("./pages/PublicWeeklyReport"));
 const ShareView = lazy(() => import("./pages/ShareView"));
 const Team = lazy(() => import("./pages/Team"));
 const AdminPanel = lazy(() => import("./pages/AdminPanel"));
-const CompaniesPage = lazy(() => import("./pages/CompaniesPage"));
 const CrmTasksPage = lazy(() => import("./pages/CrmTasksPage"));
 const DirectorDashboard = lazy(() => import("./pages/DirectorDashboard"));
 const ContentPage = lazy(() => import("./pages/ContentPage"));
@@ -42,6 +41,8 @@ const FinanceIncome = lazy(() => import("./pages/finance/IncomePage"));
 const FinanceExpenses = lazy(() => import("./pages/finance/ExpensesPage"));
 const FinanceClients = lazy(() => import("./pages/finance/ClientsPage"));
 const FinancePayables = lazy(() => import("./pages/finance/PayablesPage"));
+const FinanceForecast = lazy(() => import("./pages/finance/ForecastPage"));
+const FinancePartners = lazy(() => import("./pages/finance/PartnersPage"));
 const FinanceReports = lazy(() => import("./pages/finance/ReportsPage"));
 const FinanceSettings = lazy(() => import("./pages/finance/FinanceSettingsPage"));
 const DeletionLogPage = lazy(() => import("./pages/DeletionLogPage"));
@@ -89,8 +90,6 @@ const App = () => (
                   <Route path="/oauth/yandex/callback" element={<OAuthCallback />} />
                   <Route path="/" element={<ProtectedRoute><CrmLayout><FinanceHome /></CrmLayout></ProtectedRoute>} />
                   <Route path="/seo-dashboard" element={<ProtectedRoute><CrmLayout><Index /></CrmLayout></ProtectedRoute>} />
-
-                  <Route path="/companies" element={<ProtectedRoute><CrmLayout><CompaniesPage /></CrmLayout></ProtectedRoute>} />
                   <Route path="/tasks" element={<ProtectedRoute><CrmLayout><CrmTasksPage /></CrmLayout></ProtectedRoute>} />
                   <Route path="/director" element={<ProtectedRoute><CrmLayout><DirectorDashboard /></CrmLayout></ProtectedRoute>} />
                   <Route path="/content" element={<ProtectedRoute><CrmLayout><ContentPage /></CrmLayout></ProtectedRoute>} />
@@ -106,6 +105,8 @@ const App = () => (
                   <Route path="/finance/expenses" element={<ProtectedRoute><CrmLayout><FinanceGuard><FinanceExpenses /></FinanceGuard></CrmLayout></ProtectedRoute>} />
                   <Route path="/finance/clients" element={<ProtectedRoute><CrmLayout><FinanceGuard><FinanceClients /></FinanceGuard></CrmLayout></ProtectedRoute>} />
                   <Route path="/finance/payables" element={<ProtectedRoute><CrmLayout><FinanceGuard><FinancePayables /></FinanceGuard></CrmLayout></ProtectedRoute>} />
+                  <Route path="/finance/forecast" element={<ProtectedRoute><CrmLayout><FinanceGuard><FinanceForecast /></FinanceGuard></CrmLayout></ProtectedRoute>} />
+                  <Route path="/finance/partners" element={<ProtectedRoute><CrmLayout><FinanceGuard><FinancePartners /></FinanceGuard></CrmLayout></ProtectedRoute>} />
                   <Route path="/finance/reports" element={<ProtectedRoute><CrmLayout><FinanceGuard><FinanceReports /></FinanceGuard></CrmLayout></ProtectedRoute>} />
                   <Route path="/finance/settings" element={<ProtectedRoute><CrmLayout><FinanceGuard><FinanceSettings /></FinanceGuard></CrmLayout></ProtectedRoute>} />
 
