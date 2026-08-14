@@ -64,7 +64,7 @@ export default function OverviewPage() {
   return (
     <div className="mx-auto max-w-[1400px] space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <PageTitle title="Финансовый обзор" subtitle="Cash Position не зависит от фильтра периода" />
+        <PageTitle title="Финансовый обзор" subtitle="Фильтр периода влияет на движение денег и результат; остаток и прогноз — всегда на сегодня" />
         <PeriodFilter />
       </div>
 
