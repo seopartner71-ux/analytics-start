@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { WorkspaceColorProvider } from "@/contexts/WorkspaceColorContext";
+import { FinancePeriodProvider } from "@/contexts/FinancePeriodContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { FinanceGuard } from "@/components/FinanceGuard";
 import { CrmLayout } from "./components/CrmLayout";
