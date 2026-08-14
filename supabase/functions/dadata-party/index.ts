@@ -81,7 +81,10 @@ Deno.serve(async (req) => {
         ogrn: d.ogrn ?? null,
         legal_address: d.address?.unrestricted_value ?? null,
         management: d.management?.name ?? null,
+        management_post: d.management?.post ?? null,
         status: d.state?.status ?? null,
+        okved: d.okved ?? null,
+        okved_name: d.okved_type ? (d.okveds?.find((o: { main?: boolean }) => o.main)?.name ?? null) : (d.okveds?.find((o: { main?: boolean }) => o.main)?.name ?? null),
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
