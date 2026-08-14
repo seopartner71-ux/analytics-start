@@ -28,12 +28,7 @@ const allNav = [
   { title: "Отчёты", url: "/finance/reports", icon: FileText, minRole: "manager" as const, managerPlus: true },
   { title: "Настройки финансов", url: "/finance/settings", icon: Settings, minRole: "admin" as const, managerPlus: true },
   // Работа компании
-  { title: "Проекты", url: "/crm-projects", icon: FolderKanban, minRole: "viewer" as const },
   { title: "Задачи", url: "/tasks", icon: ClipboardList, minRole: "manager" as const },
-  { title: "Мои задачи", url: "/my-tasks", icon: UserCheck, minRole: "viewer" as const },
-  { title: "Сотрудники", url: "/employees", icon: Users, minRole: "manager" as const },
-  { title: "Чат", url: "/chat", icon: MessageSquare, minRole: "viewer" as const },
-  { title: "База знаний", url: "/knowledge", icon: BookOpen, minRole: "viewer" as const },
   { title: "Журнал удалений", url: "/admin/deletion-log", icon: History, minRole: "manager" as const, managerPlus: true },
 ];
 
@@ -226,31 +221,6 @@ export function AppSidebar({ activeTab, onTabChange, projectName, projectLogo }:
               </SidebarGroupContent>
             </SidebarGroup>
 
-            {!collapsed && projects.length > 0 && (
-              <div className="px-3 py-2 border-t border-sidebar-border">
-                <Select onValueChange={(v) => navigate(`/crm-projects/${v}?tab=analytics`)}>
-                  <SelectTrigger className="w-full h-8 text-xs bg-sidebar-accent/50 border-sidebar-border text-sidebar-foreground">
-                    <SelectValue placeholder="Аналитика проекта..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {projects.map(p => (
-                      <SelectItem key={p.id} value={p.id}>
-                        <div className="flex items-center gap-2">
-                          {p.logo_url ? (
-                            <img src={p.logo_url} alt="" className="h-4 w-4 rounded object-cover" />
-                          ) : (
-                            <div className="h-4 w-4 rounded bg-primary/20 text-2xs flex items-center justify-center font-bold text-primary">
-                              {p.name.slice(0, 2).toUpperCase()}
-                            </div>
-                          )}
-                          <span>{p.name}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
           </>
         )}
       </SidebarContent>

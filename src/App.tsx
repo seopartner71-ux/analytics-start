@@ -28,16 +28,11 @@ const ShareView = lazy(() => import("./pages/ShareView"));
 const Team = lazy(() => import("./pages/Team"));
 const AdminPanel = lazy(() => import("./pages/AdminPanel"));
 const CompaniesPage = lazy(() => import("./pages/CompaniesPage"));
-const EmployeesPage = lazy(() => import("./pages/EmployeesPage"));
 const CrmTasksPage = lazy(() => import("./pages/CrmTasksPage"));
-const MyTasksPage = lazy(() => import("./pages/MyTasksPage"));
 const DirectorDashboard = lazy(() => import("./pages/DirectorDashboard"));
-const CrmProjectsPage = lazy(() => import("./pages/CrmProjectsPage"));
-const CrmProjectDetailPage = lazy(() => import("./pages/CrmProjectDetailPage"));
 const ContentPage = lazy(() => import("./pages/ContentPage"));
 const LinksPage = lazy(() => import("./pages/LinksPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
-const ChatPage = lazy(() => import("./pages/ChatPage"));
 
 const Finance = lazy(() => import("./pages/Finance"));
 const FinanceHome = lazy(() => import("./pages/finance/FinanceHome"));
@@ -49,8 +44,6 @@ const FinanceClients = lazy(() => import("./pages/finance/ClientsPage"));
 const FinancePayables = lazy(() => import("./pages/finance/PayablesPage"));
 const FinanceReports = lazy(() => import("./pages/finance/ReportsPage"));
 const FinanceSettings = lazy(() => import("./pages/finance/FinanceSettingsPage"));
-const KnowledgeBasePage = lazy(() => import("./pages/KnowledgeBasePage"));
-const KnowledgeBooksPage = lazy(() => import("./pages/KnowledgeBooksPage"));
 const DeletionLogPage = lazy(() => import("./pages/DeletionLogPage"));
 const CredentialsPage = lazy(() => import("./pages/CredentialsPage"));
 const NotificationSettingsPage = lazy(() => import("./pages/NotificationSettingsPage"));
@@ -98,19 +91,14 @@ const App = () => (
                   <Route path="/seo-dashboard" element={<ProtectedRoute><CrmLayout><Index /></CrmLayout></ProtectedRoute>} />
 
                   <Route path="/companies" element={<ProtectedRoute><CrmLayout><CompaniesPage /></CrmLayout></ProtectedRoute>} />
-                  <Route path="/employees" element={<ProtectedRoute><CrmLayout><EmployeesPage /></CrmLayout></ProtectedRoute>} />
                   <Route path="/tasks" element={<ProtectedRoute><CrmLayout><CrmTasksPage /></CrmLayout></ProtectedRoute>} />
-                  <Route path="/my-tasks" element={<ProtectedRoute><CrmLayout><MyTasksPage /></CrmLayout></ProtectedRoute>} />
                   <Route path="/director" element={<ProtectedRoute><CrmLayout><DirectorDashboard /></CrmLayout></ProtectedRoute>} />
-                  <Route path="/crm-projects" element={<ProtectedRoute><CrmLayout><CrmProjectsPage /></CrmLayout></ProtectedRoute>} />
-                  <Route path="/crm-projects/:id" element={<ProtectedRoute><CrmLayout><CrmProjectDetailPage /></CrmLayout></ProtectedRoute>} />
                   <Route path="/content" element={<ProtectedRoute><CrmLayout><ContentPage /></CrmLayout></ProtectedRoute>} />
                   <Route path="/links" element={<ProtectedRoute><CrmLayout><LinksPage /></CrmLayout></ProtectedRoute>} />
                   <Route path="/project/:id" element={<ProtectedRoute><ProjectDetail /></ProtectedRoute>} />
                   <Route path="/team" element={<ProtectedRoute><CrmLayout><Team /></CrmLayout></ProtectedRoute>} />
                   <Route path="/admin" element={<ProtectedRoute><CrmLayout><AdminPanel /></CrmLayout></ProtectedRoute>} />
                   <Route path="/profile" element={<ProtectedRoute><CrmLayout><ProfilePage /></CrmLayout></ProtectedRoute>} />
-                  <Route path="/chat" element={<ProtectedRoute><CrmLayout><ChatPage /></CrmLayout></ProtectedRoute>} />
                   <Route path="/finance" element={<ProtectedRoute><CrmLayout><FinanceGuard><Finance /></FinanceGuard></CrmLayout></ProtectedRoute>} />
                   <Route path="/finance/overview" element={<ProtectedRoute><CrmLayout><FinanceGuard><FinanceOverview /></FinanceGuard></CrmLayout></ProtectedRoute>} />
                   <Route path="/finance/operations" element={<ProtectedRoute><CrmLayout><FinanceGuard><FinanceOperations /></FinanceGuard></CrmLayout></ProtectedRoute>} />
@@ -121,10 +109,6 @@ const App = () => (
                   <Route path="/finance/reports" element={<ProtectedRoute><CrmLayout><FinanceGuard><FinanceReports /></FinanceGuard></CrmLayout></ProtectedRoute>} />
                   <Route path="/finance/settings" element={<ProtectedRoute><CrmLayout><FinanceGuard><FinanceSettings /></FinanceGuard></CrmLayout></ProtectedRoute>} />
 
-                  <Route path="/knowledge" element={<ProtectedRoute><CrmLayout><KnowledgeBasePage /></CrmLayout></ProtectedRoute>} />
-                  <Route path="/knowledge-books" element={<ProtectedRoute><CrmLayout><KnowledgeBooksPage /></CrmLayout></ProtectedRoute>} />
-                  <Route path="/users" element={<ProtectedRoute><CrmLayout><EmployeesPage /></CrmLayout></ProtectedRoute>} />
-                  <Route path="/admin/time-stats" element={<ProtectedRoute><CrmLayout><EmployeesPage /></CrmLayout></ProtectedRoute>} />
                   <Route path="/admin/deletion-log" element={<ProtectedRoute><CrmLayout><DeletionLogPage /></CrmLayout></ProtectedRoute>} />
                   <Route path="/credentials" element={<ProtectedRoute><CrmLayout><CredentialsPage /></CrmLayout></ProtectedRoute>} />
                   <Route path="/notifications/settings" element={<ProtectedRoute><CrmLayout><NotificationSettingsPage /></CrmLayout></ProtectedRoute>} />
