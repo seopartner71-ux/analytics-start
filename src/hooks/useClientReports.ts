@@ -13,6 +13,11 @@ export interface FinClient {
   status: string;
   notes: string | null;
   legal_name: string | null;
+  short_name: string | null;
+  management_name: string | null;
+  org_status: string | null;
+  okved: string | null;
+  okved_name: string | null;
   inn: string | null;
   kpp: string | null;
   ogrn: string | null;
