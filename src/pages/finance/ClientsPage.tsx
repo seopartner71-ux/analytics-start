@@ -1,134 +1,175 @@
 import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PeriodFilter } from "@/components/finance/PeriodFilter";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EmptyState, Metric, PageTitle, Panel, StatusBadge, TableWrap, Td, Th } from "@/components/finance/primitives";
-import { useFinancePeriod } from "@/contexts/FinancePeriodContext";
-import { invoiceReceivable, useInvoices, useTransactions } from "@/hooks/useFinanceData";
-import { TAX_RATE, fmtDate, fmtPeriodLabel, inPeriod, money } from "@/lib/finance";
-
-interface ClientRow {
-  name: string;
-  revenue: number;
-  revenueAll: number;
-  directCost: number;
-  profit: number;
-  margin: number;
-  debt: number;
-  overdue: number;
-  lastPayment: string | null;
-  invoices: number;
-}
+import { ClientCardSheet } from "@/components/finance/ClientCardSheet";
+import { ClientFormDialog } from "@/components/finance/ClientFormDialog";
+import { invoiceReceivable, useInvoices } from "@/hooks/useFinanceData";
+import { useClients, useReportSettings, useResponsibles, type FinClient } from "@/hooks/useClientReports";
+import {
+  CLIENT_STATUSES, REPORT_STATUS_LABEL, REPORT_STATUS_TONE,
+  computeReportState, daysLeftLabel, fmtRuShort,
+} from "@/lib/clientReports";
+import { money } from "@/lib/finance";
 
 export default function ClientsPage() {
-  const { period } = useFinancePeriod();
+  const { data: clients = [], isLoading } = useClients();
+  const { data: responsibles = [] } = useResponsibles();
+  const { data: settings } = useReportSettings();
   const { data: invoices = [] } = useInvoices();
-  const { data: txs = [] } = useTransactions();
+  const warnDays = settings?.warn_days ?? 3;
+
   const [q, setQ] = useState("");
+  const [resp, setResp] = useState("all");
+  const [status, setStatus] = useState("all");
+  const [due, setDue] = useState("all");
+  const [createOpen, setCreateOpen] = useState(false);
+  const [active, setActive] = useState<FinClient | null>(null);
 
-  const rows = useMemo<ClientRow[]>(() => {
-    const map = new Map<string, ClientRow & { clientIds: Set<string> }>();
-    const get = (name: string) => {
-      if (!map.has(name)) {
-        map.set(name, {
-          name, revenue: 0, revenueAll: 0, directCost: 0, profit: 0, margin: 0,
-          debt: 0, overdue: 0, lastPayment: null, invoices: 0, clientIds: new Set(),
-        });
-      }
-      return map.get(name)!;
-    };
-
-    invoices.forEach((i) => {
-      const r = get(i.client_name || "Без клиента");
-      r.invoices += 1;
-      if (i.client_id) r.clientIds.add(i.client_id);
-      const rec = invoiceReceivable(i);
-      r.debt += rec.outstanding;
-      if (rec.overdueDays > 0) r.overdue += rec.outstanding;
-      if (i.status === "paid") {
-        const paidAt = i.date_paid || i.date_created;
-        r.revenueAll += Number(i.amount);
-        if (inPeriod(paidAt, period)) r.revenue += Number(i.amount);
-        if (!r.lastPayment || new Date(paidAt) > new Date(r.lastPayment)) r.lastPayment = paidAt;
-      }
+  const rows = useMemo(() => {
+    return clients.map((c) => {
+      const state = computeReportState(c.report_enabled ? c.report_day : null, c.last_report_date, new Date(), warnDays);
+      const mine = invoices.filter((i) => i.client_id === c.id || i.client_name === c.name);
+      const paid = mine.filter((i) => i.status === "paid").reduce((s, i) => s + Number(i.amount), 0);
+      const debt = mine.reduce((s, i) => s + invoiceReceivable(i).outstanding, 0);
+      return { client: c, state, paid, debt };
     });
+  }, [clients, invoices, warnDays]);
 
-    map.forEach((r) => {
-      r.directCost = txs
-        .filter((t) => t.type === "expense" && t.client_id && r.clientIds.has(t.client_id) && inPeriod(t.date, period))
-        .reduce((s, t) => s + Number(t.amount), 0);
-      r.profit = r.revenue - r.revenue * TAX_RATE - r.directCost;
-      r.margin = r.revenue ? (r.profit / r.revenue) * 100 : 0;
-    });
+  const filtered = useMemo(() => rows.filter((r) => {
+    const c = r.client;
+    if (q && !`${c.name} ${c.legal_name || ""} ${c.inn || ""}`.toLowerCase().includes(q.toLowerCase())) return false;
+    if (resp !== "all" && (c.responsible_id || "none") !== resp) return false;
+    if (status !== "all" && c.status !== status) return false;
+    if (due !== "all") {
+      const d = r.state.daysLeft;
+      if (due === "overdue" && !(d !== null && d < 0)) return false;
+      if (due === "today" && d !== 0) return false;
+      if (due === "soon" && !(d !== null && d >= 0 && d <= warnDays)) return false;
+      if (due === "month" && !(d !== null && d >= 0 && d <= 31)) return false;
+    }
+    return true;
+  }).sort((a, b) => {
+    const av = a.state.daysLeft ?? 9999, bv = b.state.daysLeft ?? 9999;
+    return av - bv;
+  }), [rows, q, resp, status, due, warnDays]);
 
-    return Array.from(map.values())
-      .sort((a, b) => b.revenue - a.revenue || b.revenueAll - a.revenueAll);
-  }, [invoices, txs, period]);
-
-  const filtered = rows.filter((r) => r.name.toLowerCase().includes(q.toLowerCase()));
-  const totalRevenue = rows.reduce((s, r) => s + r.revenue, 0);
+  const overdue = rows.filter((r) => r.state.status === "overdue").length;
+  const todayCnt = rows.filter((r) => r.state.status === "today").length;
+  const soon = rows.filter((r) => r.state.status === "soon").length;
   const totalDebt = rows.reduce((s, r) => s + r.debt, 0);
-  const paying = rows.filter((r) => r.revenue > 0).length;
 
   return (
     <div className="mx-auto max-w-[1400px] space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <PageTitle title="Клиенты" subtitle={fmtPeriodLabel(period)} />
-        <PeriodFilter />
-      </div>
+      <PageTitle
+        title="Клиенты"
+        subtitle="Учёт клиентов и контроль отчётных периодов"
+        actions={
+          <Button size="sm" className="h-8" onClick={() => setCreateOpen(true)}>
+            <Plus className="mr-1.5 h-3.5 w-3.5" /> Добавить клиента
+          </Button>
+        }
+      />
 
       <div className="grid grid-cols-2 divide-x divide-border overflow-hidden rounded-lg border border-border bg-card lg:grid-cols-4">
-        <Metric label="Выручка за период" value={totalRevenue} tone="positive" />
-        <Metric label="Платящих клиентов" value={paying} tone="muted" hint={`всего в базе: ${rows.length}`} />
+        <Metric label="Просрочено отчётов" value={overdue} tone={overdue ? "negative" : "muted"} />
+        <Metric label="Отчётность сегодня" value={todayCnt} tone={todayCnt ? "neutral" : "muted"} />
+        <Metric label={`Ближайшие (${warnDays} дн.)`} value={soon} tone="muted" />
         <Metric label="Долг клиентов" value={totalDebt} tone={totalDebt ? "negative" : "muted"} />
-        <Metric label="Средний чек" value={paying ? totalRevenue / paying : 0} />
       </div>
 
       <Panel
         title="Клиентская база"
-        subtitle="Выручка, маржинальность и задолженность"
+        subtitle={`${filtered.length} из ${clients.length}`}
         padded={false}
         actions={
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Поиск клиента" className="h-8 w-48 pl-7 text-xs" />
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Поиск" className="h-8 w-40 pl-7 text-xs" />
+            </div>
+            <Select value={resp} onValueChange={setResp}>
+              <SelectTrigger className="h-8 w-40 text-xs"><SelectValue placeholder="Ответственный" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Все ответственные</SelectItem>
+                <SelectItem value="none">Без ответственного</SelectItem>
+                {responsibles.map((r) => <SelectItem key={r.id} value={r.id}>{r.full_name || r.email}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger className="h-8 w-32 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Все статусы</SelectItem>
+                {CLIENT_STATUSES.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={due} onValueChange={setDue}>
+              <SelectTrigger className="h-8 w-40 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Любая отчётность</SelectItem>
+                <SelectItem value="overdue">Просрочено</SelectItem>
+                <SelectItem value="today">Сегодня</SelectItem>
+                <SelectItem value="soon">Ближайшие</SelectItem>
+                <SelectItem value="month">В этом месяце</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         }
       >
-        {filtered.length === 0 ? <EmptyState text="Клиенты не найдены" /> : (
+        {isLoading ? <EmptyState text="Загрузка…" /> : filtered.length === 0 ? <EmptyState text="Клиенты не найдены" /> : (
           <TableWrap>
             <thead>
               <tr>
-                <Th>Клиент</Th><Th align="right">Выручка</Th><Th align="right">Прямые расходы</Th>
-                <Th align="right">Прибыль</Th><Th align="right">Маржа</Th><Th align="right">Долг</Th>
-                <Th>Последняя оплата</Th><Th align="right">Счетов</Th>
+                <Th>Клиент</Th><Th>Ответственный</Th><Th>Отчётный день</Th>
+                <Th>Следующая отчётность</Th><Th>До отчётности</Th>
+                <Th align="right">Финансы</Th><Th>Статус</Th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((r) => (
-                <tr key={r.name} className="transition-colors hover:bg-muted/40">
-                  <Td className="max-w-[260px] truncate font-medium">{r.name}</Td>
-                  <Td align="right">{money(r.revenue)}</Td>
-                  <Td align="right" className="text-muted-foreground">{money(r.directCost)}</Td>
-                  <Td align="right" className={r.profit < 0 ? "text-destructive" : ""}>{money(r.profit)}</Td>
-                  <Td align="right">
-                    {r.revenue ? (
-                      <StatusBadge
-                        label={`${r.margin.toFixed(0)}%`}
-                        tone={r.margin >= 40 ? "success" : r.margin >= 15 ? "warning" : "danger"}
-                      />
-                    ) : <span className="text-muted-foreground">—</span>}
+              {filtered.map(({ client: c, state, paid, debt }) => (
+                <tr
+                  key={c.id}
+                  className="cursor-pointer transition-colors hover:bg-muted/40"
+                  onClick={() => setActive(c)}
+                >
+                  <Td className="max-w-[240px] truncate font-medium">{c.name}</Td>
+                  <Td className="text-muted-foreground">
+                    {responsibles.find((r) => r.id === c.responsible_id)?.full_name || "—"}
                   </Td>
-                  <Td align="right" className={r.overdue > 0 ? "text-destructive font-medium" : ""}>{money(r.debt)}</Td>
-                  <Td className="whitespace-nowrap text-muted-foreground">{fmtDate(r.lastPayment)}</Td>
-                  <Td align="right" className="text-muted-foreground">{r.invoices}</Td>
+                  <Td className="text-muted-foreground">{c.report_day ? `${c.report_day} число` : "—"}</Td>
+                  <Td className={state.status === "overdue" ? "font-medium text-destructive" : "font-medium"}>
+                    {state.dueDate ? fmtRuShort(state.dueDate) : "—"}
+                  </Td>
+                  <Td className="text-muted-foreground">{daysLeftLabel(state.daysLeft)}</Td>
+                  <Td align="right">
+                    {money(paid)}
+                    {debt > 0 && <span className="ml-2 text-2xs text-destructive">долг {money(debt)}</span>}
+                  </Td>
+                  <Td>
+                    <div className="flex items-center gap-1.5">
+                      <StatusBadge label={REPORT_STATUS_LABEL[state.status]} tone={REPORT_STATUS_TONE[state.status]} />
+                      {c.status !== "active" && (
+                        <StatusBadge label={CLIENT_STATUSES.find((s) => s.value === c.status)?.label || c.status} />
+                      )}
+                    </div>
+                  </Td>
                 </tr>
               ))}
             </tbody>
           </TableWrap>
         )}
       </Panel>
+
+      <ClientFormDialog open={createOpen} onOpenChange={setCreateOpen} />
+      <ClientCardSheet
+        client={active}
+        open={!!active}
+        onOpenChange={(v) => !v && setActive(null)}
+        warnDays={warnDays}
+      />
     </div>
   );
 }
