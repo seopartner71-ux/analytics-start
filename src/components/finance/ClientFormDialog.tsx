@@ -47,11 +47,16 @@ export function ClientFormDialog({
 
   const [loadingInn, setLoadingInn] = useState(false);
   const [lastInn, setLastInn] = useState("");
+  const [innError, setInnError] = useState<string | null>(null);
 
-  const lookupInn = async () => {
-    const inn = (form.inn || "").replace(/\D/g, "");
-    if (inn.length !== 10 && inn.length !== 12) return;
+  const lookupInn = async (raw?: string, silent = false) => {
+    const inn = (raw ?? form.inn ?? "").replace(/\D/g, "");
+    if (inn.length !== 10 && inn.length !== 12) {
+      if (!silent && inn.length > 0) setInnError("ИНН должен содержать 10 или 12 цифр");
+      return;
+    }
     if (inn === lastInn || loadingInn) return;
+    setInnError(null);
     setLoadingInn(true);
     try {
       const { data, error } = await supabase.functions.invoke("dadata-party", { body: { inn } });
@@ -66,19 +71,35 @@ export function ClientFormDialog({
         ...f,
         inn: data.inn || f.inn,
         legal_name: data.legal_name || f.legal_name,
+        short_name: data.short_name || f.short_name,
         kpp: data.kpp || f.kpp,
         ogrn: data.ogrn || f.ogrn,
         legal_address: data.legal_address || f.legal_address,
         actual_address: f.actual_address || data.legal_address || null,
+        management_name: data.management || f.management_name,
+        org_status: data.status || f.org_status,
+        okved: data.okved || f.okved,
+        okved_name: data.okved_name || f.okved_name,
         name: (f.name || "").trim() || data.short_name || data.legal_name || "",
       }));
       toast.success("Реквизиты подставлены по ИНН");
     } catch (e) {
-      toast.error((e as Error).message);
+      setInnError((e as Error).message);
+      if (!silent) toast.error((e as Error).message);
     } finally {
       setLoadingInn(false);
     }
   };
+
+  // Автопоиск по ИНН при вводе 10/12 цифр
+  useEffect(() => {
+    const inn = (form.inn || "").replace(/\D/g, "");
+    if (inn.length !== 10 && inn.length !== 12) return;
+    if (inn === lastInn) return;
+    const t = setTimeout(() => { void lookupInn(inn, true); }, 600);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.inn, lastInn]);
 
   const save = useMutation({
     mutationFn: async () => {
@@ -93,6 +114,11 @@ export function ClientFormDialog({
         status: form.status || "active",
         notes: form.notes || null,
         legal_name: form.legal_name || null,
+        short_name: form.short_name || null,
+        management_name: form.management_name || null,
+        org_status: form.org_status || null,
+        okved: form.okved || null,
+        okved_name: form.okved_name || null,
         inn: form.inn || null,
         kpp: form.kpp || null,
         ogrn: form.ogrn || null,
@@ -209,6 +235,7 @@ export function ClientFormDialog({
 
           <TabsContent value="req" className="mt-4 grid max-h-[55vh] gap-3 overflow-y-auto sm:grid-cols-2">
             <div className="sm:col-span-2">{field("Юридическое название", "legal_name")}</div>
+            <div className="sm:col-span-2">{field("Краткое наименование", "short_name")}</div>
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">ИНН</Label>
               <div className="flex gap-2">
@@ -229,12 +256,18 @@ export function ClientFormDialog({
                   {loadingInn ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Найти"}
                 </Button>
               </div>
+              {loadingInn && <p className="text-2xs text-muted-foreground">Запрашиваем данные…</p>}
+              {innError && !loadingInn && <p className="text-2xs text-destructive">{innError}</p>}
             </div>
             {field("КПП", "kpp")}
             {field("ОГРН / ОГРНИП", "ogrn")}
             {field("БИК", "bik")}
             <div className="sm:col-span-2">{field("Юридический адрес", "legal_address")}</div>
             <div className="sm:col-span-2">{field("Фактический адрес", "actual_address")}</div>
+            {field("Руководитель (ФИО)", "management_name")}
+            {field("Статус организации", "org_status")}
+            {field("Основной ОКВЭД", "okved")}
+            {field("Расшифровка ОКВЭД", "okved_name")}
             {field("Расчётный счёт", "account_number")}
             {field("Банк", "bank_name")}
             <div className="sm:col-span-2">{field("Корреспондентский счёт", "correspondent_account")}</div>

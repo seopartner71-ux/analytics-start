@@ -1273,15 +1273,20 @@ export type Database = {
           last_report_date: string | null
           legal_address: string | null
           legal_name: string | null
+          management_name: string | null
           monthly_fee: number
           name: string
           notes: string | null
           ogrn: string | null
+          okved: string | null
+          okved_name: string | null
+          org_status: string | null
           other_requisites: string | null
           phone: string | null
           report_day: number | null
           report_enabled: boolean
           responsible_id: string | null
+          short_name: string | null
           status: string
           telegram: string | null
           updated_at: string
@@ -1302,15 +1307,20 @@ export type Database = {
           last_report_date?: string | null
           legal_address?: string | null
           legal_name?: string | null
+          management_name?: string | null
           monthly_fee?: number
           name: string
           notes?: string | null
           ogrn?: string | null
+          okved?: string | null
+          okved_name?: string | null
+          org_status?: string | null
           other_requisites?: string | null
           phone?: string | null
           report_day?: number | null
           report_enabled?: boolean
           responsible_id?: string | null
+          short_name?: string | null
           status?: string
           telegram?: string | null
           updated_at?: string
@@ -1331,15 +1341,20 @@ export type Database = {
           last_report_date?: string | null
           legal_address?: string | null
           legal_name?: string | null
+          management_name?: string | null
           monthly_fee?: number
           name?: string
           notes?: string | null
           ogrn?: string | null
+          okved?: string | null
+          okved_name?: string | null
+          org_status?: string | null
           other_requisites?: string | null
           phone?: string | null
           report_day?: number | null
           report_enabled?: boolean
           responsible_id?: string | null
+          short_name?: string | null
           status?: string
           telegram?: string | null
           updated_at?: string
