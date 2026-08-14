@@ -193,186 +193,6 @@ export type Database = {
           },
         ]
       }
-      bank_accounts: {
-        Row: {
-          account_number: string
-          balance: number
-          bank_name: string
-          bik: string | null
-          created_at: string
-          currency: string
-          id: string
-          integration_id: string
-          is_active: boolean
-          last_sync_at: string | null
-          meta: Json
-          owner_id: string
-          updated_at: string
-        }
-        Insert: {
-          account_number: string
-          balance?: number
-          bank_name?: string
-          bik?: string | null
-          created_at?: string
-          currency?: string
-          id?: string
-          integration_id: string
-          is_active?: boolean
-          last_sync_at?: string | null
-          meta?: Json
-          owner_id: string
-          updated_at?: string
-        }
-        Update: {
-          account_number?: string
-          balance?: number
-          bank_name?: string
-          bik?: string | null
-          created_at?: string
-          currency?: string
-          id?: string
-          integration_id?: string
-          is_active?: boolean
-          last_sync_at?: string | null
-          meta?: Json
-          owner_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "bank_accounts_integration_id_fkey"
-            columns: ["integration_id"]
-            isOneToOne: false
-            referencedRelation: "bank_integrations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      bank_integrations: {
-        Row: {
-          access_token: string | null
-          created_at: string
-          display_name: string
-          error_message: string | null
-          expires_at: string | null
-          id: string
-          last_sync_at: string | null
-          meta: Json
-          owner_id: string
-          provider: string
-          refresh_token: string | null
-          status: string
-          updated_at: string
-        }
-        Insert: {
-          access_token?: string | null
-          created_at?: string
-          display_name?: string
-          error_message?: string | null
-          expires_at?: string | null
-          id?: string
-          last_sync_at?: string | null
-          meta?: Json
-          owner_id: string
-          provider: string
-          refresh_token?: string | null
-          status?: string
-          updated_at?: string
-        }
-        Update: {
-          access_token?: string | null
-          created_at?: string
-          display_name?: string
-          error_message?: string | null
-          expires_at?: string | null
-          id?: string
-          last_sync_at?: string | null
-          meta?: Json
-          owner_id?: string
-          provider?: string
-          refresh_token?: string | null
-          status?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      bank_transactions: {
-        Row: {
-          account_id: string
-          amount: number
-          category: string
-          counterparty: string
-          counterparty_inn: string | null
-          created_at: string
-          direction: string
-          external_id: string | null
-          id: string
-          linked_expense_id: string | null
-          linked_invoice_id: string | null
-          operation_date: string
-          owner_id: string
-          purpose: string
-          raw_data: Json
-        }
-        Insert: {
-          account_id: string
-          amount: number
-          category?: string
-          counterparty?: string
-          counterparty_inn?: string | null
-          created_at?: string
-          direction: string
-          external_id?: string | null
-          id?: string
-          linked_expense_id?: string | null
-          linked_invoice_id?: string | null
-          operation_date: string
-          owner_id: string
-          purpose?: string
-          raw_data?: Json
-        }
-        Update: {
-          account_id?: string
-          amount?: number
-          category?: string
-          counterparty?: string
-          counterparty_inn?: string | null
-          created_at?: string
-          direction?: string
-          external_id?: string | null
-          id?: string
-          linked_expense_id?: string | null
-          linked_invoice_id?: string | null
-          operation_date?: string
-          owner_id?: string
-          purpose?: string
-          raw_data?: Json
-        }
-        Relationships: [
-          {
-            foreignKeyName: "bank_transactions_account_id_fkey"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "bank_accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bank_transactions_linked_expense_id_fkey"
-            columns: ["linked_expense_id"]
-            isOneToOne: false
-            referencedRelation: "finance_expenses"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bank_transactions_linked_invoice_id_fkey"
-            columns: ["linked_invoice_id"]
-            isOneToOne: false
-            referencedRelation: "finance_invoices"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       cached_reports: {
         Row: {
           generated_at: string
@@ -1193,43 +1013,59 @@ export type Database = {
           },
         ]
       }
-      deals: {
+      customer_credit: {
         Row: {
-          amount: number | null
-          company_id: string
+          amount: number
+          client_id: string | null
+          client_name: string | null
+          comment: string | null
           created_at: string
+          created_by: string | null
           id: string
-          owner_id: string
+          invoice_id: string | null
+          reason: string
           status: string
-          title: string
           updated_at: string
         }
         Insert: {
-          amount?: number | null
-          company_id: string
+          amount: number
+          client_id?: string | null
+          client_name?: string | null
+          comment?: string | null
           created_at?: string
+          created_by?: string | null
           id?: string
-          owner_id: string
+          invoice_id?: string | null
+          reason?: string
           status?: string
-          title?: string
           updated_at?: string
         }
         Update: {
-          amount?: number | null
-          company_id?: string
+          amount?: number
+          client_id?: string | null
+          client_name?: string | null
+          comment?: string | null
           created_at?: string
+          created_by?: string | null
           id?: string
-          owner_id?: string
+          invoice_id?: string | null
+          reason?: string
           status?: string
-          title?: string
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "deals_company_id_fkey"
-            columns: ["company_id"]
+            foreignKeyName: "customer_credit_client_id_fkey"
+            columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "companies"
+            referencedRelation: "financial_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_credit_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
             referencedColumns: ["id"]
           },
         ]
@@ -1385,217 +1221,6 @@ export type Database = {
         }
         Relationships: []
       }
-      finance_clients: {
-        Row: {
-          created_at: string
-          email: string | null
-          id: string
-          name: string
-          notes: string | null
-          owner_id: string
-          phone: string | null
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          email?: string | null
-          id?: string
-          name: string
-          notes?: string | null
-          owner_id: string
-          phone?: string | null
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          email?: string | null
-          id?: string
-          name?: string
-          notes?: string | null
-          owner_id?: string
-          phone?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      finance_expenses: {
-        Row: {
-          amount: number
-          category: string
-          comment: string | null
-          created_at: string
-          expense_date: string
-          id: string
-          owner_id: string
-          updated_at: string
-        }
-        Insert: {
-          amount?: number
-          category?: string
-          comment?: string | null
-          created_at?: string
-          expense_date?: string
-          id?: string
-          owner_id: string
-          updated_at?: string
-        }
-        Update: {
-          amount?: number
-          category?: string
-          comment?: string | null
-          created_at?: string
-          expense_date?: string
-          id?: string
-          owner_id?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      finance_invoices: {
-        Row: {
-          amount: number
-          client_id: string | null
-          client_name: string
-          created_at: string
-          due_at: string | null
-          id: string
-          invoice_number: string
-          issued_at: string
-          owner_id: string
-          services: Json
-          status: string
-          updated_at: string
-        }
-        Insert: {
-          amount?: number
-          client_id?: string | null
-          client_name?: string
-          created_at?: string
-          due_at?: string | null
-          id?: string
-          invoice_number: string
-          issued_at?: string
-          owner_id: string
-          services?: Json
-          status?: string
-          updated_at?: string
-        }
-        Update: {
-          amount?: number
-          client_id?: string | null
-          client_name?: string
-          created_at?: string
-          due_at?: string | null
-          id?: string
-          invoice_number?: string
-          issued_at?: string
-          owner_id?: string
-          services?: Json
-          status?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "finance_invoices_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "finance_clients"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      finance_payments: {
-        Row: {
-          client_id: string | null
-          client_name: string
-          comment: string | null
-          contract_amount: number
-          created_at: string
-          id: string
-          next_payment_date: string | null
-          owner_id: string
-          paid_amount: number
-          recurrence: string
-          service: string
-          status: string
-          updated_at: string
-        }
-        Insert: {
-          client_id?: string | null
-          client_name?: string
-          comment?: string | null
-          contract_amount?: number
-          created_at?: string
-          id?: string
-          next_payment_date?: string | null
-          owner_id: string
-          paid_amount?: number
-          recurrence?: string
-          service?: string
-          status?: string
-          updated_at?: string
-        }
-        Update: {
-          client_id?: string | null
-          client_name?: string
-          comment?: string | null
-          contract_amount?: number
-          created_at?: string
-          id?: string
-          next_payment_date?: string | null
-          owner_id?: string
-          paid_amount?: number
-          recurrence?: string
-          service?: string
-          status?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "finance_payments_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "finance_clients"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      finance_taxes: {
-        Row: {
-          amount: number
-          created_at: string
-          id: string
-          owner_id: string
-          paid_at: string | null
-          quarter: number
-          status: string
-          updated_at: string
-          year: number
-        }
-        Insert: {
-          amount?: number
-          created_at?: string
-          id?: string
-          owner_id: string
-          paid_at?: string | null
-          quarter: number
-          status?: string
-          updated_at?: string
-          year: number
-        }
-        Update: {
-          amount?: number
-          created_at?: string
-          id?: string
-          owner_id?: string
-          paid_at?: string | null
-          quarter?: number
-          status?: string
-          updated_at?: string
-          year?: number
-        }
-        Relationships: []
-      }
       financial_accounts: {
         Row: {
           balance: number
@@ -1648,6 +1273,7 @@ export type Database = {
           last_report_date: string | null
           legal_address: string | null
           legal_name: string | null
+          monthly_fee: number
           name: string
           notes: string | null
           ogrn: string | null
@@ -1675,6 +1301,7 @@ export type Database = {
           last_report_date?: string | null
           legal_address?: string | null
           legal_name?: string | null
+          monthly_fee?: number
           name: string
           notes?: string | null
           ogrn?: string | null
@@ -1702,6 +1329,7 @@ export type Database = {
           last_report_date?: string | null
           legal_address?: string | null
           legal_name?: string | null
+          monthly_fee?: number
           name?: string
           notes?: string | null
           ogrn?: string | null
@@ -1716,104 +1344,6 @@ export type Database = {
         }
         Relationships: []
       }
-      financial_expenses: {
-        Row: {
-          added_by: string | null
-          added_by_name: string | null
-          amount: number
-          category: string
-          comment: string | null
-          created_at: string
-          expense_date: string
-          id: string
-          receipt_url: string | null
-          updated_at: string
-        }
-        Insert: {
-          added_by?: string | null
-          added_by_name?: string | null
-          amount?: number
-          category?: string
-          comment?: string | null
-          created_at?: string
-          expense_date?: string
-          id?: string
-          receipt_url?: string | null
-          updated_at?: string
-        }
-        Update: {
-          added_by?: string | null
-          added_by_name?: string | null
-          amount?: number
-          category?: string
-          comment?: string | null
-          created_at?: string
-          expense_date?: string
-          id?: string
-          receipt_url?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      financial_invoices: {
-        Row: {
-          amount: number
-          client_id: string | null
-          client_name: string
-          comment: string | null
-          created_at: string
-          due_at: string | null
-          id: string
-          invoice_number: string
-          issued_at: string
-          services: Json
-          status: string
-          updated_at: string
-          vat_included: boolean
-          vat_rate: number
-        }
-        Insert: {
-          amount?: number
-          client_id?: string | null
-          client_name?: string
-          comment?: string | null
-          created_at?: string
-          due_at?: string | null
-          id?: string
-          invoice_number: string
-          issued_at?: string
-          services?: Json
-          status?: string
-          updated_at?: string
-          vat_included?: boolean
-          vat_rate?: number
-        }
-        Update: {
-          amount?: number
-          client_id?: string | null
-          client_name?: string
-          comment?: string | null
-          created_at?: string
-          due_at?: string | null
-          id?: string
-          invoice_number?: string
-          issued_at?: string
-          services?: Json
-          status?: string
-          updated_at?: string
-          vat_included?: boolean
-          vat_rate?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "financial_invoices_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "financial_clients"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       financial_obligations: {
         Row: {
           amount: number
@@ -1824,7 +1354,9 @@ export type Database = {
           created_by: string | null
           due_date: string | null
           id: string
+          occurrence_date: string | null
           paid_at: string | null
+          recurring_id: string | null
           status: string
           title: string
           transaction_id: string | null
@@ -1839,7 +1371,9 @@ export type Database = {
           created_by?: string | null
           due_date?: string | null
           id?: string
+          occurrence_date?: string | null
           paid_at?: string | null
+          recurring_id?: string | null
           status?: string
           title: string
           transaction_id?: string | null
@@ -1854,153 +1388,63 @@ export type Database = {
           created_by?: string | null
           due_date?: string | null
           id?: string
+          occurrence_date?: string | null
           paid_at?: string | null
+          recurring_id?: string | null
           status?: string
           title?: string
           transaction_id?: string | null
           updated_at?: string
         }
-        Relationships: []
-      }
-      financial_payment_history: {
-        Row: {
-          amount: number
-          created_at: string
-          created_by: string | null
-          id: string
-          note: string | null
-          paid_at: string
-          payment_id: string
-        }
-        Insert: {
-          amount: number
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          note?: string | null
-          paid_at?: string
-          payment_id: string
-        }
-        Update: {
-          amount?: number
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          note?: string | null
-          paid_at?: string
-          payment_id?: string
-        }
         Relationships: [
           {
-            foreignKeyName: "financial_payment_history_payment_id_fkey"
-            columns: ["payment_id"]
+            foreignKeyName: "financial_obligations_recurring_id_fkey"
+            columns: ["recurring_id"]
             isOneToOne: false
-            referencedRelation: "financial_payments"
+            referencedRelation: "recurring_operations"
             referencedColumns: ["id"]
           },
         ]
       }
-      financial_payments: {
+      financial_periods: {
         Row: {
-          client_id: string | null
-          client_name: string
+          closed_at: string | null
+          closed_by: string | null
+          closing_profit: number | null
           comment: string | null
-          contract_amount: number
           created_at: string
-          due_date: string | null
           id: string
-          next_payment_date: string | null
-          paid_amount: number
-          recurrence: string
-          service: string
+          period: string
+          period_end: string
+          period_start: string
           status: string
           updated_at: string
         }
         Insert: {
-          client_id?: string | null
-          client_name?: string
+          closed_at?: string | null
+          closed_by?: string | null
+          closing_profit?: number | null
           comment?: string | null
-          contract_amount?: number
           created_at?: string
-          due_date?: string | null
           id?: string
-          next_payment_date?: string | null
-          paid_amount?: number
-          recurrence?: string
-          service?: string
+          period: string
+          period_end: string
+          period_start: string
           status?: string
           updated_at?: string
         }
         Update: {
-          client_id?: string | null
-          client_name?: string
+          closed_at?: string | null
+          closed_by?: string | null
+          closing_profit?: number | null
           comment?: string | null
-          contract_amount?: number
           created_at?: string
-          due_date?: string | null
           id?: string
-          next_payment_date?: string | null
-          paid_amount?: number
-          recurrence?: string
-          service?: string
+          period?: string
+          period_end?: string
+          period_start?: string
           status?: string
           updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "financial_payments_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "financial_clients"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      financial_taxes: {
-        Row: {
-          amount: number
-          created_at: string
-          due_date: string | null
-          id: string
-          income_base: number
-          paid_amount: number
-          paid_at: string | null
-          quarter: number | null
-          rate: number
-          status: string
-          tax_type: string
-          updated_at: string
-          year: number
-        }
-        Insert: {
-          amount?: number
-          created_at?: string
-          due_date?: string | null
-          id?: string
-          income_base?: number
-          paid_amount?: number
-          paid_at?: string | null
-          quarter?: number | null
-          rate?: number
-          status?: string
-          tax_type?: string
-          updated_at?: string
-          year: number
-        }
-        Update: {
-          amount?: number
-          created_at?: string
-          due_date?: string | null
-          id?: string
-          income_base?: number
-          paid_amount?: number
-          paid_at?: string | null
-          quarter?: number | null
-          rate?: number
-          status?: string
-          tax_type?: string
-          updated_at?: string
-          year?: number
         }
         Relationships: []
       }
@@ -2189,6 +1633,73 @@ export type Database = {
           },
         ]
       }
+      invoice_payments: {
+        Row: {
+          amount: number
+          comment: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          invoice_id: string
+          kind: string
+          paid_at: string
+          reversal_of: string | null
+          reversed_at: string | null
+          transaction_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          comment?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          invoice_id: string
+          kind?: string
+          paid_at?: string
+          reversal_of?: string | null
+          reversed_at?: string | null
+          transaction_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          comment?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          invoice_id?: string
+          kind?: string
+          paid_at?: string
+          reversal_of?: string | null
+          reversed_at?: string | null
+          transaction_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_payments_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_payments_reversal_of_fkey"
+            columns: ["reversal_of"]
+            isOneToOne: false
+            referencedRelation: "invoice_payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_payments_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoices: {
         Row: {
           amount: number
@@ -2199,6 +1710,8 @@ export type Database = {
           created_by: string | null
           date_created: string
           date_paid: string | null
+          due_date: string | null
+          expected_date: string | null
           id: string
           invoice_number: string
           paid_to_account_id: string | null
@@ -2215,6 +1728,8 @@ export type Database = {
           created_by?: string | null
           date_created?: string
           date_paid?: string | null
+          due_date?: string | null
+          expected_date?: string | null
           id?: string
           invoice_number: string
           paid_to_account_id?: string | null
@@ -2231,6 +1746,8 @@ export type Database = {
           created_by?: string | null
           date_created?: string
           date_paid?: string | null
+          due_date?: string | null
+          expected_date?: string | null
           id?: string
           invoice_number?: string
           paid_to_account_id?: string | null
@@ -2915,7 +2432,11 @@ export type Database = {
       }
       partner_distributions: {
         Row: {
+          approval_status: string
+          approved_at: string | null
+          approved_by: string | null
           created_at: string
+          distributed_amount: number
           id: string
           partner1_amount: number
           partner1_id: string | null
@@ -2930,11 +2451,17 @@ export type Database = {
           partner2_share: number
           partner2_tx_id: string | null
           period: string
+          profit_base: number
+          retained_amount: number
           total_profit: number
           updated_at: string
         }
         Insert: {
+          approval_status?: string
+          approved_at?: string | null
+          approved_by?: string | null
           created_at?: string
+          distributed_amount?: number
           id?: string
           partner1_amount?: number
           partner1_id?: string | null
@@ -2949,11 +2476,17 @@ export type Database = {
           partner2_share?: number
           partner2_tx_id?: string | null
           period: string
+          profit_base?: number
+          retained_amount?: number
           total_profit?: number
           updated_at?: string
         }
         Update: {
+          approval_status?: string
+          approved_at?: string | null
+          approved_by?: string | null
           created_at?: string
+          distributed_amount?: number
           id?: string
           partner1_amount?: number
           partner1_id?: string | null
@@ -2968,10 +2501,75 @@ export type Database = {
           partner2_share?: number
           partner2_tx_id?: string | null
           period?: string
+          profit_base?: number
+          retained_amount?: number
           total_profit?: number
           updated_at?: string
         }
         Relationships: []
+      }
+      partner_ledger: {
+        Row: {
+          amount: number
+          comment: string | null
+          created_at: string
+          created_by: string | null
+          distribution_id: string | null
+          entry_date: string
+          entry_type: string
+          id: string
+          partner_id: string
+          period: string | null
+          reversed_at: string | null
+          share_pct: number | null
+          transaction_id: string | null
+        }
+        Insert: {
+          amount: number
+          comment?: string | null
+          created_at?: string
+          created_by?: string | null
+          distribution_id?: string | null
+          entry_date?: string
+          entry_type: string
+          id?: string
+          partner_id: string
+          period?: string | null
+          reversed_at?: string | null
+          share_pct?: number | null
+          transaction_id?: string | null
+        }
+        Update: {
+          amount?: number
+          comment?: string | null
+          created_at?: string
+          created_by?: string | null
+          distribution_id?: string | null
+          entry_date?: string
+          entry_type?: string
+          id?: string
+          partner_id?: string
+          period?: string | null
+          reversed_at?: string | null
+          share_pct?: number | null
+          transaction_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_ledger_distribution_id_fkey"
+            columns: ["distribution_id"]
+            isOneToOne: false
+            referencedRelation: "partner_distributions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_ledger_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       period_tasks: {
         Row: {
@@ -3767,6 +3365,167 @@ export type Database = {
           },
         ]
       }
+      recurring_amount_history: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          recurring_id: string
+          valid_from: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          recurring_id: string
+          valid_from: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          recurring_id?: string
+          valid_from?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_amount_history_recurring_id_fkey"
+            columns: ["recurring_id"]
+            isOneToOne: false
+            referencedRelation: "recurring_operations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recurring_occurrences: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          materialized_at: string | null
+          obligation_id: string | null
+          occurrence_date: string
+          recurring_id: string
+          status: string
+          transaction_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          materialized_at?: string | null
+          obligation_id?: string | null
+          occurrence_date: string
+          recurring_id: string
+          status?: string
+          transaction_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          materialized_at?: string | null
+          obligation_id?: string | null
+          occurrence_date?: string
+          recurring_id?: string
+          status?: string
+          transaction_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_occurrences_obligation_id_fkey"
+            columns: ["obligation_id"]
+            isOneToOne: false
+            referencedRelation: "financial_obligations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_occurrences_recurring_id_fkey"
+            columns: ["recurring_id"]
+            isOneToOne: false
+            referencedRelation: "recurring_operations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_occurrences_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recurring_operations: {
+        Row: {
+          account_id: string | null
+          amount: number
+          amount_valid_from: string
+          category: string | null
+          comment: string | null
+          counterparty: string | null
+          created_at: string
+          created_by: string | null
+          day_of_month: number
+          direction: string
+          ended_at: string | null
+          frequency: string
+          id: string
+          is_active: boolean
+          month_of_year: number | null
+          started_at: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          account_id?: string | null
+          amount: number
+          amount_valid_from?: string
+          category?: string | null
+          comment?: string | null
+          counterparty?: string | null
+          created_at?: string
+          created_by?: string | null
+          day_of_month?: number
+          direction?: string
+          ended_at?: string | null
+          frequency?: string
+          id?: string
+          is_active?: boolean
+          month_of_year?: number | null
+          started_at?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string | null
+          amount?: number
+          amount_valid_from?: string
+          category?: string | null
+          comment?: string | null
+          counterparty?: string | null
+          created_at?: string
+          created_by?: string | null
+          day_of_month?: number
+          direction?: string
+          ended_at?: string | null
+          frequency?: string
+          id?: string
+          is_active?: boolean
+          month_of_year?: number | null
+          started_at?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_operations_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       report_templates: {
         Row: {
           client_logo_url: string | null
@@ -4254,6 +4013,62 @@ export type Database = {
             columns: ["task_id"]
             isOneToOne: false
             referencedRelation: "crm_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tax_liability: {
+        Row: {
+          accrued: number
+          comment: string | null
+          created_at: string
+          due_date: string | null
+          id: string
+          paid: number
+          payment_transaction_id: string | null
+          period: string
+          period_end: string
+          period_start: string
+          rate: number
+          taxable_base: number
+          updated_at: string
+        }
+        Insert: {
+          accrued?: number
+          comment?: string | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          paid?: number
+          payment_transaction_id?: string | null
+          period: string
+          period_end: string
+          period_start: string
+          rate?: number
+          taxable_base?: number
+          updated_at?: string
+        }
+        Update: {
+          accrued?: number
+          comment?: string | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          paid?: number
+          payment_transaction_id?: string | null
+          period?: string
+          period_end?: string
+          period_start?: string
+          rate?: number
+          taxable_base?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tax_liability_payment_transaction_id_fkey"
+            columns: ["payment_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
             referencedColumns: ["id"]
           },
         ]
@@ -4819,6 +4634,7 @@ export type Database = {
         Args: { _conv_id: string; _user_id: string }
         Returns: boolean
       }
+      is_period_closed: { Args: { _d: string }; Returns: boolean }
       is_project_member: {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
