@@ -106,6 +106,13 @@ export default function PartnersPage() {
     .sort((a, b) => (a.entry_date < b.entry_date ? 1 : -1))
     .slice(0, 50);
 
+  const firstDate = useMemo(() => {
+    const dates = input.transactions.map((t) => t.date).filter(Boolean).sort();
+    return dates[0] ? format(new Date(dates[0]), "d MMM yyyy", { locale: ru }) : null;
+  }, [input.transactions]);
+
+  const cashLimit = s.distributableBreakdown.reduce((sum, b) => sum + b.amount, 0);
+
   return (
     <div className="mx-auto max-w-[1200px] space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -117,21 +124,49 @@ export default function PartnersPage() {
 
       <Panel
         title="Доступно к распределению"
-        subtitle={s.distributableLimitedBy === "cash" ? "Ограничено деньгами на счетах" : "Ограничено накопленной прибылью"}
+        subtitle={`Нарастающим итогом за всё время${firstDate ? ` — с ${firstDate}` : ""} по сегодня. Фильтр периода здесь не применяется`}
         padded={false}
       >
         <div className="px-5 pb-4 pt-5">
           <p className="text-[2rem] font-semibold leading-none tracking-tighter tabular-nums">{money(s.distributableProfit)}</p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Минимум из двух границ:{" "}
+            <span className={s.distributableLimitedBy === "profit" ? "font-medium text-foreground" : ""}>
+              прибыль {money(s.retainedProfit)}
+            </span>{" "}
+            и{" "}
+            <span className={s.distributableLimitedBy === "cash" ? "font-medium text-foreground" : ""}>
+              свободные деньги {money(cashLimit)}
+            </span>
+            . По {money(s.distributableProfit / 2)} каждому партнёру.
+          </p>
         </div>
         <ul className="divide-y divide-border/60 border-t border-border text-sm">
+          <li className="flex items-center justify-between px-5 py-2">
+            <span className="text-muted-foreground">Накопленная прибыль за всё время</span>
+            <span className="tabular-nums">{money(s.retainedProfit + s.partnerAccrued)}</span>
+          </li>
+          <li className="flex items-center justify-between px-5 py-2">
+            <span className="text-muted-foreground">Уже начислено партнёрам за всё время</span>
+            <span className={`tabular-nums ${s.partnerAccrued ? "text-destructive" : ""}`}>{money(-s.partnerAccrued)}</span>
+          </li>
+          <li className="flex items-center justify-between border-b border-border px-5 py-2 font-medium">
+            <span>Нераспределённая прибыль</span>
+            <span className="tabular-nums">{money(s.retainedProfit)}</span>
+          </li>
           {s.distributableBreakdown.map((b) => (
             <li key={b.label} className="flex items-center justify-between px-5 py-2">
               <span className="text-muted-foreground">{b.label}</span>
               <span className={`tabular-nums ${b.amount < 0 ? "text-destructive" : ""}`}>{money(b.amount)}</span>
             </li>
           ))}
+          <li className="flex items-center justify-between border-t border-border px-5 py-2 font-medium">
+            <span>Свободные деньги</span>
+            <span className="tabular-nums">{money(cashLimit)}</span>
+          </li>
         </ul>
       </Panel>
+
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {rows.map((r) => (
