@@ -100,12 +100,16 @@ export default function PartnersPage() {
           amount: each,
           period,
           entry_date: today,
-
         })),
       );
       if (error) throw error;
     },
-    onSuccess: () => { toast.success("Прибыль начислена партнёрам 50/50"); refresh(); },
+    onSuccess: () => {
+      toast.success("Прибыль распределена 50/50");
+      setDistOpen(false);
+      refresh();
+    },
+
     onError: (e: Error) => toast.error(e.message),
   });
 
