@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { EmptyState, PageTitle, Panel, TableWrap, Td, Th } from "@/components/finance/primitives";
+import { ReportNotificationsSettings } from "@/components/finance/ReportNotificationsSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { useAccounts, useExpenseCategories } from "@/hooks/useFinanceData";
 import { money } from "@/lib/finance";
@@ -110,6 +111,8 @@ export default function FinanceSettingsPage() {
           </tbody>
         </TableWrap>
       </Panel>
+
+      <ReportNotificationsSettings />
     </div>
   );
 }

@@ -489,6 +489,136 @@ export type Database = {
           },
         ]
       }
+      client_report_history: {
+        Row: {
+          client_id: string
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          due_date: string
+          id: string
+          note: string | null
+          period_month: number
+          period_year: number
+          responsible_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          due_date: string
+          id?: string
+          note?: string | null
+          period_month: number
+          period_year: number
+          responsible_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          due_date?: string
+          id?: string
+          note?: string | null
+          period_month?: number
+          period_year?: number
+          responsible_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_report_history_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "financial_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_report_notifications: {
+        Row: {
+          channel: string
+          client_id: string
+          due_date: string
+          error_message: string | null
+          id: string
+          notification_type: string
+          period_key: string
+          sent_at: string
+          status: string
+        }
+        Insert: {
+          channel: string
+          client_id: string
+          due_date: string
+          error_message?: string | null
+          id?: string
+          notification_type: string
+          period_key: string
+          sent_at?: string
+          status?: string
+        }
+        Update: {
+          channel?: string
+          client_id?: string
+          due_date?: string
+          error_message?: string | null
+          id?: string
+          notification_type?: string
+          period_key?: string
+          sent_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_report_notifications_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "financial_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_report_settings: {
+        Row: {
+          created_at: string
+          email_enabled: boolean
+          email_from: string | null
+          email_to: string | null
+          id: string
+          telegram_chat_id: string | null
+          telegram_enabled: boolean
+          updated_at: string
+          warn_days: number
+        }
+        Insert: {
+          created_at?: string
+          email_enabled?: boolean
+          email_from?: string | null
+          email_to?: string | null
+          id?: string
+          telegram_chat_id?: string | null
+          telegram_enabled?: boolean
+          updated_at?: string
+          warn_days?: number
+        }
+        Update: {
+          created_at?: string
+          email_enabled?: boolean
+          email_from?: string | null
+          email_to?: string | null
+          id?: string
+          telegram_chat_id?: string | null
+          telegram_enabled?: boolean
+          updated_at?: string
+          warn_days?: number
+        }
+        Relationships: []
+      }
       companies: {
         Row: {
           address: string | null
@@ -1504,33 +1634,84 @@ export type Database = {
       }
       financial_clients: {
         Row: {
+          account_number: string | null
+          actual_address: string | null
+          bank_name: string | null
+          bik: string | null
+          client_type: string | null
+          correspondent_account: string | null
           created_at: string
           email: string | null
           id: string
           inn: string | null
+          kpp: string | null
+          last_report_date: string | null
+          legal_address: string | null
+          legal_name: string | null
           name: string
           notes: string | null
+          ogrn: string | null
+          other_requisites: string | null
           phone: string | null
+          report_day: number | null
+          report_enabled: boolean
+          responsible_id: string | null
+          status: string
+          telegram: string | null
           updated_at: string
         }
         Insert: {
+          account_number?: string | null
+          actual_address?: string | null
+          bank_name?: string | null
+          bik?: string | null
+          client_type?: string | null
+          correspondent_account?: string | null
           created_at?: string
           email?: string | null
           id?: string
           inn?: string | null
+          kpp?: string | null
+          last_report_date?: string | null
+          legal_address?: string | null
+          legal_name?: string | null
           name: string
           notes?: string | null
+          ogrn?: string | null
+          other_requisites?: string | null
           phone?: string | null
+          report_day?: number | null
+          report_enabled?: boolean
+          responsible_id?: string | null
+          status?: string
+          telegram?: string | null
           updated_at?: string
         }
         Update: {
+          account_number?: string | null
+          actual_address?: string | null
+          bank_name?: string | null
+          bik?: string | null
+          client_type?: string | null
+          correspondent_account?: string | null
           created_at?: string
           email?: string | null
           id?: string
           inn?: string | null
+          kpp?: string | null
+          last_report_date?: string | null
+          legal_address?: string | null
+          legal_name?: string | null
           name?: string
           notes?: string | null
+          ogrn?: string | null
+          other_requisites?: string | null
           phone?: string | null
+          report_day?: number | null
+          report_enabled?: boolean
+          responsible_id?: string | null
+          status?: string
+          telegram?: string | null
           updated_at?: string
         }
         Relationships: []
