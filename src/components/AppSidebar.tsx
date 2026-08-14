@@ -25,6 +25,8 @@ const allNav = [
   { title: "Расходы", url: "/finance/expenses", icon: Wallet, minRole: "manager" as const, managerPlus: true },
   { title: "Клиенты", url: "/finance/clients", icon: Building2, minRole: "manager" as const, managerPlus: true },
   { title: "К выплате", url: "/finance/payables", icon: Scale, minRole: "manager" as const, managerPlus: true },
+  { title: "Прогноз", url: "/finance/forecast", icon: LineChart, minRole: "manager" as const, managerPlus: true },
+  { title: "Партнёры", url: "/finance/partners", icon: Users, minRole: "admin" as const, managerPlus: true },
   { title: "Отчёты", url: "/finance/reports", icon: FileText, minRole: "manager" as const, managerPlus: true },
   { title: "Настройки финансов", url: "/finance/settings", icon: Settings, minRole: "admin" as const, managerPlus: true },
   // Работа компании

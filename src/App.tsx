@@ -41,6 +41,8 @@ const FinanceIncome = lazy(() => import("./pages/finance/IncomePage"));
 const FinanceExpenses = lazy(() => import("./pages/finance/ExpensesPage"));
 const FinanceClients = lazy(() => import("./pages/finance/ClientsPage"));
 const FinancePayables = lazy(() => import("./pages/finance/PayablesPage"));
+const FinanceForecast = lazy(() => import("./pages/finance/ForecastPage"));
+const FinancePartners = lazy(() => import("./pages/finance/PartnersPage"));
 const FinanceReports = lazy(() => import("./pages/finance/ReportsPage"));
 const FinanceSettings = lazy(() => import("./pages/finance/FinanceSettingsPage"));
 const DeletionLogPage = lazy(() => import("./pages/DeletionLogPage"));
@@ -103,6 +105,8 @@ const App = () => (
                   <Route path="/finance/expenses" element={<ProtectedRoute><CrmLayout><FinanceGuard><FinanceExpenses /></FinanceGuard></CrmLayout></ProtectedRoute>} />
                   <Route path="/finance/clients" element={<ProtectedRoute><CrmLayout><FinanceGuard><FinanceClients /></FinanceGuard></CrmLayout></ProtectedRoute>} />
                   <Route path="/finance/payables" element={<ProtectedRoute><CrmLayout><FinanceGuard><FinancePayables /></FinanceGuard></CrmLayout></ProtectedRoute>} />
+                  <Route path="/finance/forecast" element={<ProtectedRoute><CrmLayout><FinanceGuard><FinanceForecast /></FinanceGuard></CrmLayout></ProtectedRoute>} />
+                  <Route path="/finance/partners" element={<ProtectedRoute><CrmLayout><FinanceGuard><FinancePartners /></FinanceGuard></CrmLayout></ProtectedRoute>} />
                   <Route path="/finance/reports" element={<ProtectedRoute><CrmLayout><FinanceGuard><FinanceReports /></FinanceGuard></CrmLayout></ProtectedRoute>} />
                   <Route path="/finance/settings" element={<ProtectedRoute><CrmLayout><FinanceGuard><FinanceSettings /></FinanceGuard></CrmLayout></ProtectedRoute>} />
 
