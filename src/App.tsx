@@ -27,7 +27,6 @@ const PublicWeeklyReport = lazy(() => import("./pages/PublicWeeklyReport"));
 const ShareView = lazy(() => import("./pages/ShareView"));
 const Team = lazy(() => import("./pages/Team"));
 const AdminPanel = lazy(() => import("./pages/AdminPanel"));
-const CompaniesPage = lazy(() => import("./pages/CompaniesPage"));
 const CrmTasksPage = lazy(() => import("./pages/CrmTasksPage"));
 const DirectorDashboard = lazy(() => import("./pages/DirectorDashboard"));
 const ContentPage = lazy(() => import("./pages/ContentPage"));
@@ -89,8 +88,6 @@ const App = () => (
                   <Route path="/oauth/yandex/callback" element={<OAuthCallback />} />
                   <Route path="/" element={<ProtectedRoute><CrmLayout><FinanceHome /></CrmLayout></ProtectedRoute>} />
                   <Route path="/seo-dashboard" element={<ProtectedRoute><CrmLayout><Index /></CrmLayout></ProtectedRoute>} />
-
-                  <Route path="/companies" element={<ProtectedRoute><CrmLayout><CompaniesPage /></CrmLayout></ProtectedRoute>} />
                   <Route path="/tasks" element={<ProtectedRoute><CrmLayout><CrmTasksPage /></CrmLayout></ProtectedRoute>} />
                   <Route path="/director" element={<ProtectedRoute><CrmLayout><DirectorDashboard /></CrmLayout></ProtectedRoute>} />
                   <Route path="/content" element={<ProtectedRoute><CrmLayout><ContentPage /></CrmLayout></ProtectedRoute>} />

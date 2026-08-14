@@ -14,8 +14,6 @@ import { Badge } from "@/components/ui/badge";
 import { ExpensesBlock } from "@/components/finance/ExpensesBlock";
 import { InvoicesBlock } from "@/components/finance/InvoicesBlock";
 import { CashTransferBlock } from "@/components/finance/CashTransferBlock";
-import { ReconciliationBlock } from "@/components/finance/ReconciliationBlock";
-import { BankImportBlock } from "@/components/finance/BankImportBlock";
 import { PartnerDistributionBlock } from "@/components/finance/PartnerDistributionBlock";
 
 const RUB = (n: number) =>
@@ -216,10 +214,8 @@ export default function Finance() {
       <InvoicesBlock />
 
       {/* Блок 7: Импорт банковской выписки */}
-      <BankImportBlock />
 
       {/* Блок 8: Акт сверки */}
-      <ReconciliationBlock />
     </div>
   );
 }
