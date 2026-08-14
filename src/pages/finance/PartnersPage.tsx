@@ -23,11 +23,30 @@ export default function PartnersPage() {
   const names = usePartnerNames();
   const [payout, setPayout] = useState<{ partnerId: string; name: string; max: number } | null>(null);
   const [form, setForm] = useState({ amount: "", accountId: "" });
+  const [distOpen, setDistOpen] = useState(false);
+  const [dist, setDist] = useState({ base: "", reserve: true, pct: "6", fromId: "" });
+
+  const cashAccount = input.accounts.find((a) => (a as { kind?: string }).kind === "cash");
+  const bankAccounts = input.accounts.filter((a) => a.id !== cashAccount?.id);
 
   const partnerIds = useMemo(() => {
     const ids = [input.settings.partner1Id, input.settings.partner2Id].filter(Boolean) as string[];
     return ids.length ? ids : s.partners.map((p) => p.partnerId);
   }, [input.settings, s.partners]);
+
+  const openDistribute = () => {
+    setDist({
+      base: String(Math.round(s.distributableProfit)),
+      reserve: true,
+      pct: "6",
+      fromId: bankAccounts[0]?.id ?? input.accounts[0]?.id ?? "",
+    });
+    setDistOpen(true);
+  };
+
+  const distBase = Number(dist.base) || 0;
+  const distReserve = dist.reserve ? Math.round(distBase * ((Number(dist.pct) || 0) / 100)) : 0;
+  const distToPartners = Math.max(0, distBase - distReserve);
 
   const rows = partnerIds.map((id, i) => {
     const st = s.partners.find((p) => p.partnerId === id);
@@ -48,16 +67,40 @@ export default function PartnersPage() {
   const distribute = useMutation({
     mutationFn: async () => {
       if (partnerIds.length !== 2) throw new Error("Партнёры не настроены");
-      const amount = Math.round((s.distributableProfit / 2) * 100) / 100;
-      if (amount <= 0) throw new Error("Нечего распределять");
+      if (distBase <= 0) throw new Error("Укажите сумму к распределению");
+      if (distBase > s.distributableProfit + 0.01) throw new Error("Сумма больше доступной к распределению");
+      const today = format(new Date(), "yyyy-MM-dd");
       const period = format(new Date(), "yyyy-MM");
+
+      if (distReserve > 0) {
+        if (!cashAccount) throw new Error("Счёт «Касса» не найден");
+        if (!dist.fromId) throw new Error("Выберите счёт списания для резерва");
+        const from = input.accounts.find((a) => a.id === dist.fromId);
+        if (!from) throw new Error("Счёт списания не найден");
+        if (Number(from.balance) < distReserve) throw new Error("Недостаточно средств на счёте списания");
+        const desc = `Резерв в кассу ${dist.pct}% при распределении прибыли`;
+        const { error: e1 } = await supabase.from("transactions").insert({
+          account_id: dist.fromId, type: "expense", amount: distReserve,
+          date: today, category: "transfer_out", description: desc,
+        });
+        if (e1) throw e1;
+        const { error: e2 } = await supabase.from("transactions").insert({
+          account_id: cashAccount.id, type: "income", amount: distReserve,
+          date: today, category: "transfer_in", description: desc,
+        });
+        if (e2) throw e2;
+      }
+
+      const each = Math.round((distToPartners / 2) * 100) / 100;
+      if (each <= 0) throw new Error("Нечего распределять партнёрам");
       const { error } = await supabase.from("partner_ledger").insert(
         partnerIds.map((pid) => ({
           partner_id: pid,
           entry_type: "accrual" as const,
-          amount,
+          amount: each,
           period,
-          entry_date: format(new Date(), "yyyy-MM-dd"),
+          entry_date: today,
+
         })),
       );
       if (error) throw error;
