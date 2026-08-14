@@ -3,7 +3,6 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { PageHeader } from "@/components/PageHeader";
 import { AiAssistantFab } from "@/components/ai/AiAssistantFab";
-import { MessengerPanel } from "@/components/messenger/MessengerPanel";
 import { MessengerProvider } from "@/contexts/MessengerContext";
 import { useSilentTimeTracker } from "@/hooks/useSilentTimeTracker";
 
@@ -21,7 +20,6 @@ export function CrmLayout({ children }: { children: ReactNode }) {
             </main>
           </div>
           <AiAssistantFab />
-          <MessengerPanel />
         </div>
       </MessengerProvider>
     </SidebarProvider>

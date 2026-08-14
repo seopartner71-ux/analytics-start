@@ -28,12 +28,7 @@ const allNav = [
   { title: "Отчёты", url: "/finance/reports", icon: FileText, minRole: "manager" as const, managerPlus: true },
   { title: "Настройки финансов", url: "/finance/settings", icon: Settings, minRole: "admin" as const, managerPlus: true },
   // Работа компании
-  { title: "Проекты", url: "/crm-projects", icon: FolderKanban, minRole: "viewer" as const },
   { title: "Задачи", url: "/tasks", icon: ClipboardList, minRole: "manager" as const },
-  { title: "Мои задачи", url: "/my-tasks", icon: UserCheck, minRole: "viewer" as const },
-  { title: "Сотрудники", url: "/employees", icon: Users, minRole: "manager" as const },
-  { title: "Чат", url: "/chat", icon: MessageSquare, minRole: "viewer" as const },
-  { title: "База знаний", url: "/knowledge", icon: BookOpen, minRole: "viewer" as const },
   { title: "Журнал удалений", url: "/admin/deletion-log", icon: History, minRole: "manager" as const, managerPlus: true },
 ];
 
