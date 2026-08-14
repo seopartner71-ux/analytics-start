@@ -15,6 +15,7 @@
 import {
   addDays, addMonths, addYears, endOfMonth, format, isAfter, isBefore, parseISO, startOfDay,
 } from "date-fns";
+import { ru } from "date-fns/locale";
 import type {
   EngineInput, FinancialSnapshot, RecurringOccurrence, RecurringOperation,
 } from "./financialEngine";
@@ -224,7 +225,7 @@ export function buildForecast(
     if (!lowest || running < lowest.value) lowest = { date: day, value: running };
     series.push({
       date: key,
-      label: format(day, "d MMM"),
+      label: format(day, "d MMM", { locale: ru }),
       fact: i === 0 ? snapshot.cashPosition : null,
       projected: Math.round(running),
     });
