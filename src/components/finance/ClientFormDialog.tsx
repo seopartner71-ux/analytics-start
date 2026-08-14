@@ -173,7 +173,27 @@ export function ClientFormDialog({
 
           <TabsContent value="req" className="mt-4 grid max-h-[55vh] gap-3 overflow-y-auto sm:grid-cols-2">
             <div className="sm:col-span-2">{field("Юридическое название", "legal_name")}</div>
-            {field("ИНН", "inn")}
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">ИНН</Label>
+              <div className="flex gap-2">
+                <Input
+                  className="h-9"
+                  value={form.inn || ""}
+                  placeholder="7707083893"
+                  onChange={(e) => set("inn", e.target.value)}
+                  onBlur={() => lookupInn()}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-9 shrink-0"
+                  disabled={loadingInn}
+                  onClick={() => lookupInn()}
+                >
+                  {loadingInn ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Найти"}
+                </Button>
+              </div>
+            </div>
             {field("КПП", "kpp")}
             {field("ОГРН / ОГРНИП", "ogrn")}
             {field("БИК", "bik")}
