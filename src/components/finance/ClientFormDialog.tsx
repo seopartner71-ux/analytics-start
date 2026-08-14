@@ -46,6 +46,7 @@ export function ClientFormDialog({
         phone: form.phone || null,
         email: form.email || null,
         telegram: form.telegram || null,
+        website: normalizeSite(form.website || ""),
         responsible_id: form.responsible_id || null,
         status: form.status || "active",
         notes: form.notes || null,
