@@ -5,9 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { BarChart3, Globe, Mail, Lock, User, Sparkles, TrendingUp, Shield, Zap } from "lucide-react";
+import { BarChart3, Globe, Mail, Lock, Sparkles, TrendingUp, Shield, Zap } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Auth = () => {
@@ -17,7 +16,6 @@ const Auth = () => {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -25,22 +23,6 @@ const Auth = () => {
   }, [session, navigate]);
 
   const toggleLang = () => i18n.changeLanguage(i18n.language === "ru" ? "en" : "ru");
-
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { full_name: fullName },
-        emailRedirectTo: window.location.origin,
-      },
-    });
-    setLoading(false);
-    if (error) toast.error(error.message);
-    else toast.success(t("auth.checkEmail"));
-  };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -164,79 +146,41 @@ const Auth = () => {
               <div className="relative bg-card/60 backdrop-blur-xl border border-border/60 rounded-2xl p-8 shadow-2xl">
                 <div className="mb-6">
                   <h2 className="text-2xl font-bold text-foreground tracking-tight">Добро пожаловать</h2>
-                  <p className="text-sm text-muted-foreground mt-1">Войдите в свой аккаунт или создайте новый</p>
+                  <p className="text-sm text-muted-foreground mt-1">Вход только для сотрудников компании</p>
                 </div>
 
-                <Tabs defaultValue="signin" className="space-y-5">
-                  <TabsList className="w-full bg-muted/50 p-1 h-10">
-                    <TabsTrigger value="signin" className="flex-1 text-sm data-[state=active]:bg-card data-[state=active]:shadow-sm">{t("auth.signIn")}</TabsTrigger>
-                    <TabsTrigger value="signup" className="flex-1 text-sm data-[state=active]:bg-card data-[state=active]:shadow-sm">{t("auth.signUp")}</TabsTrigger>
-                  </TabsList>
-
-                  <TabsContent value="signin" className="space-y-4 mt-0">
-                    <form onSubmit={handleSignIn} className="space-y-4">
-                      <div className="space-y-1.5">
-                        <Label htmlFor="signin-email" className="text-xs font-medium text-muted-foreground">{t("auth.email")}</Label>
-                        <div className="relative group">
-                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-accent transition-colors" />
-                          <Input id="signin-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@company.com" className="pl-9 h-11 bg-background/60 border-border/60 focus-visible:ring-accent/30 focus-visible:border-accent" required />
-                        </div>
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label htmlFor="signin-password" className="text-xs font-medium text-muted-foreground">{t("auth.password")}</Label>
-                        <div className="relative group">
-                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-accent transition-colors" />
-                          <Input id="signin-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="pl-9 h-11 bg-background/60 border-border/60 focus-visible:ring-accent/30 focus-visible:border-accent" required />
-                        </div>
-                      </div>
-                      <Button type="submit" className="w-full h-11 bg-gradient-to-r from-accent to-accent/85 hover:from-accent/90 hover:to-accent/75 text-accent-foreground font-semibold shadow-lg shadow-accent/20" disabled={loading}>
-                        {loading ? t("common.loading") : t("auth.signIn")}
-                      </Button>
-                      <div className="relative py-1">
-                        <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border/60" /></div>
-                        <div className="relative flex justify-center text-2xs uppercase tracking-wider"><span className="bg-card px-3 text-muted-foreground">{t("auth.or")}</span></div>
-                      </div>
-                      <Button type="button" variant="outline" className="w-full h-11 gap-2 border-border/60 bg-background/40 hover:bg-background/80" onClick={handleMagicLink} disabled={loading}>
-                        <Mail className="h-4 w-4" />
-                        {t("auth.magicLink")}
-                      </Button>
-                    </form>
-                  </TabsContent>
-
-                  <TabsContent value="signup" className="space-y-4 mt-0">
-                    <form onSubmit={handleSignUp} className="space-y-4">
-                      <div className="space-y-1.5">
-                        <Label htmlFor="signup-name" className="text-xs font-medium text-muted-foreground">{t("auth.fullName")}</Label>
-                        <div className="relative group">
-                          <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-accent transition-colors" />
-                          <Input id="signup-name" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder={t("auth.fullNamePlaceholder")} className="pl-9 h-11 bg-background/60 border-border/60 focus-visible:ring-accent/30 focus-visible:border-accent" />
-                        </div>
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label htmlFor="signup-email" className="text-xs font-medium text-muted-foreground">{t("auth.email")}</Label>
-                        <div className="relative group">
-                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-accent transition-colors" />
-                          <Input id="signup-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@company.com" className="pl-9 h-11 bg-background/60 border-border/60 focus-visible:ring-accent/30 focus-visible:border-accent" required />
-                        </div>
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label htmlFor="signup-password" className="text-xs font-medium text-muted-foreground">{t("auth.password")}</Label>
-                        <div className="relative group">
-                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-accent transition-colors" />
-                          <Input id="signup-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="pl-9 h-11 bg-background/60 border-border/60 focus-visible:ring-accent/30 focus-visible:border-accent" required minLength={6} />
-                        </div>
-                        <p className="text-xs text-muted-foreground pt-0.5">Минимум 6 символов</p>
-                      </div>
-                      <Button type="submit" className="w-full h-11 bg-gradient-to-r from-accent to-accent/85 hover:from-accent/90 hover:to-accent/75 text-accent-foreground font-semibold shadow-lg shadow-accent/20" disabled={loading}>
-                        {loading ? t("common.loading") : t("auth.signUp")}
-                      </Button>
-                    </form>
-                  </TabsContent>
-                </Tabs>
+                <form onSubmit={handleSignIn} className="space-y-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="signin-email" className="text-xs font-medium text-muted-foreground">{t("auth.email")}</Label>
+                    <div className="relative group">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-accent transition-colors" />
+                      <Input id="signin-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@company.com" className="pl-9 h-11 bg-background/60 border-border/60 focus-visible:ring-accent/30 focus-visible:border-accent" required />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="signin-password" className="text-xs font-medium text-muted-foreground">{t("auth.password")}</Label>
+                    <div className="relative group">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-accent transition-colors" />
+                      <Input id="signin-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="pl-9 h-11 bg-background/60 border-border/60 focus-visible:ring-accent/30 focus-visible:border-accent" required />
+                    </div>
+                  </div>
+                  <Button type="submit" className="w-full h-11 bg-gradient-to-r from-accent to-accent/85 hover:from-accent/90 hover:to-accent/75 text-accent-foreground font-semibold shadow-lg shadow-accent/20" disabled={loading}>
+                    {loading ? t("common.loading") : t("auth.signIn")}
+                  </Button>
+                  <div className="relative py-1">
+                    <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border/60" /></div>
+                    <div className="relative flex justify-center text-2xs uppercase tracking-wider"><span className="bg-card px-3 text-muted-foreground">{t("auth.or")}</span></div>
+                  </div>
+                  <Button type="button" variant="outline" className="w-full h-11 gap-2 border-border/60 bg-background/40 hover:bg-background/80" onClick={handleMagicLink} disabled={loading}>
+                    <Mail className="h-4 w-4" />
+                    {t("auth.magicLink")}
+                  </Button>
+                </form>
 
                 <p className="text-xs text-center text-muted-foreground mt-6 leading-relaxed">
-                  Регистрируясь, вы соглашаетесь с условиями использования<br />и политикой конфиденциальности
+                  Регистрация закрыта.<br />Доступ выдаёт администратор по личному утверждению.
                 </p>
+
               </div>
             </div>
           </div>
