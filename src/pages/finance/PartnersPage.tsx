@@ -163,10 +163,11 @@ export default function PartnersPage() {
   return (
     <div className="mx-auto max-w-[1200px] space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <PageTitle title="Партнёры" subtitle="Распределение чистой прибыли 50/50, начисления и выплаты" />
-        <Button size="sm" disabled={s.distributableProfit <= 0 || distribute.isPending} onClick={() => distribute.mutate()}>
-          Начислить {money(s.distributableProfit)}
+        <PageTitle title="Партнёры" subtitle="Налоги удержаны, при желании резерв в кассу, остаток — 50/50" />
+        <Button size="sm" disabled={s.distributableProfit <= 0} onClick={openDistribute}>
+          Распределить {money(s.distributableProfit)}
         </Button>
+
       </div>
 
       <Panel
