@@ -126,7 +126,7 @@ export function ExpensesBlock() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("transactions" as any)
-        .select("id, account_id, type, amount, date, category, description")
+        .select("id, account_id, type, amount, date, category, description, partner_id")
         .eq("type", "expense")
         .gte("date", format(yearAgo, "yyyy-MM-dd"))
         .order("date", { ascending: false })
