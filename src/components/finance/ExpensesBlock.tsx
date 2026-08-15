@@ -15,6 +15,9 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { usePartnerNames } from "@/hooks/usePartnerNames";
+import { useFinanceSettings } from "@/hooks/useFinancialEngine";
 import { toast } from "sonner";
 
 const RUB = (n: number) =>
