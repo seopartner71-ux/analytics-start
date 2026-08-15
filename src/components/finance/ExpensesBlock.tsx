@@ -15,6 +15,9 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { usePartnerNames } from "@/hooks/usePartnerNames";
+import { useFinanceSettings } from "@/hooks/useFinancialEngine";
 import { toast } from "sonner";
 
 const RUB = (n: number) =>
@@ -62,6 +65,7 @@ type Tx = {
   date: string;
   category: string;
   description: string | null;
+  partner_id: string | null;
 };
 
 export function ExpensesBlock() {
@@ -71,8 +75,17 @@ export function ExpensesBlock() {
   const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [category, setCategory] = useState<string>("services");
   const [source, setSource] = useState<"auto" | "cash" | "bank">("auto");
+  const [partnerId, setPartnerId] = useState<string>("none");
 
   const [description, setDescription] = useState("");
+
+  const { data: settings } = useFinanceSettings();
+  const partnerNames = usePartnerNames();
+  const partners = useMemo(
+    () => [settings?.partner1Id, settings?.partner2Id].filter(Boolean) as string[],
+    [settings?.partner1Id, settings?.partner2Id]
+  );
+
 
   const { data: cashAccount } = useQuery({
     queryKey: ["fin-account-cash"],
@@ -113,7 +126,7 @@ export function ExpensesBlock() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("transactions" as any)
-        .select("id, account_id, type, amount, date, category, description")
+        .select("id, account_id, type, amount, date, category, description, partner_id")
         .eq("type", "expense")
         .gte("date", format(yearAgo, "yyyy-MM-dd"))
         .order("date", { ascending: false })
@@ -160,12 +173,37 @@ export function ExpensesBlock() {
   );
 
 
+  // Разбивка расходов месяца по партнёрам и категориям
+  const partnerBreakdown = useMemo(() => {
+    const groups = new Map<string, { total: number; byCategory: Map<string, number> }>();
+    expenses.forEach((t) => {
+      const key = t.partner_id || "none";
+      if (!groups.has(key)) groups.set(key, { total: 0, byCategory: new Map() });
+      const g = groups.get(key)!;
+      const amt = Number(t.amount);
+      g.total += amt;
+      g.byCategory.set(t.category, (g.byCategory.get(t.category) || 0) + amt);
+    });
+    return Array.from(groups.entries())
+      .map(([id, g]) => ({
+        id,
+        name: id === "none" ? "Общие (без партнёра)" : partnerNames[id] || "Партнёр",
+        total: g.total,
+        share: monthTotal ? (g.total / monthTotal) * 100 : 0,
+        categories: Array.from(g.byCategory.entries())
+          .map(([code, amount]) => ({ code, amount }))
+          .sort((a, b) => b.amount - a.amount),
+      }))
+      .sort((a, b) => b.total - a.total);
+  }, [expenses, monthTotal, partnerNames]);
+
   const reset = () => {
     setAmount("");
     setDate(format(new Date(), "yyyy-MM-dd"));
     setCategory("services");
     setDescription("");
     setSource("auto");
+    setPartnerId("none");
   };
 
   const createMut = useMutation({
@@ -196,10 +234,12 @@ export function ExpensesBlock() {
         date,
         category,
         description: description || null,
+        partner_id: partnerId === "none" ? null : partnerId,
       });
       if (error) throw error;
       return { useKassa };
     },
+
     onSuccess: ({ useKassa }) => {
       toast.success(useKassa ? "Расход списан с Кассы" : "Расход списан с банка «Точка»");
 
