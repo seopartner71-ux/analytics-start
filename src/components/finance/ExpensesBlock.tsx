@@ -292,6 +292,18 @@ export function ExpensesBlock() {
                 </Select>
               </div>
               <div className="space-y-1.5">
+                <Label>Списать с</Label>
+                <Select value={source} onValueChange={(v) => setSource(v as typeof source)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="auto">Автоматически (сначала Касса)</SelectItem>
+                    <SelectItem value="cash">Касса · {RUB(Number(cashAccount?.balance || 0))}</SelectItem>
+                    <SelectItem value="bank">Банк «Точка» · {RUB(Number(tochkaAccount?.balance || 0))}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
                 <Label>Описание</Label>
                 <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Например: оплата хостинга за месяц" rows={3} />
               </div>
