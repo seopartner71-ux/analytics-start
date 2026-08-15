@@ -70,6 +70,8 @@ export function ExpensesBlock() {
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [category, setCategory] = useState<string>("services");
+  const [source, setSource] = useState<"auto" | "cash" | "bank">("auto");
+
   const [description, setDescription] = useState("");
 
   const { data: cashAccount } = useQuery({
@@ -163,6 +165,7 @@ export function ExpensesBlock() {
     setDate(format(new Date(), "yyyy-MM-dd"));
     setCategory("services");
     setDescription("");
+    setSource("auto");
   };
 
   const createMut = useMutation({
@@ -172,7 +175,17 @@ export function ExpensesBlock() {
       if (!cashAccount && !tochkaAccount) throw new Error("Не найдены счета (Касса/Точка)");
 
       const kassaBalance = Number(cashAccount?.balance || 0);
-      const useKassa = cashAccount && kassaBalance >= amt;
+      let useKassa: boolean;
+      if (source === "cash") {
+        if (!cashAccount) throw new Error("Счёт «Касса» не найден");
+        if (kassaBalance < amt) throw new Error(`В Кассе только ${RUB(kassaBalance)} — списание невозможно`);
+        useKassa = true;
+      } else if (source === "bank") {
+        useKassa = false;
+      } else {
+        useKassa = !!cashAccount && kassaBalance >= amt;
+      }
+
       const targetAccountId = useKassa ? cashAccount!.id : tochkaAccount?.id;
       if (!targetAccountId) throw new Error("Не найден банк «Точка» для списания");
 
@@ -188,7 +201,8 @@ export function ExpensesBlock() {
       return { useKassa };
     },
     onSuccess: ({ useKassa }) => {
-      toast.success(useKassa ? "Расход списан с Кассы" : "Касса пуста — расход списан с банка «Точка»");
+      toast.success(useKassa ? "Расход списан с Кассы" : "Расход списан с банка «Точка»");
+
       qc.invalidateQueries({ queryKey: ["fin-expenses-all"] });
       qc.invalidateQueries({ queryKey: ["fin-expenses-all"] });
       qc.invalidateQueries({ queryKey: ["fin-accounts"] });
@@ -277,6 +291,18 @@ export function ExpensesBlock() {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-1.5">
+                <Label>Списать с</Label>
+                <Select value={source} onValueChange={(v) => setSource(v as typeof source)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="auto">Автоматически (сначала Касса)</SelectItem>
+                    <SelectItem value="cash">Касса · {RUB(Number(cashAccount?.balance || 0))}</SelectItem>
+                    <SelectItem value="bank">Банк «Точка» · {RUB(Number(tochkaAccount?.balance || 0))}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="space-y-1.5">
                 <Label>Описание</Label>
                 <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Например: оплата хостинга за месяц" rows={3} />
