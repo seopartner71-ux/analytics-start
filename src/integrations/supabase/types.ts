@@ -4162,6 +4162,7 @@ export type Database = {
           description: string
           id: string
           invoice_id: string | null
+          partner_id: string | null
           related_account_id: string | null
           type: string
         }
@@ -4176,6 +4177,7 @@ export type Database = {
           description?: string
           id?: string
           invoice_id?: string | null
+          partner_id?: string | null
           related_account_id?: string | null
           type: string
         }
@@ -4190,6 +4192,7 @@ export type Database = {
           description?: string
           id?: string
           invoice_id?: string | null
+          partner_id?: string | null
           related_account_id?: string | null
           type?: string
         }
@@ -4199,6 +4202,13 @@ export type Database = {
             columns: ["account_id"]
             isOneToOne: false
             referencedRelation: "financial_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
