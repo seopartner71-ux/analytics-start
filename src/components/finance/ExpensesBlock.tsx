@@ -62,6 +62,7 @@ type Tx = {
   date: string;
   category: string;
   description: string | null;
+  partner_id: string | null;
 };
 
 export function ExpensesBlock() {
@@ -71,8 +72,17 @@ export function ExpensesBlock() {
   const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [category, setCategory] = useState<string>("services");
   const [source, setSource] = useState<"auto" | "cash" | "bank">("auto");
+  const [partnerId, setPartnerId] = useState<string>("none");
 
   const [description, setDescription] = useState("");
+
+  const { data: settings } = useFinanceSettings();
+  const partnerNames = usePartnerNames();
+  const partners = useMemo(
+    () => [settings?.partner1Id, settings?.partner2Id].filter(Boolean) as string[],
+    [settings?.partner1Id, settings?.partner2Id]
+  );
+
 
   const { data: cashAccount } = useQuery({
     queryKey: ["fin-account-cash"],
