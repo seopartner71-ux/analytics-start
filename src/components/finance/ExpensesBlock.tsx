@@ -70,6 +70,8 @@ export function ExpensesBlock() {
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [category, setCategory] = useState<string>("services");
+  const [source, setSource] = useState<"auto" | "cash" | "bank">("auto");
+
   const [description, setDescription] = useState("");
 
   const { data: cashAccount } = useQuery({
