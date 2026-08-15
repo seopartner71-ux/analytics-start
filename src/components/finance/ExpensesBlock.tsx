@@ -163,6 +163,7 @@ export function ExpensesBlock() {
     setDate(format(new Date(), "yyyy-MM-dd"));
     setCategory("services");
     setDescription("");
+    setSource("auto");
   };
 
   const createMut = useMutation({
@@ -172,7 +173,17 @@ export function ExpensesBlock() {
       if (!cashAccount && !tochkaAccount) throw new Error("Не найдены счета (Касса/Точка)");
 
       const kassaBalance = Number(cashAccount?.balance || 0);
-      const useKassa = cashAccount && kassaBalance >= amt;
+      let useKassa: boolean;
+      if (source === "cash") {
+        if (!cashAccount) throw new Error("Счёт «Касса» не найден");
+        if (kassaBalance < amt) throw new Error(`В Кассе только ${RUB(kassaBalance)} — списание невозможно`);
+        useKassa = true;
+      } else if (source === "bank") {
+        useKassa = false;
+      } else {
+        useKassa = !!cashAccount && kassaBalance >= amt;
+      }
+
       const targetAccountId = useKassa ? cashAccount!.id : tochkaAccount?.id;
       if (!targetAccountId) throw new Error("Не найден банк «Точка» для списания");
 
@@ -188,7 +199,8 @@ export function ExpensesBlock() {
       return { useKassa };
     },
     onSuccess: ({ useKassa }) => {
-      toast.success(useKassa ? "Расход списан с Кассы" : "Касса пуста — расход списан с банка «Точка»");
+      toast.success(useKassa ? "Расход списан с Кассы" : "Расход списан с банка «Точка»");
+
       qc.invalidateQueries({ queryKey: ["fin-expenses-all"] });
       qc.invalidateQueries({ queryKey: ["fin-expenses-all"] });
       qc.invalidateQueries({ queryKey: ["fin-accounts"] });
