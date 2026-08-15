@@ -173,12 +173,37 @@ export function ExpensesBlock() {
   );
 
 
+  // Разбивка расходов месяца по партнёрам и категориям
+  const partnerBreakdown = useMemo(() => {
+    const groups = new Map<string, { total: number; byCategory: Map<string, number> }>();
+    expenses.forEach((t) => {
+      const key = t.partner_id || "none";
+      if (!groups.has(key)) groups.set(key, { total: 0, byCategory: new Map() });
+      const g = groups.get(key)!;
+      const amt = Number(t.amount);
+      g.total += amt;
+      g.byCategory.set(t.category, (g.byCategory.get(t.category) || 0) + amt);
+    });
+    return Array.from(groups.entries())
+      .map(([id, g]) => ({
+        id,
+        name: id === "none" ? "Общие (без партнёра)" : partnerNames[id] || "Партнёр",
+        total: g.total,
+        share: monthTotal ? (g.total / monthTotal) * 100 : 0,
+        categories: Array.from(g.byCategory.entries())
+          .map(([code, amount]) => ({ code, amount }))
+          .sort((a, b) => b.amount - a.amount),
+      }))
+      .sort((a, b) => b.total - a.total);
+  }, [expenses, monthTotal, partnerNames]);
+
   const reset = () => {
     setAmount("");
     setDate(format(new Date(), "yyyy-MM-dd"));
     setCategory("services");
     setDescription("");
     setSource("auto");
+    setPartnerId("none");
   };
 
   const createMut = useMutation({
@@ -209,10 +234,12 @@ export function ExpensesBlock() {
         date,
         category,
         description: description || null,
+        partner_id: partnerId === "none" ? null : partnerId,
       });
       if (error) throw error;
       return { useKassa };
     },
+
     onSuccess: ({ useKassa }) => {
       toast.success(useKassa ? "Расход списан с Кассы" : "Расход списан с банка «Точка»");
 
