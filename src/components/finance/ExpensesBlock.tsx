@@ -505,6 +505,29 @@ export function ExpensesBlock() {
               </div>
             )}
           </TabsContent>
+
+          <TabsContent value="services">
+            {serviceBreakdown.length === 0 ? (
+              <div className="text-sm text-muted-foreground py-6 text-center">Расходов за месяц нет</div>
+            ) : (
+              <div className="space-y-2.5">
+                {serviceBreakdown.map((s) => (
+                  <div key={s.name} className="space-y-1.5">
+                    <div className="flex items-center justify-between gap-2 text-sm">
+                      <span className={s.name === "Без сервиса" ? "text-muted-foreground" : "font-medium"}>{s.name}</span>
+                      <span className="flex items-center gap-2">
+                        <span className="text-2xs text-muted-foreground">{s.share.toFixed(0)}%</span>
+                        <span className="font-semibold text-red-500 tabular-nums">{RUB(s.total)}</span>
+                      </span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                      <div className="h-full bg-red-500/70" style={{ width: `${Math.min(100, s.share)}%` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
         </Tabs>
       </CardContent>
 
