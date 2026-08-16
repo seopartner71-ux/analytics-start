@@ -66,6 +66,7 @@ type Tx = {
   category: string;
   description: string | null;
   partner_id: string | null;
+  service_name: string | null;
 };
 
 export function ExpensesBlock() {
@@ -76,6 +77,7 @@ export function ExpensesBlock() {
   const [category, setCategory] = useState<string>("services");
   const [source, setSource] = useState<"auto" | "cash" | "bank">("auto");
   const [partnerId, setPartnerId] = useState<string>("none");
+  const [serviceName, setServiceName] = useState("");
 
   const [description, setDescription] = useState("");
 
@@ -126,7 +128,7 @@ export function ExpensesBlock() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("transactions" as any)
-        .select("id, account_id, type, amount, date, category, description, partner_id")
+        .select("id, account_id, type, amount, date, category, description, partner_id, service_name")
         .eq("type", "expense")
         .gte("date", format(yearAgo, "yyyy-MM-dd"))
         .order("date", { ascending: false })
@@ -197,6 +199,24 @@ export function ExpensesBlock() {
       .sort((a, b) => b.total - a.total);
   }, [expenses, monthTotal, partnerNames]);
 
+  // Разбивка расходов месяца по сервисам
+  const serviceBreakdown = useMemo(() => {
+    const map = new Map<string, number>();
+    expenses.forEach((t) => {
+      const key = (t.service_name || "").trim() || "Без сервиса";
+      map.set(key, (map.get(key) || 0) + Number(t.amount));
+    });
+    return Array.from(map.entries())
+      .map(([name, total]) => ({ name, total, share: monthTotal ? (total / monthTotal) * 100 : 0 }))
+      .sort((a, b) => b.total - a.total);
+  }, [expenses, monthTotal]);
+
+  // Подсказки по ранее введённым сервисам
+  const serviceOptions = useMemo(
+    () => Array.from(new Set(allExpenses.map((t) => (t.service_name || "").trim()).filter(Boolean))).sort(),
+    [allExpenses]
+  );
+
   const reset = () => {
     setAmount("");
     setDate(format(new Date(), "yyyy-MM-dd"));
@@ -204,6 +224,7 @@ export function ExpensesBlock() {
     setDescription("");
     setSource("auto");
     setPartnerId("none");
+    setServiceName("");
   };
 
   const createMut = useMutation({
@@ -235,6 +256,7 @@ export function ExpensesBlock() {
         category,
         description: description || null,
         partner_id: partnerId === "none" ? null : partnerId,
+        service_name: serviceName.trim() || null,
       });
       if (error) throw error;
       return { useKassa };
@@ -359,6 +381,22 @@ export function ExpensesBlock() {
 
 
               <div className="space-y-1.5">
+                <Label>Наименование сервиса</Label>
+                <Input
+                  list="expense-services"
+                  value={serviceName}
+                  onChange={(e) => setServiceName(e.target.value)}
+                  placeholder="Например: Topvisor, Ahrefs, Хостинг"
+                />
+                <datalist id="expense-services">
+                  {serviceOptions.map((s) => (
+                    <option key={s} value={s} />
+                  ))}
+                </datalist>
+                <p className="text-2xs text-muted-foreground">Нужно, чтобы видеть самые затратные сервисы во вкладке «По сервисам».</p>
+              </div>
+
+              <div className="space-y-1.5">
                 <Label>Описание</Label>
                 <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Например: оплата хостинга за месяц" rows={3} />
               </div>
@@ -377,6 +415,7 @@ export function ExpensesBlock() {
           <TabsList className="mb-3">
             <TabsTrigger value="list">Операции</TabsTrigger>
             <TabsTrigger value="partners">По партнёрам</TabsTrigger>
+            <TabsTrigger value="services">По сервисам</TabsTrigger>
           </TabsList>
 
           <TabsContent value="list">
@@ -389,6 +428,7 @@ export function ExpensesBlock() {
                 <tr className="text-xs uppercase text-muted-foreground border-b">
                   <th className="text-left py-2 font-medium">Дата</th>
                   <th className="text-left py-2 font-medium">Категория</th>
+                  <th className="text-left py-2 font-medium">Сервис</th>
                   <th className="text-left py-2 font-medium">Партнёр</th>
                   <th className="text-left py-2 font-medium">Описание</th>
                   <th className="text-right py-2 font-medium">Сумма</th>
@@ -407,6 +447,7 @@ export function ExpensesBlock() {
                         {CATEGORY_LABEL[e.category] || e.category}
                       </Badge>
                     </td>
+                    <td className="py-2.5 whitespace-nowrap">{e.service_name || "—"}</td>
                     <td className="py-2.5 text-muted-foreground whitespace-nowrap">
                       {e.partner_id ? (partnerNames[e.partner_id] || "Партнёр") : "Общий"}
                     </td>
@@ -458,6 +499,29 @@ export function ExpensesBlock() {
                           <span className="tabular-nums">{RUB(c.amount)}</span>
                         </div>
                       ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="services">
+            {serviceBreakdown.length === 0 ? (
+              <div className="text-sm text-muted-foreground py-6 text-center">Расходов за месяц нет</div>
+            ) : (
+              <div className="space-y-2.5">
+                {serviceBreakdown.map((s) => (
+                  <div key={s.name} className="space-y-1.5">
+                    <div className="flex items-center justify-between gap-2 text-sm">
+                      <span className={s.name === "Без сервиса" ? "text-muted-foreground" : "font-medium"}>{s.name}</span>
+                      <span className="flex items-center gap-2">
+                        <span className="text-2xs text-muted-foreground">{s.share.toFixed(0)}%</span>
+                        <span className="font-semibold text-red-500 tabular-nums">{RUB(s.total)}</span>
+                      </span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                      <div className="h-full bg-red-500/70" style={{ width: `${Math.min(100, s.share)}%` }} />
                     </div>
                   </div>
                 ))}
