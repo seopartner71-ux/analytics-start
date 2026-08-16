@@ -373,6 +373,13 @@ export function ExpensesBlock() {
         </Dialog>
       </CardHeader>
       <CardContent>
+        <Tabs defaultValue="list">
+          <TabsList className="mb-3">
+            <TabsTrigger value="list">Операции</TabsTrigger>
+            <TabsTrigger value="partners">По партнёрам</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="list">
         {expenses.length === 0 ? (
           <div className="text-sm text-muted-foreground py-6 text-center">Расходов пока нет</div>
         ) : (
@@ -382,6 +389,7 @@ export function ExpensesBlock() {
                 <tr className="text-xs uppercase text-muted-foreground border-b">
                   <th className="text-left py-2 font-medium">Дата</th>
                   <th className="text-left py-2 font-medium">Категория</th>
+                  <th className="text-left py-2 font-medium">Партнёр</th>
                   <th className="text-left py-2 font-medium">Описание</th>
                   <th className="text-right py-2 font-medium">Сумма</th>
                   <th className="w-10"></th>
@@ -398,6 +406,9 @@ export function ExpensesBlock() {
                       >
                         {CATEGORY_LABEL[e.category] || e.category}
                       </Badge>
+                    </td>
+                    <td className="py-2.5 text-muted-foreground whitespace-nowrap">
+                      {e.partner_id ? (partnerNames[e.partner_id] || "Партнёр") : "Общий"}
                     </td>
                     <td className="py-2.5 text-muted-foreground max-w-[280px] truncate">{e.description || "—"}</td>
                     <td className="py-2.5 text-right font-semibold text-red-500">−{RUB(Number(e.amount))}</td>
@@ -419,7 +430,43 @@ export function ExpensesBlock() {
             </table>
           </div>
         )}
+          </TabsContent>
+
+          <TabsContent value="partners">
+            {partnerBreakdown.length === 0 ? (
+              <div className="text-sm text-muted-foreground py-6 text-center">Расходов за месяц нет</div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {partnerBreakdown.map((p) => (
+                  <div key={p.id} className="rounded-lg border p-4 space-y-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="font-medium">{p.name}</div>
+                      <div className="text-right">
+                        <div className="font-semibold text-red-500">{RUB(p.total)}</div>
+                        <div className="text-2xs text-muted-foreground">{p.share.toFixed(0)}% расходов</div>
+                      </div>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                      <div className="h-full bg-red-500/70" style={{ width: `${Math.min(100, p.share)}%` }} />
+                    </div>
+                    <div className="space-y-1.5">
+                      {p.categories.map((c) => (
+                        <div key={c.code} className="flex items-center justify-between text-sm">
+                          <Badge variant="outline" className={`text-2xs ${CATEGORY_TONE[c.code] || ""}`}>
+                            {CATEGORY_LABEL[c.code] || c.code}
+                          </Badge>
+                          <span className="tabular-nums">{RUB(c.amount)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </CardContent>
+
     </Card>
   );
 }
