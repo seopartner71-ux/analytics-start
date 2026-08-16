@@ -199,6 +199,24 @@ export function ExpensesBlock() {
       .sort((a, b) => b.total - a.total);
   }, [expenses, monthTotal, partnerNames]);
 
+  // Разбивка расходов месяца по сервисам
+  const serviceBreakdown = useMemo(() => {
+    const map = new Map<string, number>();
+    expenses.forEach((t) => {
+      const key = (t.service_name || "").trim() || "Без сервиса";
+      map.set(key, (map.get(key) || 0) + Number(t.amount));
+    });
+    return Array.from(map.entries())
+      .map(([name, total]) => ({ name, total, share: monthTotal ? (total / monthTotal) * 100 : 0 }))
+      .sort((a, b) => b.total - a.total);
+  }, [expenses, monthTotal]);
+
+  // Подсказки по ранее введённым сервисам
+  const serviceOptions = useMemo(
+    () => Array.from(new Set(allExpenses.map((t) => (t.service_name || "").trim()).filter(Boolean))).sort(),
+    [allExpenses]
+  );
+
   const reset = () => {
     setAmount("");
     setDate(format(new Date(), "yyyy-MM-dd"));
@@ -363,6 +381,22 @@ export function ExpensesBlock() {
 
 
               <div className="space-y-1.5">
+                <Label>Наименование сервиса</Label>
+                <Input
+                  list="expense-services"
+                  value={serviceName}
+                  onChange={(e) => setServiceName(e.target.value)}
+                  placeholder="Например: Topvisor, Ahrefs, Хостинг"
+                />
+                <datalist id="expense-services">
+                  {serviceOptions.map((s) => (
+                    <option key={s} value={s} />
+                  ))}
+                </datalist>
+                <p className="text-2xs text-muted-foreground">Нужно, чтобы видеть самые затратные сервисы во вкладке «По сервисам».</p>
+              </div>
+
+              <div className="space-y-1.5">
                 <Label>Описание</Label>
                 <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Например: оплата хостинга за месяц" rows={3} />
               </div>
@@ -381,6 +415,7 @@ export function ExpensesBlock() {
           <TabsList className="mb-3">
             <TabsTrigger value="list">Операции</TabsTrigger>
             <TabsTrigger value="partners">По партнёрам</TabsTrigger>
+            <TabsTrigger value="services">По сервисам</TabsTrigger>
           </TabsList>
 
           <TabsContent value="list">
@@ -393,6 +428,7 @@ export function ExpensesBlock() {
                 <tr className="text-xs uppercase text-muted-foreground border-b">
                   <th className="text-left py-2 font-medium">Дата</th>
                   <th className="text-left py-2 font-medium">Категория</th>
+                  <th className="text-left py-2 font-medium">Сервис</th>
                   <th className="text-left py-2 font-medium">Партнёр</th>
                   <th className="text-left py-2 font-medium">Описание</th>
                   <th className="text-right py-2 font-medium">Сумма</th>
@@ -411,6 +447,7 @@ export function ExpensesBlock() {
                         {CATEGORY_LABEL[e.category] || e.category}
                       </Badge>
                     </td>
+                    <td className="py-2.5 whitespace-nowrap">{e.service_name || "—"}</td>
                     <td className="py-2.5 text-muted-foreground whitespace-nowrap">
                       {e.partner_id ? (partnerNames[e.partner_id] || "Партнёр") : "Общий"}
                     </td>
