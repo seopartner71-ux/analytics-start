@@ -66,6 +66,7 @@ type Tx = {
   category: string;
   description: string | null;
   partner_id: string | null;
+  service_name: string | null;
 };
 
 export function ExpensesBlock() {
@@ -76,6 +77,7 @@ export function ExpensesBlock() {
   const [category, setCategory] = useState<string>("services");
   const [source, setSource] = useState<"auto" | "cash" | "bank">("auto");
   const [partnerId, setPartnerId] = useState<string>("none");
+  const [serviceName, setServiceName] = useState("");
 
   const [description, setDescription] = useState("");
 
