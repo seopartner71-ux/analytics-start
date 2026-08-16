@@ -238,6 +238,7 @@ export function ExpensesBlock() {
         category,
         description: description || null,
         partner_id: partnerId === "none" ? null : partnerId,
+        service_name: serviceName.trim() || null,
       });
       if (error) throw error;
       return { useKassa };
