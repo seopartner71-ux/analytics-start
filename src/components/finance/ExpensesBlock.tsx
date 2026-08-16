@@ -342,6 +342,21 @@ export function ExpensesBlock() {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-1.5">
+                <Label>Партнёр</Label>
+                <Select value={partnerId} onValueChange={setPartnerId}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Общий расход компании</SelectItem>
+                    {partners.map((p) => (
+                      <SelectItem key={p} value={p}>{partnerNames[p] || "Партнёр"}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-2xs text-muted-foreground">Кто из партнёров инициировал расход — попадёт во вкладку «По партнёрам».</p>
+              </div>
+
+
 
               <div className="space-y-1.5">
                 <Label>Описание</Label>
