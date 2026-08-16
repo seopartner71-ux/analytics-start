@@ -4164,6 +4164,7 @@ export type Database = {
           invoice_id: string | null
           partner_id: string | null
           related_account_id: string | null
+          service_name: string | null
           type: string
         }
         Insert: {
@@ -4179,6 +4180,7 @@ export type Database = {
           invoice_id?: string | null
           partner_id?: string | null
           related_account_id?: string | null
+          service_name?: string | null
           type: string
         }
         Update: {
@@ -4194,6 +4196,7 @@ export type Database = {
           invoice_id?: string | null
           partner_id?: string | null
           related_account_id?: string | null
+          service_name?: string | null
           type?: string
         }
         Relationships: [
