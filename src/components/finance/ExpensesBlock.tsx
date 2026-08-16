@@ -128,7 +128,7 @@ export function ExpensesBlock() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("transactions" as any)
-        .select("id, account_id, type, amount, date, category, description, partner_id")
+        .select("id, account_id, type, amount, date, category, description, partner_id, service_name")
         .eq("type", "expense")
         .gte("date", format(yearAgo, "yyyy-MM-dd"))
         .order("date", { ascending: false })
@@ -206,6 +206,7 @@ export function ExpensesBlock() {
     setDescription("");
     setSource("auto");
     setPartnerId("none");
+    setServiceName("");
   };
 
   const createMut = useMutation({
