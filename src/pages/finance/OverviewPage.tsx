@@ -13,7 +13,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useFinancePeriod } from "@/contexts/FinancePeriodContext";
 import { useFinancialEngine } from "@/hooks/useFinancialEngine";
 import { usePartnerNames } from "@/hooks/usePartnerNames";
-import { fmtPeriodLabel, money, pct } from "@/lib/finance";
+import { fmtPeriodLabel, inPeriod, money, pct } from "@/lib/finance";
+import { NON_OPEX } from "@/lib/financialEngine";
+
 import type { ForecastEvent } from "@/lib/forecast";
 
 const KIND_LABEL: Record<ForecastEvent["kind"], string> = {
@@ -33,6 +35,29 @@ export default function OverviewPage() {
     const limit = addDays(startOfDay(new Date()), 14);
     return forecast.events.filter((e) => !isAfter(e.date, limit)).slice(0, 12);
   }, [forecast.events]);
+
+
+  /** Полная сверка движения денег за период: приход − все виды расхода = изменение остатка. */
+  const flow = useMemo(() => {
+    const txs = input.transactions.filter((t) => inPeriod(t.date, period));
+    const sum = (f: (t: (typeof txs)[number]) => boolean) =>
+      txs.filter(f).reduce((acc, t) => acc + (Number(t.amount) || 0), 0);
+    const opex = sum((t) => t.type === "expense" && !NON_OPEX.includes(t.category || ""));
+    const tax = sum((t) => t.type === "expense" && t.category === "tax");
+    const partners = sum(
+      (t) => t.type === "expense" && ["partner_payout", "owner_withdrawal"].includes(t.category || ""),
+    );
+    const other = sum(
+      (t) =>
+        t.type === "expense" &&
+        NON_OPEX.includes(t.category || "") &&
+        !["tax", "partner_payout", "owner_withdrawal"].includes(t.category || ""),
+    );
+    const income = sum((t) => t.type === "income");
+    const outTotal = opex + tax + partners + other;
+    return { income, opex, tax, partners, other, outTotal, net: income - outTotal };
+  }, [input.transactions, period]);
+
 
   const partnerRows = useMemo(() => {
     const share = s.distributableProfit / 2;
@@ -97,6 +122,43 @@ export default function OverviewPage() {
               <p className="mt-0.5 text-2xs text-muted-foreground">после расходов и налога {money(s.periodTax)}</p>
             </div>
           </div>
+
+          {/* Полная сверка: приход − все выплаты = изменение остатка */}
+          <div className="border-b border-border px-5 py-3">
+            <p className="text-2xs uppercase tracking-wide text-muted-foreground">Куда ушли деньги за период</p>
+            <ul className="mt-1.5 space-y-1 text-xs">
+              <li className="flex justify-between">
+                <span className="text-muted-foreground">Пришло на счета</span>
+                <span className="tabular-nums text-[hsl(var(--success))]">{money(flow.income, true)}</span>
+              </li>
+              <li className="flex justify-between">
+                <span className="text-muted-foreground">Операционные расходы</span>
+                <span className="tabular-nums text-destructive">{money(-flow.opex, true)}</span>
+              </li>
+              <li className="flex justify-between">
+                <span className="text-muted-foreground">Налог уплачен</span>
+                <span className="tabular-nums text-destructive">{money(-flow.tax, true)}</span>
+              </li>
+              <li className="flex justify-between">
+                <span className="text-muted-foreground">Выплаты партнёрам</span>
+                <span className="tabular-nums text-destructive">{money(-flow.partners, true)}</span>
+              </li>
+              {flow.other !== 0 && (
+                <li className="flex justify-between">
+                  <span className="text-muted-foreground">Прочие списания</span>
+                  <span className="tabular-nums text-destructive">{money(-flow.other, true)}</span>
+                </li>
+              )}
+              <li className="flex justify-between border-t border-border/60 pt-1 font-medium">
+                <span>Изменение остатка</span>
+                <span className={`tabular-nums ${flow.net < 0 ? "text-destructive" : "text-[hsl(var(--success))]"}`}>
+                  {money(flow.net, true)}
+                </span>
+              </li>
+            </ul>
+          </div>
+
+
 
           <div className="grid grid-cols-2 divide-x divide-border border-b border-border">
             <div className="px-5 py-3">
