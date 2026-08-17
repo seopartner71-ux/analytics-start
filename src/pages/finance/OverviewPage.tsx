@@ -151,15 +151,16 @@ export default function OverviewPage() {
       {/* ── PERFORMANCE ── */}
       <Panel title="Результат за период" subtitle={fmtPeriodLabel(period)} padded={false}>
         <div className="grid grid-cols-2 divide-x divide-y divide-border md:grid-cols-4 md:divide-y-0">
-          <PerfCell label="Выставлено (Revenue)" value={s.revenue} prev={p.revenue} hint="начисленный доход по счетам" />
-          <PerfCell label="Получено (Received)" value={s.received} prev={p.received} hint="фактические деньги от клиентов" />
-          <PerfCell label="Расходы" value={s.expenses} prev={p.expenses} invert hint="операционные расходы" />
+          <PerfCell label="Выставлено счетов" value={s.revenue} prev={p.revenue} hint="начислено по счетам клиентам" />
+          <PerfCell label="Заработали (получено)" value={s.received} prev={p.received} hint="деньги, пришедшие на счета" />
+          <PerfCell label="Потратили" value={s.expenses} prev={p.expenses} invert hint="операционные расходы за период" />
           <PerfCell
             label="Прибыль"
-            value={s.profit}
-            prev={p.profit}
-            hint={`денежная прибыль: ${money(s.cashProfit)} · налог ${money(s.periodTax)}`}
+            value={s.cashProfit}
+            prev={p.cashProfit}
+            hint={`получено − расходы − налог ${money(s.periodTax)}`}
           />
+
         </div>
       </Panel>
 
