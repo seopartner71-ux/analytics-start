@@ -32,6 +32,8 @@ export default function OverviewPage() {
   const next14 = useMemo(() => {
     const limit = addDays(startOfDay(new Date()), 14);
     return forecast.events.filter((e) => !isAfter(e.date, limit)).slice(0, 12);
+  }, [forecast.events]);
+
 
   /** Полная сверка движения денег за период: приход − все виды расхода = изменение остатка. */
   const flow = useMemo(() => {
