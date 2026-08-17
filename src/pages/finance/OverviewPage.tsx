@@ -13,7 +13,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useFinancePeriod } from "@/contexts/FinancePeriodContext";
 import { useFinancialEngine } from "@/hooks/useFinancialEngine";
 import { usePartnerNames } from "@/hooks/usePartnerNames";
-import { fmtPeriodLabel, money, pct } from "@/lib/finance";
+import { fmtPeriodLabel, inPeriod, money, pct } from "@/lib/finance";
+import { NON_OPEX } from "@/lib/financialEngine";
+
 import type { ForecastEvent } from "@/lib/forecast";
 
 const KIND_LABEL: Record<ForecastEvent["kind"], string> = {
