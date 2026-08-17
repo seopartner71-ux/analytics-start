@@ -123,6 +123,43 @@ export default function OverviewPage() {
             </div>
           </div>
 
+          {/* Полная сверка: приход − все выплаты = изменение остатка */}
+          <div className="border-b border-border px-5 py-3">
+            <p className="text-2xs uppercase tracking-wide text-muted-foreground">Куда ушли деньги за период</p>
+            <ul className="mt-1.5 space-y-1 text-xs">
+              <li className="flex justify-between">
+                <span className="text-muted-foreground">Пришло на счета</span>
+                <span className="tabular-nums text-[hsl(var(--success))]">{money(flow.income, true)}</span>
+              </li>
+              <li className="flex justify-between">
+                <span className="text-muted-foreground">Операционные расходы</span>
+                <span className="tabular-nums text-destructive">{money(-flow.opex, true)}</span>
+              </li>
+              <li className="flex justify-between">
+                <span className="text-muted-foreground">Налог уплачен</span>
+                <span className="tabular-nums text-destructive">{money(-flow.tax, true)}</span>
+              </li>
+              <li className="flex justify-between">
+                <span className="text-muted-foreground">Выплаты партнёрам</span>
+                <span className="tabular-nums text-destructive">{money(-flow.partners, true)}</span>
+              </li>
+              {flow.other !== 0 && (
+                <li className="flex justify-between">
+                  <span className="text-muted-foreground">Прочие списания</span>
+                  <span className="tabular-nums text-destructive">{money(-flow.other, true)}</span>
+                </li>
+              )}
+              <li className="flex justify-between border-t border-border/60 pt-1 font-medium">
+                <span>Изменение остатка</span>
+                <span className={`tabular-nums ${flow.net < 0 ? "text-destructive" : "text-[hsl(var(--success))]"}`}>
+                  {money(flow.net, true)}
+                </span>
+              </li>
+            </ul>
+          </div>
+
+
+
           <div className="grid grid-cols-2 divide-x divide-border border-b border-border">
             <div className="px-5 py-3">
               <p className="text-2xs text-muted-foreground">Денег на счетах сейчас</p>
