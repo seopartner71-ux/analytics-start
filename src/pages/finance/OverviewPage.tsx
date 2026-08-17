@@ -72,34 +72,40 @@ export default function OverviewPage() {
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]">
         <Panel padded={false} className="overflow-hidden">
           <div className="px-5 pb-4 pt-5">
-            <p className="text-2xs uppercase tracking-[0.14em] text-muted-foreground">Денег сейчас</p>
+            <p className="text-2xs uppercase tracking-[0.14em] text-muted-foreground">
+              Доходы · {fmtPeriodLabel(period)}
+            </p>
             <p className="mt-1.5 text-[2.4rem] font-semibold leading-none tracking-tighter tabular-nums">
-              {money(s.cashPosition)}
+              {money(s.received)}
             </p>
             <p className="mt-2 text-xs text-muted-foreground">
-              За период {fmtPeriodLabel(period)}:{" "}
-              <span className="text-[hsl(var(--success))] tabular-nums">{money(s.cashIn, true)}</span>{" "}
-              <span className="text-destructive tabular-nums">{money(-s.cashOut, true)}</span>{" "}
+              Выставлено {money(s.revenue)} · расходы{" "}
+              <span className="text-destructive tabular-nums">{money(-s.cashOut, true)}</span> · итог{" "}
               <span className={`tabular-nums font-medium ${s.cashFlow < 0 ? "text-destructive" : "text-foreground"}`}>
-                = {money(s.cashFlow, true)}
+                {money(s.cashFlow, true)}
               </span>
             </p>
           </div>
 
           <div className="grid grid-cols-2 divide-x divide-border border-y border-border">
             <div className="px-5 py-3">
-              <p className="text-2xs text-muted-foreground">Через 30 дней</p>
-              <p className={`mt-0.5 text-lg font-semibold tabular-nums ${forecast.projected30 < 0 ? "text-destructive" : ""}`}>
-                {money(forecast.projected30)}
+              <p className="text-2xs text-muted-foreground">Денег на счетах</p>
+              <p className={`mt-0.5 text-lg font-semibold tabular-nums ${s.cashPosition < 0 ? "text-destructive" : ""}`}>
+                {money(s.cashPosition)}
               </p>
+              <p className="mt-0.5 text-2xs text-muted-foreground">в т.ч. налог {money(s.taxReserve)}</p>
             </div>
             <div className="px-5 py-3">
-              <p className="text-2xs text-muted-foreground">Через 90 дней</p>
-              <p className={`mt-0.5 text-lg font-semibold tabular-nums ${forecast.projected90 < 0 ? "text-destructive" : ""}`}>
-                {money(forecast.projected90)}
+              <p className="text-2xs text-muted-foreground">Свободно после налога</p>
+              <p className={`mt-0.5 text-lg font-semibold tabular-nums ${s.cashPosition - s.taxReserve < 0 ? "text-destructive" : ""}`}>
+                {money(s.cashPosition - s.taxReserve)}
+              </p>
+              <p className="mt-0.5 text-2xs text-muted-foreground">
+                прогноз 30 дн. {money(forecast.projected30)}
               </p>
             </div>
           </div>
+
           <ul className="divide-y divide-border/60">
             {input.accounts.map((a) => (
               <li key={a.id} className="flex items-center justify-between px-5 py-2.5">
