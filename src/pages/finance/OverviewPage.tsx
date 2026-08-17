@@ -64,7 +64,7 @@ export default function OverviewPage() {
   return (
     <div className="mx-auto max-w-[1400px] space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <PageTitle title="Финансовый обзор" subtitle="Фильтр периода влияет на движение денег и результат; остаток и прогноз — всегда на сегодня" />
+        <PageTitle title="Финансовый обзор" subtitle="Главная цифра — доходы за выбранный период. Деньги на счетах показаны отдельно: часть из них зарезервирована на налог" />
         <PeriodFilter />
       </div>
 
