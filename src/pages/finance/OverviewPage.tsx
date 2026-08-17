@@ -32,7 +32,28 @@ export default function OverviewPage() {
   const next14 = useMemo(() => {
     const limit = addDays(startOfDay(new Date()), 14);
     return forecast.events.filter((e) => !isAfter(e.date, limit)).slice(0, 12);
-  }, [forecast.events]);
+
+  /** Полная сверка движения денег за период: приход − все виды расхода = изменение остатка. */
+  const flow = useMemo(() => {
+    const txs = input.transactions.filter((t) => inPeriod(t.date, period));
+    const sum = (f: (t: (typeof txs)[number]) => boolean) =>
+      txs.filter(f).reduce((acc, t) => acc + (Number(t.amount) || 0), 0);
+    const opex = sum((t) => t.type === "expense" && !NON_OPEX.includes(t.category || ""));
+    const tax = sum((t) => t.type === "expense" && t.category === "tax");
+    const partners = sum(
+      (t) => t.type === "expense" && ["partner_payout", "owner_withdrawal"].includes(t.category || ""),
+    );
+    const other = sum(
+      (t) =>
+        t.type === "expense" &&
+        NON_OPEX.includes(t.category || "") &&
+        !["tax", "partner_payout", "owner_withdrawal"].includes(t.category || ""),
+    );
+    const income = sum((t) => t.type === "income");
+    const outTotal = opex + tax + partners + other;
+    return { income, opex, tax, partners, other, outTotal, net: income - outTotal };
+  }, [input.transactions, period]);
+
 
   const partnerRows = useMemo(() => {
     const share = s.distributableProfit / 2;
