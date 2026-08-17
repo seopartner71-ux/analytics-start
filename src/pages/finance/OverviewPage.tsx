@@ -73,23 +73,34 @@ export default function OverviewPage() {
         <Panel padded={false} className="overflow-hidden">
           <div className="px-5 pb-4 pt-5">
             <p className="text-2xs uppercase tracking-[0.14em] text-muted-foreground">
-              Доходы · {fmtPeriodLabel(period)}
+              Заработали · {fmtPeriodLabel(period)}
             </p>
-            <p className="mt-1.5 text-[2.4rem] font-semibold leading-none tracking-tighter tabular-nums">
+            <p className="mt-1.5 text-[2.4rem] font-semibold leading-none tracking-tighter tabular-nums text-[hsl(var(--success))]">
               {money(s.received)}
             </p>
             <p className="mt-2 text-xs text-muted-foreground">
-              Выставлено {money(s.revenue)} · расходы{" "}
-              <span className="text-destructive tabular-nums">{money(-s.cashOut, true)}</span> · итог{" "}
-              <span className={`tabular-nums font-medium ${s.cashFlow < 0 ? "text-destructive" : "text-foreground"}`}>
-                {money(s.cashFlow, true)}
-              </span>
+              деньги, реально пришедшие от клиентов за период
             </p>
           </div>
 
           <div className="grid grid-cols-2 divide-x divide-border border-y border-border">
             <div className="px-5 py-3">
-              <p className="text-2xs text-muted-foreground">Денег на счетах</p>
+              <p className="text-2xs text-muted-foreground">Потратили</p>
+              <p className="mt-0.5 text-lg font-semibold tabular-nums text-destructive">{money(s.expenses)}</p>
+              <p className="mt-0.5 text-2xs text-muted-foreground">расходы за период</p>
+            </div>
+            <div className="px-5 py-3">
+              <p className="text-2xs text-muted-foreground">Осталось (прибыль)</p>
+              <p className={`mt-0.5 text-lg font-semibold tabular-nums ${s.cashProfit < 0 ? "text-destructive" : ""}`}>
+                {money(s.cashProfit)}
+              </p>
+              <p className="mt-0.5 text-2xs text-muted-foreground">после расходов и налога {money(s.periodTax)}</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 divide-x divide-border border-b border-border">
+            <div className="px-5 py-3">
+              <p className="text-2xs text-muted-foreground">Денег на счетах сейчас</p>
               <p className={`mt-0.5 text-lg font-semibold tabular-nums ${s.cashPosition < 0 ? "text-destructive" : ""}`}>
                 {money(s.cashPosition)}
               </p>
@@ -100,11 +111,10 @@ export default function OverviewPage() {
               <p className={`mt-0.5 text-lg font-semibold tabular-nums ${s.cashPosition - s.taxReserve < 0 ? "text-destructive" : ""}`}>
                 {money(s.cashPosition - s.taxReserve)}
               </p>
-              <p className="mt-0.5 text-2xs text-muted-foreground">
-                прогноз 30 дн. {money(forecast.projected30)}
-              </p>
+              <p className="mt-0.5 text-2xs text-muted-foreground">прогноз 30 дн. {money(forecast.projected30)}</p>
             </div>
           </div>
+
 
           <ul className="divide-y divide-border/60">
             {input.accounts.map((a) => (
@@ -141,15 +151,16 @@ export default function OverviewPage() {
       {/* ── PERFORMANCE ── */}
       <Panel title="Результат за период" subtitle={fmtPeriodLabel(period)} padded={false}>
         <div className="grid grid-cols-2 divide-x divide-y divide-border md:grid-cols-4 md:divide-y-0">
-          <PerfCell label="Выставлено (Revenue)" value={s.revenue} prev={p.revenue} hint="начисленный доход по счетам" />
-          <PerfCell label="Получено (Received)" value={s.received} prev={p.received} hint="фактические деньги от клиентов" />
-          <PerfCell label="Расходы" value={s.expenses} prev={p.expenses} invert hint="операционные расходы" />
+          <PerfCell label="Выставлено счетов" value={s.revenue} prev={p.revenue} hint="начислено по счетам клиентам" />
+          <PerfCell label="Заработали (получено)" value={s.received} prev={p.received} hint="деньги, пришедшие на счета" />
+          <PerfCell label="Потратили" value={s.expenses} prev={p.expenses} invert hint="операционные расходы за период" />
           <PerfCell
             label="Прибыль"
-            value={s.profit}
-            prev={p.profit}
-            hint={`денежная прибыль: ${money(s.cashProfit)} · налог ${money(s.periodTax)}`}
+            value={s.cashProfit}
+            prev={p.cashProfit}
+            hint={`получено − расходы − налог ${money(s.periodTax)}`}
           />
+
         </div>
       </Panel>
 
