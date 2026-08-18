@@ -4162,7 +4162,9 @@ export type Database = {
           description: string
           id: string
           invoice_id: string | null
+          paid_personally: boolean
           partner_id: string | null
+          reimbursed_at: string | null
           related_account_id: string | null
           service_name: string | null
           type: string
@@ -4178,7 +4180,9 @@ export type Database = {
           description?: string
           id?: string
           invoice_id?: string | null
+          paid_personally?: boolean
           partner_id?: string | null
+          reimbursed_at?: string | null
           related_account_id?: string | null
           service_name?: string | null
           type: string
@@ -4194,7 +4198,9 @@ export type Database = {
           description?: string
           id?: string
           invoice_id?: string | null
+          paid_personally?: boolean
           partner_id?: string | null
+          reimbursed_at?: string | null
           related_account_id?: string | null
           service_name?: string | null
           type?: string
