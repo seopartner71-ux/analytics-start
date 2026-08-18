@@ -181,13 +181,17 @@ export function ExpensesBlock() {
 
   // Разбивка расходов месяца по партнёрам и категориям
   const partnerBreakdown = useMemo(() => {
-    const groups = new Map<string, { total: number; byCategory: Map<string, number> }>();
+    const groups = new Map<string, { total: number; owed: number; reimbursed: number; byCategory: Map<string, number> }>();
     expenses.forEach((t) => {
       const key = t.partner_id || "none";
-      if (!groups.has(key)) groups.set(key, { total: 0, byCategory: new Map() });
+      if (!groups.has(key)) groups.set(key, { total: 0, owed: 0, reimbursed: 0, byCategory: new Map() });
       const g = groups.get(key)!;
       const amt = Number(t.amount);
       g.total += amt;
+      if (t.paid_personally) {
+        if (t.reimbursed_at) g.reimbursed += amt;
+        else g.owed += amt;
+      }
       g.byCategory.set(t.category, (g.byCategory.get(t.category) || 0) + amt);
     });
     return Array.from(groups.entries())
@@ -195,6 +199,8 @@ export function ExpensesBlock() {
         id,
         name: id === "none" ? "Общие (без партнёра)" : partnerNames[id] || "Партнёр",
         total: g.total,
+        owed: g.owed,
+        reimbursed: g.reimbursed,
         share: monthTotal ? (g.total / monthTotal) * 100 : 0,
         categories: Array.from(g.byCategory.entries())
           .map(([code, amount]) => ({ code, amount }))
@@ -202,6 +208,7 @@ export function ExpensesBlock() {
       }))
       .sort((a, b) => b.total - a.total);
   }, [expenses, monthTotal, partnerNames]);
+
 
   // Разбивка расходов месяца по сервисам
   const serviceBreakdown = useMemo(() => {
