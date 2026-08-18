@@ -67,6 +67,8 @@ type Tx = {
   description: string | null;
   partner_id: string | null;
   service_name: string | null;
+  paid_personally: boolean | null;
+  reimbursed_at: string | null;
 };
 
 export function ExpensesBlock() {
@@ -78,8 +80,10 @@ export function ExpensesBlock() {
   const [source, setSource] = useState<"auto" | "cash" | "bank">("auto");
   const [partnerId, setPartnerId] = useState<string>("none");
   const [serviceName, setServiceName] = useState("");
+  const [paidPersonally, setPaidPersonally] = useState(false);
 
   const [description, setDescription] = useState("");
+
 
   const { data: settings } = useFinanceSettings();
   const partnerNames = usePartnerNames();
