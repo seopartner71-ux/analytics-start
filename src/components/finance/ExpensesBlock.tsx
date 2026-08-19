@@ -236,6 +236,7 @@ export function ExpensesBlock() {
     setSource("auto");
     setPartnerId("none");
     setServiceName("");
+    setPaidPersonally(false);
   };
 
   const createMut = useMutation({
@@ -268,6 +269,7 @@ export function ExpensesBlock() {
         description: description || null,
         partner_id: partnerId === "none" ? null : partnerId,
         service_name: serviceName.trim() || null,
+        paid_personally: partnerId !== "none" && paidPersonally,
       });
       if (error) throw error;
       return { useKassa };
@@ -286,6 +288,35 @@ export function ExpensesBlock() {
       reset();
     },
     onError: (e: any) => toast.error(e.message || "Ошибка сохранения"),
+  });
+
+  // Пометка «партнёру возмещено» / снять пометку
+  const reimburseMut = useMutation({
+    mutationFn: async ({ id, value }: { id: string; value: boolean }) => {
+      const { error } = await supabase
+        .from("transactions" as any)
+        .update({ reimbursed_at: value ? new Date().toISOString() : null })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_d, v) => {
+      toast.success(v.value ? "Отмечено: партнёру возмещено" : "Пометка снята — компания должна партнёру");
+      qc.invalidateQueries({ queryKey: ["fin-expenses-all"] });
+    },
+    onError: (e: any) => toast.error(e.message || "Не удалось обновить"),
+  });
+
+  // Переключить «оплачено партнёром лично» у существующего расхода
+  const personalMut = useMutation({
+    mutationFn: async ({ id, value }: { id: string; value: boolean }) => {
+      const { error } = await supabase
+        .from("transactions" as any)
+        .update({ paid_personally: value, reimbursed_at: null })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["fin-expenses-all"] }),
+    onError: (e: any) => toast.error(e.message || "Не удалось обновить"),
   });
 
   const deleteMut = useMutation({
@@ -389,6 +420,24 @@ export function ExpensesBlock() {
                 <p className="text-2xs text-muted-foreground">Кто из партнёров инициировал расход — попадёт во вкладку «По партнёрам».</p>
               </div>
 
+              {partnerId !== "none" && (
+                <label className="flex items-start gap-2 rounded-md border p-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5 h-4 w-4 accent-primary"
+                    checked={paidPersonally}
+                    onChange={(e) => setPaidPersonally(e.target.checked)}
+                  />
+                  <span>
+                    <span className="text-sm font-medium">Оплачено партнёром лично</span>
+                    <span className="block text-2xs text-muted-foreground">
+                      Компания должна вернуть партнёру. Когда вернёте из кассы — отметьте «Возмещено» в списке.
+                    </span>
+                  </span>
+                </label>
+              )}
+
+
 
 
               <div className="space-y-1.5">
@@ -442,6 +491,7 @@ export function ExpensesBlock() {
                   <th className="text-left py-2 font-medium">Сервис</th>
                   <th className="text-left py-2 font-medium">Партнёр</th>
                   <th className="text-left py-2 font-medium">Описание</th>
+                  <th className="text-left py-2 font-medium">Возврат партнёру</th>
                   <th className="text-right py-2 font-medium">Сумма</th>
                   <th className="w-10"></th>
                 </tr>
@@ -463,6 +513,43 @@ export function ExpensesBlock() {
                       {e.partner_id ? (partnerNames[e.partner_id] || "Партнёр") : "Общий"}
                     </td>
                     <td className="py-2.5 text-muted-foreground max-w-[280px] truncate">{e.description || "—"}</td>
+                    <td className="py-2.5 whitespace-nowrap">
+                      {!e.partner_id ? (
+                        <span className="text-2xs text-muted-foreground">—</span>
+                      ) : !e.paid_personally ? (
+                        <button
+                          className="text-2xs text-muted-foreground hover:text-foreground underline underline-offset-2"
+                          onClick={() => personalMut.mutate({ id: e.id, value: true })}
+                        >
+                          Оплатил партнёр лично
+                        </button>
+                      ) : e.reimbursed_at ? (
+                        <button
+                          className="inline-flex items-center gap-1"
+                          title="Снять пометку"
+                          onClick={() => reimburseMut.mutate({ id: e.id, value: false })}
+                        >
+                          <Badge variant="outline" className="text-2xs border-emerald-500/40 text-emerald-500 bg-emerald-500/10">
+                            Возмещено · {format(new Date(e.reimbursed_at), "dd.MM.yyyy")}
+                          </Badge>
+                        </button>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5">
+                          <Badge variant="outline" className="text-2xs border-amber-500/40 text-amber-500 bg-amber-500/10">
+                            Должны партнёру
+                          </Badge>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-6 px-2 text-2xs"
+                            onClick={() => reimburseMut.mutate({ id: e.id, value: true })}
+                          >
+                            Возместил
+                          </Button>
+                        </span>
+                      )}
+                    </td>
+
                     <td className="py-2.5 text-right font-semibold text-red-500">−{RUB(Number(e.amount))}</td>
                     <td className="py-2.5 text-right">
                       <Button
@@ -501,6 +588,23 @@ export function ExpensesBlock() {
                     <div className="h-1.5 rounded-full bg-muted overflow-hidden">
                       <div className="h-full bg-red-500/70" style={{ width: `${Math.min(100, p.share)}%` }} />
                     </div>
+                    {p.id !== "none" && (p.owed > 0 || p.reimbursed > 0) && (
+                      <div className="flex items-center justify-between text-xs rounded-md border p-2">
+                        <span className="text-muted-foreground">Оплачено лично</span>
+                        <span className="flex items-center gap-2">
+                          {p.owed > 0 && (
+                            <Badge variant="outline" className="text-2xs border-amber-500/40 text-amber-500 bg-amber-500/10">
+                              Должны {RUB(p.owed)}
+                            </Badge>
+                          )}
+                          {p.reimbursed > 0 && (
+                            <Badge variant="outline" className="text-2xs border-emerald-500/40 text-emerald-500 bg-emerald-500/10">
+                              Возмещено {RUB(p.reimbursed)}
+                            </Badge>
+                          )}
+                        </span>
+                      </div>
+                    )}
                     <div className="space-y-1.5">
                       {p.categories.map((c) => (
                         <div key={c.code} className="flex items-center justify-between text-sm">
