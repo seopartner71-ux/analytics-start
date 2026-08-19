@@ -23,6 +23,8 @@ const allNav = [
   { title: "Операции", url: "/finance/operations", icon: Activity, minRole: "manager" as const, managerPlus: true },
   { title: "Доходы", url: "/finance/income", icon: TrendingUp, minRole: "manager" as const, managerPlus: true },
   { title: "Расходы", url: "/finance/expenses", icon: Wallet, minRole: "manager" as const, managerPlus: true },
+  { title: "Касса", url: "/finance/cash", icon: Briefcase, minRole: "manager" as const, managerPlus: true },
+
   { title: "Клиенты", url: "/finance/clients", icon: Building2, minRole: "manager" as const, managerPlus: true },
   { title: "К выплате", url: "/finance/payables", icon: Scale, minRole: "manager" as const, managerPlus: true },
   { title: "Прогноз", url: "/finance/forecast", icon: LineChart, minRole: "manager" as const, managerPlus: true },
