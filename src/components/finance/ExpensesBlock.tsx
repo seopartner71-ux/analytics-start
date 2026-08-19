@@ -236,6 +236,7 @@ export function ExpensesBlock() {
     setSource("auto");
     setPartnerId("none");
     setServiceName("");
+    setPaidPersonally(false);
   };
 
   const createMut = useMutation({
