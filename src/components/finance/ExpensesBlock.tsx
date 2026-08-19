@@ -290,6 +290,35 @@ export function ExpensesBlock() {
     onError: (e: any) => toast.error(e.message || "Ошибка сохранения"),
   });
 
+  // Пометка «партнёру возмещено» / снять пометку
+  const reimburseMut = useMutation({
+    mutationFn: async ({ id, value }: { id: string; value: boolean }) => {
+      const { error } = await supabase
+        .from("transactions" as any)
+        .update({ reimbursed_at: value ? new Date().toISOString() : null })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_d, v) => {
+      toast.success(v.value ? "Отмечено: партнёру возмещено" : "Пометка снята — компания должна партнёру");
+      qc.invalidateQueries({ queryKey: ["fin-expenses-all"] });
+    },
+    onError: (e: any) => toast.error(e.message || "Не удалось обновить"),
+  });
+
+  // Переключить «оплачено партнёром лично» у существующего расхода
+  const personalMut = useMutation({
+    mutationFn: async ({ id, value }: { id: string; value: boolean }) => {
+      const { error } = await supabase
+        .from("transactions" as any)
+        .update({ paid_personally: value, reimbursed_at: null })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["fin-expenses-all"] }),
+    onError: (e: any) => toast.error(e.message || "Не удалось обновить"),
+  });
+
   const deleteMut = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("transactions" as any).delete().eq("id", id);
