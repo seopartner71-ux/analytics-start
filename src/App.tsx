@@ -39,6 +39,8 @@ const FinanceOverview = lazy(() => import("./pages/finance/OverviewPage"));
 const FinanceOperations = lazy(() => import("./pages/finance/OperationsPage"));
 const FinanceIncome = lazy(() => import("./pages/finance/IncomePage"));
 const FinanceExpenses = lazy(() => import("./pages/finance/ExpensesPage"));
+const FinanceCash = lazy(() => import("./pages/finance/CashPage"));
+
 const FinanceClients = lazy(() => import("./pages/finance/ClientsPage"));
 const FinancePayables = lazy(() => import("./pages/finance/PayablesPage"));
 const FinanceForecast = lazy(() => import("./pages/finance/ForecastPage"));
