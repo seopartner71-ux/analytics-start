@@ -588,6 +588,23 @@ export function ExpensesBlock() {
                     <div className="h-1.5 rounded-full bg-muted overflow-hidden">
                       <div className="h-full bg-red-500/70" style={{ width: `${Math.min(100, p.share)}%` }} />
                     </div>
+                    {p.id !== "none" && (p.owed > 0 || p.reimbursed > 0) && (
+                      <div className="flex items-center justify-between text-xs rounded-md border p-2">
+                        <span className="text-muted-foreground">Оплачено лично</span>
+                        <span className="flex items-center gap-2">
+                          {p.owed > 0 && (
+                            <Badge variant="outline" className="text-2xs border-amber-500/40 text-amber-500 bg-amber-500/10">
+                              Должны {RUB(p.owed)}
+                            </Badge>
+                          )}
+                          {p.reimbursed > 0 && (
+                            <Badge variant="outline" className="text-2xs border-emerald-500/40 text-emerald-500 bg-emerald-500/10">
+                              Возмещено {RUB(p.reimbursed)}
+                            </Badge>
+                          )}
+                        </span>
+                      </div>
+                    )}
                     <div className="space-y-1.5">
                       {p.categories.map((c) => (
                         <div key={c.code} className="flex items-center justify-between text-sm">
