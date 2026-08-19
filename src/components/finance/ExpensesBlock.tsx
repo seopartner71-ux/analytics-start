@@ -269,6 +269,7 @@ export function ExpensesBlock() {
         description: description || null,
         partner_id: partnerId === "none" ? null : partnerId,
         service_name: serviceName.trim() || null,
+        paid_personally: partnerId !== "none" && paidPersonally,
       });
       if (error) throw error;
       return { useKassa };
