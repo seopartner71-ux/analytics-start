@@ -420,6 +420,24 @@ export function ExpensesBlock() {
                 <p className="text-2xs text-muted-foreground">Кто из партнёров инициировал расход — попадёт во вкладку «По партнёрам».</p>
               </div>
 
+              {partnerId !== "none" && (
+                <label className="flex items-start gap-2 rounded-md border p-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5 h-4 w-4 accent-primary"
+                    checked={paidPersonally}
+                    onChange={(e) => setPaidPersonally(e.target.checked)}
+                  />
+                  <span>
+                    <span className="text-sm font-medium">Оплачено партнёром лично</span>
+                    <span className="block text-2xs text-muted-foreground">
+                      Компания должна вернуть партнёру. Когда вернёте из кассы — отметьте «Возмещено» в списке.
+                    </span>
+                  </span>
+                </label>
+              )}
+
+
 
 
               <div className="space-y-1.5">
