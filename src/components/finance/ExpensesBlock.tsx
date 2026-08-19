@@ -491,6 +491,7 @@ export function ExpensesBlock() {
                   <th className="text-left py-2 font-medium">Сервис</th>
                   <th className="text-left py-2 font-medium">Партнёр</th>
                   <th className="text-left py-2 font-medium">Описание</th>
+                  <th className="text-left py-2 font-medium">Возврат партнёру</th>
                   <th className="text-right py-2 font-medium">Сумма</th>
                   <th className="w-10"></th>
                 </tr>
@@ -512,6 +513,43 @@ export function ExpensesBlock() {
                       {e.partner_id ? (partnerNames[e.partner_id] || "Партнёр") : "Общий"}
                     </td>
                     <td className="py-2.5 text-muted-foreground max-w-[280px] truncate">{e.description || "—"}</td>
+                    <td className="py-2.5 whitespace-nowrap">
+                      {!e.partner_id ? (
+                        <span className="text-2xs text-muted-foreground">—</span>
+                      ) : !e.paid_personally ? (
+                        <button
+                          className="text-2xs text-muted-foreground hover:text-foreground underline underline-offset-2"
+                          onClick={() => personalMut.mutate({ id: e.id, value: true })}
+                        >
+                          Оплатил партнёр лично
+                        </button>
+                      ) : e.reimbursed_at ? (
+                        <button
+                          className="inline-flex items-center gap-1"
+                          title="Снять пометку"
+                          onClick={() => reimburseMut.mutate({ id: e.id, value: false })}
+                        >
+                          <Badge variant="outline" className="text-2xs border-emerald-500/40 text-emerald-500 bg-emerald-500/10">
+                            Возмещено · {format(new Date(e.reimbursed_at), "dd.MM.yyyy")}
+                          </Badge>
+                        </button>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5">
+                          <Badge variant="outline" className="text-2xs border-amber-500/40 text-amber-500 bg-amber-500/10">
+                            Должны партнёру
+                          </Badge>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-6 px-2 text-2xs"
+                            onClick={() => reimburseMut.mutate({ id: e.id, value: true })}
+                          >
+                            Возместил
+                          </Button>
+                        </span>
+                      )}
+                    </td>
+
                     <td className="py-2.5 text-right font-semibold text-red-500">−{RUB(Number(e.amount))}</td>
                     <td className="py-2.5 text-right">
                       <Button
