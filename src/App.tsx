@@ -105,6 +105,8 @@ const App = () => (
                   <Route path="/finance/operations" element={<ProtectedRoute><CrmLayout><FinanceGuard><FinanceOperations /></FinanceGuard></CrmLayout></ProtectedRoute>} />
                   <Route path="/finance/income" element={<ProtectedRoute><CrmLayout><FinanceGuard><FinanceIncome /></FinanceGuard></CrmLayout></ProtectedRoute>} />
                   <Route path="/finance/expenses" element={<ProtectedRoute><CrmLayout><FinanceGuard><FinanceExpenses /></FinanceGuard></CrmLayout></ProtectedRoute>} />
+                  <Route path="/finance/cash" element={<ProtectedRoute><CrmLayout><FinanceGuard><FinanceCash /></FinanceGuard></CrmLayout></ProtectedRoute>} />
+
                   <Route path="/finance/clients" element={<ProtectedRoute><CrmLayout><FinanceGuard><FinanceClients /></FinanceGuard></CrmLayout></ProtectedRoute>} />
                   <Route path="/finance/payables" element={<ProtectedRoute><CrmLayout><FinanceGuard><FinancePayables /></FinanceGuard></CrmLayout></ProtectedRoute>} />
                   <Route path="/finance/forecast" element={<ProtectedRoute><CrmLayout><FinanceGuard><FinanceForecast /></FinanceGuard></CrmLayout></ProtectedRoute>} />
