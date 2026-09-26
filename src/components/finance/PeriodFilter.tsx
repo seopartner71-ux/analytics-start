@@ -34,7 +34,13 @@ export function PeriodFilter() {
         ))}
       </div>
 
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover
+        open={open}
+        onOpenChange={(o) => {
+          setOpen(o);
+          if (o) setRange({});
+        }}
+      >
         <PopoverTrigger asChild>
           <Button
             variant="outline"
@@ -49,17 +55,24 @@ export function PeriodFilter() {
           <Calendar
             mode="range"
             locale={ru}
+            weekStartsOn={1}
             defaultMonth={period.from}
             selected={range as any}
-            onSelect={(r: any) => {
-              setRange(r || {});
-              if (r?.from && r?.to) {
-                setCustom({ from: r.from, to: r.to });
-                setOpen(false);
+            onSelect={() => {}}
+            onDayClick={(day: Date) => {
+              // 1-й клик — начало, 2-й — конец (в любом порядке)
+              if (!range.from || range.to) {
+                setRange({ from: day, to: undefined });
+                return;
               }
+              const from = day < range.from ? day : range.from;
+              const to = day < range.from ? range.from : day;
+              setRange({ from, to });
+              setCustom({ from, to });
+              setOpen(false);
             }}
             numberOfMonths={2}
-            className="pointer-events-auto"
+            className="p-3 pointer-events-auto"
           />
         </PopoverContent>
       </Popover>
